@@ -41,6 +41,9 @@ func Run(t *testing.T, newStore Factory) {
 		"NoMutationMethods":       testNoMutationMethods,
 		"Settings":                testSettings,
 	}
+	for name, fn := range kitchenTests() {
+		tests[name] = fn
+	}
 	for name, fn := range tests {
 		t.Run(name, func(t *testing.T) { fn(t, newStore(t)) })
 	}

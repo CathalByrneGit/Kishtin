@@ -126,6 +126,86 @@ type ClientInterface interface {
 	RevokeKey(ctx context.Context, options *RevokeKeyRequestOptions, reqEditors ...runtime.RequestEditorFn) (*struct{}, error)
 	RevokeKeyWithResponse(ctx context.Context, options *RevokeKeyRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RevokeKeyResp, error)
 
+	// GetKitchen Show open orders and the scheduler's plan
+	GetKitchen(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetKitchenResponse, error)
+	GetKitchenWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetKitchenResp, error)
+
+	// MoveItems Move items: started, rested, plated, ready, served or voided
+	MoveItems(ctx context.Context, options *MoveItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*MoveItemsResponse, error)
+	MoveItemsWithResponse(ctx context.Context, options *MoveItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*MoveItemsResp, error)
+
+	// GetMenu Show stations, equipment and dishes
+	GetMenu(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResponse, error)
+	GetMenuWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResp, error)
+
+	// CreateDish Add a dish (manager password)
+	CreateDish(ctx context.Context, options *CreateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateDishResponse, error)
+	CreateDishWithResponse(ctx context.Context, options *CreateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateDishResp, error)
+
+	// UpdateDish Change a dish (manager password)
+	UpdateDish(ctx context.Context, options *UpdateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateDishResponse, error)
+	UpdateDishWithResponse(ctx context.Context, options *UpdateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateDishResp, error)
+
+	// SetDishAvailability Mark a dish sold out (86) or back on
+	SetDishAvailability(ctx context.Context, options *SetDishAvailabilityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetDishAvailabilityResponse, error)
+	SetDishAvailabilityWithResponse(ctx context.Context, options *SetDishAvailabilityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetDishAvailabilityResp, error)
+
+	// CreateEquipment Add equipment to a station (manager password)
+	CreateEquipment(ctx context.Context, options *CreateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateEquipmentResponse, error)
+	CreateEquipmentWithResponse(ctx context.Context, options *CreateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateEquipmentResp, error)
+
+	// UpdateEquipment Change equipment (manager password)
+	UpdateEquipment(ctx context.Context, options *UpdateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateEquipmentResponse, error)
+	UpdateEquipmentWithResponse(ctx context.Context, options *UpdateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateEquipmentResp, error)
+
+	// CreateStation Add a station (manager password)
+	CreateStation(ctx context.Context, options *CreateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateStationResponse, error)
+	CreateStationWithResponse(ctx context.Context, options *CreateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateStationResp, error)
+
+	// UpdateStation Change a station (manager password)
+	UpdateStation(ctx context.Context, options *UpdateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateStationResponse, error)
+	UpdateStationWithResponse(ctx context.Context, options *UpdateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateStationResp, error)
+
+	// ListOrders List open orders, or every order of a day
+	ListOrders(ctx context.Context, options *ListOrdersRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListOrdersResponse, error)
+	ListOrdersWithResponse(ctx context.Context, options *ListOrdersRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListOrdersResp, error)
+
+	// CreateOrder Enter an order
+	CreateOrder(ctx context.Context, options *CreateOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateOrderResponse, error)
+	CreateOrderWithResponse(ctx context.Context, options *CreateOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateOrderResp, error)
+
+	// GetOrder Show an order
+	GetOrder(ctx context.Context, options *GetOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetOrderResponse, error)
+	GetOrderWithResponse(ctx context.Context, options *GetOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetOrderResp, error)
+
+	// CloseOrder Close an order once everything is served or voided
+	CloseOrder(ctx context.Context, options *CloseOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CloseOrderResponse, error)
+	CloseOrderWithResponse(ctx context.Context, options *CloseOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CloseOrderResp, error)
+
+	// FireCourse Fire a course: its target time is now plus its longest item
+	FireCourse(ctx context.Context, options *FireCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*FireCourseResponse, error)
+	FireCourseWithResponse(ctx context.Context, options *FireCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*FireCourseResp, error)
+
+	// ServeCourse Serve a course once every item is ready
+	ServeCourse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResponse, error)
+	ServeCourseWithResponse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResp, error)
+
+	// SetCourseTarget Change when a fired course should reach the pass
+	SetCourseTarget(ctx context.Context, options *SetCourseTargetRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetCourseTargetResponse, error)
+	SetCourseTargetWithResponse(ctx context.Context, options *SetCourseTargetRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetCourseTargetResp, error)
+
+	// SetCourseUrgent Flag a course urgent so the scheduler puts it first, or clear the flag
+	SetCourseUrgent(ctx context.Context, options *SetCourseUrgentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetCourseUrgentResponse, error)
+	SetCourseUrgentWithResponse(ctx context.Context, options *SetCourseUrgentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetCourseUrgentResp, error)
+
+	// OrderEvents Show an order's history: every change, who made it and when
+	OrderEvents(ctx context.Context, options *OrderEventsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*OrderEventsResponse, error)
+	OrderEventsWithResponse(ctx context.Context, options *OrderEventsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*OrderEventsResp, error)
+
+	// AddItems Add items to an open order
+	AddItems(ctx context.Context, options *AddItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AddItemsResponse, error)
+	AddItemsWithResponse(ctx context.Context, options *AddItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AddItemsResp, error)
+
 	// GetGuidance Show the reference guidance in force
 	GetGuidance(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResponse, error)
 	GetGuidanceWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResp, error)
@@ -173,6 +253,22 @@ type ClientInterface interface {
 	// PreviewRules Preview a change to the food-safety rules
 	PreviewRules(ctx context.Context, options *PreviewRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRulesResponse, error)
 	PreviewRulesWithResponse(ctx context.Context, options *PreviewRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRulesResp, error)
+
+	// GetScheduler Show the scheduler settings in force
+	GetScheduler(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSchedulerResponse, error)
+	GetSchedulerWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSchedulerResp, error)
+
+	// SaveScheduler Save a new version of the scheduler settings
+	SaveScheduler(ctx context.Context, options *SaveSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSchedulerResponse, error)
+	SaveSchedulerWithResponse(ctx context.Context, options *SaveSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSchedulerResp, error)
+
+	// SchedulerHistory List every saved version of the scheduler settings, oldest first
+	SchedulerHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SchedulerHistoryResponse, error)
+	SchedulerHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SchedulerHistoryResp, error)
+
+	// PreviewScheduler Preview a change to the scheduler settings
+	PreviewScheduler(ctx context.Context, options *PreviewSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSchedulerResponse, error)
+	PreviewSchedulerWithResponse(ctx context.Context, options *PreviewSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSchedulerResp, error)
 
 	// GetSystem Show the system settings in force
 	GetSystem(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResponse, error)
@@ -1609,6 +1705,1281 @@ func (c *Client) RevokeKey(ctx context.Context, options *RevokeKeyRequestOptions
 	return responseParser(ctx, resp)
 }
 
+// GetKitchen Show open orders and the scheduler's plan
+func (c *Client) GetKitchen(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetKitchenResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/kitchen",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetKitchenResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetKitchenErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetKitchenErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetKitchenResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetKitchenResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// MoveItems Move items: started, rested, plated, ready, served or voided
+func (c *Client) MoveItems(ctx context.Context, options *MoveItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*MoveItemsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/kitchen/items",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*MoveItemsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(MoveItemsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "MoveItemsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(MoveItemsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "MoveItemsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen/items")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetMenu Show stations, equipment and dishes
+func (c *Client) GetMenu(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/menu",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetMenuResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetMenuErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetMenuErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetMenuResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetMenuResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// CreateDish Add a dish (manager password)
+func (c *Client) CreateDish(ctx context.Context, options *CreateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateDishResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/dishes",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CreateDishResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 201 {
+			target := new(CreateDishErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CreateDishErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CreateDishResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CreateDishResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/dishes")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// UpdateDish Change a dish (manager password)
+func (c *Client) UpdateDish(ctx context.Context, options *UpdateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateDishResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/dishes/{id}",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*UpdateDishResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(UpdateDishErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "UpdateDishErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(UpdateDishResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "UpdateDishResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/dishes/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SetDishAvailability Mark a dish sold out (86) or back on
+func (c *Client) SetDishAvailability(ctx context.Context, options *SetDishAvailabilityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetDishAvailabilityResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/dishes/{id}/availability",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SetDishAvailabilityResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SetDishAvailabilityErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SetDishAvailabilityErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SetDishAvailabilityResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SetDishAvailabilityResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/dishes/{id}/availability")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// CreateEquipment Add equipment to a station (manager password)
+func (c *Client) CreateEquipment(ctx context.Context, options *CreateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateEquipmentResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/equipment",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CreateEquipmentResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 201 {
+			target := new(CreateEquipmentErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CreateEquipmentErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CreateEquipmentResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CreateEquipmentResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/equipment")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// UpdateEquipment Change equipment (manager password)
+func (c *Client) UpdateEquipment(ctx context.Context, options *UpdateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateEquipmentResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/equipment/{id}",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*UpdateEquipmentResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(UpdateEquipmentErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "UpdateEquipmentErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(UpdateEquipmentResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "UpdateEquipmentResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/equipment/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// CreateStation Add a station (manager password)
+func (c *Client) CreateStation(ctx context.Context, options *CreateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateStationResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/stations",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CreateStationResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 201 {
+			target := new(CreateStationErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CreateStationErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CreateStationResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CreateStationResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/stations")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// UpdateStation Change a station (manager password)
+func (c *Client) UpdateStation(ctx context.Context, options *UpdateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateStationResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/stations/{id}",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*UpdateStationResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(UpdateStationErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "UpdateStationErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(UpdateStationResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "UpdateStationResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/stations/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ListOrders List open orders, or every order of a day
+func (c *Client) ListOrders(ctx context.Context, options *ListOrdersRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListOrdersResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"date": {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/orders",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ListOrdersResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ListOrdersErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ListOrdersErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ListOrdersResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ListOrdersResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// CreateOrder Enter an order
+func (c *Client) CreateOrder(ctx context.Context, options *CreateOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateOrderResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CreateOrderResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 201 {
+			target := new(CreateOrderErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CreateOrderErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CreateOrderResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CreateOrderResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetOrder Show an order
+func (c *Client) GetOrder(ctx context.Context, options *GetOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetOrderResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetOrderResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetOrderErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetOrderErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetOrderResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetOrderResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// CloseOrder Close an order once everything is served or voided
+func (c *Client) CloseOrder(ctx context.Context, options *CloseOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CloseOrderResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/close",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CloseOrderResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(CloseOrderErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CloseOrderErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CloseOrderResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CloseOrderResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/close")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// FireCourse Fire a course: its target time is now plus its longest item
+func (c *Client) FireCourse(ctx context.Context, options *FireCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*FireCourseResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/fire",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*FireCourseResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(FireCourseErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "FireCourseErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(FireCourseResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "FireCourseResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/fire")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ServeCourse Serve a course once every item is ready
+func (c *Client) ServeCourse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/serve",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ServeCourseResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ServeCourseErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ServeCourseErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ServeCourseResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ServeCourseResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/serve")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SetCourseTarget Change when a fired course should reach the pass
+func (c *Client) SetCourseTarget(ctx context.Context, options *SetCourseTargetRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetCourseTargetResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/target",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SetCourseTargetResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SetCourseTargetErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SetCourseTargetErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SetCourseTargetResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SetCourseTargetResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/target")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SetCourseUrgent Flag a course urgent so the scheduler puts it first, or clear the flag
+func (c *Client) SetCourseUrgent(ctx context.Context, options *SetCourseUrgentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetCourseUrgentResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/urgent",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SetCourseUrgentResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SetCourseUrgentErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SetCourseUrgentErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SetCourseUrgentResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SetCourseUrgentResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/urgent")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// OrderEvents Show an order's history: every change, who made it and when
+func (c *Client) OrderEvents(ctx context.Context, options *OrderEventsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*OrderEventsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/events",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*OrderEventsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(OrderEventsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "OrderEventsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(OrderEventsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "OrderEventsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/events")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// AddItems Add items to an open order
+func (c *Client) AddItems(ctx context.Context, options *AddItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AddItemsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/items",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*AddItemsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(AddItemsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "AddItemsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(AddItemsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "AddItemsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/items")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // GetGuidance Show the reference guidance in force
 func (c *Client) GetGuidance(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResponse, error) {
 	var err error
@@ -2359,6 +3730,258 @@ func (c *Client) PreviewRules(ctx context.Context, options *PreviewRulesRequestO
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetScheduler Show the scheduler settings in force
+func (c *Client) GetScheduler(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSchedulerResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/scheduler",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetSchedulerResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetSchedulerErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetSchedulerErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetSchedulerResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetSchedulerResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/scheduler")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveScheduler Save a new version of the scheduler settings
+func (c *Client) SaveScheduler(ctx context.Context, options *SaveSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSchedulerResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/scheduler",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveSchedulerResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveSchedulerErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveSchedulerErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveSchedulerResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveSchedulerResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/scheduler")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SchedulerHistory List every saved version of the scheduler settings, oldest first
+func (c *Client) SchedulerHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SchedulerHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/scheduler/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SchedulerHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SchedulerHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SchedulerHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SchedulerHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SchedulerHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/scheduler/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewScheduler Preview a change to the scheduler settings
+func (c *Client) PreviewScheduler(ctx context.Context, options *PreviewSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSchedulerResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/scheduler/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewSchedulerResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewSchedulerErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewSchedulerErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewSchedulerResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewSchedulerResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/scheduler/preview")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -3434,6 +5057,861 @@ func (o *RevokeKeyRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// MoveItemsRequestOptions is the options needed to make a request to MoveItems.
+type MoveItemsRequestOptions struct {
+	Body *MoveItemsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *MoveItemsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *MoveItemsRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *MoveItemsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *MoveItemsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *MoveItemsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// CreateDishRequestOptions is the options needed to make a request to CreateDish.
+type CreateDishRequestOptions struct {
+	Body *CreateDishBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *CreateDishRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *CreateDishRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *CreateDishRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *CreateDishRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *CreateDishRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// UpdateDishRequestOptions is the options needed to make a request to UpdateDish.
+type UpdateDishRequestOptions struct {
+	PathParams *UpdateDishPath
+	Body       *UpdateDishBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *UpdateDishRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *UpdateDishRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *UpdateDishRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *UpdateDishRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *UpdateDishRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SetDishAvailabilityRequestOptions is the options needed to make a request to SetDishAvailability.
+type SetDishAvailabilityRequestOptions struct {
+	PathParams *SetDishAvailabilityPath
+	Body       *SetDishAvailabilityBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SetDishAvailabilityRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SetDishAvailabilityRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *SetDishAvailabilityRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SetDishAvailabilityRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SetDishAvailabilityRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// CreateEquipmentRequestOptions is the options needed to make a request to CreateEquipment.
+type CreateEquipmentRequestOptions struct {
+	Body *CreateEquipmentBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *CreateEquipmentRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *CreateEquipmentRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *CreateEquipmentRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *CreateEquipmentRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *CreateEquipmentRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// UpdateEquipmentRequestOptions is the options needed to make a request to UpdateEquipment.
+type UpdateEquipmentRequestOptions struct {
+	PathParams *UpdateEquipmentPath
+	Body       *UpdateEquipmentBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *UpdateEquipmentRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *UpdateEquipmentRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *UpdateEquipmentRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *UpdateEquipmentRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *UpdateEquipmentRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// CreateStationRequestOptions is the options needed to make a request to CreateStation.
+type CreateStationRequestOptions struct {
+	Body *CreateStationBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *CreateStationRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *CreateStationRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *CreateStationRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *CreateStationRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *CreateStationRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// UpdateStationRequestOptions is the options needed to make a request to UpdateStation.
+type UpdateStationRequestOptions struct {
+	PathParams *UpdateStationPath
+	Body       *UpdateStationBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *UpdateStationRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *UpdateStationRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *UpdateStationRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *UpdateStationRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *UpdateStationRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// ListOrdersRequestOptions is the options needed to make a request to ListOrders.
+type ListOrdersRequestOptions struct {
+	Query *ListOrdersQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ListOrdersRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ListOrdersRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *ListOrdersRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ListOrdersRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *ListOrdersRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// CreateOrderRequestOptions is the options needed to make a request to CreateOrder.
+type CreateOrderRequestOptions struct {
+	Body *CreateOrderBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *CreateOrderRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *CreateOrderRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *CreateOrderRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *CreateOrderRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *CreateOrderRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// GetOrderRequestOptions is the options needed to make a request to GetOrder.
+type GetOrderRequestOptions struct {
+	PathParams *GetOrderPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *GetOrderRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *GetOrderRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *GetOrderRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *GetOrderRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *GetOrderRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// CloseOrderRequestOptions is the options needed to make a request to CloseOrder.
+type CloseOrderRequestOptions struct {
+	PathParams *CloseOrderPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *CloseOrderRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *CloseOrderRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *CloseOrderRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *CloseOrderRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *CloseOrderRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// FireCourseRequestOptions is the options needed to make a request to FireCourse.
+type FireCourseRequestOptions struct {
+	PathParams *FireCoursePath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *FireCourseRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *FireCourseRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *FireCourseRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *FireCourseRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *FireCourseRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// ServeCourseRequestOptions is the options needed to make a request to ServeCourse.
+type ServeCourseRequestOptions struct {
+	PathParams *ServeCoursePath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ServeCourseRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ServeCourseRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *ServeCourseRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ServeCourseRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *ServeCourseRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SetCourseTargetRequestOptions is the options needed to make a request to SetCourseTarget.
+type SetCourseTargetRequestOptions struct {
+	PathParams *SetCourseTargetPath
+	Body       *SetCourseTargetBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SetCourseTargetRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SetCourseTargetRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *SetCourseTargetRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SetCourseTargetRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SetCourseTargetRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SetCourseUrgentRequestOptions is the options needed to make a request to SetCourseUrgent.
+type SetCourseUrgentRequestOptions struct {
+	PathParams *SetCourseUrgentPath
+	Body       *SetCourseUrgentBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SetCourseUrgentRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SetCourseUrgentRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *SetCourseUrgentRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SetCourseUrgentRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SetCourseUrgentRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// OrderEventsRequestOptions is the options needed to make a request to OrderEvents.
+type OrderEventsRequestOptions struct {
+	PathParams *OrderEventsPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *OrderEventsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *OrderEventsRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *OrderEventsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *OrderEventsRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *OrderEventsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// AddItemsRequestOptions is the options needed to make a request to AddItems.
+type AddItemsRequestOptions struct {
+	PathParams *AddItemsPath
+	Body       *AddItemsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *AddItemsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *AddItemsRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *AddItemsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *AddItemsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *AddItemsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // SaveGuidanceRequestOptions is the options needed to make a request to SaveGuidance.
 type SaveGuidanceRequestOptions struct {
 	Body *SaveGuidanceBody
@@ -3695,6 +6173,94 @@ func (o *PreviewRulesRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *PreviewRulesRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SaveSchedulerRequestOptions is the options needed to make a request to SaveScheduler.
+type SaveSchedulerRequestOptions struct {
+	Body *SaveSchedulerBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveSchedulerRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveSchedulerRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveSchedulerRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveSchedulerRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveSchedulerRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewSchedulerRequestOptions is the options needed to make a request to PreviewScheduler.
+type PreviewSchedulerRequestOptions struct {
+	Body *PreviewSchedulerBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewSchedulerRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewSchedulerRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewSchedulerRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewSchedulerRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewSchedulerRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -5221,6 +7787,1236 @@ func (c *Client) RevokeKeyWithResponse(ctx context.Context, options *RevokeKeyRe
 	}
 }
 
+// GetKitchen Show open orders and the scheduler's plan
+func (c *Client) GetKitchenWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetKitchenResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/kitchen",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetKitchenResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetKitchenResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetKitchenResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetKitchenErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetKitchenErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// MoveItems Move items: started, rested, plated, ready, served or voided
+func (c *Client) MoveItemsWithResponse(ctx context.Context, options *MoveItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*MoveItemsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/kitchen/items",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen/items")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &MoveItemsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(MoveItemsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "MoveItemsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(MoveItemsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "MoveItemsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// GetMenu Show stations, equipment and dishes
+func (c *Client) GetMenuWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/menu",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetMenuResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetMenuResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetMenuResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetMenuErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetMenuErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// CreateDish Add a dish (manager password)
+func (c *Client) CreateDishWithResponse(ctx context.Context, options *CreateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateDishResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/dishes",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/dishes")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CreateDishResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 201:
+		out.JSON201 = new(CreateDishResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON201); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateDishResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CreateDishErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateDishErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// UpdateDish Change a dish (manager password)
+func (c *Client) UpdateDishWithResponse(ctx context.Context, options *UpdateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateDishResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/dishes/{id}",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/dishes/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &UpdateDishResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(UpdateDishResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "UpdateDishResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(UpdateDishErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "UpdateDishErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SetDishAvailability Mark a dish sold out (86) or back on
+func (c *Client) SetDishAvailabilityWithResponse(ctx context.Context, options *SetDishAvailabilityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetDishAvailabilityResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/dishes/{id}/availability",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/dishes/{id}/availability")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SetDishAvailabilityResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SetDishAvailabilityResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetDishAvailabilityResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SetDishAvailabilityErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetDishAvailabilityErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// CreateEquipment Add equipment to a station (manager password)
+func (c *Client) CreateEquipmentWithResponse(ctx context.Context, options *CreateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateEquipmentResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/equipment",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/equipment")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CreateEquipmentResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 201:
+		out.JSON201 = new(CreateEquipmentResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON201); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateEquipmentResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CreateEquipmentErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateEquipmentErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// UpdateEquipment Change equipment (manager password)
+func (c *Client) UpdateEquipmentWithResponse(ctx context.Context, options *UpdateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateEquipmentResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/equipment/{id}",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/equipment/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &UpdateEquipmentResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(UpdateEquipmentResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "UpdateEquipmentResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(UpdateEquipmentErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "UpdateEquipmentErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// CreateStation Add a station (manager password)
+func (c *Client) CreateStationWithResponse(ctx context.Context, options *CreateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateStationResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/stations",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/stations")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CreateStationResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 201:
+		out.JSON201 = new(CreateStationResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON201); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateStationResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CreateStationErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateStationErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// UpdateStation Change a station (manager password)
+func (c *Client) UpdateStationWithResponse(ctx context.Context, options *UpdateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateStationResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/menu/stations/{id}",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/stations/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &UpdateStationResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(UpdateStationResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "UpdateStationResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(UpdateStationErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "UpdateStationErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ListOrders List open orders, or every order of a day
+func (c *Client) ListOrdersWithResponse(ctx context.Context, options *ListOrdersRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListOrdersResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ListOrdersResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ListOrdersResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListOrdersResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ListOrdersErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListOrdersErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// CreateOrder Enter an order
+func (c *Client) CreateOrderWithResponse(ctx context.Context, options *CreateOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateOrderResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CreateOrderResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 201:
+		out.JSON201 = new(CreateOrderResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON201); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateOrderResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CreateOrderErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateOrderErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// GetOrder Show an order
+func (c *Client) GetOrderWithResponse(ctx context.Context, options *GetOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetOrderResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetOrderResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetOrderResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetOrderResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetOrderErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetOrderErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// CloseOrder Close an order once everything is served or voided
+func (c *Client) CloseOrderWithResponse(ctx context.Context, options *CloseOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CloseOrderResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/close",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/close")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CloseOrderResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(CloseOrderResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CloseOrderResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CloseOrderErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CloseOrderErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// FireCourse Fire a course: its target time is now plus its longest item
+func (c *Client) FireCourseWithResponse(ctx context.Context, options *FireCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*FireCourseResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/fire",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/fire")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &FireCourseResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(FireCourseResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "FireCourseResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(FireCourseErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "FireCourseErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ServeCourse Serve a course once every item is ready
+func (c *Client) ServeCourseWithResponse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/serve",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/serve")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ServeCourseResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ServeCourseResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ServeCourseResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ServeCourseErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ServeCourseErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SetCourseTarget Change when a fired course should reach the pass
+func (c *Client) SetCourseTargetWithResponse(ctx context.Context, options *SetCourseTargetRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetCourseTargetResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/target",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/target")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SetCourseTargetResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SetCourseTargetResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetCourseTargetResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SetCourseTargetErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetCourseTargetErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SetCourseUrgent Flag a course urgent so the scheduler puts it first, or clear the flag
+func (c *Client) SetCourseUrgentWithResponse(ctx context.Context, options *SetCourseUrgentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetCourseUrgentResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/urgent",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/urgent")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SetCourseUrgentResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SetCourseUrgentResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetCourseUrgentResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SetCourseUrgentErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetCourseUrgentErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// OrderEvents Show an order's history: every change, who made it and when
+func (c *Client) OrderEventsWithResponse(ctx context.Context, options *OrderEventsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*OrderEventsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/events",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/events")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &OrderEventsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(OrderEventsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "OrderEventsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(OrderEventsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "OrderEventsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// AddItems Add items to an open order
+func (c *Client) AddItemsWithResponse(ctx context.Context, options *AddItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AddItemsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/items",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/items")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &AddItemsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(AddItemsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "AddItemsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(AddItemsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "AddItemsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetGuidance Show the reference guidance in force
 func (c *Client) GetGuidanceWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResp, error) {
 	var err error
@@ -5953,6 +9749,250 @@ func (c *Client) PreviewRulesWithResponse(ctx context.Context, options *PreviewR
 	}
 }
 
+// GetScheduler Show the scheduler settings in force
+func (c *Client) GetSchedulerWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSchedulerResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/scheduler",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/scheduler")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetSchedulerResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetSchedulerResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSchedulerResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetSchedulerErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSchedulerErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveScheduler Save a new version of the scheduler settings
+func (c *Client) SaveSchedulerWithResponse(ctx context.Context, options *SaveSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSchedulerResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/scheduler",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/scheduler")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveSchedulerResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveSchedulerResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSchedulerResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveSchedulerErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSchedulerErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SchedulerHistory List every saved version of the scheduler settings, oldest first
+func (c *Client) SchedulerHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SchedulerHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/scheduler/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/scheduler/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SchedulerHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SchedulerHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SchedulerHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SchedulerHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SchedulerHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewScheduler Preview a change to the scheduler settings
+func (c *Client) PreviewSchedulerWithResponse(ctx context.Context, options *PreviewSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSchedulerResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/scheduler/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/scheduler/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewSchedulerResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewSchedulerResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSchedulerResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewSchedulerErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSchedulerErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetSystem Show the system settings in force
 func (c *Client) GetSystemWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResp, error) {
 	var err error
@@ -6398,6 +10438,95 @@ func (n NewKeyInBodyKind) Validate() error {
 	}
 }
 
+type NewOrderKind string
+
+const (
+	Table    NewOrderKind = "table"
+	Takeaway NewOrderKind = "takeaway"
+)
+
+// Validate checks if the NewOrderKind value is valid
+func (n NewOrderKind) Validate() error {
+	switch n {
+	case Table, Takeaway:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid NewOrderKind value, got: %v", n))
+	}
+}
+
+type FireCoursePathCourse string
+
+const (
+	Dessert FireCoursePathCourse = "dessert"
+	Main    FireCoursePathCourse = "main"
+	Starter FireCoursePathCourse = "starter"
+)
+
+// Validate checks if the FireCoursePathCourse value is valid
+func (f FireCoursePathCourse) Validate() error {
+	switch f {
+	case Dessert, Main, Starter:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid FireCoursePathCourse value, got: %v", f))
+	}
+}
+
+type ServeCoursePathCourse string
+
+const (
+	ServeCoursePathCourseDessert ServeCoursePathCourse = "dessert"
+	ServeCoursePathCourseMain    ServeCoursePathCourse = "main"
+	ServeCoursePathCourseStarter ServeCoursePathCourse = "starter"
+)
+
+// Validate checks if the ServeCoursePathCourse value is valid
+func (s ServeCoursePathCourse) Validate() error {
+	switch s {
+	case ServeCoursePathCourseDessert, ServeCoursePathCourseMain, ServeCoursePathCourseStarter:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid ServeCoursePathCourse value, got: %v", s))
+	}
+}
+
+type SetCourseTargetPathCourse string
+
+const (
+	SetCourseTargetPathCourseDessert SetCourseTargetPathCourse = "dessert"
+	SetCourseTargetPathCourseMain    SetCourseTargetPathCourse = "main"
+	SetCourseTargetPathCourseStarter SetCourseTargetPathCourse = "starter"
+)
+
+// Validate checks if the SetCourseTargetPathCourse value is valid
+func (s SetCourseTargetPathCourse) Validate() error {
+	switch s {
+	case SetCourseTargetPathCourseDessert, SetCourseTargetPathCourseMain, SetCourseTargetPathCourseStarter:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid SetCourseTargetPathCourse value, got: %v", s))
+	}
+}
+
+type SetCourseUrgentPathCourse string
+
+const (
+	SetCourseUrgentPathCourseDessert SetCourseUrgentPathCourse = "dessert"
+	SetCourseUrgentPathCourseMain    SetCourseUrgentPathCourse = "main"
+	SetCourseUrgentPathCourseStarter SetCourseUrgentPathCourse = "starter"
+)
+
+// Validate checks if the SetCourseUrgentPathCourse value is valid
+func (s SetCourseUrgentPathCourse) Validate() error {
+	switch s {
+	case SetCourseUrgentPathCourseDessert, SetCourseUrgentPathCourseMain, SetCourseUrgentPathCourseStarter:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid SetCourseUrgentPathCourse value, got: %v", s))
+	}
+}
+
 type LogoutHeaders struct {
 	XKishtinSession *string `json:"X-Kishtin-Session,omitempty"`
 }
@@ -6426,6 +10555,154 @@ func (r RevokeKeyPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(r))
 }
 
+type UpdateDishPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (u UpdateDishPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(u))
+}
+
+type SetDishAvailabilityPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (s SetDishAvailabilityPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type UpdateEquipmentPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (u UpdateEquipmentPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(u))
+}
+
+type UpdateStationPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (u UpdateStationPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(u))
+}
+
+type GetOrderPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (g GetOrderPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(g))
+}
+
+type CloseOrderPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (c CloseOrderPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type FireCoursePath struct {
+	ID     string               `json:"id" validate:"required"`
+	Course FireCoursePathCourse `json:"course" validate:"required"`
+}
+
+func (f FireCoursePath) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(f.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if v, ok := any(f.Course).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Course", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ServeCoursePath struct {
+	ID     string                `json:"id" validate:"required"`
+	Course ServeCoursePathCourse `json:"course" validate:"required"`
+}
+
+func (s ServeCoursePath) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if v, ok := any(s.Course).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Course", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SetCourseTargetPath struct {
+	ID     string                    `json:"id" validate:"required"`
+	Course SetCourseTargetPathCourse `json:"course" validate:"required"`
+}
+
+func (s SetCourseTargetPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if v, ok := any(s.Course).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Course", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SetCourseUrgentPath struct {
+	ID     string                    `json:"id" validate:"required"`
+	Course SetCourseUrgentPathCourse `json:"course" validate:"required"`
+}
+
+func (s SetCourseUrgentPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if v, ok := any(s.Course).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Course", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type OrderEventsPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (o OrderEventsPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(o))
+}
+
+type AddItemsPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (a AddItemsPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
 type UpdateUserPath struct {
 	ID string `json:"id" validate:"required"`
 }
@@ -6448,6 +10725,28 @@ type LogRecordBody = NewRecord
 
 type CreateKeyBody = NewKeyInBody
 
+type MoveItemsBody = ItemMove
+
+type CreateDishBody = DishInput
+
+type UpdateDishBody = DishInput
+
+type SetDishAvailabilityBody = AvailabilityBody
+
+type CreateEquipmentBody = EquipmentInput
+
+type UpdateEquipmentBody = EquipmentInput
+
+type CreateStationBody = StationInput
+
+type UpdateStationBody = StationInput
+
+type CreateOrderBody = NewOrder
+
+type SetCourseTargetBody = TargetBody
+
+type SetCourseUrgentBody = UrgentBody
+
 type SaveGuidanceBody = SettingsChangeGuidance
 
 type PreviewGuidanceBody = SettingsChangeGuidance
@@ -6459,6 +10758,10 @@ type PreviewListsBody = SettingsChangeLists
 type SaveRulesBody = SettingsChangeRules
 
 type PreviewRulesBody = SettingsChangeRules
+
+type SaveSchedulerBody = SettingsChangeSettings
+
+type PreviewSchedulerBody = SettingsChangeSettings
 
 type SaveSystemBody = SettingsChangeSystem
 
@@ -6523,6 +10826,11 @@ type ListRecordsQuery struct {
 
 func (l ListRecordsQuery) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(l))
+}
+
+type ListOrdersQuery struct {
+	// Date A day (YYYY-MM-DD, Dublin time). Leave out for open orders.
+	Date *string `json:"date,omitempty"`
 }
 
 type LoginResponse = LoginResult
@@ -6611,6 +10919,86 @@ type CreateKeyErrorResponse = ErrorModel
 
 type RevokeKeyErrorResponse = ErrorModel
 
+type GetKitchenResponse = KitchenView
+
+type GetKitchenErrorResponse = ErrorModel
+
+type MoveItemsResponse = OrdersBody
+
+type MoveItemsErrorResponse = ErrorModel
+
+type GetMenuResponse = Setup
+
+type GetMenuErrorResponse = ErrorModel
+
+type CreateDishResponse = Dish
+
+type CreateDishErrorResponse = ErrorModel
+
+type UpdateDishResponse = Dish
+
+type UpdateDishErrorResponse = ErrorModel
+
+type SetDishAvailabilityResponse = Dish
+
+type SetDishAvailabilityErrorResponse = ErrorModel
+
+type CreateEquipmentResponse = Equipment
+
+type CreateEquipmentErrorResponse = ErrorModel
+
+type UpdateEquipmentResponse = Equipment
+
+type UpdateEquipmentErrorResponse = ErrorModel
+
+type CreateStationResponse = Station
+
+type CreateStationErrorResponse = ErrorModel
+
+type UpdateStationResponse = Station
+
+type UpdateStationErrorResponse = ErrorModel
+
+type ListOrdersResponse = OrdersBody
+
+type ListOrdersErrorResponse = ErrorModel
+
+type CreateOrderResponse = Order
+
+type CreateOrderErrorResponse = ErrorModel
+
+type GetOrderResponse = Order
+
+type GetOrderErrorResponse = ErrorModel
+
+type CloseOrderResponse = Order
+
+type CloseOrderErrorResponse = ErrorModel
+
+type FireCourseResponse = Order
+
+type FireCourseErrorResponse = ErrorModel
+
+type ServeCourseResponse = Order
+
+type ServeCourseErrorResponse = ErrorModel
+
+type SetCourseTargetResponse = Order
+
+type SetCourseTargetErrorResponse = ErrorModel
+
+type SetCourseUrgentResponse = Order
+
+type SetCourseUrgentErrorResponse = ErrorModel
+
+type OrderEventsResponse = EventsBody
+
+type OrderEventsErrorResponse = ErrorModel
+
+type AddItemsResponse = Order
+
+type AddItemsErrorResponse = ErrorModel
+
 type GetGuidanceResponse = VersionedGuidance
 
 type GetGuidanceErrorResponse = ErrorModel
@@ -6658,6 +11046,22 @@ type RulesHistoryErrorResponse = ErrorModel
 type PreviewRulesResponse = SettingsPreviewRules
 
 type PreviewRulesErrorResponse = ErrorModel
+
+type GetSchedulerResponse = VersionedSettings
+
+type GetSchedulerErrorResponse = ErrorModel
+
+type SaveSchedulerResponse = VersionedSettings
+
+type SaveSchedulerErrorResponse = ErrorModel
+
+type SchedulerHistoryResponse = HistoryOutSettingsBody
+
+type SchedulerHistoryErrorResponse = ErrorModel
+
+type PreviewSchedulerResponse = SettingsPreviewSettings
+
+type PreviewSchedulerErrorResponse = ErrorModel
 
 type GetSystemResponse = VersionedSystem
 
@@ -6892,6 +11296,166 @@ type RevokeKeyResp struct {
 	ApplicationProblemPlusJSONDefault *RevokeKeyErrorResponse
 }
 
+type GetKitchenResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetKitchenResponse
+	ApplicationProblemPlusJSONDefault *GetKitchenErrorResponse
+}
+
+type MoveItemsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *MoveItemsResponse
+	ApplicationProblemPlusJSONDefault *MoveItemsErrorResponse
+}
+
+type GetMenuResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetMenuResponse
+	ApplicationProblemPlusJSONDefault *GetMenuErrorResponse
+}
+
+type CreateDishResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON201                           *CreateDishResponse
+	ApplicationProblemPlusJSONDefault *CreateDishErrorResponse
+}
+
+type UpdateDishResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *UpdateDishResponse
+	ApplicationProblemPlusJSONDefault *UpdateDishErrorResponse
+}
+
+type SetDishAvailabilityResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SetDishAvailabilityResponse
+	ApplicationProblemPlusJSONDefault *SetDishAvailabilityErrorResponse
+}
+
+type CreateEquipmentResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON201                           *CreateEquipmentResponse
+	ApplicationProblemPlusJSONDefault *CreateEquipmentErrorResponse
+}
+
+type UpdateEquipmentResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *UpdateEquipmentResponse
+	ApplicationProblemPlusJSONDefault *UpdateEquipmentErrorResponse
+}
+
+type CreateStationResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON201                           *CreateStationResponse
+	ApplicationProblemPlusJSONDefault *CreateStationErrorResponse
+}
+
+type UpdateStationResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *UpdateStationResponse
+	ApplicationProblemPlusJSONDefault *UpdateStationErrorResponse
+}
+
+type ListOrdersResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ListOrdersResponse
+	ApplicationProblemPlusJSONDefault *ListOrdersErrorResponse
+}
+
+type CreateOrderResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON201                           *CreateOrderResponse
+	ApplicationProblemPlusJSONDefault *CreateOrderErrorResponse
+}
+
+type GetOrderResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetOrderResponse
+	ApplicationProblemPlusJSONDefault *GetOrderErrorResponse
+}
+
+type CloseOrderResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *CloseOrderResponse
+	ApplicationProblemPlusJSONDefault *CloseOrderErrorResponse
+}
+
+type FireCourseResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *FireCourseResponse
+	ApplicationProblemPlusJSONDefault *FireCourseErrorResponse
+}
+
+type ServeCourseResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ServeCourseResponse
+	ApplicationProblemPlusJSONDefault *ServeCourseErrorResponse
+}
+
+type SetCourseTargetResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SetCourseTargetResponse
+	ApplicationProblemPlusJSONDefault *SetCourseTargetErrorResponse
+}
+
+type SetCourseUrgentResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SetCourseUrgentResponse
+	ApplicationProblemPlusJSONDefault *SetCourseUrgentErrorResponse
+}
+
+type OrderEventsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *OrderEventsResponse
+	ApplicationProblemPlusJSONDefault *OrderEventsErrorResponse
+}
+
+type AddItemsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *AddItemsResponse
+	ApplicationProblemPlusJSONDefault *AddItemsErrorResponse
+}
+
 type GetGuidanceResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -6988,6 +11552,38 @@ type PreviewRulesResp struct {
 	ApplicationProblemPlusJSONDefault *PreviewRulesErrorResponse
 }
 
+type GetSchedulerResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetSchedulerResponse
+	ApplicationProblemPlusJSONDefault *GetSchedulerErrorResponse
+}
+
+type SaveSchedulerResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveSchedulerResponse
+	ApplicationProblemPlusJSONDefault *SaveSchedulerErrorResponse
+}
+
+type SchedulerHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SchedulerHistoryResponse
+	ApplicationProblemPlusJSONDefault *SchedulerHistoryErrorResponse
+}
+
+type PreviewSchedulerResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewSchedulerResponse
+	ApplicationProblemPlusJSONDefault *PreviewSchedulerErrorResponse
+}
+
 type GetSystemResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -7058,6 +11654,28 @@ func (a APIKey) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(a))
 }
 
+type Action struct {
+	DishID        string    `json:"dish_id" validate:"required"`
+	DishName      string    `json:"dish_name" validate:"required"`
+	EquipmentID   *string   `json:"equipment_id,omitempty"`
+	EquipmentName *string   `json:"equipment_name,omitempty"`
+	ItemIds       []string  `json:"item_ids" validate:"required"`
+	Labels        []string  `json:"labels" validate:"required"`
+	Late          *bool     `json:"late,omitempty"`
+	Modifiers     []string  `json:"modifiers,omitempty"`
+	Now           bool      `json:"now"`
+	OrderIds      []string  `json:"order_ids" validate:"required"`
+	Quantity      int64     `json:"quantity"`
+	Reason        string    `json:"reason" validate:"required"`
+	StartAt       time.Time `json:"start_at" validate:"required"`
+	StationID     string    `json:"station_id" validate:"required"`
+	Text          string    `json:"text" validate:"required"`
+}
+
+func (a Action) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
 type ActionPreset struct {
 	Text string `json:"text" validate:"required"`
 	Type string `json:"type" validate:"required"`
@@ -7065,6 +11683,35 @@ type ActionPreset struct {
 
 func (a ActionPreset) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
+type AddItemsBody struct {
+	Items []NewItem `json:"items" validate:"required"`
+}
+
+func (a AddItemsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(a.Items, "required"); err != nil {
+		errors = errors.Append("Items", err)
+	}
+	if a.Items != nil && len(a.Items) < 1 {
+		errors = errors.Add("Items", fmt.Sprintf("must have at least 1 items, got %d", len(a.Items)))
+	}
+	for i, item := range a.Items {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Items[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type AvailabilityBody struct {
+	Available bool `json:"available"`
 }
 
 type Backup struct {
@@ -7243,6 +11890,157 @@ type CoolingLimit struct {
 	IntoFridgeWithinSeconds int64   `json:"into_fridge_within_seconds"`
 }
 
+type Course struct {
+	Course    string     `json:"course" validate:"required"`
+	FiredAt   *time.Time `json:"fired_at,omitempty"`
+	OrderID   string     `json:"order_id" validate:"required"`
+	ServedAt  *time.Time `json:"served_at,omitempty"`
+	State     string     `json:"state" validate:"required"`
+	TargetAt  *time.Time `json:"target_at,omitempty"`
+	TargetSet *bool      `json:"target_set,omitempty"`
+	Urgent    *bool      `json:"urgent,omitempty"`
+}
+
+func (c Course) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type CourseStatus struct {
+	Course       string    `json:"course" validate:"required"`
+	Label        string    `json:"label" validate:"required"`
+	OrderID      string    `json:"order_id" validate:"required"`
+	PlannedReady time.Time `json:"planned_ready" validate:"required"`
+	Reason       string    `json:"reason" validate:"required"`
+	Status       string    `json:"status" validate:"required"`
+	Target       time.Time `json:"target" validate:"required"`
+}
+
+func (c CourseStatus) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type Dish struct {
+	Active        bool       `json:"active"`
+	Available     bool       `json:"available"`
+	BatchCapacity *int64     `json:"batch_capacity,omitempty"`
+	Batchable     bool       `json:"batchable"`
+	CookSeconds   int64      `json:"cook_seconds"`
+	Course        string     `json:"course" validate:"required"`
+	CreatedAt     time.Time  `json:"created_at" validate:"required"`
+	EquipmentID   *string    `json:"equipment_id,omitempty"`
+	FoodCategory  *string    `json:"food_category,omitempty"`
+	HoldSeconds   int64      `json:"hold_seconds"`
+	ID            string     `json:"id" validate:"required"`
+	Modifiers     []Modifier `json:"modifiers" validate:"required"`
+	Name          string     `json:"name" validate:"required"`
+	PlateSeconds  int64      `json:"plate_seconds"`
+	RestSeconds   int64      `json:"rest_seconds"`
+	StationID     string     `json:"station_id" validate:"required"`
+	UpdatedAt     time.Time  `json:"updated_at" validate:"required"`
+}
+
+func (d Dish) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(d.Course, "required"); err != nil {
+		errors = errors.Append("Course", err)
+	}
+	if err := typesValidator.Var(d.CreatedAt, "required"); err != nil {
+		errors = errors.Append("CreatedAt", err)
+	}
+	if err := typesValidator.Var(d.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if err := typesValidator.Var(d.Modifiers, "required"); err != nil {
+		errors = errors.Append("Modifiers", err)
+	}
+	for i, item := range d.Modifiers {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Modifiers[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(d.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(d.StationID, "required"); err != nil {
+		errors = errors.Append("StationID", err)
+	}
+	if err := typesValidator.Var(d.UpdatedAt, "required"); err != nil {
+		errors = errors.Append("UpdatedAt", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type DishInput struct {
+	Active        *bool      `json:"active,omitempty"`
+	Available     *bool      `json:"available,omitempty"`
+	BatchCapacity *int64     `json:"batch_capacity,omitempty"`
+	Batchable     *bool      `json:"batchable,omitempty"`
+	CookSeconds   *int64     `json:"cook_seconds,omitempty"`
+	Course        string     `json:"course" validate:"required"`
+	EquipmentID   *string    `json:"equipment_id,omitempty"`
+	FoodCategory  *string    `json:"food_category,omitempty"`
+	HoldSeconds   *int64     `json:"hold_seconds,omitempty"`
+	Modifiers     []Modifier `json:"modifiers,omitempty"`
+	Name          string     `json:"name" validate:"required"`
+	PlateSeconds  *int64     `json:"plate_seconds,omitempty"`
+	RestSeconds   *int64     `json:"rest_seconds,omitempty"`
+	StationID     string     `json:"station_id" validate:"required"`
+}
+
+func (d DishInput) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(d.Course, "required"); err != nil {
+		errors = errors.Append("Course", err)
+	}
+	for i, item := range d.Modifiers {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Modifiers[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(d.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(d.StationID, "required"); err != nil {
+		errors = errors.Append("StationID", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Equipment struct {
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"created_at" validate:"required"`
+	ID        string    `json:"id" validate:"required"`
+	Name      string    `json:"name" validate:"required"`
+	Slots     int64     `json:"slots"`
+	StationID string    `json:"station_id" validate:"required"`
+	UpdatedAt time.Time `json:"updated_at" validate:"required"`
+}
+
+func (e Equipment) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(e))
+}
+
+type EquipmentInput struct {
+	Active    *bool  `json:"active,omitempty"`
+	Name      string `json:"name" validate:"required"`
+	Slots     int64  `json:"slots"`
+	StationID string `json:"station_id" validate:"required"`
+}
+
+func (e EquipmentInput) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(e))
+}
+
 type ErrorDetail struct {
 	// Location Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
 	Location *string `json:"location,omitempty"`
@@ -7300,6 +12098,46 @@ func (s ErrorModel) Error() string {
 
 func NewErrorModel(message string) ErrorModel {
 	return ErrorModel{Detail: runtime.Ptr(message)}
+}
+
+type Event struct {
+	At      time.Time `json:"at" validate:"required"`
+	By      string    `json:"by" validate:"required"`
+	ByName  string    `json:"by_name" validate:"required"`
+	Course  *string   `json:"course,omitempty"`
+	Detail  *string   `json:"detail,omitempty"`
+	From    *string   `json:"from,omitempty"`
+	ID      string    `json:"id" validate:"required"`
+	ItemID  *string   `json:"item_id,omitempty"`
+	Kind    string    `json:"kind" validate:"required"`
+	OrderID string    `json:"order_id" validate:"required"`
+	To      *string   `json:"to,omitempty"`
+}
+
+func (e Event) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(e))
+}
+
+type EventsBody struct {
+	Events []Event `json:"events" validate:"required"`
+}
+
+func (e EventsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(e.Events, "required"); err != nil {
+		errors = errors.Append("Events", err)
+	}
+	for i, item := range e.Events {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Events[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type FileMeta struct {
@@ -7451,6 +12289,28 @@ func (h HistoryOutRulesBody) Validate() error {
 	return errors
 }
 
+type HistoryOutSettingsBody struct {
+	Versions []VersionedSettings `json:"versions" validate:"required"`
+}
+
+func (h HistoryOutSettingsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range h.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type HistoryOutSystemBody struct {
 	Versions []VersionedSystem `json:"versions" validate:"required"`
 }
@@ -7473,6 +12333,101 @@ func (h HistoryOutSystemBody) Validate() error {
 	return errors
 }
 
+type Item struct {
+	BatchCapacity *int64     `json:"batch_capacity,omitempty"`
+	Batchable     bool       `json:"batchable"`
+	Course        string     `json:"course" validate:"required"`
+	DishID        string     `json:"dish_id" validate:"required"`
+	DishName      string     `json:"dish_name" validate:"required"`
+	EquipmentID   *string    `json:"equipment_id,omitempty"`
+	HoldSeconds   int64      `json:"hold_seconds"`
+	ID            string     `json:"id" validate:"required"`
+	Modifiers     []string   `json:"modifiers" validate:"required"`
+	Notes         *string    `json:"notes,omitempty"`
+	OrderID       string     `json:"order_id" validate:"required"`
+	Position      int64      `json:"position"`
+	ReadyAt       *time.Time `json:"ready_at,omitempty"`
+	ServedAt      *time.Time `json:"served_at,omitempty"`
+	StartedAt     *time.Time `json:"started_at,omitempty"`
+	State         string     `json:"state" validate:"required"`
+	StateAt       time.Time  `json:"state_at" validate:"required"`
+	StationID     string     `json:"station_id" validate:"required"`
+	Timing        Timing     `json:"timing"`
+	VoidReason    *string    `json:"void_reason,omitempty"`
+}
+
+func (i Item) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(i.Course, "required"); err != nil {
+		errors = errors.Append("Course", err)
+	}
+	if err := typesValidator.Var(i.DishID, "required"); err != nil {
+		errors = errors.Append("DishID", err)
+	}
+	if err := typesValidator.Var(i.DishName, "required"); err != nil {
+		errors = errors.Append("DishName", err)
+	}
+	if err := typesValidator.Var(i.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if err := typesValidator.Var(i.Modifiers, "required"); err != nil {
+		errors = errors.Append("Modifiers", err)
+	}
+	if err := typesValidator.Var(i.OrderID, "required"); err != nil {
+		errors = errors.Append("OrderID", err)
+	}
+	if err := typesValidator.Var(i.State, "required"); err != nil {
+		errors = errors.Append("State", err)
+	}
+	if err := typesValidator.Var(i.StateAt, "required"); err != nil {
+		errors = errors.Append("StateAt", err)
+	}
+	if err := typesValidator.Var(i.StationID, "required"); err != nil {
+		errors = errors.Append("StationID", err)
+	}
+	if v, ok := any(i.Timing).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Timing", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ItemMove struct {
+	ItemIds []string `json:"item_ids" validate:"required"`
+	Reason  *string  `json:"reason,omitempty"`
+	To      *string  `json:"to,omitempty"`
+}
+
+func (i ItemMove) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(i.ItemIds, "required"); err != nil {
+		errors = errors.Append("ItemIds", err)
+	}
+	if i.ItemIds != nil && len(i.ItemIds) < 1 {
+		errors = errors.Add("ItemIds", fmt.Sprintf("must have at least 1 items, got %d", len(i.ItemIds)))
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ItemPlan struct {
+	ItemID      string    `json:"item_id" validate:"required"`
+	LatestStart time.Time `json:"latest_start" validate:"required"`
+	OrderID     string    `json:"order_id" validate:"required"`
+	ReadyAt     time.Time `json:"ready_at" validate:"required"`
+	StartAt     time.Time `json:"start_at" validate:"required"`
+}
+
+func (i ItemPlan) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(i))
+}
+
 type KeysOutBody struct {
 	Keys []APIKey `json:"keys" validate:"required"`
 }
@@ -7486,6 +12441,50 @@ func (k KeysOutBody) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("Keys[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type KitchenView struct {
+	At            time.Time `json:"at" validate:"required"`
+	Orders        []Order   `json:"orders" validate:"required"`
+	Plan          Plan      `json:"plan"`
+	ReplanSeconds int64     `json:"replan_seconds"`
+	Stations      []Station `json:"stations" validate:"required"`
+}
+
+func (k KitchenView) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(k.At, "required"); err != nil {
+		errors = errors.Append("At", err)
+	}
+	if err := typesValidator.Var(k.Orders, "required"); err != nil {
+		errors = errors.Append("Orders", err)
+	}
+	for i, item := range k.Orders {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Orders[%d]", i), err)
+			}
+		}
+	}
+	if v, ok := any(k.Plan).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Plan", err)
+		}
+	}
+	if err := typesValidator.Var(k.Stations, "required"); err != nil {
+		errors = errors.Append("Stations", err)
+	}
+	for i, item := range k.Stations {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Stations[%d]", i), err)
 			}
 		}
 	}
@@ -7737,6 +12736,27 @@ func (m MeOutBody) Validate() error {
 	return errors
 }
 
+type Modifier struct {
+	AddSeconds int64  `json:"add_seconds"`
+	Name       string `json:"name" validate:"required"`
+}
+
+func (m Modifier) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(m))
+}
+
+type NewItem struct {
+	Course    *string  `json:"course,omitempty"`
+	DishID    string   `json:"dish_id" validate:"required"`
+	Modifiers []string `json:"modifiers,omitempty"`
+	Notes     *string  `json:"notes,omitempty"`
+	Quantity  *int64   `json:"quantity,omitempty"`
+}
+
+func (n NewItem) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(n))
+}
+
 type NewKeyInBody struct {
 	Kind NewKeyInBodyKind `json:"kind" validate:"required"`
 	Name string           `json:"name" validate:"required,min=1"`
@@ -7828,6 +12848,40 @@ func (n NewLimit) Validate() error {
 	return errors
 }
 
+type NewOrder struct {
+	Allergy *bool        `json:"allergy,omitempty"`
+	Covers  *int64       `json:"covers,omitempty"`
+	Fire    []string     `json:"fire,omitempty"`
+	Items   []NewItem    `json:"items" validate:"required"`
+	Kind    NewOrderKind `json:"kind" validate:"required"`
+	Name    *string      `json:"name,omitempty"`
+	Notes   *string      `json:"notes,omitempty"`
+	Table   *string      `json:"table,omitempty"`
+}
+
+func (n NewOrder) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(n.Items, "required"); err != nil {
+		errors = errors.Append("Items", err)
+	}
+	for i, item := range n.Items {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Items[%d]", i), err)
+			}
+		}
+	}
+	if v, ok := any(n.Kind).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Kind", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type NewRecord struct {
 	CorrectionReason *string `json:"correction_reason,omitempty"`
 	CorrectiveAction *string `json:"corrective_action,omitempty"`
@@ -7861,6 +12915,159 @@ type NewUser struct {
 
 func (n NewUser) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(n))
+}
+
+type Order struct {
+	Allergy   *bool      `json:"allergy,omitempty"`
+	ClosedAt  *time.Time `json:"closed_at,omitempty"`
+	Courses   []Course   `json:"courses" validate:"required"`
+	Covers    *int64     `json:"covers,omitempty"`
+	CreatedAt time.Time  `json:"created_at" validate:"required"`
+	CreatedBy string     `json:"created_by" validate:"required"`
+	ID        string     `json:"id" validate:"required"`
+	Items     []Item     `json:"items" validate:"required"`
+	Kind      string     `json:"kind" validate:"required"`
+	Name      *string    `json:"name,omitempty"`
+	Notes     *string    `json:"notes,omitempty"`
+	Number    int64      `json:"number"`
+	Status    string     `json:"status" validate:"required"`
+	Table     *string    `json:"table,omitempty"`
+}
+
+func (o Order) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(o.Courses, "required"); err != nil {
+		errors = errors.Append("Courses", err)
+	}
+	for i, item := range o.Courses {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Courses[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(o.CreatedAt, "required"); err != nil {
+		errors = errors.Append("CreatedAt", err)
+	}
+	if err := typesValidator.Var(o.CreatedBy, "required"); err != nil {
+		errors = errors.Append("CreatedBy", err)
+	}
+	if err := typesValidator.Var(o.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if err := typesValidator.Var(o.Items, "required"); err != nil {
+		errors = errors.Append("Items", err)
+	}
+	for i, item := range o.Items {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Items[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(o.Kind, "required"); err != nil {
+		errors = errors.Append("Kind", err)
+	}
+	if err := typesValidator.Var(o.Status, "required"); err != nil {
+		errors = errors.Append("Status", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type OrdersBody struct {
+	Orders []Order `json:"orders" validate:"required"`
+}
+
+func (o OrdersBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(o.Orders, "required"); err != nil {
+		errors = errors.Append("Orders", err)
+	}
+	for i, item := range o.Orders {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Orders[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Plan struct {
+	At              time.Time      `json:"at" validate:"required"`
+	Courses         []CourseStatus `json:"courses" validate:"required"`
+	Items           []ItemPlan     `json:"items" validate:"required"`
+	SettingsVersion string         `json:"settings_version" validate:"required"`
+	Stations        []StationPlan  `json:"stations" validate:"required"`
+	Strategy        string         `json:"strategy" validate:"required"`
+}
+
+func (p Plan) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.At, "required"); err != nil {
+		errors = errors.Append("At", err)
+	}
+	if err := typesValidator.Var(p.Courses, "required"); err != nil {
+		errors = errors.Append("Courses", err)
+	}
+	for i, item := range p.Courses {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Courses[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.Items, "required"); err != nil {
+		errors = errors.Append("Items", err)
+	}
+	for i, item := range p.Items {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Items[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.SettingsVersion, "required"); err != nil {
+		errors = errors.Append("SettingsVersion", err)
+	}
+	if err := typesValidator.Var(p.Stations, "required"); err != nil {
+		errors = errors.Append("Stations", err)
+	}
+	for i, item := range p.Stations {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Stations[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.Strategy, "required"); err != nil {
+		errors = errors.Append("Strategy", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Progress struct {
+	DishName    string    `json:"dish_name" validate:"required"`
+	ItemID      string    `json:"item_id" validate:"required"`
+	Label       string    `json:"label" validate:"required"`
+	Modifiers   []string  `json:"modifiers,omitempty"`
+	OrderID     string    `json:"order_id" validate:"required"`
+	Overdue     *bool     `json:"overdue,omitempty"`
+	PhaseEndsAt time.Time `json:"phase_ends_at" validate:"required"`
+	State       string    `json:"state" validate:"required"`
+}
+
+func (p Progress) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(p))
 }
 
 type Reading struct {
@@ -8026,6 +13233,40 @@ func (s Session) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
+type Settings struct {
+	BatchWindowSeconds  int64           `json:"batch_window_seconds"`
+	Batching            bool            `json:"batching"`
+	LargeTableCovers    int64           `json:"large_table_covers"`
+	MaxPassWaitSeconds  int64           `json:"max_pass_wait_seconds"`
+	PriorityAllergy     bool            `json:"priority_allergy"`
+	PriorityLeadSeconds int64           `json:"priority_lead_seconds"`
+	PriorityTakeaway    bool            `json:"priority_takeaway"`
+	ReplanSeconds       int64           `json:"replan_seconds"`
+	StationBuffers      []StationBuffer `json:"station_buffers" validate:"required"`
+	Strategy            string          `json:"strategy" validate:"required"`
+}
+
+func (s Settings) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.StationBuffers, "required"); err != nil {
+		errors = errors.Append("StationBuffers", err)
+	}
+	for i, item := range s.StationBuffers {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("StationBuffers[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Strategy, "required"); err != nil {
+		errors = errors.Append("Strategy", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type SettingsChangeGuidance struct {
 	PlanRef *string  `json:"plan_ref,omitempty"`
 	Reason  string   `json:"reason" validate:"required"`
@@ -8077,6 +13318,28 @@ type SettingsChangeRules struct {
 }
 
 func (s SettingsChangeRules) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Reason, "required"); err != nil {
+		errors = errors.Append("Reason", err)
+	}
+	if v, ok := any(s.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsChangeSettings struct {
+	PlanRef *string  `json:"plan_ref,omitempty"`
+	Reason  string   `json:"reason" validate:"required"`
+	Value   Settings `json:"value"`
+}
+
+func (s SettingsChangeSettings) Validate() error {
 	var errors runtime.ValidationErrors
 	if err := typesValidator.Var(s.Reason, "required"); err != nil {
 		errors = errors.Append("Reason", err)
@@ -8213,6 +13476,39 @@ func (s SettingsPreviewRules) Validate() error {
 	return errors
 }
 
+type SettingsPreviewSettings struct {
+	Changes    []string          `json:"changes" validate:"required"`
+	Current    VersionedSettings `json:"current"`
+	LessStrict []string          `json:"less_strict,omitempty"`
+	Notes      []string          `json:"notes" validate:"required"`
+	Problem    *string           `json:"problem,omitempty"`
+	Proposed   Settings          `json:"proposed"`
+}
+
+func (s SettingsPreviewSettings) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Changes, "required"); err != nil {
+		errors = errors.Append("Changes", err)
+	}
+	if v, ok := any(s.Current).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Current", err)
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(s.Proposed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Proposed", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type SettingsPreviewSystem struct {
 	Changes    []string        `json:"changes" validate:"required"`
 	Current    VersionedSystem `json:"current"`
@@ -8258,6 +13554,50 @@ type SettingsVersion struct {
 
 func (s SettingsVersion) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type Setup struct {
+	Dishes    []Dish      `json:"dishes" validate:"required"`
+	Equipment []Equipment `json:"equipment" validate:"required"`
+	Stations  []Station   `json:"stations" validate:"required"`
+}
+
+func (s Setup) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Dishes, "required"); err != nil {
+		errors = errors.Append("Dishes", err)
+	}
+	for i, item := range s.Dishes {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Dishes[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Equipment, "required"); err != nil {
+		errors = errors.Append("Equipment", err)
+	}
+	for i, item := range s.Equipment {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Equipment[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Stations, "required"); err != nil {
+		errors = errors.Append("Stations", err)
+	}
+	for i, item := range s.Stations {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Stations[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type SlotToday struct {
@@ -8326,6 +13666,79 @@ func (s StaffOutBody) Validate() error {
 	return errors
 }
 
+type Station struct {
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"created_at" validate:"required"`
+	ID        string    `json:"id" validate:"required"`
+	Name      string    `json:"name" validate:"required"`
+	Position  int64     `json:"position"`
+	UpdatedAt time.Time `json:"updated_at" validate:"required"`
+}
+
+func (s Station) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type StationBuffer struct {
+	Seconds   int64  `json:"seconds"`
+	StationID string `json:"station_id" validate:"required"`
+}
+
+func (s StationBuffer) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type StationInput struct {
+	Active   *bool  `json:"active,omitempty"`
+	Name     string `json:"name" validate:"required"`
+	Position *int64 `json:"position,omitempty"`
+}
+
+func (s StationInput) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type StationPlan struct {
+	Actions    []Action   `json:"actions" validate:"required"`
+	InProgress []Progress `json:"in_progress" validate:"required"`
+	Name       string     `json:"name" validate:"required"`
+	StationID  string     `json:"station_id" validate:"required"`
+}
+
+func (s StationPlan) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Actions, "required"); err != nil {
+		errors = errors.Append("Actions", err)
+	}
+	for i, item := range s.Actions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Actions[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.InProgress, "required"); err != nil {
+		errors = errors.Append("InProgress", err)
+	}
+	for i, item := range s.InProgress {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("InProgress[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(s.StationID, "required"); err != nil {
+		errors = errors.Append("StationID", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type System struct {
 	BackupIntervalMinutes int64  `json:"backup_interval_minutes"`
 	BackupKeep            int64  `json:"backup_keep"`
@@ -8338,9 +13751,24 @@ func (s System) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
+type TargetBody struct {
+	Reason   *string   `json:"reason,omitempty"`
+	TargetAt time.Time `json:"target_at" validate:"required"`
+}
+
+func (t TargetBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(t))
+}
+
 type TimeTemp struct {
 	HoldSeconds int64   `json:"hold_seconds"`
 	MinC        float64 `json:"min_c"`
+}
+
+type Timing struct {
+	Cook  int64 `json:"cook"`
+	Plate int64 `json:"plate"`
+	Rest  int64 `json:"rest"`
 }
 
 type TodayView struct {
@@ -8491,6 +13919,10 @@ func (u UnitToday) Validate() error {
 	return errors
 }
 
+type UrgentBody struct {
+	Urgent bool `json:"urgent"`
+}
+
 type User struct {
 	Active    bool      `json:"active"`
 	CreatedAt time.Time `json:"created_at" validate:"required"`
@@ -8617,6 +14049,30 @@ type VersionedRules struct {
 }
 
 func (v VersionedRules) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(v.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if v, ok := any(v.Version).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Version", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionedSettings struct {
+	Builtin bool            `json:"builtin"`
+	Value   Settings        `json:"value"`
+	Version SettingsVersion `json:"version"`
+}
+
+func (v VersionedSettings) Validate() error {
 	var errors runtime.ValidationErrors
 	if v, ok := any(v.Value).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {

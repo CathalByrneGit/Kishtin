@@ -10,6 +10,8 @@ const (
 	KindLimit    = "limit"
 	KindSettings = "settings"
 	KindStaff    = "staff"
+	KindMenu     = "menu"
+	KindOrder    = "order"
 )
 
 // Event says something changed. Screens refetch what they show; the event

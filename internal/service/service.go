@@ -108,7 +108,7 @@ func (s *Service) publish(kind, id string) { s.events.Publish(events.Event{Kind:
 // guidance, rules and lists if they are missing.
 func (s *Service) Init(ctx context.Context) error {
 	return s.st.WithTx(ctx, func(tx store.Store) error {
-		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed} {
+		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed} {
 			if err := seed(ctx, tx); err != nil {
 				return err
 			}

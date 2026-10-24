@@ -1,0 +1,137 @@
+{
+  "at": "2026-05-01T18:00:00Z",
+  "strategy": "backward",
+  "settings_version": "test-settings",
+  "stations": [
+    {
+      "station_id": "grill",
+      "name": "Grill",
+      "actions": [
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "quantity": 3,
+          "item_ids": [
+            "t12-1",
+            "t12-2",
+            "t12-3"
+          ],
+          "order_ids": [
+            "t12"
+          ],
+          "labels": [
+            "Takeaway #12"
+          ],
+          "start_at": "2026-05-01T18:00:10Z",
+          "now": true,
+          "text": "Start 3× Burger on the flat-top now for Takeaway #12",
+          "reason": "Takeaway #12 mains are due at 19:11. Burger: 8 min cook + 2 min rest + 1 min plate, so start by 19:00. It is a priority (flagged urgent), so it goes ahead in the queue."
+        },
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "quantity": 3,
+          "item_ids": [
+            "o5-1",
+            "o5-2",
+            "o5-3"
+          ],
+          "order_ids": [
+            "o5"
+          ],
+          "labels": [
+            "Table 5"
+          ],
+          "start_at": "2026-05-01T18:08:10Z",
+          "now": false,
+          "late": true,
+          "text": "Start 3× Burger on the flat-top at 19:08 for Table 5",
+          "reason": "Table 5 mains are due at 19:19. Burger: 8 min cook + 2 min rest + 1 min plate, so start by 19:08. The flat-top is full until 19:08 (3 of 3 in use). The course moved from 19:11 to 19:19 so every item finishes together."
+        }
+      ],
+      "in_progress": []
+    },
+    {
+      "station_id": "fryer",
+      "name": "Fryer",
+      "actions": [],
+      "in_progress": []
+    },
+    {
+      "station_id": "cold",
+      "name": "Cold section",
+      "actions": [],
+      "in_progress": []
+    }
+  ],
+  "courses": [
+    {
+      "order_id": "o5",
+      "label": "Table 5",
+      "course": "main",
+      "target": "2026-05-01T18:11:00Z",
+      "planned_ready": "2026-05-01T18:19:10Z",
+      "status": "at_risk",
+      "reason": "Due at 19:11, but equipment is busy: expected at 19:19."
+    },
+    {
+      "order_id": "t12",
+      "label": "Takeaway #12",
+      "course": "main",
+      "target": "2026-05-01T18:11:10Z",
+      "planned_ready": "2026-05-01T18:11:10Z",
+      "status": "on_track",
+      "reason": "On track for 19:11."
+    }
+  ],
+  "items": [
+    {
+      "item_id": "t12-1",
+      "order_id": "t12",
+      "latest_start": "2026-05-01T18:00:10Z",
+      "start_at": "2026-05-01T18:00:10Z",
+      "ready_at": "2026-05-01T18:11:10Z"
+    },
+    {
+      "item_id": "t12-2",
+      "order_id": "t12",
+      "latest_start": "2026-05-01T18:00:10Z",
+      "start_at": "2026-05-01T18:00:10Z",
+      "ready_at": "2026-05-01T18:11:10Z"
+    },
+    {
+      "item_id": "t12-3",
+      "order_id": "t12",
+      "latest_start": "2026-05-01T18:00:10Z",
+      "start_at": "2026-05-01T18:00:10Z",
+      "ready_at": "2026-05-01T18:11:10Z"
+    },
+    {
+      "item_id": "o5-1",
+      "order_id": "o5",
+      "latest_start": "2026-05-01T18:08:10Z",
+      "start_at": "2026-05-01T18:08:10Z",
+      "ready_at": "2026-05-01T18:19:10Z"
+    },
+    {
+      "item_id": "o5-2",
+      "order_id": "o5",
+      "latest_start": "2026-05-01T18:08:10Z",
+      "start_at": "2026-05-01T18:08:10Z",
+      "ready_at": "2026-05-01T18:19:10Z"
+    },
+    {
+      "item_id": "o5-3",
+      "order_id": "o5",
+      "latest_start": "2026-05-01T18:08:10Z",
+      "start_at": "2026-05-01T18:08:10Z",
+      "ready_at": "2026-05-01T18:19:10Z"
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "description": "Table 5 (fired first) and an urgent takeaway both need three burgers. The takeaway is flagged urgent, so it gets the flat-top first.",
+  "now": "2026-05-01T18:00:00Z",
+  "stations": [
+    {
+      "id": "grill",
+      "name": "Grill"
+    },
+    {
+      "id": "fryer",
+      "name": "Fryer"
+    },
+    {
+      "id": "cold",
+      "name": "Cold section"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "flat-top",
+      "station_id": "grill",
+      "name": "Flat-top"
+    },
+    {
+      "id": "baskets",
+      "station_id": "fryer",
+      "name": "Fryer"
+    }
+  ],
+  "dishes": {
+    "burger": {
+      "name": "Burger",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "8m",
+      "rest": "2m",
+      "plate": "1m",
+      "hold": "3m",
+      "batchable": true
+    },
+    "steak": {
+      "name": "Steak",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "12m",
+      "rest": "5m",
+      "plate": "1m",
+      "hold": "0s"
+    },
+    "fries": {
+      "name": "Fries",
+      "station": "fryer",
+      "equipment": "baskets",
+      "capacity": 2,
+      "cook": "4m",
+      "plate": "30s",
+      "hold": "2m",
+      "batchable": true
+    },
+    "salad": {
+      "name": "Salad",
+      "station": "cold",
+      "plate": "3m",
+      "hold": "5m"
+    }
+  },
+  "courses": [
+    {
+      "order_id": "o5",
+      "label": "Table 5",
+      "course": "main",
+      "fired_at": "2026-05-01T18:00:00Z",
+      "target": "2026-05-01T18:11:00Z",
+      "items": [
+        {
+          "id": "o5-1",
+          "dish": "burger",
+          "state": "fired"
+        },
+        {
+          "id": "o5-2",
+          "dish": "burger",
+          "state": "fired"
+        },
+        {
+          "id": "o5-3",
+          "dish": "burger",
+          "state": "fired"
+        }
+      ]
+    },
+    {
+      "order_id": "t12",
+      "label": "Takeaway #12",
+      "course": "main",
+      "fired_at": "2026-05-01T18:00:10Z",
+      "target": "2026-05-01T18:11:10Z",
+      "urgent": true,
+      "takeaway": true,
+      "items": [
+        {
+          "id": "t12-1",
+          "dish": "burger",
+          "state": "fired"
+        },
+        {
+          "id": "t12-2",
+          "dish": "burger",
+          "state": "fired"
+        },
+        {
+          "id": "t12-3",
+          "dish": "burger",
+          "state": "fired"
+        }
+      ]
+    }
+  ]
+}

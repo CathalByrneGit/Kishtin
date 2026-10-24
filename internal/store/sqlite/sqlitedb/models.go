@@ -19,6 +19,36 @@ type ApiKey struct {
 	RevokedAt sql.NullInt64
 }
 
+type Dish struct {
+	ID            string
+	Name          string
+	Course        string
+	StationID     string
+	EquipmentID   sql.NullString
+	BatchCapacity int64
+	CookSeconds   int64
+	RestSeconds   int64
+	PlateSeconds  int64
+	HoldSeconds   int64
+	Batchable     int64
+	Modifiers     string
+	FoodCategory  string
+	Available     int64
+	Active        int64
+	CreatedAt     int64
+	UpdatedAt     int64
+}
+
+type Equipment struct {
+	ID        string
+	StationID string
+	Name      string
+	Slots     int64
+	Active    int64
+	CreatedAt int64
+	UpdatedAt int64
+}
+
 type File struct {
 	Sha256       string
 	Mime         string
@@ -59,6 +89,71 @@ type LimitVersion struct {
 	Body       string
 }
 
+type Order struct {
+	ID        string
+	Number    int64
+	Kind      string
+	TableName string
+	Name      string
+	Covers    int64
+	Notes     string
+	Allergy   int64
+	Status    string
+	CreatedBy string
+	CreatedAt int64
+	ClosedAt  sql.NullInt64
+}
+
+type OrderCourse struct {
+	OrderID   string
+	Course    string
+	State     string
+	FiredAt   sql.NullInt64
+	TargetAt  sql.NullInt64
+	TargetSet int64
+	Urgent    int64
+	ServedAt  sql.NullInt64
+}
+
+type OrderEvent struct {
+	ID      string
+	OrderID string
+	ItemID  string
+	Course  string
+	Kind    string
+	FromVal string
+	ToVal   string
+	Detail  string
+	At      int64
+	ByUser  string
+	ByName  string
+}
+
+type OrderItem struct {
+	ID            string
+	OrderID       string
+	Position      int64
+	DishID        string
+	DishName      string
+	Course        string
+	Modifiers     string
+	Notes         string
+	State         string
+	StationID     string
+	EquipmentID   string
+	BatchCapacity int64
+	HoldSeconds   int64
+	Batchable     int64
+	CookMs        int64
+	RestMs        int64
+	PlateMs       int64
+	StateAt       int64
+	StartedAt     sql.NullInt64
+	ReadyAt       sql.NullInt64
+	ServedAt      sql.NullInt64
+	VoidReason    string
+}
+
 type Session struct {
 	TokenHash string
 	UserID    string
@@ -76,6 +171,15 @@ type SettingsVersion struct {
 	Reason     string
 	PlanRef    string
 	Body       string
+}
+
+type Station struct {
+	ID        string
+	Name      string
+	Position  int64
+	Active    int64
+	CreatedAt int64
+	UpdatedAt int64
 }
 
 type User struct {

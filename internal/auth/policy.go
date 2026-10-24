@@ -19,6 +19,20 @@ const (
 	ActBackup       Action = "backup"
 	// ActManageSettings changes system settings such as the backup schedule.
 	ActManageSettings Action = "settings.manage"
+
+	// ActViewKitchen sees the menu, orders, the pass and station queues.
+	ActViewKitchen Action = "kitchen.view"
+	// ActManageMenu changes stations, equipment and dishes.
+	ActManageMenu Action = "menu.manage"
+	// ActSetAvailability marks a dish sold out (86) or back on.
+	ActSetAvailability Action = "menu.availability"
+	// ActTakeOrders enters orders and adds items to them.
+	ActTakeOrders Action = "orders.take"
+	// ActRunPass fires and serves courses, voids items, changes target
+	// times and closes orders: the expo's actions.
+	ActRunPass Action = "orders.pass"
+	// ActWorkStation marks items started, rested, plated and ready.
+	ActWorkStation Action = "orders.station"
 )
 
 type rule struct {
@@ -39,6 +53,13 @@ var policy = map[Action]rule{
 	ActManageKeys:     {roles: []Role{RoleManager}, password: true},
 	ActBackup:         {roles: []Role{RoleManager}, password: true},
 	ActManageSettings: {roles: []Role{RoleManager}, password: true},
+
+	ActViewKitchen:     {roles: everyone},
+	ActManageMenu:      {roles: []Role{RoleManager}, password: true},
+	ActSetAvailability: {roles: []Role{RoleHeadChef, RoleLineCook, RoleManager}},
+	ActTakeOrders:      {roles: []Role{RoleFrontOfHouse, RoleHeadChef, RoleManager}},
+	ActRunPass:         {roles: []Role{RoleHeadChef, RoleManager}},
+	ActWorkStation:     {roles: []Role{RoleLineCook, RoleHeadChef, RoleManager}},
 }
 
 // Principal is who is making a request.

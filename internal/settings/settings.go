@@ -22,10 +22,12 @@ const (
 	KindLists Kind = "lists"
 	// KindSystem is the system settings.
 	KindSystem Kind = "system"
+	// KindScheduler is the cook scheduler's settings.
+	KindScheduler Kind = "scheduler"
 )
 
 // Kinds lists every kind.
-var Kinds = []Kind{KindGuidance, KindRules, KindLists, KindSystem}
+var Kinds = []Kind{KindGuidance, KindRules, KindLists, KindSystem, KindScheduler}
 
 // Valid reports whether k is a known kind.
 func (k Kind) Valid() bool { return slices.Contains(Kinds, k) }

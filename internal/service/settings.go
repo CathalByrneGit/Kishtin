@@ -11,6 +11,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/scheduler"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
@@ -136,6 +137,44 @@ func (s *Service) System() *Group[settings.System] {
 		},
 		edit: auth.ActManageSettings,
 	}}
+}
+
+// Scheduler is the cook scheduler's settings: its strategy, batching,
+// priorities and buffers.
+func (s *Service) Scheduler() *Group[scheduler.Settings] {
+	return &Group[scheduler.Settings]{s: s, spec: groupSpec[scheduler.Settings]{
+		kind: settings.KindScheduler, builtinID: scheduler.BuiltinSettingsID, seeded: true,
+		builtin:    func(*Service) scheduler.Settings { return scheduler.DefaultSettings() },
+		normalize:  scheduler.Settings.Normalize,
+		validate:   scheduler.Settings.Validate,
+		lessStrict: func(_, _ scheduler.Settings) []string { return nil },
+		notes:      schedulerNotes,
+		edit:       auth.ActManageSettings,
+	}}
+}
+
+// schedulerNotes checks station buffers name real stations, and says what
+// the change does to service.
+func schedulerNotes(ctx context.Context, _ *Service, st store.Store, cur, next scheduler.Settings) ([]string, error) {
+	stations, err := st.Menu().ListStations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := map[string]string{}
+	for _, x := range stations {
+		names[x.ID] = x.Name
+	}
+	var out []string
+	for _, b := range next.StationBuffers {
+		if names[b.StationID] == "" {
+			out = append(out, fmt.Sprintf("Station %s does not exist; its buffer will have no effect.", b.StationID))
+		}
+	}
+	if cur.Strategy != next.Strategy {
+		out = append(out, "Every screen switches to the new strategy on its next plan, within a few seconds.")
+	}
+	out = append(out, "Plans already shown are not changed; the next plan uses the new settings.")
+	return out, nil
 }
 
 var builtinTime = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)

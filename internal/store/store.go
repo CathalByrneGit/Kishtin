@@ -13,6 +13,8 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/menu"
+	"github.com/cathalbyrnegit/kishtin/internal/orders"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
 )
 
@@ -30,6 +32,8 @@ type Store interface {
 	Auth() AuthStore
 	Files() FileStore
 	Settings() SettingsStore
+	Menu() MenuStore
+	Orders() OrderStore
 
 	// WithTx runs fn in one transaction. If fn returns an error the
 	// transaction is rolled back. Writes inside fn must use tx.
@@ -145,4 +149,66 @@ type SettingsStore interface {
 	GetSettings(ctx context.Context, id string) (SettingsVersion, error)
 	// ListSettings returns every version of a kind, oldest first.
 	ListSettings(ctx context.Context, kind settings.Kind) ([]SettingsVersion, error)
+}
+
+// MenuStore stores stations, equipment and dishes. Nothing is deleted:
+// orders refer to them, so they are marked inactive instead.
+type MenuStore interface {
+	// CreateStation returns ErrConflict if the name is taken.
+	CreateStation(ctx context.Context, s menu.Station) error
+	// UpdateStation returns ErrNotFound if the station does not exist.
+	UpdateStation(ctx context.Context, s menu.Station) error
+	// ListStations returns every station, ordered by position then name.
+	ListStations(ctx context.Context) ([]menu.Station, error)
+
+	// CreateEquipment returns ErrConflict if the station already has
+	// equipment with that name.
+	CreateEquipment(ctx context.Context, e menu.Equipment) error
+	UpdateEquipment(ctx context.Context, e menu.Equipment) error
+	ListEquipment(ctx context.Context) ([]menu.Equipment, error)
+
+	// CreateDish returns ErrConflict if the name is taken.
+	CreateDish(ctx context.Context, d menu.Dish) error
+	UpdateDish(ctx context.Context, d menu.Dish) error
+	GetDish(ctx context.Context, id string) (menu.Dish, error)
+	// ListDishes returns every dish, ordered by name.
+	ListDishes(ctx context.Context) ([]menu.Dish, error)
+}
+
+// OrderFilter selects orders. With OpenOnly unset, From and To bound
+// CreatedAt (From inclusive, To exclusive) and both must be set.
+type OrderFilter struct {
+	OpenOnly bool
+	From, To time.Time
+}
+
+// OrderStore stores orders with their courses and items, and the order
+// event log. Events are append-only.
+type OrderStore interface {
+	// CreateOrder stores an order with its courses and items.
+	CreateOrder(ctx context.Context, o orders.Order) error
+	// UpdateOrder replaces the order's own fields (not courses or items).
+	UpdateOrder(ctx context.Context, o orders.Order) error
+	// GetOrder returns an order with its courses and items.
+	GetOrder(ctx context.Context, id string) (orders.Order, error)
+	// ListOrders returns orders with their courses and items, oldest
+	// first.
+	ListOrders(ctx context.Context, f OrderFilter) ([]orders.Order, error)
+	// MaxOrderNumberSince returns the highest ticket number of orders
+	// created at or after t, or 0.
+	MaxOrderNumberSince(ctx context.Context, t time.Time) (int, error)
+
+	// SaveCourse creates or replaces a course.
+	SaveCourse(ctx context.Context, c orders.Course) error
+	AddItem(ctx context.Context, it orders.Item) error
+	// UpdateItem replaces an item's course, modifiers, notes, state and
+	// times. Its dish snapshot never changes.
+	UpdateItem(ctx context.Context, it orders.Item) error
+
+	AppendEvent(ctx context.Context, e orders.Event) error
+	// ListEvents returns an order's events, oldest first.
+	ListEvents(ctx context.Context, orderID string) ([]orders.Event, error)
+	// ListItemEvents returns item state changes between from (inclusive)
+	// and to (exclusive), oldest first.
+	ListItemEvents(ctx context.Context, from, to time.Time) ([]orders.Event, error)
 }

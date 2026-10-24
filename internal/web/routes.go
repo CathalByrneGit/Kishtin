@@ -27,6 +27,7 @@ func (s *Server) routes() {
 	s.fileRoutes()
 	s.settingsRoutes()
 	s.adminRoutes()
+	s.kitchenRoutes()
 }
 
 // --- Auth ---

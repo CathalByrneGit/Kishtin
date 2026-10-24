@@ -367,6 +367,348 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kitchen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show open orders and the scheduler's plan
+         * @description The plan is made fresh on every request: what each station should start and when, why, and whether each fired course is on track, at risk or late.
+         */
+        get: operations["get-kitchen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kitchen/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move items: started, rested, plated, ready, served or voided
+         * @description Leave out to to move each item one step forward. Items can belong to different orders. Voiding needs a reason. Cooks move items through cooking; the head chef or a manager serves and voids.
+         */
+        post: operations["move-items"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show stations, equipment and dishes */
+        get: operations["get-menu"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/dishes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a dish (manager password) */
+        post: operations["create-dish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/dishes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change a dish (manager password)
+         * @description Replaces every field. Orders already in the kitchen keep the times they were ordered with.
+         */
+        put: operations["update-dish"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/dishes/{id}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark a dish sold out (86) or back on */
+        put: operations["set-dish-availability"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add equipment to a station (manager password) */
+        post: operations["create-equipment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/equipment/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change equipment (manager password) */
+        put: operations["update-equipment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/stations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a station (manager password) */
+        post: operations["create-station"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/stations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change a station (manager password)
+         * @description Set active to false to take it out of use. Stations are never deleted, because past orders refer to them.
+         */
+        put: operations["update-station"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List open orders, or every order of a day */
+        get: operations["list-orders"];
+        put?: never;
+        /**
+         * Enter an order
+         * @description Courses are held until the expo fires them. List courses in fire to fire them straight away (head chef or manager).
+         */
+        post: operations["create-order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show an order */
+        get: operations["get-order"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close an order once everything is served or voided */
+        post: operations["close-order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/courses/{course}/fire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fire a course: its target time is now plus its longest item */
+        post: operations["fire-course"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/courses/{course}/serve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Serve a course once every item is ready */
+        post: operations["serve-course"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/courses/{course}/target": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change when a fired course should reach the pass
+         * @description An expo override. It is logged with its reason and the scheduler plans around it.
+         */
+        put: operations["set-course-target"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/courses/{course}/urgent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Flag a course urgent so the scheduler puts it first, or clear the flag */
+        put: operations["set-course-urgent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show an order's history: every change, who made it and when */
+        get: operations["order-events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add items to an open order */
+        post: operations["add-items"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/guidance": {
         parameters: {
             query?: never;
@@ -550,6 +892,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/scheduler": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show the scheduler settings in force
+         * @description The cook scheduler's strategy, batching window, priorities, station buffers and re-plan interval. Every plan says which version produced it.
+         */
+        get: operations["get-scheduler"];
+        /**
+         * Save a new version of the scheduler settings
+         * @description Needs a manager password login or a manager API key, and a reason. A change that makes food safety less strict also needs plan_ref. Saved records are never re-graded.
+         */
+        put: operations["save-scheduler"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/scheduler/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every saved version of the scheduler settings, oldest first */
+        get: operations["scheduler-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/scheduler/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a change to the scheduler settings
+         * @description Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.
+         */
+        post: operations["preview-scheduler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/system": {
         parameters: {
             query?: never;
@@ -661,9 +1064,34 @@ export interface components {
             revoked_at?: string;
             user_id?: string;
         };
+        Action: {
+            dish_id: string;
+            dish_name: string;
+            equipment_id?: string;
+            equipment_name?: string;
+            item_ids: string[];
+            labels: string[];
+            late?: boolean;
+            modifiers?: string[];
+            now: boolean;
+            order_ids: string[];
+            /** Format: int64 */
+            quantity: number;
+            reason: string;
+            /** Format: date-time */
+            start_at: string;
+            station_id: string;
+            text: string;
+        };
         ActionPreset: {
             text: string;
             type: string;
+        };
+        AddItemsBody: {
+            items: components["schemas"]["NewItem"][];
+        };
+        AvailabilityBody: {
+            available: boolean;
         };
         Backup: {
             head_hash: string;
@@ -728,6 +1156,96 @@ export interface components {
             /** Format: int64 */
             into_fridge_within_seconds: number;
         };
+        Course: {
+            course: string;
+            /** Format: date-time */
+            fired_at?: string;
+            order_id: string;
+            /** Format: date-time */
+            served_at?: string;
+            state: string;
+            /** Format: date-time */
+            target_at?: string;
+            target_set?: boolean;
+            urgent?: boolean;
+        };
+        CourseStatus: {
+            course: string;
+            label: string;
+            order_id: string;
+            /** Format: date-time */
+            planned_ready: string;
+            reason: string;
+            status: string;
+            /** Format: date-time */
+            target: string;
+        };
+        Dish: {
+            active: boolean;
+            available: boolean;
+            /** Format: int64 */
+            batch_capacity?: number;
+            batchable: boolean;
+            /** Format: int64 */
+            cook_seconds: number;
+            course: string;
+            /** Format: date-time */
+            created_at: string;
+            equipment_id?: string;
+            food_category?: string;
+            /** Format: int64 */
+            hold_seconds: number;
+            id: string;
+            modifiers: components["schemas"]["Modifier"][];
+            name: string;
+            /** Format: int64 */
+            plate_seconds: number;
+            /** Format: int64 */
+            rest_seconds: number;
+            station_id: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DishInput: {
+            active?: boolean;
+            available?: boolean;
+            /** Format: int64 */
+            batch_capacity?: number;
+            batchable?: boolean;
+            /** Format: int64 */
+            cook_seconds?: number;
+            course: string;
+            equipment_id?: string;
+            food_category?: string;
+            /** Format: int64 */
+            hold_seconds?: number;
+            modifiers?: components["schemas"]["Modifier"][];
+            name: string;
+            /** Format: int64 */
+            plate_seconds?: number;
+            /** Format: int64 */
+            rest_seconds?: number;
+            station_id: string;
+        };
+        Equipment: {
+            active: boolean;
+            /** Format: date-time */
+            created_at: string;
+            id: string;
+            name: string;
+            /** Format: int64 */
+            slots: number;
+            station_id: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        EquipmentInput: {
+            active?: boolean;
+            name: string;
+            /** Format: int64 */
+            slots: number;
+            station_id: string;
+        };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
             location?: string;
@@ -769,6 +1287,23 @@ export interface components {
              */
             type: string;
         };
+        Event: {
+            /** Format: date-time */
+            at: string;
+            by: string;
+            by_name: string;
+            course?: string;
+            detail?: string;
+            from?: string;
+            id: string;
+            item_id?: string;
+            kind: string;
+            order_id: string;
+            to?: string;
+        };
+        EventsBody: {
+            events: components["schemas"]["Event"][];
+        };
         FileMeta: {
             mime: string;
             original_name?: string;
@@ -808,11 +1343,67 @@ export interface components {
         HistoryOutRulesBody: {
             versions: components["schemas"]["VersionedRules"][];
         };
+        HistoryOutSettingsBody: {
+            versions: components["schemas"]["VersionedSettings"][];
+        };
         HistoryOutSystemBody: {
             versions: components["schemas"]["VersionedSystem"][];
         };
+        Item: {
+            /** Format: int64 */
+            batch_capacity?: number;
+            batchable: boolean;
+            course: string;
+            dish_id: string;
+            dish_name: string;
+            equipment_id?: string;
+            /** Format: int64 */
+            hold_seconds: number;
+            id: string;
+            modifiers: string[];
+            notes?: string;
+            order_id: string;
+            /** Format: int64 */
+            position: number;
+            /** Format: date-time */
+            ready_at?: string;
+            /** Format: date-time */
+            served_at?: string;
+            /** Format: date-time */
+            started_at?: string;
+            state: string;
+            /** Format: date-time */
+            state_at: string;
+            station_id: string;
+            timing: components["schemas"]["Timing"];
+            void_reason?: string;
+        };
+        ItemMove: {
+            item_ids: string[];
+            reason?: string;
+            to?: string;
+        };
+        ItemPlan: {
+            item_id: string;
+            /** Format: date-time */
+            latest_start: string;
+            order_id: string;
+            /** Format: date-time */
+            ready_at: string;
+            /** Format: date-time */
+            start_at: string;
+        };
         KeysOutBody: {
             keys: components["schemas"]["APIKey"][];
+        };
+        KitchenView: {
+            /** Format: date-time */
+            at: string;
+            orders: components["schemas"]["Order"][];
+            plan: components["schemas"]["Plan"];
+            /** Format: int64 */
+            replan_seconds: number;
+            stations: components["schemas"]["Station"][];
         };
         LimitPreview: {
             below_fsai?: string[];
@@ -871,6 +1462,19 @@ export interface components {
             method?: string;
             user?: components["schemas"]["User"];
         };
+        Modifier: {
+            /** Format: int64 */
+            add_seconds: number;
+            name: string;
+        };
+        NewItem: {
+            course?: string;
+            dish_id: string;
+            modifiers?: string[];
+            notes?: string;
+            /** Format: int64 */
+            quantity?: number;
+        };
         NewKeyInBody: {
             /** @enum {string} */
             kind: "device" | "user";
@@ -897,6 +1501,18 @@ export interface components {
             reason: string;
             scope: components["schemas"]["Scope"];
         };
+        NewOrder: {
+            allergy?: boolean;
+            /** Format: int64 */
+            covers?: number;
+            fire?: string[];
+            items: components["schemas"]["NewItem"][];
+            /** @enum {string} */
+            kind: "table" | "takeaway";
+            name?: string;
+            notes?: string;
+            table?: string;
+        };
         NewRecord: {
             correction_reason?: string;
             corrective_action?: string;
@@ -909,6 +1525,49 @@ export interface components {
             password?: string;
             pin?: string;
             role: string;
+        };
+        Order: {
+            allergy?: boolean;
+            /** Format: date-time */
+            closed_at?: string;
+            courses: components["schemas"]["Course"][];
+            /** Format: int64 */
+            covers?: number;
+            /** Format: date-time */
+            created_at: string;
+            created_by: string;
+            id: string;
+            items: components["schemas"]["Item"][];
+            kind: string;
+            name?: string;
+            notes?: string;
+            /** Format: int64 */
+            number: number;
+            status: string;
+            table?: string;
+        };
+        OrdersBody: {
+            orders: components["schemas"]["Order"][];
+        };
+        Plan: {
+            /** Format: date-time */
+            at: string;
+            courses: components["schemas"]["CourseStatus"][];
+            items: components["schemas"]["ItemPlan"][];
+            settings_version: string;
+            stations: components["schemas"]["StationPlan"][];
+            strategy: string;
+        };
+        Progress: {
+            dish_name: string;
+            item_id: string;
+            label: string;
+            modifiers?: string[];
+            order_id: string;
+            overdue?: boolean;
+            /** Format: date-time */
+            phase_ends_at: string;
+            state: string;
         };
         Reading: {
             area?: string;
@@ -995,6 +1654,23 @@ export interface components {
             method: string;
             user_id: string;
         };
+        Settings: {
+            /** Format: int64 */
+            batch_window_seconds: number;
+            batching: boolean;
+            /** Format: int64 */
+            large_table_covers: number;
+            /** Format: int64 */
+            max_pass_wait_seconds: number;
+            priority_allergy: boolean;
+            /** Format: int64 */
+            priority_lead_seconds: number;
+            priority_takeaway: boolean;
+            /** Format: int64 */
+            replan_seconds: number;
+            station_buffers: components["schemas"]["StationBuffer"][];
+            strategy: string;
+        };
         SettingsChangeGuidance: {
             plan_ref?: string;
             reason: string;
@@ -1009,6 +1685,11 @@ export interface components {
             plan_ref?: string;
             reason: string;
             value: components["schemas"]["Rules"];
+        };
+        SettingsChangeSettings: {
+            plan_ref?: string;
+            reason: string;
+            value: components["schemas"]["Settings"];
         };
         SettingsChangeSystem: {
             plan_ref?: string;
@@ -1039,6 +1720,14 @@ export interface components {
             problem?: string;
             proposed: components["schemas"]["Rules"];
         };
+        SettingsPreviewSettings: {
+            changes: string[];
+            current: components["schemas"]["VersionedSettings"];
+            less_strict?: string[];
+            notes: string[];
+            problem?: string;
+            proposed: components["schemas"]["Settings"];
+        };
         SettingsPreviewSystem: {
             changes: string[];
             current: components["schemas"]["VersionedSystem"];
@@ -1057,6 +1746,11 @@ export interface components {
             reason: string;
             supersedes?: string;
         };
+        Setup: {
+            dishes: components["schemas"]["Dish"][];
+            equipment: components["schemas"]["Equipment"][];
+            stations: components["schemas"]["Station"][];
+        };
         SlotToday: {
             from: string;
             label: string;
@@ -1074,6 +1768,34 @@ export interface components {
         StaffOutBody: {
             staff: components["schemas"]["StaffEntry"][];
         };
+        Station: {
+            active: boolean;
+            /** Format: date-time */
+            created_at: string;
+            id: string;
+            name: string;
+            /** Format: int64 */
+            position: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        StationBuffer: {
+            /** Format: int64 */
+            seconds: number;
+            station_id: string;
+        };
+        StationInput: {
+            active?: boolean;
+            name: string;
+            /** Format: int64 */
+            position?: number;
+        };
+        StationPlan: {
+            actions: components["schemas"]["Action"][];
+            in_progress: components["schemas"]["Progress"][];
+            name: string;
+            station_id: string;
+        };
         System: {
             /** Format: int64 */
             backup_interval_minutes: number;
@@ -1085,11 +1807,24 @@ export interface components {
             preview_records: number;
             restaurant_name: string;
         };
+        TargetBody: {
+            reason?: string;
+            /** Format: date-time */
+            target_at: string;
+        };
         TimeTemp: {
             /** Format: int64 */
             hold_seconds: number;
             /** Format: double */
             min_c: number;
+        };
+        Timing: {
+            /** Format: int64 */
+            cook: number;
+            /** Format: int64 */
+            plate: number;
+            /** Format: int64 */
+            rest: number;
         };
         TodayView: {
             batches: components["schemas"]["BatchToday"][];
@@ -1123,6 +1858,9 @@ export interface components {
             name: string;
             non_food?: boolean;
             slots: components["schemas"]["SlotToday"][];
+        };
+        UrgentBody: {
+            urgent: boolean;
         };
         User: {
             active: boolean;
@@ -1165,6 +1903,11 @@ export interface components {
         VersionedRules: {
             builtin: boolean;
             value: components["schemas"]["Rules"];
+            version: components["schemas"]["SettingsVersion"];
+        };
+        VersionedSettings: {
+            builtin: boolean;
+            value: components["schemas"]["Settings"];
             version: components["schemas"]["SettingsVersion"];
         };
         VersionedSystem: {
@@ -1927,6 +2670,665 @@ export interface operations {
             };
         };
     };
+    "get-kitchen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KitchenView"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "move-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemMove"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdersBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-menu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Setup"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-dish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DishInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dish"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-dish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DishInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dish"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-dish-availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvailabilityBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dish"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Equipment"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Equipment"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-station": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StationInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Station"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-station": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StationInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Station"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-orders": {
+        parameters: {
+            query?: {
+                /** @description A day (YYYY-MM-DD, Dublin time). Leave out for open orders. */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdersBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewOrder"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "close-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "fire-course": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                course: "starter" | "main" | "dessert";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "serve-course": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                course: "starter" | "main" | "dessert";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-course-target": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                course: "starter" | "main" | "dessert";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TargetBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-course-urgent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                course: "starter" | "main" | "dessert";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UrgentBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "order-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "add-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddItemsBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-guidance": {
         parameters: {
             query?: never;
@@ -2286,6 +3688,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsPreviewRules"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-scheduler": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "save-scheduler": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangeSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "scheduler-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryOutSettingsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-scheduler": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangeSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsPreviewSettings"];
                 };
             };
             /** @description Error */

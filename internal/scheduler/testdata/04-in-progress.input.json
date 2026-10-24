@@ -1,0 +1,117 @@
+{
+  "description": "The flat-top is full with three burgers started at 18:55. Table 9's steak waits until they come off at 19:03.",
+  "now": "2026-05-01T18:00:00Z",
+  "stations": [
+    {
+      "id": "grill",
+      "name": "Grill"
+    },
+    {
+      "id": "fryer",
+      "name": "Fryer"
+    },
+    {
+      "id": "cold",
+      "name": "Cold section"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "flat-top",
+      "station_id": "grill",
+      "name": "Flat-top"
+    },
+    {
+      "id": "baskets",
+      "station_id": "fryer",
+      "name": "Fryer"
+    }
+  ],
+  "dishes": {
+    "burger": {
+      "name": "Burger",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "8m",
+      "rest": "2m",
+      "plate": "1m",
+      "hold": "3m",
+      "batchable": true
+    },
+    "steak": {
+      "name": "Steak",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "12m",
+      "rest": "5m",
+      "plate": "1m",
+      "hold": "0s"
+    },
+    "fries": {
+      "name": "Fries",
+      "station": "fryer",
+      "equipment": "baskets",
+      "capacity": 2,
+      "cook": "4m",
+      "plate": "30s",
+      "hold": "2m",
+      "batchable": true
+    },
+    "salad": {
+      "name": "Salad",
+      "station": "cold",
+      "plate": "3m",
+      "hold": "5m"
+    }
+  },
+  "courses": [
+    {
+      "order_id": "o2",
+      "label": "Table 2",
+      "course": "main",
+      "fired_at": "2026-05-01T17:55:00Z",
+      "target": "2026-05-01T18:06:00Z",
+      "items": [
+        {
+          "id": "o2-1",
+          "dish": "burger",
+          "state": "cooking",
+          "state_at": "2026-05-01T17:55:00Z"
+        },
+        {
+          "id": "o2-2",
+          "dish": "burger",
+          "state": "cooking",
+          "state_at": "2026-05-01T17:55:00Z"
+        },
+        {
+          "id": "o2-3",
+          "dish": "burger",
+          "state": "cooking",
+          "state_at": "2026-05-01T17:55:00Z"
+        }
+      ]
+    },
+    {
+      "order_id": "o9",
+      "label": "Table 9",
+      "course": "main",
+      "fired_at": "2026-05-01T18:00:00Z",
+      "target": "2026-05-01T18:18:00Z",
+      "items": [
+        {
+          "id": "o9-1",
+          "dish": "steak",
+          "state": "fired"
+        },
+        {
+          "id": "o9-2",
+          "dish": "fries",
+          "state": "fired"
+        }
+      ]
+    }
+  ]
+}

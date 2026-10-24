@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/orders"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 	"github.com/cathalbyrnegit/kishtin/internal/store/storetest"
 )
@@ -55,7 +56,11 @@ func TestTriggersBlockEdits(t *testing.T) {
 	r := haccp.Seal(haccp.Record{ID: "r1", Type: haccp.RecordCleaning, Outcome: haccp.OutcomePass}, nil)
 	require.NoError(t, s.AppendRecord(ctx, r))
 	require.NoError(t, s.AppendSettings(ctx, store.SettingsVersion{ID: "s1", Kind: "rules", Body: []byte("{}"), CreatedBy: "x", Reason: "x"}))
+	require.NoError(t, s.CreateOrder(ctx, orders.Order{ID: "o1", Number: 1, Kind: orders.KindTakeaway, Status: orders.StatusOpen, CreatedBy: "x"}))
+	require.NoError(t, s.AppendEvent(ctx, orders.Event{ID: "e1", OrderID: "o1", Kind: orders.EventCreated, By: "x", ByName: "x"}))
 	for _, q := range []string{
+		"UPDATE order_events SET detail = 'edited'",
+		"DELETE FROM order_events",
 		"UPDATE haccp_records SET outcome = 'fail'",
 		"DELETE FROM haccp_records",
 		"UPDATE settings_versions SET body = '{}'",

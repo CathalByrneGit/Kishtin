@@ -37,6 +37,84 @@
         ],
         "type": "object"
       },
+      "Action": {
+        "additionalProperties": false,
+        "properties": {
+          "dish_id": {
+            "type": "string"
+          },
+          "dish_name": {
+            "type": "string"
+          },
+          "equipment_id": {
+            "type": "string"
+          },
+          "equipment_name": {
+            "type": "string"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "late": {
+            "type": "boolean"
+          },
+          "modifiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "now": {
+            "type": "boolean"
+          },
+          "order_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "quantity": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "start_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "station_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "station_id",
+          "dish_id",
+          "dish_name",
+          "quantity",
+          "item_ids",
+          "order_ids",
+          "labels",
+          "start_at",
+          "now",
+          "text",
+          "reason"
+        ],
+        "type": "object"
+      },
       "ActionPreset": {
         "additionalProperties": false,
         "properties": {
@@ -50,6 +128,34 @@
         "required": [
           "type",
           "text"
+        ],
+        "type": "object"
+      },
+      "AddItemsBody": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NewItem"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "AvailabilityBody": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
         ],
         "type": "object"
       },
@@ -275,6 +381,289 @@
         ],
         "type": "object"
       },
+      "Course": {
+        "additionalProperties": false,
+        "properties": {
+          "course": {
+            "type": "string"
+          },
+          "fired_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "served_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "target_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "target_set": {
+            "type": "boolean"
+          },
+          "urgent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "order_id",
+          "course",
+          "state"
+        ],
+        "type": "object"
+      },
+      "CourseStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "course": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "planned_ready": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "target": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_id",
+          "label",
+          "course",
+          "target",
+          "planned_ready",
+          "status",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "Dish": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "batch_capacity": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "batchable": {
+            "type": "boolean"
+          },
+          "cook_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "course": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "equipment_id": {
+            "type": "string"
+          },
+          "food_category": {
+            "type": "string"
+          },
+          "hold_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/Modifier"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "plate_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rest_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "station_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "course",
+          "station_id",
+          "cook_seconds",
+          "rest_seconds",
+          "plate_seconds",
+          "hold_seconds",
+          "batchable",
+          "modifiers",
+          "available",
+          "active",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "DishInput": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "batch_capacity": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "batchable": {
+            "type": "boolean"
+          },
+          "cook_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "course": {
+            "type": "string"
+          },
+          "equipment_id": {
+            "type": "string"
+          },
+          "food_category": {
+            "type": "string"
+          },
+          "hold_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/Modifier"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "plate_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rest_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "station_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "course",
+          "station_id"
+        ],
+        "type": "object"
+      },
+      "Equipment": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slots": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "station_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "station_id",
+          "name",
+          "slots",
+          "active",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "EquipmentInput": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slots": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "station_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "station_id",
+          "name",
+          "slots"
+        ],
+        "type": "object"
+      },
       "ErrorDetail": {
         "additionalProperties": false,
         "properties": {
@@ -342,6 +731,69 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "Event": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "by": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "course": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "kind",
+          "at",
+          "by",
+          "by_name"
+        ],
+        "type": "object"
+      },
+      "EventsBody": {
+        "additionalProperties": false,
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "events"
+        ],
         "type": "object"
       },
       "FileMeta": {
@@ -493,6 +945,21 @@
         ],
         "type": "object"
       },
+      "HistoryOutSettingsBody": {
+        "additionalProperties": false,
+        "properties": {
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/VersionedSettings"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "versions"
+        ],
+        "type": "object"
+      },
       "HistoryOutSystemBody": {
         "additionalProperties": false,
         "properties": {
@@ -508,6 +975,150 @@
         ],
         "type": "object"
       },
+      "Item": {
+        "additionalProperties": false,
+        "properties": {
+          "batch_capacity": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "batchable": {
+            "type": "boolean"
+          },
+          "course": {
+            "type": "string"
+          },
+          "dish_id": {
+            "type": "string"
+          },
+          "dish_name": {
+            "type": "string"
+          },
+          "equipment_id": {
+            "type": "string"
+          },
+          "hold_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "modifiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ready_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "served_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "state_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "station_id": {
+            "type": "string"
+          },
+          "timing": {
+            "$ref": "#/components/schemas/Timing"
+          },
+          "void_reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "position",
+          "dish_id",
+          "dish_name",
+          "course",
+          "modifiers",
+          "state",
+          "station_id",
+          "hold_seconds",
+          "batchable",
+          "timing",
+          "state_at"
+        ],
+        "type": "object"
+      },
+      "ItemMove": {
+        "additionalProperties": false,
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_ids"
+        ],
+        "type": "object"
+      },
+      "ItemPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "item_id": {
+            "type": "string"
+          },
+          "latest_start": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "ready_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "start_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "order_id",
+          "latest_start",
+          "start_at",
+          "ready_at"
+        ],
+        "type": "object"
+      },
       "KeysOutBody": {
         "additionalProperties": false,
         "properties": {
@@ -520,6 +1131,42 @@
         },
         "required": [
           "keys"
+        ],
+        "type": "object"
+      },
+      "KitchenView": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            },
+            "type": "array"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "replan_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/Station"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "at",
+          "orders",
+          "plan",
+          "stations",
+          "replan_seconds"
         ],
         "type": "object"
       },
@@ -748,6 +1395,51 @@
         ],
         "type": "object"
       },
+      "Modifier": {
+        "additionalProperties": false,
+        "properties": {
+          "add_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "add_seconds"
+        ],
+        "type": "object"
+      },
+      "NewItem": {
+        "additionalProperties": false,
+        "properties": {
+          "course": {
+            "type": "string"
+          },
+          "dish_id": {
+            "type": "string"
+          },
+          "modifiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "quantity": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dish_id"
+        ],
+        "type": "object"
+      },
       "NewKeyInBody": {
         "additionalProperties": false,
         "properties": {
@@ -836,6 +1528,51 @@
         ],
         "type": "object"
       },
+      "NewOrder": {
+        "additionalProperties": false,
+        "properties": {
+          "allergy": {
+            "type": "boolean"
+          },
+          "covers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "fire": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NewItem"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "table",
+              "takeaway"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "items"
+        ],
+        "type": "object"
+      },
       "NewRecord": {
         "additionalProperties": false,
         "properties": {
@@ -880,6 +1617,173 @@
         "required": [
           "name",
           "role"
+        ],
+        "type": "object"
+      },
+      "Order": {
+        "additionalProperties": false,
+        "properties": {
+          "allergy": {
+            "type": "boolean"
+          },
+          "closed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/Course"
+            },
+            "type": "array"
+          },
+          "covers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "number": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "kind",
+          "status",
+          "created_by",
+          "created_at",
+          "courses",
+          "items"
+        ],
+        "type": "object"
+      },
+      "OrdersBody": {
+        "additionalProperties": false,
+        "properties": {
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "orders"
+        ],
+        "type": "object"
+      },
+      "Plan": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/CourseStatus"
+            },
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemPlan"
+            },
+            "type": "array"
+          },
+          "settings_version": {
+            "type": "string"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/StationPlan"
+            },
+            "type": "array"
+          },
+          "strategy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "strategy",
+          "settings_version",
+          "stations",
+          "courses",
+          "items"
+        ],
+        "type": "object"
+      },
+      "Progress": {
+        "additionalProperties": false,
+        "properties": {
+          "dish_name": {
+            "type": "string"
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "modifiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "overdue": {
+            "type": "boolean"
+          },
+          "phase_ends_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "order_id",
+          "label",
+          "dish_name",
+          "state",
+          "phase_ends_at"
         ],
         "type": "object"
       },
@@ -1161,6 +2065,62 @@
         ],
         "type": "object"
       },
+      "Settings": {
+        "additionalProperties": false,
+        "properties": {
+          "batch_window_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "batching": {
+            "type": "boolean"
+          },
+          "large_table_covers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "max_pass_wait_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "priority_allergy": {
+            "type": "boolean"
+          },
+          "priority_lead_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "priority_takeaway": {
+            "type": "boolean"
+          },
+          "replan_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "station_buffers": {
+            "items": {
+              "$ref": "#/components/schemas/StationBuffer"
+            },
+            "type": "array"
+          },
+          "strategy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "strategy",
+          "batching",
+          "batch_window_seconds",
+          "max_pass_wait_seconds",
+          "station_buffers",
+          "priority_lead_seconds",
+          "priority_takeaway",
+          "priority_allergy",
+          "large_table_covers",
+          "replan_seconds"
+        ],
+        "type": "object"
+      },
       "SettingsChangeGuidance": {
         "additionalProperties": false,
         "properties": {
@@ -1210,6 +2170,25 @@
           },
           "value": {
             "$ref": "#/components/schemas/Rules"
+          }
+        },
+        "required": [
+          "value",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "SettingsChangeSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "plan_ref": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Settings"
           }
         },
         "required": [
@@ -1354,6 +2333,45 @@
         ],
         "type": "object"
       },
+      "SettingsPreviewSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "current": {
+            "$ref": "#/components/schemas/VersionedSettings"
+          },
+          "less_strict": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "problem": {
+            "type": "string"
+          },
+          "proposed": {
+            "$ref": "#/components/schemas/Settings"
+          }
+        },
+        "required": [
+          "current",
+          "proposed",
+          "changes",
+          "notes"
+        ],
+        "type": "object"
+      },
       "SettingsPreviewSystem": {
         "additionalProperties": false,
         "properties": {
@@ -1428,6 +2446,35 @@
         ],
         "type": "object"
       },
+      "Setup": {
+        "additionalProperties": false,
+        "properties": {
+          "dishes": {
+            "items": {
+              "$ref": "#/components/schemas/Dish"
+            },
+            "type": "array"
+          },
+          "equipment": {
+            "items": {
+              "$ref": "#/components/schemas/Equipment"
+            },
+            "type": "array"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/Station"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "stations",
+          "equipment",
+          "dishes"
+        ],
+        "type": "object"
+      },
       "SlotToday": {
         "additionalProperties": false,
         "properties": {
@@ -1497,6 +2544,107 @@
         ],
         "type": "object"
       },
+      "Station": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "position",
+          "active",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "StationBuffer": {
+        "additionalProperties": false,
+        "properties": {
+          "seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "station_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "station_id",
+          "seconds"
+        ],
+        "type": "object"
+      },
+      "StationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "StationPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "type": "array"
+          },
+          "in_progress": {
+            "items": {
+              "$ref": "#/components/schemas/Progress"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "station_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "station_id",
+          "name",
+          "actions",
+          "in_progress"
+        ],
+        "type": "object"
+      },
       "System": {
         "additionalProperties": false,
         "properties": {
@@ -1529,6 +2677,22 @@
         ],
         "type": "object"
       },
+      "TargetBody": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "target_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_at"
+        ],
+        "type": "object"
+      },
       "TimeTemp": {
         "additionalProperties": false,
         "properties": {
@@ -1544,6 +2708,29 @@
         "required": [
           "min_c",
           "hold_seconds"
+        ],
+        "type": "object"
+      },
+      "Timing": {
+        "additionalProperties": false,
+        "properties": {
+          "cook": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plate": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rest": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cook",
+          "rest",
+          "plate"
         ],
         "type": "object"
       },
@@ -1679,6 +2866,18 @@
           "kind",
           "limit",
           "slots"
+        ],
+        "type": "object"
+      },
+      "UrgentBody": {
+        "additionalProperties": false,
+        "properties": {
+          "urgent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "urgent"
         ],
         "type": "object"
       },
@@ -1833,6 +3032,26 @@
           },
           "value": {
             "$ref": "#/components/schemas/Rules"
+          },
+          "version": {
+            "$ref": "#/components/schemas/SettingsVersion"
+          }
+        },
+        "required": [
+          "version",
+          "value",
+          "builtin"
+        ],
+        "type": "object"
+      },
+      "VersionedSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "builtin": {
+            "type": "boolean"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Settings"
           },
           "version": {
             "$ref": "#/components/schemas/SettingsVersion"
@@ -2959,6 +4178,934 @@
         ]
       }
     },
+    "/kitchen": {
+      "get": {
+        "description": "The plan is made fresh on every request: what each station should start and when, why, and whether each fired course is on track, at risk or late.",
+        "operationId": "get-kitchen",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KitchenView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show open orders and the scheduler's plan",
+        "tags": [
+          "Kitchen"
+        ]
+      }
+    },
+    "/kitchen/items": {
+      "post": {
+        "description": "Leave out to to move each item one step forward. Items can belong to different orders. Voiding needs a reason. Cooks move items through cooking; the head chef or a manager serves and voids.",
+        "operationId": "move-items",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemMove"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdersBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Move items: started, rested, plated, ready, served or voided",
+        "tags": [
+          "Kitchen"
+        ]
+      }
+    },
+    "/menu": {
+      "get": {
+        "operationId": "get-menu",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Setup"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show stations, equipment and dishes",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/dishes": {
+      "post": {
+        "operationId": "create-dish",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DishInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dish"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add a dish (manager password)",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/dishes/{id}": {
+      "put": {
+        "description": "Replaces every field. Orders already in the kitchen keep the times they were ordered with.",
+        "operationId": "update-dish",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DishInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dish"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change a dish (manager password)",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/dishes/{id}/availability": {
+      "put": {
+        "operationId": "set-dish-availability",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvailabilityBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dish"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Mark a dish sold out (86) or back on",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/equipment": {
+      "post": {
+        "operationId": "create-equipment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Equipment"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add equipment to a station (manager password)",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/equipment/{id}": {
+      "put": {
+        "operationId": "update-equipment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Equipment"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change equipment (manager password)",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/stations": {
+      "post": {
+        "operationId": "create-station",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Station"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add a station (manager password)",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/stations/{id}": {
+      "put": {
+        "description": "Set active to false to take it out of use. Stations are never deleted, because past orders refer to them.",
+        "operationId": "update-station",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Station"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change a station (manager password)",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/orders": {
+      "get": {
+        "operationId": "list-orders",
+        "parameters": [
+          {
+            "description": "A day (YYYY-MM-DD, Dublin time). Leave out for open orders.",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "schema": {
+              "description": "A day (YYYY-MM-DD, Dublin time). Leave out for open orders.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdersBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List open orders, or every order of a day",
+        "tags": [
+          "Orders"
+        ]
+      },
+      "post": {
+        "description": "Courses are held until the expo fires them. List courses in fire to fire them straight away (head chef or manager).",
+        "operationId": "create-order",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Enter an order",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "operationId": "get-order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show an order",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/close": {
+      "post": {
+        "operationId": "close-order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Close an order once everything is served or voided",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/courses/{course}/fire": {
+      "post": {
+        "operationId": "fire-course",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "course",
+            "required": true,
+            "schema": {
+              "enum": [
+                "starter",
+                "main",
+                "dessert"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Fire a course: its target time is now plus its longest item",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/courses/{course}/serve": {
+      "post": {
+        "operationId": "serve-course",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "course",
+            "required": true,
+            "schema": {
+              "enum": [
+                "starter",
+                "main",
+                "dessert"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Serve a course once every item is ready",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/courses/{course}/target": {
+      "put": {
+        "description": "An expo override. It is logged with its reason and the scheduler plans around it.",
+        "operationId": "set-course-target",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "course",
+            "required": true,
+            "schema": {
+              "enum": [
+                "starter",
+                "main",
+                "dessert"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change when a fired course should reach the pass",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/courses/{course}/urgent": {
+      "put": {
+        "operationId": "set-course-urgent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "course",
+            "required": true,
+            "schema": {
+              "enum": [
+                "starter",
+                "main",
+                "dessert"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UrgentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Flag a course urgent so the scheduler puts it first, or clear the flag",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/events": {
+      "get": {
+        "operationId": "order-events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show an order's history: every change, who made it and when",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/items": {
+      "post": {
+        "operationId": "add-items",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddItemsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add items to an open order",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
     "/settings/guidance": {
       "get": {
         "description": "The reference limits are measured against. It starts as the FSAI defaults. A limit looser than the guidance needs a HACCP plan reference; guidance looser than FSAI needs one too.",
@@ -3389,6 +5536,151 @@
           }
         },
         "summary": "Preview a change to the food-safety rules",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/scheduler": {
+      "get": {
+        "description": "The cook scheduler's strategy, batching window, priorities, station buffers and re-plan interval. Every plan says which version produced it.",
+        "operationId": "get-scheduler",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionedSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show the scheduler settings in force",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "put": {
+        "description": "Needs a manager password login or a manager API key, and a reason. A change that makes food safety less strict also needs plan_ref. Saved records are never re-graded.",
+        "operationId": "save-scheduler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChangeSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionedSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Save a new version of the scheduler settings",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/scheduler/history": {
+      "get": {
+        "operationId": "scheduler-history",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryOutSettingsBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List every saved version of the scheduler settings, oldest first",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/scheduler/preview": {
+      "post": {
+        "description": "Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.",
+        "operationId": "preview-scheduler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChangeSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsPreviewSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Preview a change to the scheduler settings",
         "tags": [
           "Settings"
         ]
