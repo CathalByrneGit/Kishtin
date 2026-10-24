@@ -1,0 +1,31 @@
+# Kishtin server configuration. Copy to <data_dir>/kishtin.toml, or pass
+# --config to kishtind. Every setting here is optional.
+
+# Where the database, attached files and backups live.
+# Default: ~/.kishtin, or /var/lib/kishtin when there is no home folder.
+# data_dir = "/var/lib/kishtin"
+
+[server]
+# Loopback only by default. To serve kitchen tablets over Wi-Fi, listen on
+# the network address and either set tls_cert and tls_key, or set
+# trusted_network = true on a private network you control.
+listen = "127.0.0.1:8080"
+# tls_cert = "/etc/kishtin/cert.pem"
+# tls_key = "/etc/kishtin/key.pem"
+# trusted_network = false
+
+[store]
+# Only sqlite is built so far.
+driver = "sqlite"
+# dsn = "/var/lib/kishtin/kishtin.db"
+
+[backup]
+# A consistent copy of the database is written this often and its HACCP
+# chain is verified. Copy backups off the machine yourself.
+interval = "6h"
+keep = 28
+# dir = "/var/lib/kishtin/backups"
+
+[files]
+# Largest docket or invoice photo accepted.
+max_size_mb = 15

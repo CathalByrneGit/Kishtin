@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Test (pure-Go SQLite)
+        run: go test -race ./...
+      - name: Test (CGO SQLite)
+        run: CGO_ENABLED=1 go test -tags sqlite_cgo ./...
+      - name: Generated code is current
+        run: |
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+          make generate
+          git diff --exit-code
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
