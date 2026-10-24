@@ -8,12 +8,20 @@
   import { param, setParam } from "../lib/router.svelte";
   import { session } from "../lib/session.svelte";
 
+  interface Props {
+    /** large type and buttons, for a station tablet */
+    big?: boolean;
+    /** show only this station, with no station picker */
+    station?: string | null;
+  }
+  let { big = false, station: locked = null }: Props = $props();
+
   const feed = kitchenFeed();
   const cook = $derived(canWorkStation(session.user?.role));
   let busy = $state<string | null>(null);
 
   const stations = $derived(feed.view?.plan.stations ?? []);
-  const selectedId = $derived(param("station") ?? stations[0]?.station_id ?? "");
+  const selectedId = $derived(locked ?? param("station") ?? stations[0]?.station_id ?? "");
   const station = $derived(stations.find((s) => s.station_id === selectedId) ?? null);
   const startNow = $derived(station?.actions.filter((a) => a.now) ?? []);
   const comingUp = $derived(station?.actions.filter((a) => !a.now) ?? []);
@@ -52,7 +60,8 @@
   }
 </script>
 
-<div class="page">
+<div class="page" class:big class:kitchen={big}>
+  {#if !big}
   <header class="head">
     <div>
       <h1>{station?.name ?? "Stations"}</h1>
@@ -60,6 +69,7 @@
     </div>
     {#if feed.view}<span class="muted small">Plan at {dublinTime(feed.view.plan.at)}</span>{/if}
   </header>
+  {/if}
 
   {#if feed.error}<Notice tone="error" title="Could not load the kitchen" message={feed.error} />{/if}
 
@@ -68,6 +78,7 @@
   {:else if stations.length === 0}
     <EmptyState title="No stations" description="A manager adds stations, equipment and dishes in Setup, Menu." />
   {:else}
+    {#if !locked}
     <div>
       <SegmentedControl
         ariaLabel="Station"
@@ -76,8 +87,11 @@
         options={stations.map((s) => ({ value: s.station_id, label: `${s.name}${s.actions.some((a) => a.now) ? " •" : ""}` }))}
       />
     </div>
+    {/if}
 
-    {#if station}
+    {#if !station}
+      <Notice tone="warning" title="Station not found" message="This screen's station is no longer in use. Choose another from the menu at the top right." />
+    {:else}
       <div class="columns">
         <section>
           <h2 class="section-title">Start now</h2>
@@ -90,7 +104,7 @@
               <span class="for">{a.equipment_name ? `On the ${a.equipment_name.toLowerCase()} · ` : ""}for {a.labels.join(" and ")}</span>
               <p class="why">{a.reason}</p>
               {#if cook}
-                <Button tone="success" surface="solid" size="lg" label={busy === a.item_ids.join(",") ? "Starting…" : a.quantity > 1 ? `Start all ${a.quantity}` : "Start"} disabled={busy !== null} onclick={() => move(a.item_ids.join(","), a.item_ids, `Started ${a.quantity}× ${a.dish_name}`)}>
+                <Button tone="success" surface="solid" size={big ? undefined : "lg"} label={busy === a.item_ids.join(",") ? "Starting…" : a.quantity > 1 ? `Start all ${a.quantity}` : "Start"} disabled={busy !== null} onclick={() => move(a.item_ids.join(","), a.item_ids, `Started ${a.quantity}× ${a.dish_name}`)}>
                   <Play size={18} />
                 </Button>
               {/if}
@@ -135,7 +149,7 @@
               <span class="for">for {a.labels.join(" and ")}</span>
               <p class="why">{a.reason}</p>
               {#if cook}
-                <Button size="sm" label="Start early" disabled={busy !== null} onclick={() => move(a.item_ids.join(","), a.item_ids, `Started ${a.quantity}× ${a.dish_name}`)} />
+                <Button size={big ? undefined : "sm"} label="Start early" disabled={busy !== null} onclick={() => move(a.item_ids.join(","), a.item_ids, `Started ${a.quantity}× ${a.dish_name}`)} />
               {/if}
             </article>
           {:else}
@@ -221,5 +235,20 @@
     .columns {
       grid-template-columns: minmax(0, 1fr);
     }
+  }
+
+  /* Station tablet: bigger type; columns wrap on a portrait tablet. */
+  .big .columns {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  }
+  .big .why {
+    font-size: var(--font-size-md);
+  }
+  .big .for,
+  .big .action-head strong {
+    font-size: var(--font-size-lg);
+  }
+  .big .big {
+    font-size: var(--font-size-2xl);
   }
 </style>

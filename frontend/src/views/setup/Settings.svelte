@@ -2,6 +2,7 @@
   import { Button, Card, Notice, Spinner, TextInput, ThemeToggle, Toggle, getHighContrast, setHighContrast, showFlash } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
   import ManagerGate from "../../components/ManagerGate.svelte";
+  import ScreenPicker from "../../components/ScreenPicker.svelte";
   import ReviewChanges, { type Preview } from "../../components/ReviewChanges.svelte";
   import { api, message, type Schemas } from "../../lib/api";
   import { onChange } from "../../lib/live.svelte";
@@ -141,6 +142,7 @@
       <h2 class="section-title">This device</h2>
       <Card padding="md">
         <div class="stack">
+          <ScreenPicker />
           <div class="field">
             <span>Theme</span>
             <ThemeToggle variant="segmented" block />

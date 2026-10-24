@@ -10,7 +10,7 @@ See [AGENTS.md](AGENTS.md) for the full plan. This README describes what is buil
 
 Roadmap stages 1 to 4: the HACCP log, ported from the browser prototype; the menu with stations and equipment; manual orders and the pass; and the cook scheduler.
 
-- **Screens** for a computer, served by `kishtind` itself: the Pass, Stations and Orders; HACCP Today, Records, Exports and Verify; and Setup for the menu, the scheduler, fridges and tasks, limits and rules, staff, device keys, backups and settings. Search with Ctrl K. See [docs/screens.md](docs/screens.md).
+- **Screens** for a computer, served by `kishtind` itself: the Pass, Stations and Orders; HACCP Today, Records, Exports and Verify; and Setup for the menu, the scheduler, fridges and tasks, limits and rules, staff, device keys, backups and settings. Search with Ctrl K. Each device can instead show a full-screen pass screen, station screen or phone layout, with large type and 56 px buttons. See [docs/screens.md](docs/screens.md).
 - **Menu**: stations, equipment with how many units it holds, and dishes with cook, rest, plate and hold times, batch capacity, modifiers such as "well done +2 min", and 86 for sold out. See [docs/kitchen.md](docs/kitchen.md).
 - **Orders and the pass**: tables and takeaways with daily ticket numbers; courses held until fired; items moved from waiting to cooking, resting, plating, ready and served; a course served together; expo overrides (new target time, urgent) logged with every other change in each order's history.
 - **Cook scheduler**: backward scheduling within equipment capacity, with batching across tables, priorities and station buffers. It tells each station what to start and when, says why for every recommendation, and shows each course as on track, at risk or late. Its settings are versioned.
@@ -32,7 +32,6 @@ Roadmap stages 1 to 4: the HACCP log, ported from the browser prototype; the men
 - Postgres and DuckDB backends. Only SQLite is built.
 - Off-site backups. Kishtin writes backups on the server machine. Copying them somewhere else is up to you.
 - Saving while the server is unreachable. Screens keep showing the last data with a "Not connected" notice, but new records cannot be saved until the connection is back.
-- A layout designed for phones and kitchen tablets. The screens work on them, but they are laid out for a computer.
 - Printable batch labels.
 
 ## Install and run

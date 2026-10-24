@@ -24,7 +24,7 @@
 </script>
 
 <script lang="ts">
-  import { Chip, IconButton, SelectDropdown, TextInput } from "@kenn-io/kit-ui";
+  import { Button, Chip, IconButton, SelectDropdown, TextInput } from "@kenn-io/kit-ui";
   import { Minus, Plus, X } from "@lucide/svelte";
   import type { Dish, Setup } from "../lib/api";
   import { COURSES, courseLabel } from "../lib/kitchen";
@@ -32,8 +32,11 @@
   interface Props {
     menu: Setup;
     lines: Line[];
+    /** kitchen-sized controls for phones and tablets */
+    touch?: boolean;
   }
-  let { menu, lines = $bindable() }: Props = $props();
+  let { menu, lines = $bindable(), touch = false }: Props = $props();
+  const small = $derived(touch ? undefined : ("sm" as const));
 
   let nextKey = 1;
   const dishes = $derived(menu.dishes.filter((d) => d.active));
@@ -76,11 +79,11 @@
       {#each lines as l, i (l.key)}
         {@const d = dishOf(l.dishId)}
         <li>
-          <div class="line-top">
+          <div class="line-top" class:touch>
             <div class="qty">
-              <IconButton ariaLabel="One fewer" size="sm" disabled={l.quantity <= 1} onclick={() => (l.quantity -= 1)}><Minus size={14} /></IconButton>
+              <IconButton ariaLabel="One fewer" size={small} disabled={l.quantity <= 1} onclick={() => (l.quantity -= 1)}><Minus size={14} /></IconButton>
               <strong class="num">{l.quantity}×</strong>
-              <IconButton ariaLabel="One more" size="sm" disabled={l.quantity >= 50} onclick={() => (l.quantity += 1)}><Plus size={14} /></IconButton>
+              <IconButton ariaLabel="One more" size={small} disabled={l.quantity >= 50} onclick={() => (l.quantity += 1)}><Plus size={14} /></IconButton>
             </div>
             <strong class="name">{d?.name ?? "?"}</strong>
             <SelectDropdown
@@ -89,18 +92,27 @@
               onchange={(v) => (l.course = v as Course)}
               title="Course"
             />
-            <IconButton ariaLabel={`Remove ${d?.name ?? "item"}`} size="sm" onclick={() => lines.splice(i, 1)}><X size={14} /></IconButton>
+            <span class="remove"><IconButton ariaLabel={`Remove ${d?.name ?? "item"}`} size={small} onclick={() => lines.splice(i, 1)}><X size={14} /></IconButton></span>
           </div>
           {#if d && d.modifiers.length > 0}
             <div class="mods">
               {#each d.modifiers as m (m.name)}
-                <Chip interactive size="sm" uppercase={false} tone={l.modifiers.includes(m.name) ? "info" : "neutral"} onclick={() => toggle(l, m.name)}>
-                  {m.name}
-                </Chip>
+                {#if touch}
+                  <Button
+                    label={m.name}
+                    tone={l.modifiers.includes(m.name) ? "info" : "neutral"}
+                    surface={l.modifiers.includes(m.name) ? "solid" : "outline"}
+                    onclick={() => toggle(l, m.name)}
+                  />
+                {:else}
+                  <Chip interactive size="sm" uppercase={false} tone={l.modifiers.includes(m.name) ? "info" : "neutral"} onclick={() => toggle(l, m.name)}>
+                    {m.name}
+                  </Chip>
+                {/if}
               {/each}
             </div>
           {/if}
-          <TextInput bind:value={l.notes} size="sm" placeholder="Notes for the kitchen (optional)" ariaLabel="Notes" block />
+          <TextInput bind:value={l.notes} size={small} placeholder="Notes for the kitchen (optional)" ariaLabel="Notes" block />
         </li>
       {/each}
     </ul>
@@ -128,7 +140,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
-    min-height: 44px;
+    min-height: max(44px, var(--kit-control-height, 0px));
     padding: var(--space-3) var(--space-4);
     border: var(--border-width) solid var(--border-default);
     border-radius: var(--radius-md);
@@ -172,6 +184,18 @@
   .name {
     flex: 1;
     min-width: 0;
+  }
+  /* On phones the dish name gets its own line above the controls. */
+  .line-top.touch {
+    flex-wrap: wrap;
+  }
+  .line-top.touch .name {
+    order: -2;
+    flex: 1 0 calc(100% - var(--kit-control-height, 56px) - var(--space-3));
+    font-size: var(--font-size-lg);
+  }
+  .line-top.touch .remove {
+    order: -1;
   }
   .mods {
     display: flex;

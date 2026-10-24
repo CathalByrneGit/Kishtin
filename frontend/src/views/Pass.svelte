@@ -9,6 +9,14 @@
   import { param, setParam } from "../lib/router.svelte";
   import { session } from "../lib/session.svelte";
 
+  interface Props {
+    /** large type and buttons, for a wall-mounted screen */
+    big?: boolean;
+    /** no heading or figures, for a phone */
+    compact?: boolean;
+  }
+  let { big = false, compact = false }: Props = $props();
+
   const feed = kitchenFeed();
   const expo = $derived(canRunPass(session.user?.role));
   const filter = $derived(param("show") ?? "all");
@@ -83,7 +91,8 @@
   }
 </script>
 
-<div class="page">
+<div class="page" class:big class:kitchen={big}>
+  {#if !big && !compact}
   <header class="head">
     <div>
       <h1>Pass</h1>
@@ -93,12 +102,14 @@
       <span class="muted small">Plan at {dublinTime(feed.view.plan.at)} · {feed.view.plan.strategy === "fifo" ? "first in, first out" : "backward scheduling"}</span>
     {/if}
   </header>
+  {/if}
 
   {#if feed.error}<Notice tone="error" title="Could not load the kitchen" message={feed.error} />{/if}
 
   {#if !feed.view}
     {#if !feed.error}<Spinner />{/if}
   {:else}
+    {#if !compact}
     <div class="metrics">
       <MetricCard label="Open orders" value={String(feed.view.orders.length)} />
       <MetricCard label="On track" value={String(counts.on_track)} tone="success" />
@@ -107,6 +118,7 @@
       <MetricCard label="Ready to serve" value={String(counts.ready)} tone={counts.ready > 0 ? "info" : "neutral"} />
       <MetricCard label="Held courses" value={String(counts.held)} />
     </div>
+    {/if}
 
     <div>
       <SegmentedControl
@@ -239,7 +251,7 @@
   }
   .cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
     gap: var(--space-5);
     align-items: start;
   }
@@ -340,5 +352,23 @@
   }
   p {
     margin: 0;
+  }
+
+  /* Wall-mounted pass screen: bigger type, readable at arm's length. */
+  .big .cards {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  }
+  .big .title h2 {
+    font-size: var(--font-size-2xl);
+  }
+  .big .items li,
+  .big .course-head strong {
+    font-size: var(--font-size-lg);
+  }
+  .big .due {
+    font-size: var(--font-size-xl);
+  }
+  .big .reason {
+    font-size: var(--font-size-md);
   }
 </style>

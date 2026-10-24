@@ -2,7 +2,7 @@
 
 `kishtind` serves the screens at its address (for example `http://kitchen-pc.local:8080/`). The layout is built for a computer screen: a sidebar on the left, a top bar with search and **Log check**, and tables with a details panel. The theme is light and high contrast by default. Every status shows as text plus colour.
 
-Phones and tablets can open the same screens. Below 900 px wide, the sidebar becomes a menu button and pages stack into one column. A layout made for phones and kitchen tablets is not built yet.
+Each device can instead show a full-screen kitchen layout: a **pass screen**, a **station screen** or a **phone** layout. See [Kitchen screens](#kitchen-screens). On the desktop layout below 900 px wide, the sidebar becomes a menu button and pages stack into one column.
 
 ## Pairing a device and logging in
 
@@ -11,6 +11,24 @@ Phones and tablets can open the same screens. Below 900 px wide, the sidebar bec
 3. Staff pick their name and enter their PIN. A PIN login lasts 12 hours. The exit icon at the bottom of the sidebar switches staff.
 
 To take a device out of use, revoke its key in **Device keys**, or use **Unpair this device** in **Settings**.
+
+## Kitchen screens
+
+Choose what a device shows in **Settings → This device → This device shows**, or from the menu (☰) at the top right of a kitchen screen:
+
+| Layout | For | Shows |
+|---|---|---|
+| Desktop, with the sidebar | the office computer | the full app, described below |
+| Pass screen | a wall-mounted tablet or TV at the pass | every open order in large type, with Fire, Serve, Change time and Urgent for the head chef or a manager |
+| Station screen | a tablet at one station | that station's Start now, In progress and Coming up, with Start and Done buttons |
+| Phone | a phone | four tabs: Today (fridge and cleaning checks), Log check, New order (for staff who take orders), and the Pass |
+
+- The choice is kept in that device's browser only. A device with a phone-sized screen starts on the phone layout; anything else starts on the desktop.
+- Kitchen screens have no sidebar: a top bar with what the screen is, the restaurant, a large clock (pass and station), the connection, who is logged in, and the menu. The menu switches staff, changes the screen, and sets the theme and high contrast.
+- Every button, field and tab on a kitchen screen is at least 56 px tall, and type is larger, so they work with wet or gloved hands and read at arm's length.
+- The station screen's columns wrap on a portrait tablet: Start now and In progress side by side, Coming up below.
+- Kitchen screens keep the screen awake where the browser allows it, show the last known state with a "Not connected" notice if the server drops, and update after every change on any device.
+- A PIN login lasts 12 hours, so a shared pass or station screen asks for a PIN again after a long shift. Records, exports, verify and setup are on the desktop layout only.
 
 ## Layout
 
@@ -137,11 +155,11 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks** and **Limits and
 ## Settings
 
 - **Restaurant**: the name, backup schedule and retention, largest upload, and preview length. These change through the same review as Setup. See [settings.md](settings.md#system-settings).
-- **This device**: light, dark or system theme, high contrast, and unpairing.
+- **This device**: which screen it shows (see [Kitchen screens](#kitchen-screens)), light, dark or system theme, high contrast, and unpairing.
 
 ## Screenshots
 
-All taken with synthetic data at 1440 × 960.
+All taken with synthetic data, at 1440 × 960 unless noted.
 
 | Pass | Stations: the grill |
 |---|---|
@@ -167,6 +185,16 @@ All taken with synthetic data at 1440 × 960.
 | **Backups** | **Settings** |
 | ![Backups](screenshots/backups.png) | ![Settings](screenshots/settings.png) |
 
-At 600 px wide the same screens stack into one column, as below. A layout designed for phones is still to come.
+### Kitchen screens
 
-![Today at 600 px](screenshots/today-narrow.png)
+| Pass screen on a landscape tablet (1280 × 800) | Station screen on a portrait tablet (800 × 1280) |
+|---|---|
+| ![Pass screen](screenshots/pass-screen.png) | ![Station screen](screenshots/station-screen.png) |
+
+The pass screen on a TV (1920 × 1080):
+
+![Pass screen on a TV](screenshots/pass-tv.png)
+
+| Phone: Today | Phone: Log check | Phone: New order | Phone: Pass |
+|---|---|---|---|
+| ![Phone Today](screenshots/phone-today.png) | ![Phone Log check](screenshots/phone-log.png) | ![Phone New order](screenshots/phone-order.png) | ![Phone Pass](screenshots/phone-pass.png) |

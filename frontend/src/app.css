@@ -32,6 +32,12 @@ h3 {
   --kit-control-font-size: var(--font-size-lg);
 }
 
+/* kit-ui's segmented control grows its frame, not its segments, with the
+   control height; make each segment a full-height tap target. */
+.kitchen .kit-segmented__btn {
+  min-height: var(--kit-control-height);
+}
+
 .stack {
   display: flex;
   flex-direction: column;

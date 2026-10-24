@@ -262,6 +262,11 @@ type interval struct {
 
 const epsilon = 1e-9
 
+// slack is how late against a target still counts as on time: a plan made a
+// few seconds after a latest start has passed should not call it late or
+// move the course.
+const slack = 30 * time.Second
+
 func plan(state KitchenState, cfg Config, now time.Time, strategy string) Plan {
 	if cfg.Location == nil {
 		cfg.Location = time.UTC
@@ -496,7 +501,7 @@ func assign(courses []Course, cfg Config, now time.Time, strategy string, names 
 		if strategy != StrategyFIFO {
 			// Items already started set the earliest the course can be ready.
 			for _, it := range c.Items {
-				if r, ok := inProgressReady(it, now); ok && r.After(target.Add(time.Second)) {
+				if r, ok := inProgressReady(it, now); ok && r.After(target.Add(slack)) {
 					target = r
 					causes[ci] = shiftCause(nil, &it, now, cfg, names)
 				}
@@ -509,7 +514,7 @@ func assign(courses []Course, cfg Config, now time.Time, strategy string, names 
 			var ready time.Time
 			var worst *job
 			jobs, ready, worst = placeCourse(c, ci, target, try, cfg, now, strategy)
-			if strategy == StrategyFIFO || !ready.After(target.Add(time.Second)) {
+			if strategy == StrategyFIFO || !ready.After(target.Add(slack)) {
 				break
 			}
 			if causes[ci].text == "" {
@@ -851,7 +856,7 @@ func action(g *group, shift []time.Duration, causes []cause, cfg Config, now tim
 			a.OrderIDs = append(a.OrderIDs, j.course.OrderID)
 			a.Labels = append(a.Labels, j.course.Label)
 		}
-		if g.start.After(j.latest0) {
+		if g.start.After(j.latest0.Add(slack)) {
 			a.Late = true
 		}
 	}
@@ -1007,7 +1012,7 @@ func courseStatus(c *Course, ci int, why cause, jobs []*job, cfg Config, now tim
 		if why.text != "" {
 			cs.Reason += " " + why.text
 		}
-	case planned.After(c.Target.Add(30 * time.Second)):
+	case planned.After(c.Target.Add(slack)):
 		cs.Status = StatusAtRisk
 		cs.Reason = fmt.Sprintf("Due at %s; expected at %s.", cfg.clock(c.Target), cfg.clock(planned))
 		if why.text != "" {

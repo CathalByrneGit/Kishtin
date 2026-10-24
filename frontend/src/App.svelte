@@ -44,7 +44,9 @@
   import { connect, disconnect, live, onChange } from "./lib/live.svelte";
   import { closeLog, logDrawer, openLog } from "./lib/logdrawer.svelte";
   import { initRouter, navigate, route } from "./lib/router.svelte";
+  import { screen } from "./lib/screen.svelte";
   import { endSession, session, takePairingFromURL } from "./lib/session.svelte";
+  import KitchenShell from "./screens/KitchenShell.svelte";
   import Login from "./screens/Login.svelte";
   import Pair from "./screens/Pair.svelte";
   import Exports from "./views/Exports.svelte";
@@ -264,6 +266,8 @@
   <Pair />
 {:else if !session.token}
   <Login />
+{:else if screen.kind !== "desktop"}
+  <KitchenShell {restaurant} />
 {:else}
   <div class="app">
     <AppSidebar {groups} {location} page={route.path + route.search} storageKey="kishtin-sidebar">
