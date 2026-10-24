@@ -102,6 +102,10 @@ type ClientInterface interface {
 	GetRecord(ctx context.Context, options *GetRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordResponse, error)
 	GetRecordWithResponse(ctx context.Context, options *GetRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordResp, error)
 
+	// Today Show today's checks
+	Today(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*TodayResponse, error)
+	TodayWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*TodayResp, error)
+
 	// Verify Check HACCP records and files for tampering
 	Verify(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*VerifyResponse, error)
 	VerifyWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*VerifyResp, error)
@@ -756,8 +760,10 @@ func (c *Client) ExportRecords(ctx context.Context, options *ExportRecordsReques
 	var err error
 
 	queryEncoding := map[string]runtime.QueryEncoding{
-		"from": {Style: "form", Explode: &[]bool{false}[0]},
-		"to":   {Style: "form", Explode: &[]bool{false}[0]},
+		"from":    {Style: "form", Explode: &[]bool{false}[0]},
+		"outcome": {Style: "form", Explode: &[]bool{false}[0]},
+		"to":      {Style: "form", Explode: &[]bool{false}[0]},
+		"type":    {Style: "form", Explode: &[]bool{false}[0]},
 	}
 	reqParams := runtime.RequestOptionsParameters{
 		RequestURL:    c.apiClient.GetBaseURL() + "/haccp/export",
@@ -1049,11 +1055,12 @@ func (c *Client) ListRecords(ctx context.Context, options *ListRecordsRequestOpt
 	var err error
 
 	queryEncoding := map[string]runtime.QueryEncoding{
-		"from":   {Style: "form", Explode: &[]bool{false}[0]},
-		"limit":  {Style: "form", Explode: &[]bool{false}[0]},
-		"newest": {Style: "form", Explode: &[]bool{false}[0]},
-		"to":     {Style: "form", Explode: &[]bool{false}[0]},
-		"type":   {Style: "form", Explode: &[]bool{false}[0]},
+		"from":    {Style: "form", Explode: &[]bool{false}[0]},
+		"limit":   {Style: "form", Explode: &[]bool{false}[0]},
+		"newest":  {Style: "form", Explode: &[]bool{false}[0]},
+		"outcome": {Style: "form", Explode: &[]bool{false}[0]},
+		"to":      {Style: "form", Explode: &[]bool{false}[0]},
+		"type":    {Style: "form", Explode: &[]bool{false}[0]},
 	}
 	reqParams := runtime.RequestOptionsParameters{
 		RequestURL:    c.apiClient.GetBaseURL() + "/haccp/records",
@@ -1237,6 +1244,68 @@ func (c *Client) GetRecord(ctx context.Context, options *GetRecordRequestOptions
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/records/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// Today Show today's checks
+func (c *Client) Today(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*TodayResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/today",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*TodayResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(TodayErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "TodayErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(TodayResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "TodayResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/today")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -4704,6 +4773,66 @@ func (c *Client) GetRecordWithResponse(ctx context.Context, options *GetRecordRe
 	}
 }
 
+// Today Show today's checks
+func (c *Client) TodayWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*TodayResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/today",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/today")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &TodayResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(TodayResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "TodayResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(TodayErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "TodayErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // Verify Check HACCP records and files for tampering
 func (c *Client) VerifyWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*VerifyResp, error) {
 	var err error
@@ -6186,15 +6315,17 @@ type UploadFileQuery struct {
 }
 
 type ExportRecordsQuery struct {
-	// From Start date (2026-05-01) or RFC 3339 time.
-	From string `json:"from" validate:"required"`
+	// From Start date (2026-05-01, Dublin time) or RFC 3339 time. Empty: from the first record.
+	From *string `json:"from,omitempty"`
 
-	// To End date, inclusive, or RFC 3339 time, exclusive.
-	To string `json:"to" validate:"required"`
-}
+	// To End date, inclusive, or RFC 3339 time, exclusive. Empty: up to now.
+	To *string `json:"to,omitempty"`
 
-func (e ExportRecordsQuery) Validate() error {
-	return runtime.ConvertValidatorError(typesValidator.Struct(e))
+	// Type Only these record types.
+	Type []string `json:"type,omitempty"`
+
+	// Outcome Only these outcomes: pass, borderline, fail, recorded.
+	Outcome []string `json:"outcome,omitempty"`
 }
 
 type ListRecordsQuery struct {
@@ -6206,6 +6337,9 @@ type ListRecordsQuery struct {
 
 	// Type Only these record types.
 	Type []string `json:"type,omitempty"`
+
+	// Outcome Only these outcomes: pass, borderline, fail, recorded.
+	Outcome []string `json:"outcome,omitempty"`
 
 	// Limit At most this many records (default and maximum 1000).
 	Limit *int64 `json:"limit,omitempty" validate:"omitempty,gte=0,lte=1000"`
@@ -6281,6 +6415,10 @@ type LogRecordErrorResponse = ErrorModel
 type GetRecordResponse = Record
 
 type GetRecordErrorResponse = ErrorModel
+
+type TodayResponse = TodayView
+
+type TodayErrorResponse = ErrorModel
 
 type VerifyResponse = VerifyReport
 
@@ -6522,6 +6660,14 @@ type GetRecordResp struct {
 	ApplicationProblemPlusJSONDefault *GetRecordErrorResponse
 }
 
+type TodayResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *TodayResponse
+	ApplicationProblemPlusJSONDefault *TodayErrorResponse
+}
+
 type VerifyResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -6719,6 +6865,15 @@ func (a APIKey) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(a))
 }
 
+type ActionPreset struct {
+	Text string `json:"text" validate:"required"`
+	Type string `json:"type" validate:"required"`
+}
+
+func (a ActionPreset) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
 type Backup struct {
 	HeadHash string    `json:"head_hash" validate:"required"`
 	Name     string    `json:"name" validate:"required"`
@@ -6749,6 +6904,31 @@ func (b BackupsOutBody) Validate() error {
 				errors = errors.Append(fmt.Sprintf("Backups[%d]", i), err)
 			}
 		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type BatchToday struct {
+	Record Record `json:"record"`
+	Status string `json:"status" validate:"required"`
+	UseBy  string `json:"use_by" validate:"required"`
+}
+
+func (b BatchToday) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(b.Record).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Record", err)
+		}
+	}
+	if err := typesValidator.Var(b.Status, "required"); err != nil {
+		errors = errors.Append("Status", err)
+	}
+	if err := typesValidator.Var(b.UseBy, "required"); err != nil {
+		errors = errors.Append("UseBy", err)
 	}
 	if len(errors) == 0 {
 		return nil
@@ -6822,6 +7002,15 @@ func (c Check) Validate() error {
 	return errors
 }
 
+type CheckTime struct {
+	From  string `json:"from" validate:"required"`
+	Label string `json:"label" validate:"required"`
+}
+
+func (c CheckTime) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
 type CleaningTask struct {
 	Area *string `json:"area,omitempty"`
 	Task string  `json:"task" validate:"required"`
@@ -6829,6 +7018,30 @@ type CleaningTask struct {
 
 func (c CleaningTask) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type CleaningToday struct {
+	Area   *string `json:"area,omitempty"`
+	Record *Record `json:"record,omitempty"`
+	Task   string  `json:"task" validate:"required"`
+}
+
+func (c CleaningToday) Validate() error {
+	var errors runtime.ValidationErrors
+	if c.Record != nil {
+		if v, ok := any(c.Record).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Record", err)
+			}
+		}
+	}
+	if err := typesValidator.Var(c.Task, "required"); err != nil {
+		errors = errors.Append("Task", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CoolingLimit struct {
@@ -7224,9 +7437,10 @@ func (l Limits) Validate() error {
 }
 
 type Lists struct {
-	CleaningTasks  []CleaningTask `json:"cleaning_tasks" validate:"required"`
-	FoodCategories []string       `json:"food_categories" validate:"required"`
-	Units          []Unit         `json:"units" validate:"required"`
+	CleaningTasks     []CleaningTask `json:"cleaning_tasks" validate:"required"`
+	CorrectiveActions []ActionPreset `json:"corrective_actions" validate:"required"`
+	FoodCategories    []string       `json:"food_categories" validate:"required"`
+	Units             []Unit         `json:"units" validate:"required"`
 }
 
 func (l Lists) Validate() error {
@@ -7238,6 +7452,16 @@ func (l Lists) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("CleaningTasks[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(l.CorrectiveActions, "required"); err != nil {
+		errors = errors.Append("CorrectiveActions", err)
+	}
+	for i, item := range l.CorrectiveActions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("CorrectiveActions[%d]", i), err)
 			}
 		}
 	}
@@ -7459,11 +7683,14 @@ type Reading struct {
 	Food          *string    `json:"food,omitempty"`
 	FoodCategory  *string    `json:"food_category,omitempty"`
 	HoldSeconds   *int64     `json:"hold_seconds,omitempty"`
+	InDate        *bool      `json:"in_date,omitempty"`
 	IntoFridgeAt  *time.Time `json:"into_fridge_at,omitempty"`
 	MadeOn        *string    `json:"made_on,omitempty"`
 	Notes         *string    `json:"notes,omitempty"`
+	PackagingOk   *bool      `json:"packaging_ok,omitempty"`
 	Product       *string    `json:"product,omitempty"`
 	Quantity      *string    `json:"quantity,omitempty"`
+	ShelfLifeDays *int64     `json:"shelf_life_days,omitempty"`
 	Supplier      *string    `json:"supplier,omitempty"`
 	Task          *string    `json:"task,omitempty"`
 	TempAtCutoffC *float64   `json:"temp_at_cutoff_c,omitempty"`
@@ -7843,6 +8070,38 @@ func (s SettingsVersion) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
+type SlotToday struct {
+	From   string  `json:"from" validate:"required"`
+	Label  string  `json:"label" validate:"required"`
+	Record *Record `json:"record,omitempty"`
+	Status string  `json:"status" validate:"required"`
+	Until  *string `json:"until,omitempty"`
+}
+
+func (s SlotToday) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.From, "required"); err != nil {
+		errors = errors.Append("From", err)
+	}
+	if err := typesValidator.Var(s.Label, "required"); err != nil {
+		errors = errors.Append("Label", err)
+	}
+	if s.Record != nil {
+		if v, ok := any(s.Record).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Record", err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Status, "required"); err != nil {
+		errors = errors.Append("Status", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type StaffEntry struct {
 	HasPassword bool   `json:"has_password"`
 	HasPin      bool   `json:"has_pin"`
@@ -7878,10 +8137,15 @@ func (s StaffOutBody) Validate() error {
 }
 
 type System struct {
-	BackupIntervalMinutes int64 `json:"backup_interval_minutes"`
-	BackupKeep            int64 `json:"backup_keep"`
-	MaxUploadMb           int64 `json:"max_upload_mb"`
-	PreviewRecords        int64 `json:"preview_records"`
+	BackupIntervalMinutes int64  `json:"backup_interval_minutes"`
+	BackupKeep            int64  `json:"backup_keep"`
+	MaxUploadMb           int64  `json:"max_upload_mb"`
+	PreviewRecords        int64  `json:"preview_records"`
+	RestaurantName        string `json:"restaurant_name" validate:"required"`
+}
+
+func (s System) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
 type TimeTemp struct {
@@ -7889,14 +8153,152 @@ type TimeTemp struct {
 	MinC        float64 `json:"min_c"`
 }
 
+type TodayView struct {
+	Batches           []BatchToday    `json:"batches" validate:"required"`
+	Cleaning          []CleaningToday `json:"cleaning" validate:"required"`
+	CorrectiveActions []ActionPreset  `json:"corrective_actions" validate:"required"`
+	Date              string          `json:"date" validate:"required"`
+	Done              int64           `json:"done"`
+	NeedsAttention    []Record        `json:"needs_attention" validate:"required"`
+	OutOfLimit        int64           `json:"out_of_limit"`
+	Percent           int64           `json:"percent"`
+	RestaurantName    string          `json:"restaurant_name" validate:"required"`
+	Ring              string          `json:"ring" validate:"required"`
+	Total             int64           `json:"total"`
+	Units             []UnitToday     `json:"units" validate:"required"`
+	WithoutAction     int64           `json:"without_action"`
+}
+
+func (t TodayView) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(t.Batches, "required"); err != nil {
+		errors = errors.Append("Batches", err)
+	}
+	for i, item := range t.Batches {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Batches[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.Cleaning, "required"); err != nil {
+		errors = errors.Append("Cleaning", err)
+	}
+	for i, item := range t.Cleaning {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Cleaning[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.CorrectiveActions, "required"); err != nil {
+		errors = errors.Append("CorrectiveActions", err)
+	}
+	for i, item := range t.CorrectiveActions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("CorrectiveActions[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.Date, "required"); err != nil {
+		errors = errors.Append("Date", err)
+	}
+	if err := typesValidator.Var(t.NeedsAttention, "required"); err != nil {
+		errors = errors.Append("NeedsAttention", err)
+	}
+	for i, item := range t.NeedsAttention {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("NeedsAttention[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.RestaurantName, "required"); err != nil {
+		errors = errors.Append("RestaurantName", err)
+	}
+	if err := typesValidator.Var(t.Ring, "required"); err != nil {
+		errors = errors.Append("Ring", err)
+	}
+	if err := typesValidator.Var(t.Units, "required"); err != nil {
+		errors = errors.Append("Units", err)
+	}
+	for i, item := range t.Units {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Units[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type Unit struct {
-	Kind    string `json:"kind" validate:"required"`
-	Name    string `json:"name" validate:"required"`
-	NonFood *bool  `json:"non_food,omitempty"`
+	Checks  []CheckTime `json:"checks,omitempty"`
+	Kind    string      `json:"kind" validate:"required"`
+	Name    string      `json:"name" validate:"required"`
+	NonFood *bool       `json:"non_food,omitempty"`
 }
 
 func (u Unit) Validate() error {
-	return runtime.ConvertValidatorError(typesValidator.Struct(u))
+	var errors runtime.ValidationErrors
+	for i, item := range u.Checks {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Checks[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(u.Kind, "required"); err != nil {
+		errors = errors.Append("Kind", err)
+	}
+	if err := typesValidator.Var(u.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type UnitToday struct {
+	Kind    string       `json:"kind" validate:"required"`
+	Limit   LimitVersion `json:"limit"`
+	Name    string       `json:"name" validate:"required"`
+	NonFood *bool        `json:"non_food,omitempty"`
+	Slots   []SlotToday  `json:"slots" validate:"required"`
+}
+
+func (u UnitToday) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(u.Kind, "required"); err != nil {
+		errors = errors.Append("Kind", err)
+	}
+	if v, ok := any(u.Limit).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Limit", err)
+		}
+	}
+	if err := typesValidator.Var(u.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(u.Slots, "required"); err != nil {
+		errors = errors.Append("Slots", err)
+	}
+	for i, item := range u.Slots {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Slots[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type User struct {

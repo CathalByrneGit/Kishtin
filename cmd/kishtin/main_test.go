@@ -62,32 +62,32 @@ func TestCLI(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, out, "Máire Manager (manager)")
 
-	out, _, err = run(t, url, key, "", "haccp", "log", "fridge", "--unit", "Walk-in", "--temp", "3.4")
+	out, _, err = run(t, url, key, "", "haccp", "log", "fridge", "--unit", "Walk-in fridge", "--temp", "3.4")
 	require.NoError(t, err)
 	assert.Contains(t, out, "PASS  3.4°C is at or below the 5.0°C limit.")
 	assert.Contains(t, out, "Saved record 1")
 
-	out, _, err = run(t, url, key, "", "haccp", "log", "fridge", "--unit", "Walk-in", "--temp", "7.1", "--dry-run")
+	out, _, err = run(t, url, key, "", "haccp", "log", "fridge", "--unit", "Walk-in fridge", "--temp", "7.1", "--dry-run")
 	require.NoError(t, err)
 	assert.Contains(t, out, "FAIL")
 	assert.Contains(t, out, "Not saved (dry run).")
 
-	_, _, err = run(t, url, key, "", "haccp", "log", "fridge", "--unit", "Walk-in", "--temp", "7.1")
+	_, _, err = run(t, url, key, "", "haccp", "log", "fridge", "--unit", "Walk-in fridge", "--temp", "7.1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Add a corrective action to save it.")
 
-	_, _, err = run(t, url, key, "", "haccp", "log", "fridge", "--unit", "Walk-in", "--temp", "7.1", "--action", "Moved stock, called engineer")
+	_, _, err = run(t, url, key, "", "haccp", "log", "fridge", "--unit", "Walk-in fridge", "--temp", "7.1", "--action", "Moved stock, called engineer")
 	require.NoError(t, err)
 
 	png := []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d, 'I', 'H', 'D', 'R', 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0}
 	docket := filepath.Join(t.TempDir(), "docket.png")
 	require.NoError(t, os.WriteFile(docket, png, 0o600))
 	_, errOut, err := run(t, url, key, "", "haccp", "log", "delivery", "--supplier", "Synthetic Meats Ltd", "--product", "Chicken",
-		"--kind", "chilled", "--temp", "6.5", "--action", "Accepted, used same day", "--docket", docket)
+		"--kind", "chilled", "--packaging-ok", "--in-date", "--temp", "6.5", "--action", "Accepted, used same day", "--docket", docket)
 	require.NoError(t, err)
 	assert.Contains(t, errOut, "Attached docket.png")
 
-	_, _, err = run(t, url, key, "", "haccp", "log", "cleaning", "--task", "Deep clean fryer", "--done")
+	_, _, err = run(t, url, key, "", "haccp", "log", "cleaning", "--task", "Floors swept & mopped", "--done")
 	require.NoError(t, err)
 
 	out, _, err = run(t, url, key, "", "haccp", "list")
@@ -108,8 +108,17 @@ func TestCLI(t *testing.T) {
 
 	out, _, err = run(t, url, key, "", "haccp", "show", list.Records[0].ID)
 	require.NoError(t, err)
-	assert.Contains(t, out, "Walk-in")
+	assert.Contains(t, out, "Walk-in fridge")
 	assert.Contains(t, out, "Hash:")
+
+	out, _, err = run(t, url, key, "", "haccp", "today")
+	require.NoError(t, err)
+	assert.Contains(t, out, "checks done")
+	assert.Contains(t, out, "Walk-in fridge")
+	assert.Regexp(t, `Floors swept & mopped +done .* by Máire Manager`, out)
+
+	_, _, err = run(t, url, key, "", "haccp", "log", "cleaning", "--task", "Floors swept & mopped", "--done")
+	assert.ErrorContains(t, err, "already done today")
 
 	out, _, err = run(t, url, key, "", "haccp", "verify")
 	require.NoError(t, err)
@@ -124,7 +133,7 @@ func TestCLI(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(string(data), "seq,record_id,"))
 
-	_, errOut, err = run(t, url, key, "n\n", "limits", "set", "--check", "fridge", "--scope", "unit:Walk-in", "--max", "3", "--reason", "Fish in the walk-in")
+	_, errOut, err = run(t, url, key, "n\n", "limits", "set", "--check", "fridge", "--scope", "unit:Walk-in fridge", "--max", "3", "--reason", "Fish in the walk-in")
 	require.NoError(t, err)
 	assert.Contains(t, errOut, "Would score differently: 1.")
 	assert.Contains(t, errOut, "Not saved.")

@@ -71,9 +71,10 @@ func setup(t *testing.T) *fixture {
 }
 
 func fp(v float64) *float64 { return &v }
+func bt(v bool) *bool       { return &v }
 
 func fridge(temp float64) NewRecord {
-	return NewRecord{Type: haccp.RecordFridge, Reading: haccp.Reading{Unit: "Walk-in", TempC: &temp}}
+	return NewRecord{Type: haccp.RecordFridge, Reading: haccp.Reading{Unit: "Walk-in fridge", TempC: &temp}}
 }
 
 func TestSetupOnlyOnce(t *testing.T) {
@@ -207,7 +208,7 @@ func TestLimitChanges(t *testing.T) {
 	old, err := f.svc.LogRecord(ctx, f.cook, fridge(4.5))
 	require.NoError(t, err)
 
-	tighter := NewLimit{Check: haccp.CheckFridge, Scope: haccp.Scope{Kind: haccp.ScopeUnit, Ref: "Walk-in"}, MaxC: fp(4), Reason: "Walk-in holds fish"}
+	tighter := NewLimit{Check: haccp.CheckFridge, Scope: haccp.Scope{Kind: haccp.ScopeUnit, Ref: "Walk-in fridge"}, MaxC: fp(4), Reason: "Walk-in holds fish"}
 
 	pinManager := &auth.Principal{User: f.manager.User, Method: auth.MethodPIN}
 	_, err = f.svc.CreateLimit(ctx, pinManager, tighter)
@@ -273,7 +274,7 @@ func TestVerifyFindsTamperedFile(t *testing.T) {
 	assert.Equal(t, "docket.png", m.OriginalName)
 
 	d := NewRecord{Type: haccp.RecordDelivery, Reading: haccp.Reading{
-		Supplier: "Synthetic Meats Ltd", Product: "Chicken", DeliveryKind: haccp.DeliveryChilled, TempC: fp(3), DocketFile: m.SHA256,
+		Supplier: "Synthetic Meats Ltd", Product: "Chicken", DeliveryKind: haccp.DeliveryChilled, TempC: fp(3), DocketFile: m.SHA256, PackagingOK: bt(true), InDate: bt(true),
 	}}
 	_, err = f.svc.LogRecord(ctx, f.cook, d)
 	require.NoError(t, err)
@@ -303,21 +304,22 @@ func TestExportCSV(t *testing.T) {
 		require.NoError(t, err)
 		f.clk.Advance(time.Hour)
 	}
-	inject := NewRecord{Type: haccp.RecordCleaning, Reading: haccp.Reading{Task: "=HYPERLINK(\"x\")", Done: new(bool)}, CorrectiveAction: "Done at close"}
+	inject := fridge(7)
+	inject.CorrectiveAction = "=HYPERLINK(\"x\")"
 	_, err := f.svc.LogRecord(ctx, f.cook, inject)
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	_, err = f.svc.ExportRecordsCSV(ctx, f.cook, start, start.Add(24*time.Hour), &buf)
+	_, err = f.svc.ExportRecordsCSV(ctx, f.cook, RecordQuery{From: start, To: start.Add(24 * time.Hour)}, &buf)
 	assert.Equal(t, KindForbidden, KindOf(err), "line cooks cannot export")
 
-	sum, err := f.svc.ExportRecordsCSV(ctx, f.manager, start, start.Add(90*time.Minute), &buf)
+	sum, err := f.svc.ExportRecordsCSV(ctx, f.manager, RecordQuery{From: start, To: start.Add(90 * time.Minute)}, &buf)
 	require.NoError(t, err)
 	assert.Equal(t, 2, sum.Records)
 	assert.Equal(t, 3, sum.Chain.Checked)
 
 	buf.Reset()
-	_, err = f.svc.ExportRecordsCSV(ctx, f.manager, start, start.Add(24*time.Hour), &buf)
+	_, err = f.svc.ExportRecordsCSV(ctx, f.manager, RecordQuery{From: start, To: start.Add(24 * time.Hour)}, &buf)
 	require.NoError(t, err)
 	rows, err := csv.NewReader(&buf).ReadAll()
 	require.NoError(t, err)
@@ -325,9 +327,14 @@ func TestExportCSV(t *testing.T) {
 	assert.Equal(t, recordColumns, rows[0])
 	assert.Equal(t, "3.4", rows[1][8])
 	assert.Equal(t, "2026-05-01 10:00:00", rows[1][4], "Dublin time is UTC+1 in May")
-	assert.Equal(t, "'=HYPERLINK(\"x\")", rows[3][7], "formula text is escaped")
+	assert.Equal(t, "'=HYPERLINK(\"x\")", rows[3][11], "formula text is escaped")
 
-	_, err = f.svc.ExportRecordsCSV(ctx, f.manager, start, start, &buf)
+	buf.Reset()
+	sum, err = f.svc.ExportRecordsCSV(ctx, f.manager, RecordQuery{Outcomes: []haccp.Outcome{haccp.OutcomeFail}}, &buf)
+	require.NoError(t, err)
+	assert.Equal(t, 1, sum.Records, "an open range with an outcome filter")
+
+	_, err = f.svc.ExportRecordsCSV(ctx, f.manager, RecordQuery{From: start, To: start}, &buf)
 	assert.Equal(t, KindInvalid, KindOf(err))
 
 	buf.Reset()

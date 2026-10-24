@@ -76,11 +76,54 @@ func TestTemperatureLimitBoundaries(t *testing.T) {
 }
 
 func chilled(c float64) Reading {
-	return Reading{Supplier: "Synthetic Dairy Ltd", Product: "Cream", DeliveryKind: DeliveryChilled, TempC: &c}
+	return Reading{Supplier: "Synthetic Dairy Ltd", Product: "Cream", DeliveryKind: DeliveryChilled, TempC: &c, PackagingOK: b(true), InDate: b(true)}
 }
 
 func frozen(c float64) Reading {
-	return Reading{Supplier: "Synthetic Frozen Ltd", Product: "Peas", DeliveryKind: DeliveryFrozen, TempC: &c}
+	return Reading{Supplier: "Synthetic Frozen Ltd", Product: "Peas", DeliveryKind: DeliveryFrozen, TempC: &c, PackagingOK: b(true), InDate: b(true)}
+}
+
+func TestDeliveryChecks(t *testing.T) {
+	ambient := Reading{Supplier: "Synthetic Dry Goods", Product: "Flour", DeliveryKind: DeliveryAmbient, PackagingOK: b(true), InDate: b(true)}
+	assert.Equal(t, OutcomePass, evalDefault(t, RecordDelivery, ambient).Outcome)
+
+	torn := ambient
+	torn.PackagingOK = b(false)
+	res := evalDefault(t, RecordDelivery, torn)
+	assert.Equal(t, OutcomeFail, res.Outcome)
+	assert.Equal(t, "Packaging is not intact. Reject the delivery.", res.Reason)
+
+	old := chilled(3)
+	old.InDate = b(false)
+	res = evalDefault(t, RecordDelivery, old)
+	assert.Equal(t, OutcomeFail, res.Outcome, "out of date fails even at a good temperature")
+	assert.Equal(t, "Not in date. Reject the delivery.", res.Reason)
+
+	warmAndTorn := chilled(9)
+	warmAndTorn.PackagingOK = b(false)
+	res = evalDefault(t, RecordDelivery, warmAndTorn)
+	assert.Contains(t, res.Reason, "Packaging is not intact.")
+	assert.Contains(t, res.Reason, "9.0°C is above the 8.0°C limit.")
+
+	assert.Contains(t, evalDefault(t, RecordDelivery, chilled(6)).Reason, "Accept only if used or stored straight away.")
+	assert.Contains(t, evalDefault(t, RecordDelivery, chilled(8.1)).Reason, "Reject the delivery.")
+
+	unticked := chilled(3)
+	unticked.InDate = nil
+	assert.Error(t, unticked.Normalize().Validate(RecordDelivery), "both ticks must be answered")
+}
+
+func TestBatchShelfLife(t *testing.T) {
+	five := 5
+	r := Reading{Product: "Grape soda syrup", MadeOn: "2026-05-01", ShelfLifeDays: &five}.Normalize()
+	assert.Equal(t, "2026-05-06", r.UseBy)
+	require.NoError(t, r.Validate(RecordBatchLabel))
+
+	mismatch := Reading{Product: "Syrup", MadeOn: "2026-05-01", UseBy: "2026-05-09", ShelfLifeDays: &five}.Normalize()
+	assert.Error(t, mismatch.Validate(RecordBatchLabel))
+
+	tooLong := 400
+	assert.Error(t, Reading{Product: "Syrup", MadeOn: "2026-05-01", ShelfLifeDays: &tooLong}.Normalize().Validate(RecordBatchLabel))
 }
 
 func TestCoolingBoundaries(t *testing.T) {
@@ -138,7 +181,6 @@ func TestNoLimitRecords(t *testing.T) {
 	assert.Equal(t, OutcomePass, evalDefault(t, RecordCleaning, Reading{Task: "Deep clean fryer", Done: b(true)}).Outcome)
 	assert.Equal(t, OutcomeFail, evalDefault(t, RecordCleaning, Reading{Task: "Deep clean fryer", Done: b(false)}).Outcome)
 	assert.Equal(t, OutcomeRecorded, evalDefault(t, RecordBatchLabel, Reading{Product: "Grape soda syrup", MadeOn: "2026-05-01", UseBy: "2026-05-07"}).Outcome)
-	assert.Equal(t, OutcomeRecorded, evalDefault(t, RecordDelivery, Reading{Supplier: "Synthetic Dry Goods", Product: "Flour", DeliveryKind: DeliveryAmbient}).Outcome)
 }
 
 func TestEvaluateRejectsWrongLimit(t *testing.T) {
@@ -163,8 +205,8 @@ func TestReadingValidate(t *testing.T) {
 		{"cook negative hold", RecordCook, Reading{Food: "Chicken", TempC: f(80), HoldSeconds: i(-1)}},
 		{"cooling needs cooked_at", RecordCooling, Reading{Food: "Rice"}},
 		{"cooling fridge before cooked", RecordCooling, Reading{Food: "Rice", CookedAt: &cooked, IntoFridgeAt: &before}},
-		{"delivery bad kind", RecordDelivery, Reading{Supplier: "S", Product: "P", DeliveryKind: "warm"}},
-		{"chilled delivery needs temp", RecordDelivery, Reading{Supplier: "S", Product: "P", DeliveryKind: DeliveryChilled}},
+		{"delivery bad kind", RecordDelivery, Reading{Supplier: "S", Product: "P", DeliveryKind: "warm", PackagingOK: b(true), InDate: b(true)}},
+		{"chilled delivery needs temp", RecordDelivery, Reading{Supplier: "S", Product: "P", DeliveryKind: DeliveryChilled, PackagingOK: b(true), InDate: b(true)}},
 		{"label bad date", RecordBatchLabel, Reading{Product: "Syrup", MadeOn: "1 May", UseBy: "2026-05-07"}},
 		{"label use-by before made", RecordBatchLabel, Reading{Product: "Syrup", MadeOn: "2026-05-07", UseBy: "2026-05-01"}},
 		{"cleaning needs done", RecordCleaning, Reading{Task: "Mop"}},

@@ -50,6 +50,7 @@ type RecordFilter struct {
 	// From and To bound LoggedAt: From is inclusive, To is exclusive.
 	From, To time.Time
 	Types    []haccp.RecordType
+	Outcomes []haccp.Outcome
 	// Limit caps the number of records; 0 means no cap.
 	Limit int
 	// Newest returns the newest records first instead of oldest first.

@@ -22,6 +22,8 @@ type Config struct {
 	Store   Store  `toml:"store"`
 	Backup  Backup `toml:"backup"`
 	Files   Files  `toml:"files"`
+	// RestaurantName is the starting restaurant name for the screens.
+	RestaurantName string `toml:"restaurant_name"`
 }
 
 // Server is the HTTP listener.
@@ -130,6 +132,7 @@ func (c *Config) fill() {
 // Kishtin (kishtin settings set system) take their place.
 func (c Config) SystemSettings() settings.System {
 	return settings.System{
+		RestaurantName:        c.RestaurantName,
 		BackupIntervalMinutes: int64(c.Backup.Interval.Minutes()),
 		BackupKeep:            c.Backup.Keep,
 		MaxUploadMB:           c.Files.MaxSizeMB,

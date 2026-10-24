@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
+	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
@@ -241,6 +242,9 @@ func (s *Service) CreateLimit(ctx context.Context, p *auth.Principal, nl NewLimi
 		saved = lv
 		return nil
 	})
+	if err == nil {
+		s.publish(events.KindLimit, saved.ID)
+	}
 	return saved, err
 }
 

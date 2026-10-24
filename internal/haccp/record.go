@@ -73,11 +73,18 @@ type Reading struct {
 	DeliveryKind string `json:"delivery_kind,omitempty"`
 	// DocketFile is the SHA-256 of an attached docket or invoice photo.
 	DocketFile string `json:"docket_file,omitempty"`
+	// PackagingOK and InDate are the delivery checks staff tick. A delivery
+	// with either one false fails.
+	PackagingOK *bool `json:"packaging_ok,omitempty"`
+	InDate      *bool `json:"in_date,omitempty"`
 
 	// Batch label.
-	MadeOn   string `json:"made_on,omitempty"`
-	UseBy    string `json:"use_by,omitempty"`
-	Quantity string `json:"quantity,omitempty"`
+	MadeOn string `json:"made_on,omitempty"`
+	UseBy  string `json:"use_by,omitempty"`
+	// ShelfLifeDays sets UseBy to MadeOn plus this many days when UseBy is
+	// not given.
+	ShelfLifeDays *int   `json:"shelf_life_days,omitempty"`
+	Quantity      string `json:"quantity,omitempty"`
 
 	// Cleaning.
 	Task string `json:"task,omitempty"`
@@ -118,6 +125,11 @@ func (r Reading) Normalize() Reading {
 	}
 	r.DeliveryKind = strings.ToLower(r.DeliveryKind)
 	r.DocketFile = strings.ToLower(r.DocketFile)
+	if r.UseBy == "" && r.ShelfLifeDays != nil {
+		if made, err := time.Parse(DateLayout, r.MadeOn); err == nil {
+			r.UseBy = made.AddDate(0, 0, *r.ShelfLifeDays).Format(DateLayout)
+		}
+	}
 	return r
 }
 
@@ -163,6 +175,9 @@ func (r Reading) Validate(t RecordType) error {
 		if err := errors.Join(need("supplier", r.Supplier), need("product", r.Product)); err != nil {
 			return err
 		}
+		if r.PackagingOK == nil || r.InDate == nil {
+			return errors.New("say whether the packaging is intact (packaging_ok) and the delivery is in date (in_date)")
+		}
 		switch r.DeliveryKind {
 		case DeliveryChilled, DeliveryFrozen:
 			return needTemp()
@@ -185,6 +200,14 @@ func (r Reading) Validate(t RecordType) error {
 		}
 		if useBy.Before(made) {
 			return errors.New("use_by cannot be before made_on")
+		}
+		if d := r.ShelfLifeDays; d != nil {
+			if *d < 0 || *d > 365 {
+				return errors.New("shelf_life_days must be between 0 and 365")
+			}
+			if !made.AddDate(0, 0, *d).Equal(useBy) {
+				return errors.New("use_by does not match made_on plus shelf_life_days: send one or the other")
+			}
 		}
 		return nil
 	case RecordCleaning:

@@ -41,13 +41,13 @@ func TestCLISettings(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, out, "Saved rules version")
 
-	_, _, err = run(t, url, key, "", "haccp", "log", "delivery", "--supplier", "Synthetic Dairy", "--product", "Cream", "--kind", "chilled", "--temp", "6.5")
+	_, _, err = run(t, url, key, "", "haccp", "log", "delivery", "--supplier", "Synthetic Dairy", "--product", "Cream", "--kind", "chilled", "--packaging-ok", "--in-date", "--temp", "6.5")
 	require.NoError(t, err, "borderline needs no action now")
 
-	lists := write("lists.json", `{"units": [{"name": "Walk-in", "kind": "fridge"}], "food_categories": [], "cleaning_tasks": []}`)
+	lists := write("lists.json", `{"units": [{"name": "Walk-in fridge", "kind": "fridge"}], "food_categories": [], "cleaning_tasks": []}`)
 	_, errOut, err = run(t, url, key, "n\n", "settings", "set", "lists", "-f", lists, "--reason", "Our fridges")
 	require.NoError(t, err)
-	assert.Contains(t, errOut, `units[Walk-in].name: added "Walk-in"`)
+	assert.Contains(t, errOut, `units[Prep fridge].name: removed (was "Prep fridge")`)
 	assert.Contains(t, errOut, "Not saved.")
 	_, _, err = run(t, url, key, "", "settings", "set", "lists", "-f", lists, "--reason", "Our fridges", "--yes")
 	require.NoError(t, err)

@@ -28,7 +28,9 @@ func Evaluate(t RecordType, r Reading, limit *LimitVersion) (Result, error) {
 		return Result{}, fmt.Errorf("limit %s is for %s, not %s", limit.ID, limit.Check, check)
 	}
 	switch check {
-	case CheckFridge, CheckFreezer, CheckChilledDelivery, CheckFrozenDelivery:
+	case CheckChilledDelivery, CheckFrozenDelivery:
+		return evaluateDelivery(r, evaluateMax(*r.TempC, limit)), nil
+	case CheckFridge, CheckFreezer:
 		return evaluateMax(*r.TempC, limit), nil
 	case CheckHotHold:
 		return evaluateMin(*r.TempC, limit), nil
@@ -52,10 +54,36 @@ func evaluateNoLimit(t RecordType, r Reading) Result {
 		}
 		return Result{Outcome: OutcomeFail, Reason: "Task not done."}
 	case RecordDelivery:
-		return Result{Outcome: OutcomeRecorded, Reason: "Ambient delivery recorded. No temperature limit."}
+		return evaluateDelivery(r, Result{Outcome: OutcomePass, Reason: "Ambient delivery: no temperature limit."})
 	default:
 		return Result{Outcome: OutcomeRecorded, Reason: "Recorded. No limit applies."}
 	}
+}
+
+// evaluateDelivery adds the packaging and date checks to a delivery's
+// temperature result, and says what to do with the delivery.
+func evaluateDelivery(r Reading, res Result) Result {
+	var problems []string
+	if r.PackagingOK != nil && !*r.PackagingOK {
+		problems = append(problems, "Packaging is not intact.")
+	}
+	if r.InDate != nil && !*r.InDate {
+		problems = append(problems, "Not in date.")
+	}
+	if len(problems) > 0 {
+		reasons := problems
+		if res.Outcome != OutcomePass {
+			reasons = append(reasons, res.Reason)
+		}
+		res = Result{Outcome: OutcomeFail, Reason: strings.Join(reasons, " ")}
+	}
+	switch res.Outcome {
+	case OutcomeBorderline:
+		res.Reason += " Accept only if used or stored straight away."
+	case OutcomeFail:
+		res.Reason += " Reject the delivery."
+	}
+	return res
 }
 
 func evaluateMax(temp float64, l *LimitVersion) Result {

@@ -133,12 +133,17 @@ type checkOut struct {
 	Body service.Check
 }
 
+type todayOut struct {
+	Body service.TodayView
+}
+
 type listRecordsIn struct {
-	From   string   `query:"from" doc:"Start, inclusive: a date (2026-05-01, Dublin time) or an RFC 3339 time."`
-	To     string   `query:"to" doc:"End: a date (inclusive, Dublin time) or an RFC 3339 time (exclusive)."`
-	Types  []string `query:"type" doc:"Only these record types."`
-	Limit  int      `query:"limit" minimum:"0" maximum:"1000" doc:"At most this many records (default and maximum 1000)."`
-	Newest bool     `query:"newest" doc:"Newest first."`
+	From     string   `query:"from" doc:"Start, inclusive: a date (2026-05-01, Dublin time) or an RFC 3339 time."`
+	To       string   `query:"to" doc:"End: a date (inclusive, Dublin time) or an RFC 3339 time (exclusive)."`
+	Types    []string `query:"type" doc:"Only these record types."`
+	Outcomes []string `query:"outcome" doc:"Only these outcomes: pass, borderline, fail, recorded."`
+	Limit    int      `query:"limit" minimum:"0" maximum:"1000" doc:"At most this many records (default and maximum 1000)."`
+	Newest   bool     `query:"newest" doc:"Newest first."`
 }
 
 type recordsOut struct {
@@ -152,8 +157,30 @@ type verifyOut struct {
 }
 
 type exportIn struct {
-	From string `query:"from" required:"true" doc:"Start date (2026-05-01) or RFC 3339 time."`
-	To   string `query:"to" required:"true" doc:"End date, inclusive, or RFC 3339 time, exclusive."`
+	From     string   `query:"from" doc:"Start date (2026-05-01, Dublin time) or RFC 3339 time. Empty: from the first record."`
+	To       string   `query:"to" doc:"End date, inclusive, or RFC 3339 time, exclusive. Empty: up to now."`
+	Types    []string `query:"type" doc:"Only these record types."`
+	Outcomes []string `query:"outcome" doc:"Only these outcomes: pass, borderline, fail, recorded."`
+}
+
+// query builds a record query from request parameters.
+func query(fromS, toS string, types, outcomes []string) (service.RecordQuery, error) {
+	from, err := parseWhen(fromS, false)
+	if err != nil {
+		return service.RecordQuery{}, err
+	}
+	to, err := parseWhen(toS, true)
+	if err != nil {
+		return service.RecordQuery{}, err
+	}
+	q := service.RecordQuery{From: from, To: to}
+	for _, t := range types {
+		q.Types = append(q.Types, haccp.RecordType(t))
+	}
+	for _, o := range outcomes {
+		q.Outcomes = append(q.Outcomes, haccp.Outcome(o))
+	}
+	return q, nil
 }
 
 type csvOut struct {
@@ -186,6 +213,18 @@ func parseWhen(v string, end bool) (time.Time, error) {
 
 func (s *Server) haccpRoutes() {
 	huma.Register(s.api, huma.Operation{
+		OperationID: "today", Method: http.MethodGet, Path: "/haccp/today", Tags: []string{"HACCP"},
+		Summary:     "Show today's checks",
+		Description: "Each fridge and freezer check (done, due or missed), the cleaning checklist, the share of checks done, today's out-of-limit records and batches in use.",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*todayOut, error) {
+		t, err := s.svc.Today(ctx, principal(ctx))
+		if err != nil {
+			return nil, err
+		}
+		return &todayOut{Body: t}, nil
+	}))
+
+	huma.Register(s.api, huma.Operation{
 		OperationID: "check-record", Method: http.MethodPost, Path: "/haccp/check", Tags: []string{"HACCP"},
 		Summary:     "Check a reading without saving it",
 		Description: "Returns the pass, borderline or fail result and the limit it was checked against, so it can be shown before saving.",
@@ -214,18 +253,11 @@ func (s *Server) haccpRoutes() {
 		OperationID: "list-records", Method: http.MethodGet, Path: "/haccp/records", Tags: []string{"HACCP"},
 		Summary: "List HACCP records",
 	}, wrap(s, func(ctx context.Context, in *listRecordsIn) (*recordsOut, error) {
-		from, err := parseWhen(in.From, false)
+		q, err := query(in.From, in.To, in.Types, in.Outcomes)
 		if err != nil {
 			return nil, err
 		}
-		to, err := parseWhen(in.To, true)
-		if err != nil {
-			return nil, err
-		}
-		q := service.RecordQuery{From: from, To: to, Limit: in.Limit, Newest: in.Newest}
-		for _, t := range in.Types {
-			q.Types = append(q.Types, haccp.RecordType(t))
-		}
+		q.Limit, q.Newest = in.Limit, in.Newest
 		recs, err := s.svc.ListRecords(ctx, principal(ctx), q)
 		if err != nil {
 			return nil, err
@@ -265,26 +297,23 @@ func (s *Server) haccpRoutes() {
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "export-records", Method: http.MethodGet, Path: "/haccp/export", Tags: []string{"HACCP"},
-		Summary: "Export HACCP records as CSV for an inspection",
+		Summary:     "Export HACCP records as CSV for an inspection",
+		Description: "Takes the same filters as listing records. Rows are oldest first and carry record IDs and hashes, so the export can be checked against kishtin haccp verify.",
 		Responses: map[string]*huma.Response{"200": {
 			Description: "CSV of the records in the range.",
 			Content:     map[string]*huma.MediaType{"text/csv": {Schema: &huma.Schema{Type: "string"}}},
 		}},
 	}, wrap(s, func(ctx context.Context, in *exportIn) (*csvOut, error) {
-		from, err := parseWhen(in.From, false)
-		if err != nil {
-			return nil, err
-		}
-		to, err := parseWhen(in.To, true)
+		q, err := query(in.From, in.To, in.Types, in.Outcomes)
 		if err != nil {
 			return nil, err
 		}
 		var buf bytes.Buffer
-		sum, err := s.svc.ExportRecordsCSV(ctx, principal(ctx), from, to, &buf)
+		sum, err := s.svc.ExportRecordsCSV(ctx, principal(ctx), q, &buf)
 		if err != nil {
 			return nil, err
 		}
-		name := fmt.Sprintf("kishtin-haccp-%s-to-%s.csv", in.From, in.To)
+		name := fmt.Sprintf("haccp-records-%s.csv", time.Now().In(clock.Dublin).Format(haccp.DateLayout))
 		return &csvOut{
 			ContentType:        "text/csv; charset=utf-8",
 			ContentDisposition: fmt.Sprintf("attachment; filename=%q", safeFilename(name)),

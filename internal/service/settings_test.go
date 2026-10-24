@@ -57,7 +57,7 @@ func TestRulesBorderline(t *testing.T) {
 	f := setup(t)
 	ctx := context.Background()
 	delivery := NewRecord{Type: haccp.RecordDelivery, Reading: haccp.Reading{
-		Supplier: "Synthetic Dairy Ltd", Product: "Cream", DeliveryKind: haccp.DeliveryChilled, TempC: fp(6.5),
+		Supplier: "Synthetic Dairy Ltd", Product: "Cream", DeliveryKind: haccp.DeliveryChilled, TempC: fp(6.5), PackagingOK: bt(true), InDate: bt(true),
 	}}
 	_, err := f.svc.LogRecord(ctx, f.cook, delivery)
 	assert.Equal(t, KindInvalid, KindOf(err), "borderline needs an action by default")
@@ -97,7 +97,9 @@ func TestRulesBorderline(t *testing.T) {
 func TestListsAndListedNames(t *testing.T) {
 	f := setup(t)
 	ctx := context.Background()
-	_, err := f.svc.LogRecord(ctx, f.cook, fridge(3.0)) // "Walk-in"
+	_, err := f.svc.Lists().Save(ctx, f.manager, SettingsChange[haccp.Lists]{Value: haccp.Lists{}, Reason: "Start empty"})
+	require.NoError(t, err)
+	_, err = f.svc.LogRecord(ctx, f.cook, fridge(3.0)) // "Walk-in fridge"
 	require.NoError(t, err)
 	walkin := fridge(3.0)
 	walkin.Reading.Unit = "Walkin"
@@ -105,7 +107,7 @@ func TestListsAndListedNames(t *testing.T) {
 	require.NoError(t, err, "any name is accepted while the list is empty")
 
 	lists := haccp.Lists{
-		Units:          []haccp.Unit{{Name: "Walk-in", Kind: haccp.RecordFridge}, {Name: "Fish fridge", Kind: haccp.RecordFridge}},
+		Units:          []haccp.Unit{{Name: "Walk-in fridge", Kind: haccp.RecordFridge}, {Name: "Fish fridge", Kind: haccp.RecordFridge}},
 		FoodCategories: []string{"poultry"},
 	}
 	pv, err := f.svc.Lists().Preview(ctx, f.manager, SettingsChange[haccp.Lists]{Value: lists, Reason: "Name our fridges"})
@@ -122,10 +124,10 @@ func TestListsAndListedNames(t *testing.T) {
 	assert.Contains(t, err.Error(), "not on the fridge list")
 
 	lower := fridge(3.0)
-	lower.Reading.Unit = "walk-IN"
+	lower.Reading.Unit = "walk-in FRIDGE"
 	rec, err := f.svc.LogRecord(ctx, f.cook, lower)
 	require.NoError(t, err)
-	assert.Equal(t, "Walk-in", rec.Reading.Unit, "the listed spelling is saved")
+	assert.Equal(t, "Walk-in fridge", rec.Reading.Unit, "the listed spelling is saved")
 
 	_, err = f.svc.CreateLimit(ctx, f.manager, NewLimit{Check: haccp.CheckFridge, Scope: haccp.Scope{Kind: haccp.ScopeUnit, Ref: "Bar fridge"}, MaxC: fp(4), Reason: "x"})
 	assert.Equal(t, KindInvalid, KindOf(err), "limit scopes use listed names too")

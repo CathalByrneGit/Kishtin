@@ -37,6 +37,22 @@
         ],
         "type": "object"
       },
+      "ActionPreset": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "type": "object"
+      },
       "Backup": {
         "additionalProperties": false,
         "properties": {
@@ -95,6 +111,26 @@
         },
         "required": [
           "backups"
+        ],
+        "type": "object"
+      },
+      "BatchToday": {
+        "additionalProperties": false,
+        "properties": {
+          "record": {
+            "$ref": "#/components/schemas/Record"
+          },
+          "status": {
+            "type": "string"
+          },
+          "use_by": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "record",
+          "use_by",
+          "status"
         ],
         "type": "object"
       },
@@ -170,11 +206,45 @@
         ],
         "type": "object"
       },
+      "CheckTime": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "from"
+        ],
+        "type": "object"
+      },
       "CleaningTask": {
         "additionalProperties": false,
         "properties": {
           "area": {
             "type": "string"
+          },
+          "task": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "type": "object"
+      },
+      "CleaningToday": {
+        "additionalProperties": false,
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "record": {
+            "$ref": "#/components/schemas/Record"
           },
           "task": {
             "type": "string"
@@ -643,6 +713,15 @@
               "null"
             ]
           },
+          "corrective_actions": {
+            "items": {
+              "$ref": "#/components/schemas/ActionPreset"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "food_categories": {
             "items": {
               "type": "string"
@@ -665,7 +744,8 @@
         "required": [
           "units",
           "food_categories",
-          "cleaning_tasks"
+          "cleaning_tasks",
+          "corrective_actions"
         ],
         "type": "object"
       },
@@ -896,6 +976,9 @@
             "format": "int64",
             "type": "integer"
           },
+          "in_date": {
+            "type": "boolean"
+          },
           "into_fridge_at": {
             "format": "date-time",
             "type": "string"
@@ -906,11 +989,18 @@
           "notes": {
             "type": "string"
           },
+          "packaging_ok": {
+            "type": "boolean"
+          },
           "product": {
             "type": "string"
           },
           "quantity": {
             "type": "string"
+          },
+          "shelf_life_days": {
+            "format": "int64",
+            "type": "integer"
           },
           "supplier": {
             "type": "string"
@@ -1438,6 +1528,32 @@
         ],
         "type": "object"
       },
+      "SlotToday": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "record": {
+            "$ref": "#/components/schemas/Record"
+          },
+          "status": {
+            "type": "string"
+          },
+          "until": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "from",
+          "status"
+        ],
+        "type": "object"
+      },
       "StaffEntry": {
         "additionalProperties": false,
         "properties": {
@@ -1502,9 +1618,13 @@
           "preview_records": {
             "format": "int64",
             "type": "integer"
+          },
+          "restaurant_name": {
+            "type": "string"
           }
         },
         "required": [
+          "restaurant_name",
           "backup_interval_minutes",
           "backup_keep",
           "max_upload_mb",
@@ -1530,9 +1650,113 @@
         ],
         "type": "object"
       },
+      "TodayView": {
+        "additionalProperties": false,
+        "properties": {
+          "batches": {
+            "items": {
+              "$ref": "#/components/schemas/BatchToday"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "cleaning": {
+            "items": {
+              "$ref": "#/components/schemas/CleaningToday"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "corrective_actions": {
+            "items": {
+              "$ref": "#/components/schemas/ActionPreset"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "done": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "needs_attention": {
+            "items": {
+              "$ref": "#/components/schemas/Record"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "out_of_limit": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "percent": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "restaurant_name": {
+            "type": "string"
+          },
+          "ring": {
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/UnitToday"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "without_action": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "restaurant_name",
+          "corrective_actions",
+          "date",
+          "units",
+          "cleaning",
+          "done",
+          "total",
+          "percent",
+          "out_of_limit",
+          "without_action",
+          "ring",
+          "needs_attention",
+          "batches"
+        ],
+        "type": "object"
+      },
       "Unit": {
         "additionalProperties": false,
         "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/CheckTime"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "kind": {
             "type": "string"
           },
@@ -1546,6 +1770,39 @@
         "required": [
           "name",
           "kind"
+        ],
+        "type": "object"
+      },
+      "UnitToday": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/LimitVersion"
+          },
+          "name": {
+            "type": "string"
+          },
+          "non_food": {
+            "type": "boolean"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/SlotToday"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "limit",
+          "slots"
         ],
         "type": "object"
       },
@@ -2095,28 +2352,59 @@
     },
     "/haccp/export": {
       "get": {
+        "description": "Takes the same filters as listing records. Rows are oldest first and carry record IDs and hashes, so the export can be checked against kishtin haccp verify.",
         "operationId": "export-records",
         "parameters": [
           {
-            "description": "Start date (2026-05-01) or RFC 3339 time.",
+            "description": "Start date (2026-05-01, Dublin time) or RFC 3339 time. Empty: from the first record.",
             "explode": false,
             "in": "query",
             "name": "from",
-            "required": true,
             "schema": {
-              "description": "Start date (2026-05-01) or RFC 3339 time.",
+              "description": "Start date (2026-05-01, Dublin time) or RFC 3339 time. Empty: from the first record.",
               "type": "string"
             }
           },
           {
-            "description": "End date, inclusive, or RFC 3339 time, exclusive.",
+            "description": "End date, inclusive, or RFC 3339 time, exclusive. Empty: up to now.",
             "explode": false,
             "in": "query",
             "name": "to",
-            "required": true,
             "schema": {
-              "description": "End date, inclusive, or RFC 3339 time, exclusive.",
+              "description": "End date, inclusive, or RFC 3339 time, exclusive. Empty: up to now.",
               "type": "string"
+            }
+          },
+          {
+            "description": "Only these record types.",
+            "explode": false,
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "description": "Only these record types.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Only these outcomes: pass, borderline, fail, recorded.",
+            "explode": false,
+            "in": "query",
+            "name": "outcome",
+            "schema": {
+              "description": "Only these outcomes: pass, borderline, fail, recorded.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
             }
           }
         ],
@@ -2389,6 +2677,22 @@
             }
           },
           {
+            "description": "Only these outcomes: pass, borderline, fail, recorded.",
+            "explode": false,
+            "in": "query",
+            "name": "outcome",
+            "schema": {
+              "description": "Only these outcomes: pass, borderline, fail, recorded.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
             "description": "At most this many records (default and maximum 1000).",
             "explode": false,
             "in": "query",
@@ -2516,6 +2820,38 @@
           }
         },
         "summary": "Get one HACCP record",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
+    "/haccp/today": {
+      "get": {
+        "description": "Each fridge and freezer check (done, due or missed), the cleaning checklist, the share of checks done, today's out-of-limit records and batches in use.",
+        "operationId": "today",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show today's checks",
         "tags": [
           "HACCP"
         ]

@@ -8,6 +8,7 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
+	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
 
@@ -270,6 +271,7 @@ func (s *Service) CreateUser(ctx context.Context, p *auth.Principal, nu NewUser)
 	if err := s.st.Users().CreateUser(ctx, u); err != nil {
 		return auth.User{}, mapStoreErr(err, "a user with that name")
 	}
+	s.publish(events.KindStaff, u.ID)
 	return u, nil
 }
 
@@ -333,6 +335,9 @@ func (s *Service) UpdateUser(ctx context.Context, p *auth.Principal, id string, 
 		out = u
 		return nil
 	})
+	if err == nil {
+		s.publish(events.KindStaff, out.ID)
+	}
 	return out, err
 }
 

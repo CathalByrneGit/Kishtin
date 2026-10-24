@@ -30,6 +30,7 @@ SELECT * FROM haccp_records
 WHERE logged_at >= @from_us AND logged_at < @to_us
   -- types_csv is a comma-separated list of record types; empty means all.
   AND (CAST(@types_csv AS TEXT) = '' OR instr(',' || @types_csv || ',', ',' || type || ',') > 0)
+  AND (CAST(@outcomes_csv AS TEXT) = '' OR instr(',' || @outcomes_csv || ',', ',' || outcome || ',') > 0)
 ORDER BY logged_at, seq
 LIMIT @max_rows;
 
@@ -38,5 +39,6 @@ SELECT * FROM haccp_records
 WHERE logged_at >= @from_us AND logged_at < @to_us
   -- types_csv is a comma-separated list of record types; empty means all.
   AND (CAST(@types_csv AS TEXT) = '' OR instr(',' || @types_csv || ',', ',' || type || ',') > 0)
+  AND (CAST(@outcomes_csv AS TEXT) = '' OR instr(',' || @outcomes_csv || ',', ',' || outcome || ',') > 0)
 ORDER BY logged_at DESC, seq DESC
 LIMIT @max_rows;

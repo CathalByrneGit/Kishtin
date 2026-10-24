@@ -193,15 +193,17 @@ SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, ou
 WHERE logged_at >= ?1 AND logged_at < ?2
   -- types_csv is a comma-separated list of record types; empty means all.
   AND (CAST(?3 AS TEXT) = '' OR instr(',' || ?3 || ',', ',' || type || ',') > 0)
+  AND (CAST(?4 AS TEXT) = '' OR instr(',' || ?4 || ',', ',' || outcome || ',') > 0)
 ORDER BY logged_at DESC, seq DESC
-LIMIT ?4
+LIMIT ?5
 `
 
 type ListRecordsNewestParams struct {
-	FromUs   int64
-	ToUs     int64
-	TypesCsv string
-	MaxRows  int64
+	FromUs      int64
+	ToUs        int64
+	TypesCsv    string
+	OutcomesCsv string
+	MaxRows     int64
 }
 
 func (q *Queries) ListRecordsNewest(ctx context.Context, arg ListRecordsNewestParams) ([]HaccpRecord, error) {
@@ -209,6 +211,7 @@ func (q *Queries) ListRecordsNewest(ctx context.Context, arg ListRecordsNewestPa
 		arg.FromUs,
 		arg.ToUs,
 		arg.TypesCsv,
+		arg.OutcomesCsv,
 		arg.MaxRows,
 	)
 	if err != nil {
@@ -255,15 +258,17 @@ SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, ou
 WHERE logged_at >= ?1 AND logged_at < ?2
   -- types_csv is a comma-separated list of record types; empty means all.
   AND (CAST(?3 AS TEXT) = '' OR instr(',' || ?3 || ',', ',' || type || ',') > 0)
+  AND (CAST(?4 AS TEXT) = '' OR instr(',' || ?4 || ',', ',' || outcome || ',') > 0)
 ORDER BY logged_at, seq
-LIMIT ?4
+LIMIT ?5
 `
 
 type ListRecordsOldestParams struct {
-	FromUs   int64
-	ToUs     int64
-	TypesCsv string
-	MaxRows  int64
+	FromUs      int64
+	ToUs        int64
+	TypesCsv    string
+	OutcomesCsv string
+	MaxRows     int64
 }
 
 func (q *Queries) ListRecordsOldest(ctx context.Context, arg ListRecordsOldestParams) ([]HaccpRecord, error) {
@@ -271,6 +276,7 @@ func (q *Queries) ListRecordsOldest(ctx context.Context, arg ListRecordsOldestPa
 		arg.FromUs,
 		arg.ToUs,
 		arg.TypesCsv,
+		arg.OutcomesCsv,
 		arg.MaxRows,
 	)
 	if err != nil {

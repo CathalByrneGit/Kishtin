@@ -65,14 +65,21 @@ func testLists() Lists {
 func TestListsValidate(t *testing.T) {
 	require.NoError(t, testLists().Validate())
 	require.NoError(t, DefaultLists().Validate())
+	require.NoError(t, emptyLists().Validate())
 
 	bad := map[string]Lists{
-		"duplicate unit":   {Units: []Unit{{Name: "Walk-in", Kind: RecordFridge}, {Name: "walk-in", Kind: RecordFreezer}}},
-		"unit kind":        {Units: []Unit{{Name: "Oven", Kind: RecordCook}}},
-		"empty category":   {FoodCategories: []string{""}},
-		"duplicate task":   {CleaningTasks: []CleaningTask{{Task: "Mop"}, {Task: "MOP"}}},
-		"empty task":       {CleaningTasks: []CleaningTask{{Area: "Floor"}}},
-		"blank after trim": Lists{FoodCategories: []string{"  "}}.Normalize(),
+		"duplicate unit":      {Units: []Unit{{Name: "Walk-in", Kind: RecordFridge}, {Name: "walk-in", Kind: RecordFreezer}}},
+		"unit kind":           {Units: []Unit{{Name: "Oven", Kind: RecordCook}}},
+		"empty category":      {FoodCategories: []string{""}},
+		"duplicate task":      {CleaningTasks: []CleaningTask{{Task: "Mop"}, {Task: "MOP"}}},
+		"empty task":          {CleaningTasks: []CleaningTask{{Area: "Floor"}}},
+		"blank after trim":    Lists{FoodCategories: []string{"  "}}.Normalize(),
+		"checks out of order": {Units: []Unit{{Name: "A", Kind: RecordFridge, Checks: []CheckTime{{"Late", "14:00"}, {"Early", "08:00"}}}}},
+		"check bad time":      {Units: []Unit{{Name: "A", Kind: RecordFridge, Checks: []CheckTime{{"Open", "8am"}}}}},
+		"check no label":      {Units: []Unit{{Name: "A", Kind: RecordFridge, Checks: []CheckTime{{"", "08:00"}}}}},
+		"check label twice":   {Units: []Unit{{Name: "A", Kind: RecordFridge, Checks: []CheckTime{{"Open", "08:00"}, {"open", "09:00"}}}}},
+		"preset bad type":     {CorrectiveActions: []ActionPreset{{Type: "nope", Text: "x"}}},
+		"preset twice":        {CorrectiveActions: []ActionPreset{{RecordCook, "Discarded"}, {RecordCook, "discarded"}}},
 	}
 	for name, l := range bad {
 		t.Run(name, func(t *testing.T) { assert.Error(t, l.Validate()) })
@@ -98,7 +105,7 @@ func TestListsApply(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Walkin", r.Unit, "unlisted names are allowed when the rule is off")
 
-	r, err = DefaultLists().Apply(RecordFridge, Reading{Unit: "Anything"}, strict)
+	r, err = emptyLists().Apply(RecordFridge, Reading{Unit: "Anything"}, strict)
 	require.NoError(t, err)
 	assert.Equal(t, "Anything", r.Unit, "an empty list accepts any name")
 
@@ -121,4 +128,20 @@ func TestListsApply(t *testing.T) {
 	sc, err = l.ApplyScope(CheckCook, Scope{Kind: ScopeDish, Ref: "Anything"}, strict)
 	require.NoError(t, err)
 	assert.Equal(t, "Anything", sc.Ref, "dishes are not listed yet")
+}
+
+func TestDefaultListsMatchPrototype(t *testing.T) {
+	l := DefaultLists()
+	require.Len(t, l.Units, 3)
+	assert.Equal(t, "Walk-in fridge", l.Units[0].Name)
+	assert.Equal(t, RecordFreezer, l.Units[2].Kind)
+	assert.Len(t, l.CleaningTasks, 6)
+	assert.Equal(t, DefaultChecks(), l.Units[0].ChecksOrDefault())
+	var freezer []string
+	for _, a := range l.CorrectiveActions {
+		if a.Type == RecordFreezer {
+			freezer = append(freezer, a.Text)
+		}
+	}
+	assert.Contains(t, freezer, "Called fridge engineer", "freezers share the fridge presets")
 }

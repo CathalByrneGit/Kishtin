@@ -20,7 +20,7 @@ var recordTypes = []string{"fridge", "freezer", "delivery", "cook", "reheat", "c
 
 func (c *cli) haccpCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "haccp", Short: "Log, list, verify and export HACCP records"}
-	cmd.AddCommand(c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd())
+	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd())
 	return cmd
 }
 
@@ -33,6 +33,8 @@ type readingFlags struct {
 	supplier, product, kind, docket            string
 	madeOn, useBy, quantity, task, area, notes string
 	done, notDone                              bool
+	packagingOK, inDate                        bool
+	shelfLife                                  int
 	action, corrects, reason                   string
 	dryRun                                     bool
 }
@@ -52,6 +54,9 @@ func (f *readingFlags) register(cmd *cobra.Command) {
 	fl.StringVar(&f.product, "product", "", "delivery or batch label: product")
 	fl.StringVar(&f.kind, "kind", "", "delivery: chilled, frozen or ambient")
 	fl.StringVar(&f.docket, "docket", "", "delivery: path to a docket photo or PDF to attach")
+	fl.BoolVar(&f.packagingOK, "packaging-ok", false, "delivery: packaging intact (required: --packaging-ok or --packaging-ok=false)")
+	fl.BoolVar(&f.inDate, "in-date", false, "delivery: in date (required: --in-date or --in-date=false)")
+	fl.IntVar(&f.shelfLife, "shelf-life", 0, "batch label: shelf life in days, instead of --use-by")
 	fl.StringVar(&f.madeOn, "made-on", "", "batch label: date made (2026-05-01)")
 	fl.StringVar(&f.useBy, "use-by", "", "batch label: use-by date")
 	fl.StringVar(&f.quantity, "quantity", "", "batch label: quantity")
@@ -104,6 +109,15 @@ func (f *readingFlags) build(cmd *cobra.Command, c *cli, typ string) (*client.Ne
 	}
 	if cmd.Flags().Changed("temp-at-cutoff") {
 		r.TempAtCutoffC = runtime.Ptr(f.tempAtCutoff)
+	}
+	if cmd.Flags().Changed("packaging-ok") {
+		r.PackagingOk = runtime.Ptr(f.packagingOK)
+	}
+	if cmd.Flags().Changed("in-date") {
+		r.InDate = runtime.Ptr(f.inDate)
+	}
+	if cmd.Flags().Changed("shelf-life") {
+		r.ShelfLifeDays = runtime.Ptr(int64(f.shelfLife))
 	}
 	if cmd.Flags().Changed("hold") {
 		r.HoldSeconds = runtime.Ptr(int64(f.hold / time.Second))
@@ -171,6 +185,65 @@ func outcomeText(o string) string {
 	return strings.ToUpper(o)
 }
 
+func (c *cli) todayCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "today",
+		Short: "Show today's checks: done, due, missed and out of limit",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			td, err := c.api.Today(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(td, func(w io.Writer) {
+				title := td.Date
+				if td.RestaurantName != "" {
+					title = td.RestaurantName + ", " + title
+				}
+				fmt.Fprintf(w, "%s: %d of %d checks done (%d%%)\n", title, td.Done, td.Total, td.Percent)
+				switch {
+				case td.OutOfLimit == 0:
+					fmt.Fprintln(w, "No out-of-limit readings today.")
+				case td.WithoutAction == 0:
+					fmt.Fprintf(w, "%d out-of-limit readings today, each with an action recorded.\n", td.OutOfLimit)
+				default:
+					fmt.Fprintf(w, "%d out-of-limit readings today, %d without an action.\n", td.OutOfLimit, td.WithoutAction)
+				}
+				fmt.Fprintln(w)
+				var rows [][]string
+				for _, u := range td.Units {
+					for _, sl := range u.Slots {
+						state := strings.ToUpper(sl.Status)
+						if sl.Record != nil {
+							state = tempOf(*sl.Record) + " " + outcomeText(sl.Record.Outcome)
+						}
+						rows = append(rows, []string{u.Name, u.Kind, sl.Label, state})
+					}
+				}
+				table(w, "UNIT\tKIND\tCHECK\tSTATUS", rows)
+				fmt.Fprintln(w)
+				rows = nil
+				for _, ct := range td.Cleaning {
+					state := "not done"
+					if ct.Record != nil {
+						state = "done " + local(ct.Record.LoggedAt) + " by " + ct.Record.LoggedByName
+					}
+					rows = append(rows, []string{ct.Task, state})
+				}
+				table(w, "CLEANING\tSTATUS", rows)
+				if len(td.Batches) > 0 {
+					fmt.Fprintln(w)
+					rows = nil
+					for _, b := range td.Batches {
+						rows = append(rows, []string{deref(b.Record.Reading.Product), b.UseBy, strings.ToUpper(strings.ReplaceAll(b.Status, "_", " "))})
+					}
+					table(w, "BATCH\tUSE BY\tSTATUS", rows)
+				}
+			})
+		},
+	}
+}
+
 func (c *cli) logCmd() *cobra.Command {
 	var f readingFlags
 	cmd := &cobra.Command{
@@ -181,10 +254,11 @@ func (c *cli) logCmd() *cobra.Command {
 			"Examples:\n" +
 			"  kishtin haccp log fridge --unit \"Walk-in\" --temp 3.4\n" +
 			"  kishtin haccp log cook --food \"Chicken thighs\" --category poultry --temp 78\n" +
-			"  kishtin haccp log delivery --supplier \"Synthetic Meats\" --product Chicken --kind chilled --temp 3.1 --docket docket.jpg\n" +
+			"  kishtin haccp log delivery --supplier \"Synthetic Meats\" --product Chicken --kind chilled --temp 3.1 \\\n" +
+			"      --packaging-ok --in-date --docket docket.jpg\n" +
 			"  kishtin haccp log cooling --food \"Beef stew\" --cooked-at 14:00 --into-fridge-at 15:30\n" +
-			"  kishtin haccp log batch_label --product \"Grape soda syrup\" --made-on 2026-05-01 --use-by 2026-05-07\n" +
-			"  kishtin haccp log cleaning --task \"Deep clean fryer\" --done",
+			"  kishtin haccp log batch_label --product \"Grape soda syrup\" --made-on 2026-05-01 --shelf-life 5\n" +
+			"  kishtin haccp log cleaning --task \"Floors swept & mopped\" --done",
 		Args:      cobra.ExactArgs(1),
 		ValidArgs: recordTypes,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -372,12 +446,15 @@ func (c *cli) verifyCmd() *cobra.Command {
 
 func (c *cli) exportCmd() *cobra.Command {
 	var from, to, outPath string
-	var limits bool
+	var limits, fails bool
+	var types []string
 	cmd := &cobra.Command{
 		Use:   "export",
 		Short: "Export HACCP records as CSV for an inspection",
-		Long:  "export writes the records logged between --from and --to (inclusive dates) as CSV.\nWith --limits it writes the full limit history instead.",
-		Args:  cobra.NoArgs,
+		Long: "export writes HACCP records as CSV, oldest first, with record IDs and hashes so the\n" +
+			"file can be checked later. --from and --to are inclusive dates; leave them out for all\n" +
+			"records. With --limits it writes the full limit history instead.",
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			var body []byte
 			var summary string
@@ -388,12 +465,17 @@ func (c *cli) exportCmd() *cobra.Command {
 				}
 				body, summary = res.Body, "Limit history exported."
 			} else {
-				if from == "" || to == "" {
-					return fmt.Errorf("set --from and --to, such as --from 2026-05-01 --to 2026-05-31")
+				q := &client.ExportRecordsQuery{Type: types}
+				if from != "" {
+					q.From = &from
 				}
-				res, err := c.api.ExportRecordsWithResponse(cmd.Context(), &client.ExportRecordsRequestOptions{
-					Query: &client.ExportRecordsQuery{From: from, To: to},
-				})
+				if to != "" {
+					q.To = &to
+				}
+				if fails {
+					q.Outcome = []string{"borderline", "fail"}
+				}
+				res, err := c.api.ExportRecordsWithResponse(cmd.Context(), &client.ExportRecordsRequestOptions{Query: q})
 				if err != nil {
 					return apiErr(err)
 				}
@@ -421,5 +503,7 @@ func (c *cli) exportCmd() *cobra.Command {
 	cmd.Flags().StringVar(&to, "to", "", "end date, inclusive")
 	cmd.Flags().StringVarP(&outPath, "output", "o", "", "write to this file instead of standard output")
 	cmd.Flags().BoolVar(&limits, "limits", false, "export the limit history instead of records")
+	cmd.Flags().StringSliceVar(&types, "type", nil, "only these record types")
+	cmd.Flags().BoolVar(&fails, "fails", false, "only failed and borderline records")
 	return cmd
 }

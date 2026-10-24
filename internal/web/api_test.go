@@ -19,6 +19,7 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
+	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
 	"github.com/cathalbyrnegit/kishtin/internal/service"
@@ -44,7 +45,7 @@ func newEnv(t *testing.T) *env {
 	fs, err := files.New(filepath.Join(dir, "files"))
 	require.NoError(t, err)
 	clk := clock.NewFixed(time.Date(2026, 5, 1, 9, 0, 0, 0, time.UTC))
-	svc := service.New(service.Options{Store: st, Clock: clk, Files: fs, Backups: service.BackupConfig{
+	svc := service.New(service.Options{Store: st, Clock: clk, Files: fs, Events: events.NewHub(), Backups: service.BackupConfig{
 		Dir:  filepath.Join(dir, "backups"),
 		Open: func(ctx context.Context, p string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, p) },
 	}})
@@ -129,7 +130,7 @@ func TestDeviceLoginAndLogRecord(t *testing.T) {
 	require.Len(t, staff.Staff, 2)
 
 	r := e.do(t, http.MethodPost, "/api/haccp/records", e.deviceKey, "", map[string]any{
-		"type": "fridge", "reading": map[string]any{"unit": "Walk-in", "temp_c": 3.4},
+		"type": "fridge", "reading": map[string]any{"unit": "Walk-in fridge", "temp_c": 3.4},
 	})
 	assert.Equal(t, http.StatusUnauthorized, r.status, "a device key alone cannot log records")
 
@@ -147,20 +148,20 @@ func TestDeviceLoginAndLogRecord(t *testing.T) {
 	assert.Equal(t, "Liam Cook", me.User.Name)
 
 	r = e.do(t, http.MethodPost, "/api/haccp/check", e.deviceKey, login.Token, map[string]any{
-		"type": "fridge", "reading": map[string]any{"unit": "Walk-in", "temp_c": 6.2},
+		"type": "fridge", "reading": map[string]any{"unit": "Walk-in fridge", "temp_c": 6.2},
 	})
 	require.Equal(t, http.StatusOK, r.status, string(r.body))
 	chk := decode[service.Check](t, r)
 	assert.Equal(t, haccp.OutcomeFail, chk.Result.Outcome)
 
 	r = e.do(t, http.MethodPost, "/api/haccp/records", e.deviceKey, login.Token, map[string]any{
-		"type": "fridge", "reading": map[string]any{"unit": "Walk-in", "temp_c": 6.2},
+		"type": "fridge", "reading": map[string]any{"unit": "Walk-in fridge", "temp_c": 6.2},
 	})
 	assert.Equal(t, http.StatusUnprocessableEntity, r.status)
 	assert.Contains(t, string(r.body), "Add a corrective action")
 
 	r = e.do(t, http.MethodPost, "/api/haccp/records", e.deviceKey, login.Token, map[string]any{
-		"type": "fridge", "reading": map[string]any{"unit": "Walk-in", "temp_c": 3.4},
+		"type": "fridge", "reading": map[string]any{"unit": "Walk-in fridge", "temp_c": 3.4},
 	})
 	require.Equal(t, http.StatusCreated, r.status, string(r.body))
 	rec := decode[haccp.Record](t, r)
@@ -183,7 +184,7 @@ func TestManagerFlows(t *testing.T) {
 	key := e.mgrKey
 	for _, temp := range []float64{3.4, 4.6} {
 		r := e.do(t, http.MethodPost, "/api/haccp/records", key, "", map[string]any{
-			"type": "fridge", "reading": map[string]any{"unit": "Walk-in", "temp_c": temp},
+			"type": "fridge", "reading": map[string]any{"unit": "Walk-in fridge", "temp_c": temp},
 		})
 		require.Equal(t, http.StatusCreated, r.status, string(r.body))
 	}
@@ -213,7 +214,7 @@ func TestManagerFlows(t *testing.T) {
 	assert.Len(t, rows, 3)
 
 	limit := map[string]any{
-		"check": "fridge", "scope": map[string]any{"kind": "unit", "ref": "Walk-in"},
+		"check": "fridge", "scope": map[string]any{"kind": "unit", "ref": "Walk-in fridge"},
 		"max_c": 4.0, "reason": "Fish stored in the walk-in",
 	}
 	pv := decode[service.LimitPreview](t, e.do(t, http.MethodPost, "/api/haccp/limits/preview", key, "", limit))

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,6 +21,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/cathalbyrnegit/kishtin/internal/config"
+	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
 	"github.com/cathalbyrnegit/kishtin/internal/service"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
@@ -106,6 +108,7 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 		Store:  st,
 		Files:  fs,
 		System: cfg.SystemSettings(),
+		Events: events.NewHub(),
 		Backups: service.BackupConfig{
 			Dir:  cfg.Backup.Dir,
 			Open: func(ctx context.Context, path string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, path) },
@@ -159,6 +162,8 @@ func serve(ctx context.Context, cfgPath string) error {
 		ReadTimeout:       2 * time.Minute,
 		WriteTimeout:      2 * time.Minute,
 		IdleTimeout:       2 * time.Minute,
+		// Requests end when the server stops, which closes live streams.
+		BaseContext: func(net.Listener) context.Context { return ctx },
 	}
 
 	go a.svc.RunBackups(ctx, log)

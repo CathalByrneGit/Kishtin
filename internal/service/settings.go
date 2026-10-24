@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
+	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
@@ -311,6 +312,9 @@ func (g *Group[T]) Save(ctx context.Context, p *auth.Principal, ch SettingsChang
 		out = Versioned[T]{Version: v, Value: pv.Proposed}
 		return nil
 	})
+	if err == nil {
+		g.s.publish(events.KindSettings, string(g.spec.kind))
+	}
 	return out, err
 }
 

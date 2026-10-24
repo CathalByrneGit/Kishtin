@@ -51,6 +51,15 @@ const (
 	OutcomeRecorded Outcome = "recorded"
 )
 
+// Valid reports whether o is a known outcome.
+func (o Outcome) Valid() bool {
+	switch o {
+	case OutcomePass, OutcomeBorderline, OutcomeFail, OutcomeRecorded:
+		return true
+	}
+	return false
+}
+
 // tenths converts a temperature to whole tenths of a degree. Readings and
 // limits are compared in tenths so 5.0 and 4.99999 behave the same as a
 // person reading the probe would expect.

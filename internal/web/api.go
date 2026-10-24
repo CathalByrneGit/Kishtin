@@ -67,6 +67,7 @@ func New(svc *service.Service, log *slog.Logger) (*Server, error) {
 	}
 	s.specJSON = spec
 	mux.HandleFunc("GET /api/openapi.json", s.serveSpec)
+	mux.HandleFunc("GET /api/events", s.serveEvents)
 	mux.HandleFunc("GET /{$}", serveHome)
 	return s, nil
 }

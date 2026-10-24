@@ -34,6 +34,8 @@ func (k Kind) Valid() bool { return slices.Contains(Kinds, k) }
 // address and TLS stay in kishtin.toml: they decide where files go and who
 // can connect, so they are not changeable over the API.
 type System struct {
+	// RestaurantName is shown at the top of every screen and on exports.
+	RestaurantName string `json:"restaurant_name"`
 	// BackupIntervalMinutes is how often to back up. 0 turns scheduled
 	// backups off.
 	BackupIntervalMinutes int64 `json:"backup_interval_minutes"`
@@ -54,6 +56,9 @@ const (
 // Validate checks the system settings.
 func (s System) Validate() error {
 	var errs []error
+	if len([]rune(s.RestaurantName)) > 80 {
+		errs = append(errs, errors.New("restaurant_name is at most 80 characters"))
+	}
 	if s.BackupIntervalMinutes != 0 && s.BackupIntervalMinutes < 15 {
 		errs = append(errs, errors.New("backup_interval_minutes must be 0 (off) or at least 15"))
 	}
@@ -74,7 +79,8 @@ func (s System) Validate() error {
 
 // Changes lists, in plain words, what differs between two settings values
 // of the same type. Lists of objects with a "check", "name" or "task" field
-// are compared by that field, so adding one entry reads as one change.
+// (or a "type" and "text" pair) are compared by those fields, so adding one
+// entry reads as one change.
 func Changes(before, after any) ([]string, error) {
 	a, err := flatten(before)
 	if err != nil {
@@ -145,6 +151,12 @@ func walk(path string, v any, out map[string]string) {
 			key := fmt.Sprintf("[%d]", i)
 			switch c := child.(type) {
 			case map[string]any:
+				typ, _ := c["type"].(string)
+				text, _ := c["text"].(string)
+				if typ != "" && text != "" {
+					key = fmt.Sprintf("[%s: %s]", typ, text)
+					break
+				}
 				for _, lk := range listKeys {
 					if s, ok := c[lk].(string); ok && s != "" {
 						key = fmt.Sprintf("[%s]", s)
@@ -157,7 +169,10 @@ func walk(path string, v any, out map[string]string) {
 			walk(path+key, child, out)
 		}
 	default:
-		b, _ := json.Marshal(t)
-		out[path] = strings.TrimSpace(string(b))
+		var buf strings.Builder
+		enc := json.NewEncoder(&buf)
+		enc.SetEscapeHTML(false)
+		_ = enc.Encode(t)
+		out[path] = strings.TrimSpace(buf.String())
 	}
 }

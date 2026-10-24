@@ -18,6 +18,7 @@ import (
 
 // ExportSummary describes an export, so the numbers can be checked.
 type ExportSummary struct {
+	// From and To are the range covered; zero means open-ended.
 	From    time.Time `json:"from"`
 	To      time.Time `json:"to"`
 	Records int       `json:"records"`
@@ -32,18 +33,35 @@ var recordColumns = []string{
 	"corrects", "correction_reason", "reading_json", "prev_hash", "hash",
 }
 
-// ExportRecordsCSV writes the records logged in [from, to) as CSV for an
-// inspection. The summary includes the chain head so a copy of the export
-// can be checked against the live system later.
-func (s *Service) ExportRecordsCSV(ctx context.Context, p *auth.Principal, from, to time.Time, w io.Writer) (ExportSummary, error) {
+// exportRecords lists the records an export covers, oldest first. A zero
+// From or To leaves that end of the range open.
+func (s *Service) exportRecords(ctx context.Context, q RecordQuery) ([]haccp.Record, error) {
+	if !q.From.IsZero() && !q.To.IsZero() && !q.To.After(q.From) {
+		return nil, newErr(KindInvalid, "choose a date range with the end after the start")
+	}
+	for _, t := range q.Types {
+		if !t.Valid() {
+			return nil, newErr(KindInvalid, "unknown record type %q", t)
+		}
+	}
+	for _, o := range q.Outcomes {
+		if !o.Valid() {
+			return nil, newErr(KindInvalid, "unknown outcome %q", o)
+		}
+	}
+	return s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: q.From, To: q.To, Types: q.Types, Outcomes: q.Outcomes})
+}
+
+// ExportRecordsCSV writes the records matching q as CSV for an inspection,
+// oldest first. Limit and Newest are ignored. The summary includes the
+// chain head so a copy of the export can be checked against the live
+// system later.
+func (s *Service) ExportRecordsCSV(ctx context.Context, p *auth.Principal, q RecordQuery, w io.Writer) (ExportSummary, error) {
 	if err := allow(p, auth.ActExportHACCP); err != nil {
 		return ExportSummary{}, err
 	}
-	if from.IsZero() || to.IsZero() || !to.After(from) {
-		return ExportSummary{}, newErr(KindInvalid, "choose a date range with the end after the start")
-	}
-	sum := ExportSummary{From: from, To: to}
-	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: from, To: to})
+	sum := ExportSummary{From: q.From, To: q.To}
+	recs, err := s.exportRecords(ctx, q)
 	if err != nil {
 		return sum, err
 	}

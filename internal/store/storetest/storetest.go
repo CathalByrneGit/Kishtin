@@ -176,6 +176,13 @@ func testListRecordsFilters(t *testing.T, s store.Store) {
 	require.Len(t, byType, 1)
 	assert.Equal(t, "rec-009", byType[0].ID)
 
+	fails, err := s.HACCP().ListRecords(ctx, store.RecordFilter{Outcomes: []haccp.Outcome{haccp.OutcomeBorderline, haccp.OutcomeFail}})
+	require.NoError(t, err)
+	assert.Len(t, fails, 6, "every sample record is borderline")
+	passes, err := s.HACCP().ListRecords(ctx, store.RecordFilter{Outcomes: []haccp.Outcome{haccp.OutcomePass}})
+	require.NoError(t, err)
+	assert.Empty(t, passes)
+
 	newest, err := s.HACCP().ListRecords(ctx, store.RecordFilter{Newest: true, Limit: 2})
 	require.NoError(t, err)
 	require.Len(t, newest, 2)

@@ -56,6 +56,17 @@ func TestChanges(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, none)
 
+	type preset struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	presets, err := Changes([]preset{{"fridge", "Moved food"}}, []preset{{"freezer", "Moved food"}, {"fridge", "Moved food"}})
+	require.NoError(t, err)
+	assert.Equal(t, []string{`[freezer: Moved food].text: added "Moved food"`, `[freezer: Moved food].type: added "freezer"`}, presets)
+	amp, err := Changes(map[string]string{"a": "x"}, map[string]string{"a": "Bins & bags"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{`a: "x" → "Bins & bags"`}, amp, "no HTML escaping")
+
 	removed, err := Changes(after, before)
 	require.NoError(t, err)
 	assert.Contains(t, removed, `entries[Bar].name: removed (was "Bar")`)

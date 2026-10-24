@@ -302,6 +302,11 @@ func (s *Store) ListRecords(ctx context.Context, f store.RecordFilter) ([]haccp.
 		types = append(types, string(t))
 	}
 	typesCSV := strings.Join(types, ",")
+	outcomes := make([]string, 0, len(f.Outcomes))
+	for _, o := range f.Outcomes {
+		outcomes = append(outcomes, string(o))
+	}
+	outcomesCSV := strings.Join(outcomes, ",")
 	limit := int64(-1) // SQLite: no limit
 	if f.Limit > 0 {
 		limit = int64(f.Limit)
@@ -310,11 +315,11 @@ func (s *Store) ListRecords(ctx context.Context, f store.RecordFilter) ([]haccp.
 	var err error
 	if f.Newest {
 		rows, err = s.r.ListRecordsNewest(ctx, sqlitedb.ListRecordsNewestParams{
-			FromUs: from, ToUs: to, TypesCsv: typesCSV, MaxRows: limit,
+			FromUs: from, ToUs: to, TypesCsv: typesCSV, OutcomesCsv: outcomesCSV, MaxRows: limit,
 		})
 	} else {
 		rows, err = s.r.ListRecordsOldest(ctx, sqlitedb.ListRecordsOldestParams{
-			FromUs: from, ToUs: to, TypesCsv: typesCSV, MaxRows: limit,
+			FromUs: from, ToUs: to, TypesCsv: typesCSV, OutcomesCsv: outcomesCSV, MaxRows: limit,
 		})
 	}
 	if err != nil {

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
+	"github.com/cathalbyrnegit/kishtin/internal/clock"
+	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
@@ -124,6 +126,17 @@ func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord
 		} else if nr.CorrectionReason != "" {
 			return newErr(KindInvalid, "correction_reason is only for a record that corrects another")
 		}
+		if nr.Type == haccp.RecordCleaning && nr.Corrects == "" && nr.Reading.Done != nil && *nr.Reading.Done {
+			from, to := s.dayBounds()
+			todays, err := tx.HACCP().ListRecords(ctx, store.RecordFilter{From: from, To: to, Types: []haccp.RecordType{haccp.RecordCleaning}})
+			if err != nil {
+				return err
+			}
+			if done := haccp.DoneToday(todays, nr.Reading.Task); done != nil {
+				return newErr(KindConflict, "%s was already done today at %s by %s", done.Reading.Task,
+					done.LoggedAt.In(clock.Dublin).Format("15:04"), done.LoggedByName)
+			}
+		}
 
 		rec := haccp.Record{
 			ID:               newID(),
@@ -154,7 +167,17 @@ func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord
 		}
 		return nil
 	})
+	if err == nil {
+		s.publish(events.KindRecord, saved.ID)
+	}
 	return saved, err
+}
+
+// dayBounds returns the start and end of today in Dublin, as UTC.
+func (s *Service) dayBounds() (time.Time, time.Time) {
+	now := s.clk.Now().In(clock.Dublin)
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, clock.Dublin)
+	return start.UTC(), start.AddDate(0, 0, 1).UTC()
 }
 
 func outcomeLabel(o haccp.Outcome) string {
@@ -183,6 +206,7 @@ func (s *Service) GetRecord(ctx context.Context, p *auth.Principal, id string) (
 type RecordQuery struct {
 	From, To time.Time
 	Types    []haccp.RecordType
+	Outcomes []haccp.Outcome
 	Limit    int
 	Newest   bool
 }
@@ -200,13 +224,18 @@ func (s *Service) ListRecords(ctx context.Context, p *auth.Principal, q RecordQu
 			return nil, newErr(KindInvalid, "unknown record type %q", t)
 		}
 	}
+	for _, o := range q.Outcomes {
+		if !o.Valid() {
+			return nil, newErr(KindInvalid, "unknown outcome %q", o)
+		}
+	}
 	if !q.From.IsZero() && !q.To.IsZero() && !q.To.After(q.From) {
 		return nil, newErr(KindInvalid, "the end of the range must be after the start")
 	}
 	if q.Limit <= 0 || q.Limit > MaxListLimit {
 		q.Limit = MaxListLimit
 	}
-	return s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: q.From, To: q.To, Types: q.Types, Limit: q.Limit, Newest: q.Newest})
+	return s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: q.From, To: q.To, Types: q.Types, Outcomes: q.Outcomes, Limit: q.Limit, Newest: q.Newest})
 }
 
 // FileProblem is an attached file that failed its check.

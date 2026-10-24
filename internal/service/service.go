@@ -12,6 +12,7 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
+	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
@@ -65,6 +66,7 @@ type Service struct {
 	// systemDefaults are the system settings from kishtin.toml, used until
 	// a change is saved.
 	systemDefaults settings.System
+	events         *events.Hub
 }
 
 // Options configures a Service.
@@ -75,6 +77,8 @@ type Options struct {
 	Backups BackupConfig
 	// System is the starting system settings, from kishtin.toml.
 	System settings.System
+	// Events receives a notice of every change, for live screens.
+	Events *events.Hub
 }
 
 // DefaultSystem returns the system settings used when none are configured.
@@ -92,8 +96,13 @@ func New(o Options) *Service {
 	if sys == (settings.System{}) {
 		sys = DefaultSystem()
 	}
-	return &Service{st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys}
+	return &Service{st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events}
 }
+
+// Events returns the hub that change notices are published to.
+func (s *Service) Events() *events.Hub { return s.events }
+
+func (s *Service) publish(kind, id string) { s.events.Publish(events.Event{Kind: kind, ID: id}) }
 
 // Init stores the built-in FSAI default limit versions and the built-in
 // guidance, rules and lists if they are missing.
