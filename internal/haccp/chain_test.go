@@ -76,7 +76,7 @@ func TestVerifyFindsFirstBreak(t *testing.T) {
 func TestHashIsStable(t *testing.T) {
 	// Pin the hash format: changing hashContent breaks every saved chain.
 	r := chain(t, 1)[0]
-	assert.Equal(t, "afa8ee3e1159d13c0b9b8f318ca4b2fd969b9c3efba6a894bd6895cffaf1ec26", r.Hash)
+	assert.Equal(t, "b3782249e23f87e6ad533e93c4f1510962d81711916d1a8660e7d4edbea05727", r.Hash)
 	r2 := r
 	r2.Hash = "ignored"
 	assert.Equal(t, r.Hash, ComputeHash(r2), "the Hash field is not hashed")

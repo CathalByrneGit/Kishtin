@@ -45,6 +45,7 @@ type HaccpRecord struct {
 	CorrectionReason string
 	PrevHash         string
 	Hash             string
+	RulesVersionID   string
 }
 
 type LimitVersion struct {
@@ -64,6 +65,17 @@ type Session struct {
 	Method    string
 	CreatedAt int64
 	ExpiresAt int64
+}
+
+type SettingsVersion struct {
+	ID         string
+	Kind       string
+	Supersedes sql.NullString
+	CreatedBy  string
+	CreatedAt  int64
+	Reason     string
+	PlanRef    string
+	Body       string
 }
 
 type User struct {

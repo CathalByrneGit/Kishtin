@@ -26,6 +26,7 @@ type hashContent struct {
 	OutcomeReason    string     `json:"outcome_reason"`
 	LimitVersionID   string     `json:"limit_version_id"`
 	LimitScope       *Scope     `json:"limit_scope"`
+	RulesVersionID   string     `json:"rules_version_id"`
 	CorrectiveAction string     `json:"corrective_action"`
 	Corrects         string     `json:"corrects"`
 	CorrectionReason string     `json:"correction_reason"`
@@ -48,6 +49,7 @@ func ComputeHash(r Record) string {
 		OutcomeReason:    r.OutcomeReason,
 		LimitVersionID:   r.LimitVersionID,
 		LimitScope:       r.LimitScope,
+		RulesVersionID:   r.RulesVersionID,
 		CorrectiveAction: r.CorrectiveAction,
 		Corrects:         r.Corrects,
 		CorrectionReason: r.CorrectionReason,

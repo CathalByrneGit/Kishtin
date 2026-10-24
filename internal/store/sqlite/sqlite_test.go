@@ -54,9 +54,12 @@ func TestTriggersBlockEdits(t *testing.T) {
 	s := newStore(t).(*Store)
 	r := haccp.Seal(haccp.Record{ID: "r1", Type: haccp.RecordCleaning, Outcome: haccp.OutcomePass}, nil)
 	require.NoError(t, s.AppendRecord(ctx, r))
+	require.NoError(t, s.AppendSettings(ctx, store.SettingsVersion{ID: "s1", Kind: "rules", Body: []byte("{}"), CreatedBy: "x", Reason: "x"}))
 	for _, q := range []string{
 		"UPDATE haccp_records SET outcome = 'fail'",
 		"DELETE FROM haccp_records",
+		"UPDATE settings_versions SET body = '{}'",
+		"DELETE FROM settings_versions",
 	} {
 		_, err := s.writer.ExecContext(ctx, q)
 		require.ErrorContains(t, err, "append-only", q)

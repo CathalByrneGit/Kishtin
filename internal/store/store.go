@@ -7,11 +7,13 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/settings"
 )
 
 // ErrNotFound is returned when a record does not exist.
@@ -27,6 +29,7 @@ type Store interface {
 	Users() UserStore
 	Auth() AuthStore
 	Files() FileStore
+	Settings() SettingsStore
 
 	// WithTx runs fn in one transaction. If fn returns an error the
 	// transaction is rolled back. Writes inside fn must use tx.
@@ -117,4 +120,28 @@ type FileStore interface {
 	PutFile(ctx context.Context, m FileMeta) error
 	GetFile(ctx context.Context, sha256 string) (FileMeta, error)
 	ListFiles(ctx context.Context) ([]FileMeta, error)
+}
+
+// SettingsVersion is one version of a group of settings, such as the
+// reference guidance. Versions are never edited: a change appends a new
+// version that supersedes the one before it.
+type SettingsVersion struct {
+	ID         string          `json:"id"`
+	Kind       settings.Kind   `json:"kind"`
+	Body       json.RawMessage `json:"-"`
+	Supersedes string          `json:"supersedes,omitempty"`
+	CreatedBy  string          `json:"created_by"`
+	CreatedAt  time.Time       `json:"created_at"`
+	Reason     string          `json:"reason"`
+	PlanRef    string          `json:"plan_ref,omitempty"`
+}
+
+// SettingsStore stores settings versions. It has no update or delete.
+type SettingsStore interface {
+	// AppendSettings returns ErrConflict if the ID is taken or the version
+	// it supersedes was already superseded.
+	AppendSettings(ctx context.Context, v SettingsVersion) error
+	GetSettings(ctx context.Context, id string) (SettingsVersion, error)
+	// ListSettings returns every version of a kind, oldest first.
+	ListSettings(ctx context.Context, kind settings.Kind) ([]SettingsVersion, error)
 }

@@ -1,9 +1,9 @@
 -- name: InsertRecord :exec
 INSERT INTO haccp_records (
     id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome,
-    outcome_reason, limit_version_id, limit_scope, corrective_action,
-    corrects, correction_reason, prev_hash, hash
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    outcome_reason, limit_version_id, limit_scope, rules_version_id,
+    corrective_action, corrects, correction_reason, prev_hash, hash
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: LastRecord :one
 SELECT * FROM haccp_records ORDER BY seq DESC LIMIT 1;

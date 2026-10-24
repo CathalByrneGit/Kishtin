@@ -19,6 +19,7 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 	"github.com/cathalbyrnegit/kishtin/internal/store/sqlite/sqlitedb"
 )
@@ -126,6 +127,9 @@ func (s *Store) Users() store.UserStore  { return s }
 func (s *Store) Auth() store.AuthStore   { return s }
 func (s *Store) Files() store.FileStore  { return s }
 
+// Settings returns the settings store.
+func (s *Store) Settings() store.SettingsStore { return s }
+
 // WithTx runs fn in an IMMEDIATE transaction on the writer connection.
 // Nested calls join the outer transaction.
 func (s *Store) WithTx(ctx context.Context, fn func(tx store.Store) error) error {
@@ -207,6 +211,7 @@ func (s *Store) AppendRecord(ctx context.Context, r haccp.Record) error {
 		OutcomeReason:    r.OutcomeReason,
 		LimitVersionID:   r.LimitVersionID,
 		LimitScope:       scope,
+		RulesVersionID:   r.RulesVersionID,
 		CorrectiveAction: r.CorrectiveAction,
 		Corrects:         r.Corrects,
 		CorrectionReason: r.CorrectionReason,
@@ -226,6 +231,7 @@ func recordFromRow(row sqlitedb.HaccpRecord) (haccp.Record, error) {
 		Outcome:          haccp.Outcome(row.Outcome),
 		OutcomeReason:    row.OutcomeReason,
 		LimitVersionID:   row.LimitVersionID,
+		RulesVersionID:   row.RulesVersionID,
 		CorrectiveAction: row.CorrectiveAction,
 		Corrects:         row.Corrects,
 		CorrectionReason: row.CorrectionReason,
@@ -610,6 +616,54 @@ func (s *Store) ListFiles(ctx context.Context) ([]store.FileMeta, error) {
 	out := make([]store.FileMeta, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, fileFromRow(row))
+	}
+	return out, nil
+}
+
+// --- Settings ---
+
+func (s *Store) AppendSettings(ctx context.Context, v store.SettingsVersion) error {
+	return mapErr(s.w.InsertSettings(ctx, sqlitedb.InsertSettingsParams{
+		ID:         v.ID,
+		Kind:       string(v.Kind),
+		Supersedes: nullStr(v.Supersedes),
+		CreatedBy:  v.CreatedBy,
+		CreatedAt:  us(v.CreatedAt),
+		Reason:     v.Reason,
+		PlanRef:    v.PlanRef,
+		Body:       string(v.Body),
+	}))
+}
+
+func settingsFromRow(row sqlitedb.SettingsVersion) store.SettingsVersion {
+	return store.SettingsVersion{
+		ID:         row.ID,
+		Kind:       settings.Kind(row.Kind),
+		Body:       []byte(row.Body),
+		Supersedes: row.Supersedes.String,
+		CreatedBy:  row.CreatedBy,
+		CreatedAt:  fromUS(row.CreatedAt),
+		Reason:     row.Reason,
+		PlanRef:    row.PlanRef,
+	}
+}
+
+func (s *Store) GetSettings(ctx context.Context, id string) (store.SettingsVersion, error) {
+	row, err := s.r.GetSettings(ctx, id)
+	if err != nil {
+		return store.SettingsVersion{}, mapErr(err)
+	}
+	return settingsFromRow(row), nil
+}
+
+func (s *Store) ListSettings(ctx context.Context, kind settings.Kind) ([]store.SettingsVersion, error) {
+	rows, err := s.r.ListSettings(ctx, string(kind))
+	if err != nil {
+		return nil, fmt.Errorf("list %s settings: %w", kind, err)
+	}
+	out := make([]store.SettingsVersion, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, settingsFromRow(row))
 	}
 	return out, nil
 }

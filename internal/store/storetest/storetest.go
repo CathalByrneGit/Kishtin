@@ -17,6 +17,7 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
 
@@ -38,6 +39,7 @@ func Run(t *testing.T, newStore Factory) {
 		"SessionsAndKeys":         testSessionsAndKeys,
 		"Files":                   testFiles,
 		"NoMutationMethods":       testNoMutationMethods,
+		"Settings":                testSettings,
 	}
 	for name, fn := range tests {
 		t.Run(name, func(t *testing.T) { fn(t, newStore(t)) })
@@ -83,6 +85,7 @@ func sampleRecord(k int) haccp.Record {
 		OutcomeReason:    "late but cool",
 		LimitVersionID:   haccp.FSAIDefaultID(haccp.CheckCooling),
 		LimitScope:       &haccp.Scope{Kind: haccp.ScopeDefault},
+		RulesVersionID:   haccp.BuiltinRulesID,
 		CorrectiveAction: "Moved to blast chiller",
 	}
 }
@@ -401,9 +404,45 @@ func testFiles(t *testing.T, s store.Store) {
 // expose a way to change or remove HACCP records or limit versions.
 func testNoMutationMethods(t *testing.T, s store.Store) {
 	h := s.HACCP()
-	typ := reflect.TypeOf(h)
-	for _, name := range []string{"UpdateRecord", "DeleteRecord", "UpdateLimitVersion", "DeleteLimitVersion", "DeleteFile"} {
-		_, has := typ.MethodByName(name)
-		assert.False(t, has, "the HACCP store must not have %s", name)
+	for _, v := range []any{h, s.Files(), s.Settings()} {
+		typ := reflect.TypeOf(v)
+		for _, name := range []string{"UpdateRecord", "DeleteRecord", "UpdateLimitVersion", "DeleteLimitVersion", "DeleteFile", "UpdateSettings", "DeleteSettings"} {
+			_, has := typ.MethodByName(name)
+			assert.False(t, has, "the store must not have %s", name)
+		}
 	}
+}
+
+func testSettings(t *testing.T, s store.Store) {
+	ctx := context.Background()
+	v1 := store.SettingsVersion{
+		ID: "rules-1", Kind: settings.KindRules, Body: []byte(`{"borderline_needs_action":true}`),
+		CreatedBy: "system", CreatedAt: t0, Reason: "Built in",
+	}
+	require.NoError(t, s.Settings().AppendSettings(ctx, v1))
+	assert.ErrorIs(t, s.Settings().AppendSettings(ctx, v1), store.ErrConflict)
+
+	v2 := v1
+	v2.ID, v2.Supersedes, v2.Body = "rules-2", "rules-1", []byte(`{"borderline_needs_action":false}`)
+	v2.CreatedBy, v2.CreatedAt, v2.Reason, v2.PlanRef = "u1", t0.Add(time.Hour), "Plan says so", "HACCP plan 2.3"
+	require.NoError(t, s.Settings().AppendSettings(ctx, v2))
+	fork := v2
+	fork.ID = "rules-2b"
+	assert.ErrorIs(t, s.Settings().AppendSettings(ctx, fork), store.ErrConflict, "a version is superseded only once")
+
+	other := store.SettingsVersion{ID: "sys-1", Kind: settings.KindSystem, Body: []byte(`{}`), CreatedBy: "u1", CreatedAt: t0, Reason: "x"}
+	require.NoError(t, s.Settings().AppendSettings(ctx, other))
+
+	got, err := s.Settings().GetSettings(ctx, "rules-2")
+	require.NoError(t, err)
+	assert.Equal(t, v2, got)
+
+	list, err := s.Settings().ListSettings(ctx, settings.KindRules)
+	require.NoError(t, err)
+	require.Len(t, list, 2)
+	assert.Equal(t, "rules-1", list[0].ID)
+	assert.JSONEq(t, `{"borderline_needs_action":false}`, string(list[1].Body))
+
+	_, err = s.Settings().GetSettings(ctx, "missing")
+	assert.ErrorIs(t, err, store.ErrNotFound)
 }

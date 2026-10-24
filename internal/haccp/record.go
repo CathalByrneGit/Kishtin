@@ -255,6 +255,9 @@ type Record struct {
 	OutcomeReason  string  `json:"outcome_reason"`
 	LimitVersionID string  `json:"limit_version_id,omitempty"`
 	LimitScope     *Scope  `json:"limit_scope,omitempty"`
+	// RulesVersionID is the food-safety rules version in force when the
+	// record was saved.
+	RulesVersionID string `json:"rules_version_id,omitempty"`
 
 	CorrectiveAction string `json:"corrective_action,omitempty"`
 	// Corrects is the ID of an earlier record this one corrects.

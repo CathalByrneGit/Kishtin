@@ -42,19 +42,14 @@ const (
 	// OutcomePass means the reading met the limit.
 	OutcomePass Outcome = "pass"
 	// OutcomeBorderline means the reading is outside the target but inside
-	// the borderline range. It needs a corrective action, like a fail.
+	// the borderline range. Rules.BorderlineNeedsAction decides whether it
+	// needs a corrective action.
 	OutcomeBorderline Outcome = "borderline"
 	// OutcomeFail means the reading broke the limit.
 	OutcomeFail Outcome = "fail"
 	// OutcomeRecorded is for records with no limit, such as batch labels.
 	OutcomeRecorded Outcome = "recorded"
 )
-
-// NeedsCorrectiveAction reports whether a record with this outcome can only
-// be saved with a corrective action.
-func (o Outcome) NeedsCorrectiveAction() bool {
-	return o == OutcomeFail || o == OutcomeBorderline
-}
 
 // tenths converts a temperature to whole tenths of a degree. Readings and
 // limits are compared in tenths so 5.0 and 4.99999 behave the same as a

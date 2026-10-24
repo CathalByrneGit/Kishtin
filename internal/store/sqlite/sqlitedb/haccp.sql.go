@@ -22,7 +22,7 @@ func (q *Queries) GetLimitVersion(ctx context.Context, id string) (string, error
 }
 
 const getRecord = `-- name: GetRecord :one
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash FROM haccp_records WHERE id = ?
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records WHERE id = ?
 `
 
 func (q *Queries) GetRecord(ctx context.Context, id string) (HaccpRecord, error) {
@@ -45,6 +45,7 @@ func (q *Queries) GetRecord(ctx context.Context, id string) (HaccpRecord, error)
 		&i.CorrectionReason,
 		&i.PrevHash,
 		&i.Hash,
+		&i.RulesVersionID,
 	)
 	return i, err
 }
@@ -83,9 +84,9 @@ func (q *Queries) InsertLimitVersion(ctx context.Context, arg InsertLimitVersion
 const insertRecord = `-- name: InsertRecord :exec
 INSERT INTO haccp_records (
     id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome,
-    outcome_reason, limit_version_id, limit_scope, corrective_action,
-    corrects, correction_reason, prev_hash, hash
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    outcome_reason, limit_version_id, limit_scope, rules_version_id,
+    corrective_action, corrects, correction_reason, prev_hash, hash
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertRecordParams struct {
@@ -100,6 +101,7 @@ type InsertRecordParams struct {
 	OutcomeReason    string
 	LimitVersionID   string
 	LimitScope       string
+	RulesVersionID   string
 	CorrectiveAction string
 	Corrects         string
 	CorrectionReason string
@@ -120,6 +122,7 @@ func (q *Queries) InsertRecord(ctx context.Context, arg InsertRecordParams) erro
 		arg.OutcomeReason,
 		arg.LimitVersionID,
 		arg.LimitScope,
+		arg.RulesVersionID,
 		arg.CorrectiveAction,
 		arg.Corrects,
 		arg.CorrectionReason,
@@ -130,7 +133,7 @@ func (q *Queries) InsertRecord(ctx context.Context, arg InsertRecordParams) erro
 }
 
 const lastRecord = `-- name: LastRecord :one
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash FROM haccp_records ORDER BY seq DESC LIMIT 1
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records ORDER BY seq DESC LIMIT 1
 `
 
 func (q *Queries) LastRecord(ctx context.Context) (HaccpRecord, error) {
@@ -153,6 +156,7 @@ func (q *Queries) LastRecord(ctx context.Context) (HaccpRecord, error) {
 		&i.CorrectionReason,
 		&i.PrevHash,
 		&i.Hash,
+		&i.RulesVersionID,
 	)
 	return i, err
 }
@@ -185,7 +189,7 @@ func (q *Queries) ListLimitVersions(ctx context.Context) ([]string, error) {
 }
 
 const listRecordsNewest = `-- name: ListRecordsNewest :many
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash FROM haccp_records
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records
 WHERE logged_at >= ?1 AND logged_at < ?2
   -- types_csv is a comma-separated list of record types; empty means all.
   AND (CAST(?3 AS TEXT) = '' OR instr(',' || ?3 || ',', ',' || type || ',') > 0)
@@ -231,6 +235,7 @@ func (q *Queries) ListRecordsNewest(ctx context.Context, arg ListRecordsNewestPa
 			&i.CorrectionReason,
 			&i.PrevHash,
 			&i.Hash,
+			&i.RulesVersionID,
 		); err != nil {
 			return nil, err
 		}
@@ -246,7 +251,7 @@ func (q *Queries) ListRecordsNewest(ctx context.Context, arg ListRecordsNewestPa
 }
 
 const listRecordsOldest = `-- name: ListRecordsOldest :many
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash FROM haccp_records
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records
 WHERE logged_at >= ?1 AND logged_at < ?2
   -- types_csv is a comma-separated list of record types; empty means all.
   AND (CAST(?3 AS TEXT) = '' OR instr(',' || ?3 || ',', ',' || type || ',') > 0)
@@ -292,6 +297,7 @@ func (q *Queries) ListRecordsOldest(ctx context.Context, arg ListRecordsOldestPa
 			&i.CorrectionReason,
 			&i.PrevHash,
 			&i.Hash,
+			&i.RulesVersionID,
 		); err != nil {
 			return nil, err
 		}
@@ -307,7 +313,7 @@ func (q *Queries) ListRecordsOldest(ctx context.Context, arg ListRecordsOldestPa
 }
 
 const recordsAfterSeq = `-- name: RecordsAfterSeq :many
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash FROM haccp_records WHERE seq > ? ORDER BY seq LIMIT ?
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records WHERE seq > ? ORDER BY seq LIMIT ?
 `
 
 type RecordsAfterSeqParams struct {
@@ -341,6 +347,7 @@ func (q *Queries) RecordsAfterSeq(ctx context.Context, arg RecordsAfterSeqParams
 			&i.CorrectionReason,
 			&i.PrevHash,
 			&i.Hash,
+			&i.RulesVersionID,
 		); err != nil {
 			return nil, err
 		}
