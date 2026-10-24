@@ -19,7 +19,11 @@ func (s *Service) UploadFile(ctx context.Context, p *auth.Principal, r io.Reader
 	if err := allow(p, auth.ActLogHACCP); err != nil {
 		return store.FileMeta{}, err
 	}
-	saved, err := s.files.Put(r)
+	sys, err := s.System().current(ctx, s.st)
+	if err != nil {
+		return store.FileMeta{}, err
+	}
+	saved, err := s.files.Put(r, sys.Value.MaxUploadMB<<20)
 	switch {
 	case errors.Is(err, files.ErrNotAllowed), errors.Is(err, files.ErrTooLarge):
 		return store.FileMeta{}, newErr(KindInvalid, "%s", err)

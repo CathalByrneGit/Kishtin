@@ -68,7 +68,7 @@ func newRoot(out, errOut io.Writer, in io.Reader) *cobra.Command {
 	root.SetErr(errOut)
 	root.PersistentFlags().StringVar(&c.url, "url", envOr("KISHTIN_URL", "http://127.0.0.1:8080"), "server URL ($KISHTIN_URL)")
 	root.PersistentFlags().BoolVar(&c.asJSON, "json", false, "print JSON instead of text")
-	root.AddCommand(c.whoamiCmd(), c.haccpCmd(), c.limitsCmd(), c.staffCmd(), c.keysCmd(), c.backupCmd())
+	root.AddCommand(c.whoamiCmd(), c.haccpCmd(), c.limitsCmd(), c.settingsCmd(), c.staffCmd(), c.keysCmd(), c.backupCmd())
 	return root
 }
 

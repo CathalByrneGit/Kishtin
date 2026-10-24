@@ -35,16 +35,15 @@ func ValidHash(s string) bool { return hashRE.MatchString(s) }
 
 // Store keeps files under root/ab/abcdef….
 type Store struct {
-	root    string
-	maxSize int64
+	root string
 }
 
 // New returns a store rooted at dir, creating it if needed.
-func New(dir string, maxSize int64) (*Store, error) {
+func New(dir string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Join(dir, "tmp"), 0o750); err != nil {
 		return nil, fmt.Errorf("create file store %s: %w", dir, err)
 	}
-	return &Store{root: dir, maxSize: maxSize}, nil
+	return &Store{root: dir}, nil
 }
 
 func (s *Store) path(sha string) string { return filepath.Join(s.root, sha[:2], sha) }
@@ -56,9 +55,9 @@ type Saved struct {
 	MIME   string
 }
 
-// Put stores the contents of r and returns its hash. Storing the same
-// content twice keeps one copy.
-func (s *Store) Put(r io.Reader) (Saved, error) {
+// Put stores the contents of r and returns its hash. A file over maxSize
+// bytes is refused. Storing the same content twice keeps one copy.
+func (s *Store) Put(r io.Reader, maxSize int64) (Saved, error) {
 	tmp, err := os.CreateTemp(filepath.Join(s.root, "tmp"), "upload-*")
 	if err != nil {
 		return Saved{}, fmt.Errorf("create temp file: %w", err)
@@ -67,12 +66,12 @@ func (s *Store) Put(r io.Reader) (Saved, error) {
 	defer tmp.Close()
 
 	h := sha256.New()
-	n, err := io.Copy(io.MultiWriter(tmp, h), io.LimitReader(r, s.maxSize+1))
+	n, err := io.Copy(io.MultiWriter(tmp, h), io.LimitReader(r, maxSize+1))
 	if err != nil {
 		return Saved{}, fmt.Errorf("write upload: %w", err)
 	}
-	if n > s.maxSize {
-		return Saved{}, fmt.Errorf("%w: the limit is %d MB", ErrTooLarge, s.maxSize>>20)
+	if n > maxSize {
+		return Saved{}, fmt.Errorf("%w: the limit is %d MB", ErrTooLarge, maxSize>>20)
 	}
 	if n == 0 {
 		return Saved{}, fmt.Errorf("%w: the file is empty", ErrNotAllowed)

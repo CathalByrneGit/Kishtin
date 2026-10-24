@@ -22,16 +22,16 @@ var pngBytes = []byte{
 
 func TestPutOpenVerify(t *testing.T) {
 	dir := t.TempDir()
-	s, err := New(dir, 1<<20)
+	s, err := New(dir)
 	require.NoError(t, err)
 
-	saved, err := s.Put(bytes.NewReader(pngBytes))
+	saved, err := s.Put(bytes.NewReader(pngBytes), 1<<20)
 	require.NoError(t, err)
 	assert.Equal(t, "image/png", saved.MIME)
 	assert.True(t, ValidHash(saved.SHA256))
 	assert.Equal(t, int64(len(pngBytes)), saved.Size)
 
-	again, err := s.Put(bytes.NewReader(pngBytes))
+	again, err := s.Put(bytes.NewReader(pngBytes), 1<<20)
 	require.NoError(t, err)
 	assert.Equal(t, saved, again)
 
@@ -47,18 +47,18 @@ func TestPutOpenVerify(t *testing.T) {
 }
 
 func TestPutRejects(t *testing.T) {
-	s, err := New(t.TempDir(), 32)
+	s, err := New(t.TempDir())
 	require.NoError(t, err)
-	_, err = s.Put(bytes.NewReader([]byte("plain text is not a docket")))
+	_, err = s.Put(bytes.NewReader([]byte("plain text is not a docket")), 1<<20)
 	assert.ErrorIs(t, err, ErrNotAllowed)
-	_, err = s.Put(bytes.NewReader(pngBytes))
+	_, err = s.Put(bytes.NewReader(pngBytes), 32)
 	assert.ErrorIs(t, err, ErrTooLarge)
-	_, err = s.Put(bytes.NewReader(nil))
+	_, err = s.Put(bytes.NewReader(nil), 1<<20)
 	assert.ErrorIs(t, err, ErrNotAllowed)
 }
 
 func TestOpenMissing(t *testing.T) {
-	s, err := New(t.TempDir(), 1<<20)
+	s, err := New(t.TempDir())
 	require.NoError(t, err)
 	_, err = s.Open("../../etc/passwd")
 	assert.ErrorIs(t, err, ErrNotFound)

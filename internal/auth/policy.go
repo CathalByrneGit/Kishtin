@@ -17,6 +17,8 @@ const (
 	ActManageUsers  Action = "users.manage"
 	ActManageKeys   Action = "keys.manage"
 	ActBackup       Action = "backup"
+	// ActManageSettings changes system settings such as the backup schedule.
+	ActManageSettings Action = "settings.manage"
 )
 
 type rule struct {
@@ -29,13 +31,14 @@ type rule struct {
 var everyone = []Role{RoleHeadChef, RoleLineCook, RoleFrontOfHouse, RoleManager}
 
 var policy = map[Action]rule{
-	ActLogHACCP:     {roles: everyone},
-	ActViewHACCP:    {roles: everyone},
-	ActExportHACCP:  {roles: []Role{RoleHeadChef, RoleManager}},
-	ActManageLimits: {roles: []Role{RoleManager}, password: true},
-	ActManageUsers:  {roles: []Role{RoleManager}, password: true},
-	ActManageKeys:   {roles: []Role{RoleManager}, password: true},
-	ActBackup:       {roles: []Role{RoleManager}, password: true},
+	ActLogHACCP:       {roles: everyone},
+	ActViewHACCP:      {roles: everyone},
+	ActExportHACCP:    {roles: []Role{RoleHeadChef, RoleManager}},
+	ActManageLimits:   {roles: []Role{RoleManager}, password: true},
+	ActManageUsers:    {roles: []Role{RoleManager}, password: true},
+	ActManageKeys:     {roles: []Role{RoleManager}, password: true},
+	ActBackup:         {roles: []Role{RoleManager}, password: true},
+	ActManageSettings: {roles: []Role{RoleManager}, password: true},
 }
 
 // Principal is who is making a request.

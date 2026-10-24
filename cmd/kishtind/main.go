@@ -98,16 +98,16 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 	if err != nil {
 		return fail(err)
 	}
-	fs, err := files.New(cfg.FilesDir(), cfg.Files.MaxSizeMB<<20)
+	fs, err := files.New(cfg.FilesDir())
 	if err != nil {
 		return fail(err)
 	}
 	svc := service.New(service.Options{
-		Store: st,
-		Files: fs,
+		Store:  st,
+		Files:  fs,
+		System: cfg.SystemSettings(),
 		Backups: service.BackupConfig{
 			Dir:  cfg.Backup.Dir,
-			Keep: cfg.Backup.Keep,
 			Open: func(ctx context.Context, path string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, path) },
 		},
 	})
@@ -148,7 +148,7 @@ func serve(ctx context.Context, cfgPath string) error {
 		return errors.New("no staff yet: stop here and run `kishtind setup` to create the first manager")
 	}
 
-	h, err := web.New(a.svc, log, cfg.Files.MaxSizeMB<<20)
+	h, err := web.New(a.svc, log)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func serve(ctx context.Context, cfgPath string) error {
 		IdleTimeout:       2 * time.Minute,
 	}
 
-	go a.svc.RunBackups(ctx, cfg.Backup.Interval.Duration, log)
+	go a.svc.RunBackups(ctx, log)
 	go cleanSessions(ctx, a.svc, log)
 
 	errc := make(chan error, 1)

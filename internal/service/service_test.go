@@ -17,6 +17,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 	"github.com/cathalbyrnegit/kishtin/internal/store/sqlite"
 )
@@ -39,13 +40,14 @@ func setup(t *testing.T) *fixture {
 	st, err := sqlite.Open(ctx, filepath.Join(dir, "kishtin.db"))
 	require.NoError(t, err)
 	t.Cleanup(func() { st.Close() })
-	fs, err := files.New(filepath.Join(dir, "files"), 1<<20)
+	fs, err := files.New(filepath.Join(dir, "files"))
 	require.NoError(t, err)
 	clk := clock.NewFixed(start)
 	svc := New(Options{
 		Store: st, Clock: clk, Files: fs,
+		System: settings.System{BackupKeep: 2, MaxUploadMB: 1, PreviewRecords: 50},
 		Backups: BackupConfig{
-			Dir: filepath.Join(dir, "backups"), Keep: 2,
+			Dir:  filepath.Join(dir, "backups"),
 			Open: func(ctx context.Context, path string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, path) },
 		},
 	})
@@ -248,7 +250,7 @@ func TestLimitChanges(t *testing.T) {
 	pv, err = f.svc.PreviewLimit(ctx, f.manager, looser)
 	require.NoError(t, err)
 	assert.NotEmpty(t, pv.BelowFSAI)
-	assert.Contains(t, pv.Problem, "below FSAI guidance")
+	assert.Contains(t, pv.Problem, "below your reference guidance")
 	_, err = f.svc.CreateLimit(ctx, f.manager, looser)
 	assert.Equal(t, KindInvalid, KindOf(err))
 	looser.PlanRef = "HACCP plan 3.1 (synthetic)"

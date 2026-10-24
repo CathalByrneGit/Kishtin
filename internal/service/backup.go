@@ -22,8 +22,6 @@ import (
 type BackupConfig struct {
 	// Dir is where backups are written.
 	Dir string
-	// Keep is how many backups to keep; older ones are removed. 0 keeps all.
-	Keep int
 	// Open opens a backup file as a store, so it can be verified.
 	Open func(ctx context.Context, path string) (store.Store, error)
 }
@@ -98,7 +96,11 @@ func (s *Service) backup(ctx context.Context) (Backup, error) {
 	if err := os.WriteFile(path+".sha256", []byte(sum+"  "+name+"\n"), 0o640); err != nil {
 		return out, fmt.Errorf("write backup checksum: %w", err)
 	}
-	if err := s.prune(); err != nil {
+	sys, err := s.System().current(ctx, s.st)
+	if err != nil {
+		return out, err
+	}
+	if err := s.prune(sys.Value.BackupKeep); err != nil {
 		return out, err
 	}
 	return out, nil
@@ -137,15 +139,15 @@ func (s *Service) backupNames() ([]string, error) {
 	return names, nil
 }
 
-func (s *Service) prune() error {
-	if s.backups.Keep <= 0 {
+func (s *Service) prune(keep int) error {
+	if keep <= 0 {
 		return nil
 	}
 	names, err := s.backupNames()
 	if err != nil {
 		return err
 	}
-	for len(names) > s.backups.Keep {
+	for len(names) > keep {
 		old := filepath.Join(s.backups.Dir, names[0])
 		for _, p := range []string{old, old + ".sha256", old + "-wal", old + "-shm"} {
 			if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -185,25 +187,36 @@ func (s *Service) ListBackups(ctx context.Context, p *auth.Principal) ([]Backup,
 	return out, nil
 }
 
-// RunBackups backs up every interval until ctx is done. Failures are
-// logged and retried at the next interval.
-func (s *Service) RunBackups(ctx context.Context, interval time.Duration, log *slog.Logger) {
-	if interval <= 0 {
-		return
-	}
-	t := time.NewTicker(interval)
-	defer t.Stop()
+// RunBackups backs up on the schedule in the system settings until ctx is
+// done. It re-reads the schedule after every backup and every minute while
+// backups are off, so a change takes effect without a restart. Failures
+// are logged and retried at the next interval.
+func (s *Service) RunBackups(ctx context.Context, log *slog.Logger) {
+	last := s.clk.Now()
 	for {
+		wait := time.Minute
+		sys, err := s.System().current(ctx, s.st)
+		if err != nil {
+			log.Error("read backup schedule", "err", err)
+		} else if every := time.Duration(sys.Value.BackupIntervalMinutes) * time.Minute; every > 0 {
+			if due := last.Add(every).Sub(s.clk.Now()); due < wait {
+				wait = max(due, 0)
+			}
+			if wait == 0 {
+				b, err := s.backup(ctx)
+				last = s.clk.Now()
+				if err != nil {
+					log.Error("scheduled backup failed", "err", err)
+				} else {
+					log.Info("backup written", "path", b.Path, "records", b.Records, "sha256", b.SHA256)
+				}
+				continue
+			}
+		}
 		select {
 		case <-ctx.Done():
 			return
-		case <-t.C:
-			b, err := s.backup(ctx)
-			if err != nil {
-				log.Error("scheduled backup failed", "err", err)
-				continue
-			}
-			log.Info("backup written", "path", b.Path, "records", b.Records, "sha256", b.SHA256)
+		case <-time.After(wait):
 		}
 	}
 }

@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/cathalbyrnegit/kishtin/internal/settings"
 )
 
 // Config is the server configuration.
@@ -124,6 +126,17 @@ func (c *Config) fill() {
 	}
 }
 
+// SystemSettings returns the starting system settings. Changes saved in
+// Kishtin (kishtin settings set system) take their place.
+func (c Config) SystemSettings() settings.System {
+	return settings.System{
+		BackupIntervalMinutes: int64(c.Backup.Interval.Minutes()),
+		BackupKeep:            c.Backup.Keep,
+		MaxUploadMB:           c.Files.MaxSizeMB,
+		PreviewRecords:        50,
+	}
+}
+
 // FilesDir is where attachments are stored.
 func (c Config) FilesDir() string { return filepath.Join(c.DataDir, "files") }
 
@@ -158,8 +171,8 @@ func (c Config) Validate() error {
 	if c.Backup.Interval.Duration < 0 {
 		return errors.New("backup.interval cannot be negative")
 	}
-	if c.Files.MaxSizeMB <= 0 {
-		return errors.New("files.max_size_mb must be positive")
+	if err := c.SystemSettings().Validate(); err != nil {
+		return fmt.Errorf("backup or files settings: %w", err)
 	}
 	return nil
 }

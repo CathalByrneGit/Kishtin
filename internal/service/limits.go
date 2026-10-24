@@ -44,32 +44,11 @@ type NewLimit struct {
 	PlanRef        string              `json:"plan_ref,omitempty"`
 }
 
-func (nl NewLimit) version(id, createdBy string, at time.Time, supersedes string) haccp.LimitVersion {
-	round := func(p *float64) *float64 {
-		if p == nil {
-			return nil
-		}
-		v := haccp.RoundTemp(*p)
-		return &v
-	}
-	combos := slices.Clone(nl.Combos)
-	for k := range combos {
-		combos[k].MinC = haccp.RoundTemp(combos[k].MinC)
-	}
-	var cooling *haccp.CoolingLimit
-	if nl.Cooling != nil {
-		c := *nl.Cooling
-		c.CutoffMaxC = haccp.RoundTemp(c.CutoffMaxC)
-		cooling = &c
-	}
-	scope := haccp.Scope{Kind: nl.Scope.Kind, Ref: strings.TrimSpace(nl.Scope.Ref)}
-	return haccp.LimitVersion{
-		ID: id, Check: nl.Check, Scope: scope,
-		MaxC: round(nl.MaxC), BorderlineMaxC: round(nl.BorderlineMaxC), MinC: round(nl.MinC),
-		Combos: combos, Cooling: cooling, NonFood: nl.NonFood,
-		Supersedes: supersedes, CreatedBy: createdBy, CreatedAt: at,
-		Reason: strings.TrimSpace(nl.Reason), PlanRef: strings.TrimSpace(nl.PlanRef),
-	}
+func (nl NewLimit) thresholds() haccp.Thresholds {
+	return haccp.Thresholds{
+		MaxC: nl.MaxC, BorderlineMaxC: nl.BorderlineMaxC, MinC: nl.MinC,
+		Combos: nl.Combos, Cooling: nl.Cooling,
+	}.Rounded()
 }
 
 // head returns the current version for exactly this check and scope.
@@ -99,7 +78,13 @@ type LimitPreview struct {
 	Limit haccp.LimitVersion `json:"limit"`
 	// Replaces is the version the change supersedes, if any.
 	Replaces *haccp.LimitVersion `json:"replaces,omitempty"`
-	// BelowFSAI lists how the limit is less strict than FSAI guidance.
+	// Guidance names the reference guidance the limit is measured against.
+	Guidance string `json:"guidance"`
+	// BelowGuidance lists how the limit is less strict than the guidance.
+	// Saving it needs a HACCP plan reference.
+	BelowGuidance []string `json:"below_guidance,omitempty"`
+	// BelowFSAI lists how the limit is less strict than the FSAI defaults,
+	// whatever the guidance says.
 	BelowFSAI []string        `json:"below_fsai,omitempty"`
 	Recent    []RecordRegrade `json:"recent"`
 	Changed   int             `json:"changed"`
@@ -107,8 +92,58 @@ type LimitPreview struct {
 	Problem string `json:"problem,omitempty"`
 }
 
-// previewRecords is how many recent records a preview re-scores.
-const previewRecords = 50
+// buildLimit turns a proposed limit into a version, read through st: the
+// scope name is matched to the lists, and the limit is checked against the
+// current guidance. A problem that stops it being saved is returned in
+// problem, not err.
+func (s *Service) buildLimit(ctx context.Context, st store.Store, p *auth.Principal, id string, nl NewLimit) (lv haccp.LimitVersion, pv LimitPreview, problem string, err error) {
+	history, err := st.HACCP().ListLimitVersions(ctx)
+	if err != nil {
+		return lv, pv, "", err
+	}
+	guidance, err := s.Guidance().current(ctx, st)
+	if err != nil {
+		return lv, pv, "", err
+	}
+	rules, err := s.Rules().current(ctx, st)
+	if err != nil {
+		return lv, pv, "", err
+	}
+	lists, err := s.Lists().current(ctx, st)
+	if err != nil {
+		return lv, pv, "", err
+	}
+
+	lv = haccp.LimitVersion{
+		ID: id, Check: nl.Check,
+		Scope:             haccp.Scope{Kind: nl.Scope.Kind, Ref: strings.TrimSpace(nl.Scope.Ref)},
+		Thresholds:        nl.thresholds(),
+		NonFood:           nl.NonFood,
+		GuidanceVersionID: guidance.Version.ID,
+		CreatedBy:         p.User.ID,
+		CreatedAt:         s.clk.Now(),
+		Reason:            strings.TrimSpace(nl.Reason),
+		PlanRef:           strings.TrimSpace(nl.PlanRef),
+	}
+	pv = LimitPreview{Guidance: guidance.Value.Name, Recent: []RecordRegrade{}}
+	if lv.Scope, err = lists.Value.ApplyScope(lv.Check, lv.Scope, rules.Value); err != nil {
+		pv.Limit = lv
+		return lv, pv, err.Error(), nil
+	}
+	if h := head(history, lv.Check, lv.Scope); h != nil {
+		pv.Replaces, lv.Supersedes = h, h.ID
+	}
+	pv.Limit = lv
+	if err := lv.ValidateShape(); err != nil {
+		return lv, pv, err.Error(), nil
+	}
+	pv.BelowGuidance = lv.LooserThanGuidance(guidance.Value)
+	pv.BelowFSAI = lv.LooserThanFSAI()
+	if err := lv.ValidateNew(guidance.Value); err != nil {
+		return lv, pv, err.Error(), nil
+	}
+	return lv, pv, "", nil
+}
 
 // PreviewLimit shows how recent records would have scored under a proposed
 // limit, and anything that stops it being saved.
@@ -116,26 +151,22 @@ func (s *Service) PreviewLimit(ctx context.Context, p *auth.Principal, nl NewLim
 	if err := allow(p, auth.ActManageLimits); err != nil {
 		return LimitPreview{}, err
 	}
+	lv, pv, problem, err := s.buildLimit(ctx, s.st, p, "(preview)", nl)
+	if err != nil {
+		return LimitPreview{}, err
+	}
+	pv.Problem = problem
+	if lv.ValidateShape() != nil {
+		return pv, nil
+	}
+	sys, err := s.System().current(ctx, s.st)
+	if err != nil {
+		return LimitPreview{}, err
+	}
 	history, err := s.st.HACCP().ListLimitVersions(ctx)
 	if err != nil {
 		return LimitPreview{}, err
 	}
-	pv := LimitPreview{Recent: []RecordRegrade{}}
-	var supersedes string
-	if h := head(history, nl.Check, nl.Scope); h != nil {
-		pv.Replaces, supersedes = h, h.ID
-	}
-	lv := nl.version("(preview)", p.User.ID, s.clk.Now(), supersedes)
-	pv.Limit = lv
-	if err := lv.ValidateShape(); err != nil {
-		pv.Problem = err.Error()
-		return pv, nil
-	}
-	pv.BelowFSAI = lv.LooserThanFSAI()
-	if err := lv.ValidateNew(); err != nil {
-		pv.Problem = err.Error()
-	}
-
 	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{Types: recordTypesFor(lv.Check), Newest: true, Limit: 500})
 	if err != nil {
 		return LimitPreview{}, err
@@ -144,7 +175,7 @@ func (s *Service) PreviewLimit(ctx context.Context, p *auth.Principal, nl NewLim
 	// most specific matching scope, after the change, is this one.
 	proposed := append(slices.Clone(history), lv)
 	for _, r := range recs {
-		if len(pv.Recent) == previewRecords {
+		if len(pv.Recent) == sys.Value.PreviewRecords {
 			break
 		}
 		check, ok := haccp.CheckFor(r.Type, r.Reading)
@@ -197,17 +228,12 @@ func (s *Service) CreateLimit(ctx context.Context, p *auth.Principal, nl NewLimi
 	}
 	var saved haccp.LimitVersion
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
-		history, err := tx.HACCP().ListLimitVersions(ctx)
+		lv, _, problem, err := s.buildLimit(ctx, tx, p, newID(), nl)
 		if err != nil {
 			return err
 		}
-		var supersedes string
-		if h := head(history, nl.Check, nl.Scope); h != nil {
-			supersedes = h.ID
-		}
-		lv := nl.version(newID(), p.User.ID, s.clk.Now(), supersedes)
-		if err := lv.ValidateNew(); err != nil {
-			return newErr(KindInvalid, "%s", err)
+		if problem != "" {
+			return newErr(KindInvalid, "%s", problem)
 		}
 		if err := tx.HACCP().AppendLimitVersion(ctx, lv); err != nil {
 			return mapStoreErr(err, "a newer version of this limit")

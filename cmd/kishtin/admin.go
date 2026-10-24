@@ -116,7 +116,8 @@ func (c *cli) setLimitCmd() *cobra.Command {
 		Use:   "set",
 		Short: "Preview and save a new limit version",
 		Long: "set shows how recent records would have scored under the new limit, then asks before saving.\n" +
-			"Saved records are never re-graded. A limit below FSAI guidance needs --reason and --plan-ref.\n\n" +
+			"Saved records are never re-graded. A limit below your reference guidance (see kishtin settings)\n" +
+			"needs --plan-ref.\n\n" +
 			"Examples:\n" +
 			"  kishtin limits set --check fridge --scope \"unit:Fish fridge\" --max 2 --reason \"Fish kept at 0–2°C\"\n" +
 			"  kishtin limits set --check cook --scope category:poultry --combo 75 --combo 70:2m --reason \"Plan 4.1\"",
@@ -171,8 +172,13 @@ func (c *cli) setLimitCmd() *cobra.Command {
 			if pv.Replaces != nil {
 				fmt.Fprintf(w, "Replaces:  %s\n", limitLabel(*pv.Replaces))
 			}
-			for _, b := range pv.BelowFsai {
-				fmt.Fprintf(w, "WARNING: below FSAI guidance: %s\n", b)
+			for _, b := range pv.BelowGuidance {
+				fmt.Fprintf(w, "WARNING: below your reference guidance (%s): %s\n", pv.Guidance, b)
+			}
+			if len(pv.BelowGuidance) == 0 {
+				for _, b := range pv.BelowFsai {
+					fmt.Fprintf(w, "Note: below the FSAI defaults, but allowed by %s: %s\n", pv.Guidance, b)
+				}
 			}
 			fmt.Fprintf(w, "Recent records this limit applies to: %d. Would score differently: %d.\n", len(pv.Recent), pv.Changed)
 			for _, r := range pv.Recent {
@@ -213,7 +219,7 @@ func (c *cli) setLimitCmd() *cobra.Command {
 	fl.Float64Var(&cutoffMax, "cutoff-max", 0, "cooling: highest °C allowed at the cutoff")
 	fl.BoolVar(&nonFood, "non-food", false, "unit holds no food, such as a drinks fridge")
 	fl.StringVar(&reason, "reason", "", "why the limit is changing (required)")
-	fl.StringVar(&planRef, "plan-ref", "", "HACCP plan section or validation (required below FSAI guidance)")
+	fl.StringVar(&planRef, "plan-ref", "", "HACCP plan section or validation (required below your reference guidance)")
 	fl.BoolVar(&yes, "yes", false, "save without asking")
 	return cmd
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
 
@@ -61,6 +62,9 @@ type Service struct {
 	files   *files.Store
 	lockout *auth.Lockout
 	backups BackupConfig
+	// systemDefaults are the system settings from kishtin.toml, used until
+	// a change is saved.
+	systemDefaults settings.System
 }
 
 // Options configures a Service.
@@ -69,6 +73,13 @@ type Options struct {
 	Clock   clock.Clock
 	Files   *files.Store
 	Backups BackupConfig
+	// System is the starting system settings, from kishtin.toml.
+	System settings.System
+}
+
+// DefaultSystem returns the system settings used when none are configured.
+func DefaultSystem() settings.System {
+	return settings.System{BackupIntervalMinutes: 6 * 60, BackupKeep: 28, MaxUploadMB: 15, PreviewRecords: 50}
 }
 
 // New returns a service. Call Init before use.
@@ -77,12 +88,22 @@ func New(o Options) *Service {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	return &Service{st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups}
+	sys := o.System
+	if sys == (settings.System{}) {
+		sys = DefaultSystem()
+	}
+	return &Service{st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys}
 }
 
-// Init stores the built-in FSAI default limit versions if they are missing.
+// Init stores the built-in FSAI default limit versions and the built-in
+// guidance, rules and lists if they are missing.
 func (s *Service) Init(ctx context.Context) error {
 	return s.st.WithTx(ctx, func(tx store.Store) error {
+		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed} {
+			if err := seed(ctx, tx); err != nil {
+				return err
+			}
+		}
 		for _, lv := range haccp.FSAIDefaults() {
 			_, err := tx.HACCP().GetLimitVersion(ctx, lv.ID)
 			if err == nil {
@@ -119,6 +140,8 @@ func newID() string {
 	}
 	return id.String()
 }
+
+func isNotFound(err error) bool { return errors.Is(err, store.ErrNotFound) }
 
 func mapStoreErr(err error, what string) error {
 	switch {

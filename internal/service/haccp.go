@@ -29,6 +29,9 @@ type Check struct {
 	// Limit is the limit version the reading was checked against, if any.
 	Limit                 *haccp.LimitVersion `json:"limit,omitempty"`
 	NeedsCorrectiveAction bool                `json:"needs_corrective_action"`
+	// RulesVersionID is the food-safety rules version that decided whether
+	// a corrective action is needed.
+	RulesVersionID string `json:"rules_version_id"`
 }
 
 // prepare normalizes and validates a new record and checks it against the
@@ -44,6 +47,17 @@ func (s *Service) prepare(ctx context.Context, tx store.Store, nr *NewRecord) (C
 	if err := nr.Reading.Validate(nr.Type); err != nil {
 		return Check{}, newErr(KindInvalid, "%s", err)
 	}
+	rules, err := s.Rules().current(ctx, tx)
+	if err != nil {
+		return Check{}, err
+	}
+	lists, err := s.Lists().current(ctx, tx)
+	if err != nil {
+		return Check{}, err
+	}
+	if nr.Reading, err = lists.Value.Apply(nr.Type, nr.Reading, rules.Value); err != nil {
+		return Check{}, newErr(KindInvalid, "%s", err)
+	}
 	if f := nr.Reading.DocketFile; f != "" {
 		if !files.ValidHash(f) {
 			return Check{}, newErr(KindInvalid, "docket_file must be the SHA-256 of an uploaded file")
@@ -53,7 +67,7 @@ func (s *Service) prepare(ctx context.Context, tx store.Store, nr *NewRecord) (C
 		}
 	}
 
-	var c Check
+	c := Check{RulesVersionID: rules.Version.ID}
 	if check, ok := haccp.CheckFor(nr.Type, nr.Reading); ok {
 		history, err := tx.HACCP().ListLimitVersions(ctx)
 		if err != nil {
@@ -67,7 +81,7 @@ func (s *Service) prepare(ctx context.Context, tx store.Store, nr *NewRecord) (C
 		return Check{}, newErr(KindInvalid, "%s", err)
 	}
 	c.Result = res
-	c.NeedsCorrectiveAction = res.Outcome.NeedsCorrectiveAction()
+	c.NeedsCorrectiveAction = rules.Value.NeedsAction(res.Outcome)
 	return c, nil
 }
 
@@ -80,8 +94,9 @@ func (s *Service) CheckRecord(ctx context.Context, p *auth.Principal, nr NewReco
 	return s.prepare(ctx, s.st, &nr)
 }
 
-// LogRecord checks and saves a HACCP record. A failed or borderline
-// reading is only saved with a corrective action.
+// LogRecord checks and saves a HACCP record. A failed reading, and a
+// borderline one if the rules say so, is only saved with a corrective
+// action.
 func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord) (haccp.Record, error) {
 	if err := allow(p, auth.ActLogHACCP); err != nil {
 		return haccp.Record{}, err
@@ -119,6 +134,7 @@ func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord
 			Reading:          nr.Reading,
 			Outcome:          c.Result.Outcome,
 			OutcomeReason:    c.Result.Reason,
+			RulesVersionID:   c.RulesVersionID,
 			CorrectiveAction: nr.CorrectiveAction,
 			Corrects:         nr.Corrects,
 			CorrectionReason: nr.CorrectionReason,

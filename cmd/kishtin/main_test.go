@@ -29,7 +29,7 @@ func server(t *testing.T) (url, key string) {
 	st, err := sqlite.Open(ctx, filepath.Join(dir, "kishtin.db"))
 	require.NoError(t, err)
 	t.Cleanup(func() { st.Close() })
-	fs, err := files.New(filepath.Join(dir, "files"), 1<<20)
+	fs, err := files.New(filepath.Join(dir, "files"))
 	require.NoError(t, err)
 	svc := service.New(service.Options{Store: st, Files: fs, Backups: service.BackupConfig{
 		Dir:  filepath.Join(dir, "backups"),
@@ -38,7 +38,7 @@ func server(t *testing.T) (url, key string) {
 	require.NoError(t, svc.Init(ctx))
 	res, err := svc.Setup(ctx, service.NewUser{Name: "Máire Manager", Password: "synthetic-password"})
 	require.NoError(t, err)
-	h, err := web.New(svc, slog.New(slog.NewTextHandler(io.Discard, nil)), 1<<20)
+	h, err := web.New(svc, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	require.NoError(t, err)
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
@@ -131,7 +131,7 @@ func TestCLI(t *testing.T) {
 
 	_, _, err = run(t, url, key, "", "limits", "set", "--check", "hot_hold", "--min", "60", "--reason", "Testing", "--yes")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "below FSAI guidance")
+	assert.Contains(t, err.Error(), "below your reference guidance")
 
 	out, _, err = run(t, url, key, "y\n", "limits", "set", "--check", "cook", "--scope", "category:poultry", "--combo", "75", "--combo", "70:2m", "--reason", "Time-temperature equivalent", "--plan-ref", "Plan 4.1 (synthetic)")
 	require.NoError(t, err)

@@ -15,6 +15,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
 	"github.com/cathalbyrnegit/kishtin/internal/service"
+	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
 
@@ -23,6 +24,7 @@ func (s *Server) routes() {
 	s.haccpRoutes()
 	s.limitRoutes()
 	s.fileRoutes()
+	s.settingsRoutes()
 	s.adminRoutes()
 }
 
@@ -396,7 +398,8 @@ func (s *Server) fileRoutes() {
 		Summary:       "Upload a docket or invoice photo",
 		Description:   "Send the file as the request body. JPEG, PNG, WebP, HEIC and PDF are accepted. Attach it to a delivery record with its sha256.",
 		DefaultStatus: http.StatusCreated,
-		MaxBodyBytes:  s.maxFile,
+		// The system settings set the real limit; this is the ceiling.
+		MaxBodyBytes: settings.MaxUploadMBLimit << 20,
 	}, wrap(s, func(ctx context.Context, in *uploadIn) (*fileOut, error) {
 		m, err := s.svc.UploadFile(ctx, principal(ctx), bytes.NewReader(in.RawBody), in.Name)
 		if err != nil {

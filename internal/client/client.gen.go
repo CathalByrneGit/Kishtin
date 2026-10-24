@@ -118,6 +118,70 @@ type ClientInterface interface {
 	RevokeKey(ctx context.Context, options *RevokeKeyRequestOptions, reqEditors ...runtime.RequestEditorFn) (*struct{}, error)
 	RevokeKeyWithResponse(ctx context.Context, options *RevokeKeyRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RevokeKeyResp, error)
 
+	// GetGuidance Show the reference guidance in force
+	GetGuidance(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResponse, error)
+	GetGuidanceWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResp, error)
+
+	// SaveGuidance Save a new version of the reference guidance
+	SaveGuidance(ctx context.Context, options *SaveGuidanceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveGuidanceResponse, error)
+	SaveGuidanceWithResponse(ctx context.Context, options *SaveGuidanceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveGuidanceResp, error)
+
+	// GuidanceHistory List every saved version of the reference guidance, oldest first
+	GuidanceHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GuidanceHistoryResponse, error)
+	GuidanceHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GuidanceHistoryResp, error)
+
+	// PreviewGuidance Preview a change to the reference guidance
+	PreviewGuidance(ctx context.Context, options *PreviewGuidanceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewGuidanceResponse, error)
+	PreviewGuidanceWithResponse(ctx context.Context, options *PreviewGuidanceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewGuidanceResp, error)
+
+	// GetLists Show the lists in force
+	GetLists(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetListsResponse, error)
+	GetListsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetListsResp, error)
+
+	// SaveLists Save a new version of the lists
+	SaveLists(ctx context.Context, options *SaveListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveListsResponse, error)
+	SaveListsWithResponse(ctx context.Context, options *SaveListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveListsResp, error)
+
+	// ListsHistory List every saved version of the lists, oldest first
+	ListsHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListsHistoryResponse, error)
+	ListsHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListsHistoryResp, error)
+
+	// PreviewLists Preview a change to the lists
+	PreviewLists(ctx context.Context, options *PreviewListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewListsResponse, error)
+	PreviewListsWithResponse(ctx context.Context, options *PreviewListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewListsResp, error)
+
+	// GetRules Show the food-safety rules in force
+	GetRules(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRulesResponse, error)
+	GetRulesWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRulesResp, error)
+
+	// SaveRules Save a new version of the food-safety rules
+	SaveRules(ctx context.Context, options *SaveRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveRulesResponse, error)
+	SaveRulesWithResponse(ctx context.Context, options *SaveRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveRulesResp, error)
+
+	// RulesHistory List every saved version of the food-safety rules, oldest first
+	RulesHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*RulesHistoryResponse, error)
+	RulesHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*RulesHistoryResp, error)
+
+	// PreviewRules Preview a change to the food-safety rules
+	PreviewRules(ctx context.Context, options *PreviewRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRulesResponse, error)
+	PreviewRulesWithResponse(ctx context.Context, options *PreviewRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRulesResp, error)
+
+	// GetSystem Show the system settings in force
+	GetSystem(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResponse, error)
+	GetSystemWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResp, error)
+
+	// SaveSystem Save a new version of the system settings
+	SaveSystem(ctx context.Context, options *SaveSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSystemResponse, error)
+	SaveSystemWithResponse(ctx context.Context, options *SaveSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSystemResp, error)
+
+	// SystemHistory List every saved version of the system settings, oldest first
+	SystemHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SystemHistoryResponse, error)
+	SystemHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SystemHistoryResp, error)
+
+	// PreviewSystem Preview a change to the system settings
+	PreviewSystem(ctx context.Context, options *PreviewSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSystemResponse, error)
+	PreviewSystemWithResponse(ctx context.Context, options *PreviewSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSystemResp, error)
+
 	// ListUsers List staff, including deactivated staff
 	ListUsers(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListUsersResponse, error)
 	ListUsersWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListUsersResp, error)
@@ -1415,6 +1479,1014 @@ func (c *Client) RevokeKey(ctx context.Context, options *RevokeKeyRequestOptions
 	return responseParser(ctx, resp)
 }
 
+// GetGuidance Show the reference guidance in force
+func (c *Client) GetGuidance(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/guidance",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetGuidanceResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetGuidanceErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetGuidanceErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetGuidanceResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetGuidanceResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/guidance")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveGuidance Save a new version of the reference guidance
+func (c *Client) SaveGuidance(ctx context.Context, options *SaveGuidanceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveGuidanceResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/guidance",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveGuidanceResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveGuidanceErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveGuidanceErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveGuidanceResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveGuidanceResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/guidance")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GuidanceHistory List every saved version of the reference guidance, oldest first
+func (c *Client) GuidanceHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GuidanceHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/guidance/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GuidanceHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GuidanceHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GuidanceHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GuidanceHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GuidanceHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/guidance/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewGuidance Preview a change to the reference guidance
+func (c *Client) PreviewGuidance(ctx context.Context, options *PreviewGuidanceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewGuidanceResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/guidance/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewGuidanceResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewGuidanceErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewGuidanceErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewGuidanceResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewGuidanceResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/guidance/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetLists Show the lists in force
+func (c *Client) GetLists(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetListsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/lists",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetListsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetListsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetListsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetListsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetListsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveLists Save a new version of the lists
+func (c *Client) SaveLists(ctx context.Context, options *SaveListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveListsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/lists",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveListsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveListsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveListsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveListsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveListsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ListsHistory List every saved version of the lists, oldest first
+func (c *Client) ListsHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListsHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/lists/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ListsHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ListsHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ListsHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ListsHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ListsHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewLists Preview a change to the lists
+func (c *Client) PreviewLists(ctx context.Context, options *PreviewListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewListsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/lists/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewListsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewListsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewListsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewListsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewListsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetRules Show the food-safety rules in force
+func (c *Client) GetRules(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRulesResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/rules",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetRulesResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetRulesErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetRulesErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetRulesResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetRulesResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveRules Save a new version of the food-safety rules
+func (c *Client) SaveRules(ctx context.Context, options *SaveRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveRulesResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/rules",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveRulesResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveRulesErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveRulesErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveRulesResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveRulesResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// RulesHistory List every saved version of the food-safety rules, oldest first
+func (c *Client) RulesHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*RulesHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/rules/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*RulesHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(RulesHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "RulesHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(RulesHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "RulesHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewRules Preview a change to the food-safety rules
+func (c *Client) PreviewRules(ctx context.Context, options *PreviewRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRulesResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/rules/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewRulesResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewRulesErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewRulesErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewRulesResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewRulesResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetSystem Show the system settings in force
+func (c *Client) GetSystem(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/system",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetSystemResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetSystemErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetSystemErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetSystemResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetSystemResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveSystem Save a new version of the system settings
+func (c *Client) SaveSystem(ctx context.Context, options *SaveSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSystemResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/system",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveSystemResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveSystemErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveSystemErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveSystemResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveSystemResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SystemHistory List every saved version of the system settings, oldest first
+func (c *Client) SystemHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SystemHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/system/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SystemHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SystemHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SystemHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SystemHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SystemHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewSystem Preview a change to the system settings
+func (c *Client) PreviewSystem(ctx context.Context, options *PreviewSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSystemResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/system/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewSystemResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewSystemErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewSystemErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewSystemResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewSystemResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // ListUsers List staff, including deactivated staff
 func (c *Client) ListUsers(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListUsersResponse, error) {
 	var err error
@@ -2185,6 +3257,358 @@ func (o *RevokeKeyRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *RevokeKeyRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SaveGuidanceRequestOptions is the options needed to make a request to SaveGuidance.
+type SaveGuidanceRequestOptions struct {
+	Body *SaveGuidanceBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveGuidanceRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveGuidanceRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveGuidanceRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveGuidanceRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveGuidanceRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewGuidanceRequestOptions is the options needed to make a request to PreviewGuidance.
+type PreviewGuidanceRequestOptions struct {
+	Body *PreviewGuidanceBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewGuidanceRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewGuidanceRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewGuidanceRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewGuidanceRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewGuidanceRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SaveListsRequestOptions is the options needed to make a request to SaveLists.
+type SaveListsRequestOptions struct {
+	Body *SaveListsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveListsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveListsRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveListsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveListsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveListsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewListsRequestOptions is the options needed to make a request to PreviewLists.
+type PreviewListsRequestOptions struct {
+	Body *PreviewListsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewListsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewListsRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewListsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewListsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewListsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SaveRulesRequestOptions is the options needed to make a request to SaveRules.
+type SaveRulesRequestOptions struct {
+	Body *SaveRulesBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveRulesRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveRulesRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveRulesRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveRulesRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveRulesRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewRulesRequestOptions is the options needed to make a request to PreviewRules.
+type PreviewRulesRequestOptions struct {
+	Body *PreviewRulesBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewRulesRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewRulesRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewRulesRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewRulesRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewRulesRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SaveSystemRequestOptions is the options needed to make a request to SaveSystem.
+type SaveSystemRequestOptions struct {
+	Body *SaveSystemBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveSystemRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveSystemRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveSystemRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveSystemRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveSystemRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewSystemRequestOptions is the options needed to make a request to PreviewSystem.
+type PreviewSystemRequestOptions struct {
+	Body *PreviewSystemBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewSystemRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewSystemRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewSystemRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewSystemRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewSystemRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -3509,6 +4933,982 @@ func (c *Client) RevokeKeyWithResponse(ctx context.Context, options *RevokeKeyRe
 	}
 }
 
+// GetGuidance Show the reference guidance in force
+func (c *Client) GetGuidanceWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/guidance",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/guidance")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetGuidanceResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetGuidanceResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetGuidanceResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetGuidanceErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetGuidanceErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveGuidance Save a new version of the reference guidance
+func (c *Client) SaveGuidanceWithResponse(ctx context.Context, options *SaveGuidanceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveGuidanceResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/guidance",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/guidance")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveGuidanceResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveGuidanceResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveGuidanceResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveGuidanceErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveGuidanceErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// GuidanceHistory List every saved version of the reference guidance, oldest first
+func (c *Client) GuidanceHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GuidanceHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/guidance/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/guidance/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GuidanceHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GuidanceHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GuidanceHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GuidanceHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GuidanceHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewGuidance Preview a change to the reference guidance
+func (c *Client) PreviewGuidanceWithResponse(ctx context.Context, options *PreviewGuidanceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewGuidanceResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/guidance/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/guidance/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewGuidanceResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewGuidanceResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewGuidanceResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewGuidanceErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewGuidanceErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// GetLists Show the lists in force
+func (c *Client) GetListsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetListsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/lists",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetListsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetListsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetListsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetListsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetListsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveLists Save a new version of the lists
+func (c *Client) SaveListsWithResponse(ctx context.Context, options *SaveListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveListsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/lists",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveListsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveListsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveListsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveListsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveListsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ListsHistory List every saved version of the lists, oldest first
+func (c *Client) ListsHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListsHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/lists/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ListsHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ListsHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListsHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ListsHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListsHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewLists Preview a change to the lists
+func (c *Client) PreviewListsWithResponse(ctx context.Context, options *PreviewListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewListsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/lists/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewListsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewListsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewListsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewListsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewListsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// GetRules Show the food-safety rules in force
+func (c *Client) GetRulesWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRulesResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/rules",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetRulesResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetRulesResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetRulesResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetRulesErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetRulesErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveRules Save a new version of the food-safety rules
+func (c *Client) SaveRulesWithResponse(ctx context.Context, options *SaveRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveRulesResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/rules",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveRulesResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveRulesResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveRulesResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveRulesErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveRulesErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// RulesHistory List every saved version of the food-safety rules, oldest first
+func (c *Client) RulesHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*RulesHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/rules/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &RulesHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(RulesHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "RulesHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(RulesHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "RulesHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewRules Preview a change to the food-safety rules
+func (c *Client) PreviewRulesWithResponse(ctx context.Context, options *PreviewRulesRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRulesResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/rules/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/rules/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewRulesResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewRulesResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewRulesResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewRulesErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewRulesErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// GetSystem Show the system settings in force
+func (c *Client) GetSystemWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/system",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetSystemResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetSystemResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSystemResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetSystemErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSystemErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveSystem Save a new version of the system settings
+func (c *Client) SaveSystemWithResponse(ctx context.Context, options *SaveSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSystemResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/system",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveSystemResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveSystemResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSystemResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveSystemErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSystemErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SystemHistory List every saved version of the system settings, oldest first
+func (c *Client) SystemHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SystemHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/system/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SystemHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SystemHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SystemHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SystemHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SystemHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewSystem Preview a change to the system settings
+func (c *Client) PreviewSystemWithResponse(ctx context.Context, options *PreviewSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSystemResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/system/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewSystemResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewSystemResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSystemResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewSystemErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSystemErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // ListUsers List staff, including deactivated staff
 func (c *Client) ListUsersWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListUsersResp, error) {
 	var err error
@@ -3760,6 +6160,22 @@ type LogRecordBody = NewRecord
 
 type CreateKeyBody = NewKeyInBody
 
+type SaveGuidanceBody = SettingsChangeGuidance
+
+type PreviewGuidanceBody = SettingsChangeGuidance
+
+type SaveListsBody = SettingsChangeLists
+
+type PreviewListsBody = SettingsChangeLists
+
+type SaveRulesBody = SettingsChangeRules
+
+type PreviewRulesBody = SettingsChangeRules
+
+type SaveSystemBody = SettingsChangeSystem
+
+type PreviewSystemBody = SettingsChangeSystem
+
 type CreateUserBody = NewUser
 
 type UpdateUserBody = UserChange
@@ -3879,6 +6295,70 @@ type CreateKeyResponse = NewKeyResult
 type CreateKeyErrorResponse = ErrorModel
 
 type RevokeKeyErrorResponse = ErrorModel
+
+type GetGuidanceResponse = VersionedGuidance
+
+type GetGuidanceErrorResponse = ErrorModel
+
+type SaveGuidanceResponse = VersionedGuidance
+
+type SaveGuidanceErrorResponse = ErrorModel
+
+type GuidanceHistoryResponse = HistoryOutGuidanceBody
+
+type GuidanceHistoryErrorResponse = ErrorModel
+
+type PreviewGuidanceResponse = SettingsPreviewGuidance
+
+type PreviewGuidanceErrorResponse = ErrorModel
+
+type GetListsResponse = VersionedLists
+
+type GetListsErrorResponse = ErrorModel
+
+type SaveListsResponse = VersionedLists
+
+type SaveListsErrorResponse = ErrorModel
+
+type ListsHistoryResponse = HistoryOutListsBody
+
+type ListsHistoryErrorResponse = ErrorModel
+
+type PreviewListsResponse = SettingsPreviewLists
+
+type PreviewListsErrorResponse = ErrorModel
+
+type GetRulesResponse = VersionedRules
+
+type GetRulesErrorResponse = ErrorModel
+
+type SaveRulesResponse = VersionedRules
+
+type SaveRulesErrorResponse = ErrorModel
+
+type RulesHistoryResponse = HistoryOutRulesBody
+
+type RulesHistoryErrorResponse = ErrorModel
+
+type PreviewRulesResponse = SettingsPreviewRules
+
+type PreviewRulesErrorResponse = ErrorModel
+
+type GetSystemResponse = VersionedSystem
+
+type GetSystemErrorResponse = ErrorModel
+
+type SaveSystemResponse = VersionedSystem
+
+type SaveSystemErrorResponse = ErrorModel
+
+type SystemHistoryResponse = HistoryOutSystemBody
+
+type SystemHistoryErrorResponse = ErrorModel
+
+type PreviewSystemResponse = SettingsPreviewSystem
+
+type PreviewSystemErrorResponse = ErrorModel
 
 type ListUsersResponse = UsersOutBody
 
@@ -4073,6 +6553,134 @@ type RevokeKeyResp struct {
 	ApplicationProblemPlusJSONDefault *RevokeKeyErrorResponse
 }
 
+type GetGuidanceResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetGuidanceResponse
+	ApplicationProblemPlusJSONDefault *GetGuidanceErrorResponse
+}
+
+type SaveGuidanceResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveGuidanceResponse
+	ApplicationProblemPlusJSONDefault *SaveGuidanceErrorResponse
+}
+
+type GuidanceHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GuidanceHistoryResponse
+	ApplicationProblemPlusJSONDefault *GuidanceHistoryErrorResponse
+}
+
+type PreviewGuidanceResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewGuidanceResponse
+	ApplicationProblemPlusJSONDefault *PreviewGuidanceErrorResponse
+}
+
+type GetListsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetListsResponse
+	ApplicationProblemPlusJSONDefault *GetListsErrorResponse
+}
+
+type SaveListsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveListsResponse
+	ApplicationProblemPlusJSONDefault *SaveListsErrorResponse
+}
+
+type ListsHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ListsHistoryResponse
+	ApplicationProblemPlusJSONDefault *ListsHistoryErrorResponse
+}
+
+type PreviewListsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewListsResponse
+	ApplicationProblemPlusJSONDefault *PreviewListsErrorResponse
+}
+
+type GetRulesResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetRulesResponse
+	ApplicationProblemPlusJSONDefault *GetRulesErrorResponse
+}
+
+type SaveRulesResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveRulesResponse
+	ApplicationProblemPlusJSONDefault *SaveRulesErrorResponse
+}
+
+type RulesHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *RulesHistoryResponse
+	ApplicationProblemPlusJSONDefault *RulesHistoryErrorResponse
+}
+
+type PreviewRulesResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewRulesResponse
+	ApplicationProblemPlusJSONDefault *PreviewRulesErrorResponse
+}
+
+type GetSystemResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetSystemResponse
+	ApplicationProblemPlusJSONDefault *GetSystemErrorResponse
+}
+
+type SaveSystemResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveSystemResponse
+	ApplicationProblemPlusJSONDefault *SaveSystemErrorResponse
+}
+
+type SystemHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SystemHistoryResponse
+	ApplicationProblemPlusJSONDefault *SystemHistoryErrorResponse
+}
+
+type PreviewSystemResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewSystemResponse
+	ApplicationProblemPlusJSONDefault *PreviewSystemErrorResponse
+}
+
 type ListUsersResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -4188,6 +6796,7 @@ type Check struct {
 	Limit                 *LimitVersion `json:"limit,omitempty"`
 	NeedsCorrectiveAction bool          `json:"needs_corrective_action"`
 	Result                Result        `json:"result"`
+	RulesVersionID        string        `json:"rules_version_id" validate:"required"`
 }
 
 func (c Check) Validate() error {
@@ -4204,10 +6813,22 @@ func (c Check) Validate() error {
 			errors = errors.Append("Result", err)
 		}
 	}
+	if err := typesValidator.Var(c.RulesVersionID, "required"); err != nil {
+		errors = errors.Append("RulesVersionID", err)
+	}
 	if len(errors) == 0 {
 		return nil
 	}
 	return errors
+}
+
+type CleaningTask struct {
+	Area *string `json:"area,omitempty"`
+	Task string  `json:"task" validate:"required"`
+}
+
+func (c CleaningTask) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
 }
 
 type CoolingLimit struct {
@@ -4297,6 +6918,155 @@ func (f FileProblem) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(f))
 }
 
+type Guidance struct {
+	Checks []GuidanceCheck `json:"checks" validate:"required"`
+	Name   string          `json:"name" validate:"required"`
+	Source *string         `json:"source,omitempty"`
+}
+
+func (g Guidance) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(g.Checks, "required"); err != nil {
+		errors = errors.Append("Checks", err)
+	}
+	for i, item := range g.Checks {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Checks[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(g.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type GuidanceCheck struct {
+	BorderlineMaxC *float64      `json:"borderline_max_c,omitempty"`
+	Check          string        `json:"check" validate:"required"`
+	Combos         []TimeTemp    `json:"combos,omitempty"`
+	Cooling        *CoolingLimit `json:"cooling,omitempty"`
+	MaxC           *float64      `json:"max_c,omitempty"`
+	MinC           *float64      `json:"min_c,omitempty"`
+}
+
+func (g GuidanceCheck) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(g.Check, "required"); err != nil {
+		errors = errors.Append("Check", err)
+	}
+	for i, item := range g.Combos {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Combos[%d]", i), err)
+			}
+		}
+	}
+	if g.Cooling != nil {
+		if v, ok := any(g.Cooling).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Cooling", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type HistoryOutGuidanceBody struct {
+	Versions []VersionedGuidance `json:"versions" validate:"required"`
+}
+
+func (h HistoryOutGuidanceBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range h.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type HistoryOutListsBody struct {
+	Versions []VersionedLists `json:"versions" validate:"required"`
+}
+
+func (h HistoryOutListsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range h.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type HistoryOutRulesBody struct {
+	Versions []VersionedRules `json:"versions" validate:"required"`
+}
+
+func (h HistoryOutRulesBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range h.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type HistoryOutSystemBody struct {
+	Versions []VersionedSystem `json:"versions" validate:"required"`
+}
+
+func (h HistoryOutSystemBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range h.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type KeysOutBody struct {
 	Keys []APIKey `json:"keys" validate:"required"`
 }
@@ -4320,16 +7090,21 @@ func (k KeysOutBody) Validate() error {
 }
 
 type LimitPreview struct {
-	BelowFsai []string        `json:"below_fsai,omitempty"`
-	Changed   int64           `json:"changed"`
-	Limit     LimitVersion    `json:"limit"`
-	Problem   *string         `json:"problem,omitempty"`
-	Recent    []RecordRegrade `json:"recent" validate:"required"`
-	Replaces  *LimitVersion   `json:"replaces,omitempty"`
+	BelowFsai     []string        `json:"below_fsai,omitempty"`
+	BelowGuidance []string        `json:"below_guidance,omitempty"`
+	Changed       int64           `json:"changed"`
+	Guidance      string          `json:"guidance" validate:"required"`
+	Limit         LimitVersion    `json:"limit"`
+	Problem       *string         `json:"problem,omitempty"`
+	Recent        []RecordRegrade `json:"recent" validate:"required"`
+	Replaces      *LimitVersion   `json:"replaces,omitempty"`
 }
 
 func (l LimitPreview) Validate() error {
 	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(l.Guidance, "required"); err != nil {
+		errors = errors.Append("Guidance", err)
+	}
 	if v, ok := any(l.Limit).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
 			errors = errors.Append("Limit", err)
@@ -4359,20 +7134,21 @@ func (l LimitPreview) Validate() error {
 }
 
 type LimitVersion struct {
-	BorderlineMaxC *float64      `json:"borderline_max_c,omitempty"`
-	Check          string        `json:"check" validate:"required"`
-	Combos         []TimeTemp    `json:"combos,omitempty"`
-	Cooling        *CoolingLimit `json:"cooling,omitempty"`
-	CreatedAt      time.Time     `json:"created_at" validate:"required"`
-	CreatedBy      string        `json:"created_by" validate:"required"`
-	ID             string        `json:"id" validate:"required"`
-	MaxC           *float64      `json:"max_c,omitempty"`
-	MinC           *float64      `json:"min_c,omitempty"`
-	NonFood        *bool         `json:"non_food,omitempty"`
-	PlanRef        *string       `json:"plan_ref,omitempty"`
-	Reason         *string       `json:"reason,omitempty"`
-	Scope          Scope         `json:"scope"`
-	Supersedes     *string       `json:"supersedes,omitempty"`
+	BorderlineMaxC    *float64      `json:"borderline_max_c,omitempty"`
+	Check             string        `json:"check" validate:"required"`
+	Combos            []TimeTemp    `json:"combos,omitempty"`
+	Cooling           *CoolingLimit `json:"cooling,omitempty"`
+	CreatedAt         time.Time     `json:"created_at" validate:"required"`
+	CreatedBy         string        `json:"created_by" validate:"required"`
+	GuidanceVersionID *string       `json:"guidance_version_id,omitempty"`
+	ID                string        `json:"id" validate:"required"`
+	MaxC              *float64      `json:"max_c,omitempty"`
+	MinC              *float64      `json:"min_c,omitempty"`
+	NonFood           *bool         `json:"non_food,omitempty"`
+	PlanRef           *string       `json:"plan_ref,omitempty"`
+	Reason            *string       `json:"reason,omitempty"`
+	Scope             Scope         `json:"scope"`
+	Supersedes        *string       `json:"supersedes,omitempty"`
 }
 
 func (l LimitVersion) Validate() error {
@@ -4438,6 +7214,43 @@ func (l Limits) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("History[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Lists struct {
+	CleaningTasks  []CleaningTask `json:"cleaning_tasks" validate:"required"`
+	FoodCategories []string       `json:"food_categories" validate:"required"`
+	Units          []Unit         `json:"units" validate:"required"`
+}
+
+func (l Lists) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(l.CleaningTasks, "required"); err != nil {
+		errors = errors.Append("CleaningTasks", err)
+	}
+	for i, item := range l.CleaningTasks {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("CleaningTasks[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(l.FoodCategories, "required"); err != nil {
+		errors = errors.Append("FoodCategories", err)
+	}
+	if err := typesValidator.Var(l.Units, "required"); err != nil {
+		errors = errors.Append("Units", err)
+	}
+	for i, item := range l.Units {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Units[%d]", i), err)
 			}
 		}
 	}
@@ -4674,6 +7487,7 @@ type Record struct {
 	OutcomeReason    string    `json:"outcome_reason" validate:"required"`
 	PrevHash         string    `json:"prev_hash" validate:"required"`
 	Reading          Reading   `json:"reading"`
+	RulesVersionID   *string   `json:"rules_version_id,omitempty"`
 	Seq              int64     `json:"seq"`
 	Type             string    `json:"type" validate:"required"`
 }
@@ -4770,6 +7584,11 @@ func (r Result) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(r))
 }
 
+type Rules struct {
+	BorderlineNeedsAction bool `json:"borderline_needs_action"`
+	ListedNamesOnly       bool `json:"listed_names_only"`
+}
+
 type Scope struct {
 	Kind string  `json:"kind" validate:"required"`
 	Ref  *string `json:"ref,omitempty"`
@@ -4787,6 +7606,240 @@ type Session struct {
 }
 
 func (s Session) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type SettingsChangeGuidance struct {
+	PlanRef *string  `json:"plan_ref,omitempty"`
+	Reason  string   `json:"reason" validate:"required"`
+	Value   Guidance `json:"value"`
+}
+
+func (s SettingsChangeGuidance) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Reason, "required"); err != nil {
+		errors = errors.Append("Reason", err)
+	}
+	if v, ok := any(s.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsChangeLists struct {
+	PlanRef *string `json:"plan_ref,omitempty"`
+	Reason  string  `json:"reason" validate:"required"`
+	Value   Lists   `json:"value"`
+}
+
+func (s SettingsChangeLists) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Reason, "required"); err != nil {
+		errors = errors.Append("Reason", err)
+	}
+	if v, ok := any(s.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsChangeRules struct {
+	PlanRef *string `json:"plan_ref,omitempty"`
+	Reason  string  `json:"reason" validate:"required"`
+	Value   Rules   `json:"value"`
+}
+
+func (s SettingsChangeRules) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Reason, "required"); err != nil {
+		errors = errors.Append("Reason", err)
+	}
+	if v, ok := any(s.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsChangeSystem struct {
+	PlanRef *string `json:"plan_ref,omitempty"`
+	Reason  string  `json:"reason" validate:"required"`
+	Value   System  `json:"value"`
+}
+
+func (s SettingsChangeSystem) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Reason, "required"); err != nil {
+		errors = errors.Append("Reason", err)
+	}
+	if v, ok := any(s.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsPreviewGuidance struct {
+	Changes    []string          `json:"changes" validate:"required"`
+	Current    VersionedGuidance `json:"current"`
+	LessStrict []string          `json:"less_strict,omitempty"`
+	Notes      []string          `json:"notes" validate:"required"`
+	Problem    *string           `json:"problem,omitempty"`
+	Proposed   Guidance          `json:"proposed"`
+}
+
+func (s SettingsPreviewGuidance) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Changes, "required"); err != nil {
+		errors = errors.Append("Changes", err)
+	}
+	if v, ok := any(s.Current).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Current", err)
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(s.Proposed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Proposed", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsPreviewLists struct {
+	Changes    []string       `json:"changes" validate:"required"`
+	Current    VersionedLists `json:"current"`
+	LessStrict []string       `json:"less_strict,omitempty"`
+	Notes      []string       `json:"notes" validate:"required"`
+	Problem    *string        `json:"problem,omitempty"`
+	Proposed   Lists          `json:"proposed"`
+}
+
+func (s SettingsPreviewLists) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Changes, "required"); err != nil {
+		errors = errors.Append("Changes", err)
+	}
+	if v, ok := any(s.Current).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Current", err)
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(s.Proposed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Proposed", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsPreviewRules struct {
+	Changes    []string       `json:"changes" validate:"required"`
+	Current    VersionedRules `json:"current"`
+	LessStrict []string       `json:"less_strict,omitempty"`
+	Notes      []string       `json:"notes" validate:"required"`
+	Problem    *string        `json:"problem,omitempty"`
+	Proposed   Rules          `json:"proposed"`
+}
+
+func (s SettingsPreviewRules) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Changes, "required"); err != nil {
+		errors = errors.Append("Changes", err)
+	}
+	if v, ok := any(s.Current).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Current", err)
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(s.Proposed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Proposed", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsPreviewSystem struct {
+	Changes    []string        `json:"changes" validate:"required"`
+	Current    VersionedSystem `json:"current"`
+	LessStrict []string        `json:"less_strict,omitempty"`
+	Notes      []string        `json:"notes" validate:"required"`
+	Problem    *string         `json:"problem,omitempty"`
+	Proposed   System          `json:"proposed"`
+}
+
+func (s SettingsPreviewSystem) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Changes, "required"); err != nil {
+		errors = errors.Append("Changes", err)
+	}
+	if v, ok := any(s.Current).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Current", err)
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(s.Proposed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Proposed", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsVersion struct {
+	CreatedAt  time.Time `json:"created_at" validate:"required"`
+	CreatedBy  string    `json:"created_by" validate:"required"`
+	ID         string    `json:"id" validate:"required"`
+	Kind       string    `json:"kind" validate:"required"`
+	PlanRef    *string   `json:"plan_ref,omitempty"`
+	Reason     string    `json:"reason" validate:"required"`
+	Supersedes *string   `json:"supersedes,omitempty"`
+}
+
+func (s SettingsVersion) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
@@ -4824,9 +7877,26 @@ func (s StaffOutBody) Validate() error {
 	return errors
 }
 
+type System struct {
+	BackupIntervalMinutes int64 `json:"backup_interval_minutes"`
+	BackupKeep            int64 `json:"backup_keep"`
+	MaxUploadMb           int64 `json:"max_upload_mb"`
+	PreviewRecords        int64 `json:"preview_records"`
+}
+
 type TimeTemp struct {
 	HoldSeconds int64   `json:"hold_seconds"`
 	MinC        float64 `json:"min_c"`
+}
+
+type Unit struct {
+	Kind    string `json:"kind" validate:"required"`
+	Name    string `json:"name" validate:"required"`
+	NonFood *bool  `json:"non_food,omitempty"`
+}
+
+func (u Unit) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(u))
 }
 
 type User struct {
@@ -4892,6 +7962,102 @@ func (v VerifyReport) Validate() error {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("FileProblems[%d]", i), err)
 			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionedGuidance struct {
+	Builtin bool            `json:"builtin"`
+	Value   Guidance        `json:"value"`
+	Version SettingsVersion `json:"version"`
+}
+
+func (v VersionedGuidance) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(v.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if v, ok := any(v.Version).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Version", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionedLists struct {
+	Builtin bool            `json:"builtin"`
+	Value   Lists           `json:"value"`
+	Version SettingsVersion `json:"version"`
+}
+
+func (v VersionedLists) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(v.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if v, ok := any(v.Version).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Version", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionedRules struct {
+	Builtin bool            `json:"builtin"`
+	Value   Rules           `json:"value"`
+	Version SettingsVersion `json:"version"`
+}
+
+func (v VersionedRules) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(v.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if v, ok := any(v.Version).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Version", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionedSystem struct {
+	Builtin bool            `json:"builtin"`
+	Value   System          `json:"value"`
+	Version SettingsVersion `json:"version"`
+}
+
+func (v VersionedSystem) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(v.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if v, ok := any(v.Version).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Version", err)
 		}
 	}
 	if len(errors) == 0 {

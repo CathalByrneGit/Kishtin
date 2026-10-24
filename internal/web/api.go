@@ -27,7 +27,6 @@ const SessionHeader = "X-Kishtin-Session"
 type Server struct {
 	svc      *service.Service
 	log      *slog.Logger
-	maxFile  int64
 	api      huma.API
 	mux      *http.ServeMux
 	specJSON []byte
@@ -54,11 +53,10 @@ func Config() huma.Config {
 	return cfg
 }
 
-// New builds the API server. maxFile is the largest attachment accepted,
-// in bytes.
-func New(svc *service.Service, log *slog.Logger, maxFile int64) (*Server, error) {
+// New builds the API server.
+func New(svc *service.Service, log *slog.Logger) (*Server, error) {
 	mux := http.NewServeMux()
-	s := &Server{svc: svc, log: log, maxFile: maxFile, mux: mux}
+	s := &Server{svc: svc, log: log, mux: mux}
 	s.api = humago.NewWithPrefix(mux, "/api", Config())
 	s.api.UseMiddleware(s.authenticate)
 	s.routes()
@@ -187,7 +185,7 @@ func serveHome(w http.ResponseWriter, _ *http.Request) {
 // Spec returns the API's OpenAPI description as indented JSON, without
 // needing a running server.
 func Spec() ([]byte, error) {
-	s, err := New(nil, slog.New(slog.DiscardHandler), 15<<20)
+	s, err := New(nil, slog.New(slog.DiscardHandler))
 	if err != nil {
 		return nil, err
 	}

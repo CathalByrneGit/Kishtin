@@ -41,7 +41,7 @@ func newEnv(t *testing.T) *env {
 	st, err := sqlite.Open(ctx, filepath.Join(dir, "kishtin.db"))
 	require.NoError(t, err)
 	t.Cleanup(func() { st.Close() })
-	fs, err := files.New(filepath.Join(dir, "files"), 1<<20)
+	fs, err := files.New(filepath.Join(dir, "files"))
 	require.NoError(t, err)
 	clk := clock.NewFixed(time.Date(2026, 5, 1, 9, 0, 0, 0, time.UTC))
 	svc := service.New(service.Options{Store: st, Clock: clk, Files: fs, Backups: service.BackupConfig{
@@ -57,7 +57,7 @@ func newEnv(t *testing.T) *env {
 	dev, err := svc.CreateKey(ctx, mgr, auth.KeyDevice, "Pass tablet", "")
 	require.NoError(t, err)
 
-	h, err := New(svc, slog.New(slog.NewTextHandler(io.Discard, nil)), 1<<20)
+	h, err := New(svc, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	require.NoError(t, err)
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)

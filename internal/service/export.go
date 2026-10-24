@@ -28,7 +28,7 @@ type ExportSummary struct {
 var recordColumns = []string{
 	"seq", "record_id", "type", "logged_at_utc", "logged_at_dublin",
 	"logged_by", "logged_by_name", "subject", "temp_c", "outcome",
-	"outcome_reason", "corrective_action", "limit_version_id", "limit_scope",
+	"outcome_reason", "corrective_action", "limit_version_id", "limit_scope", "rules_version_id",
 	"corrects", "correction_reason", "reading_json", "prev_hash", "hash",
 }
 
@@ -76,7 +76,7 @@ func (s *Service) ExportRecordsCSV(ctx context.Context, p *auth.Principal, from,
 			r.LoggedAt.UTC().Format(time.RFC3339Nano),
 			r.LoggedAt.In(clock.Dublin).Format("2006-01-02 15:04:05"),
 			r.LoggedBy, cell(r.LoggedByName), cell(subject(r)), temp, string(r.Outcome),
-			cell(r.OutcomeReason), cell(r.CorrectiveAction), r.LimitVersionID, cell(scope),
+			cell(r.OutcomeReason), cell(r.CorrectiveAction), r.LimitVersionID, cell(scope), r.RulesVersionID,
 			r.Corrects, cell(r.CorrectionReason), cell(string(reading)), r.PrevHash, r.Hash,
 		}
 		if err := cw.Write(row); err != nil {
@@ -93,7 +93,7 @@ func (s *Service) ExportRecordsCSV(ctx context.Context, p *auth.Principal, from,
 
 var limitColumns = []string{
 	"limit_version_id", "check", "scope", "max_c", "borderline_max_c", "min_c",
-	"combos", "cooling", "non_food", "below_fsai", "supersedes",
+	"combos", "cooling", "non_food", "below_fsai", "guidance_version_id", "supersedes",
 	"created_by", "created_at_utc", "reason", "plan_ref",
 }
 
@@ -129,7 +129,7 @@ func (s *Service) ExportLimitsCSV(ctx context.Context, p *auth.Principal, w io.W
 		row := []string{
 			lv.ID, string(lv.Check), cell(lv.Scope.String()), num(lv.MaxC), num(lv.BorderlineMaxC), num(lv.MinC),
 			strings.Join(combos, "; "), cooling, strconv.FormatBool(lv.NonFood),
-			cell(strings.Join(lv.LooserThanFSAI(), "; ")), lv.Supersedes,
+			cell(strings.Join(lv.LooserThanFSAI(), "; ")), lv.GuidanceVersionID, lv.Supersedes,
 			lv.CreatedBy, lv.CreatedAt.UTC().Format(time.RFC3339Nano), cell(lv.Reason), cell(lv.PlanRef),
 		}
 		if err := cw.Write(row); err != nil {
