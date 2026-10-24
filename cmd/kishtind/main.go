@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
+	"github.com/cathalbyrnegit/kishtin/frontend"
 	"github.com/cathalbyrnegit/kishtin/internal/config"
 	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
@@ -151,7 +152,7 @@ func serve(ctx context.Context, cfgPath string) error {
 		return errors.New("no staff yet: stop here and run `kishtind setup` to create the first manager")
 	}
 
-	h, err := web.New(a.svc, log)
+	h, err := web.New(a.svc, log, frontend.Files())
 	if err != nil {
 		return err
 	}

@@ -7631,7 +7631,7 @@ func (l Limits) Validate() error {
 
 type Lists struct {
 	CleaningTasks     []CleaningTask `json:"cleaning_tasks" validate:"required"`
-	CorrectiveActions []ActionPreset `json:"corrective_actions" validate:"required"`
+	CorrectiveActions []ActionPreset `json:"corrective_actions,omitempty"`
 	FoodCategories    []string       `json:"food_categories" validate:"required"`
 	Units             []Unit         `json:"units" validate:"required"`
 }
@@ -7647,9 +7647,6 @@ func (l Lists) Validate() error {
 				errors = errors.Append(fmt.Sprintf("CleaningTasks[%d]", i), err)
 			}
 		}
-	}
-	if err := typesValidator.Var(l.CorrectiveActions, "required"); err != nil {
-		errors = errors.Append("CorrectiveActions", err)
 	}
 	for i, item := range l.CorrectiveActions {
 		if v, ok := any(item).(runtime.Validator); ok {

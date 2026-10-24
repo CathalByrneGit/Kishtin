@@ -1,0 +1,84 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-root);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Temperatures: monospaced, tabular numbers, readable at arm's length. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kitchen screens: every kit control at least 56px tall. */
+.kitchen {
+  --kit-control-height: 56px;
+  --kit-control-font-size: var(--font-size-lg);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: var(--text-secondary);
+}
+
+.section-title {
+  font-size: var(--font-size-xl);
+  margin: var(--space-6) 0 var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field > span {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+textarea.text-area {
+  font: inherit;
+  font-size: var(--font-size-lg);
+  min-height: 96px;
+  padding: var(--space-4) var(--space-5);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+
+textarea.text-area:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}

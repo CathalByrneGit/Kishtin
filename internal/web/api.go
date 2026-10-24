@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -30,9 +31,16 @@ type Server struct {
 	api      huma.API
 	mux      *http.ServeMux
 	specJSON []byte
+	ui       fs.FS
 }
 
 type callerKey struct{}
+
+func init() {
+	// Kishtin always sends empty lists as [], never null, so the spec says
+	// so and clients need not handle null arrays.
+	huma.DefaultArrayNullable = false
+}
 
 // Config returns the Huma configuration for the Kishtin API. Docs pages
 // and schema links are off: they load scripts from the internet, and
@@ -53,10 +61,11 @@ func Config() huma.Config {
 	return cfg
 }
 
-// New builds the API server.
-func New(svc *service.Service, log *slog.Logger) (*Server, error) {
+// New builds the server. ui is the built kitchen screens; nil serves a
+// short page saying the screens are not built.
+func New(svc *service.Service, log *slog.Logger, ui fs.FS) (*Server, error) {
 	mux := http.NewServeMux()
-	s := &Server{svc: svc, log: log, mux: mux}
+	s := &Server{svc: svc, log: log, mux: mux, ui: ui}
 	s.api = humago.NewWithPrefix(mux, "/api", Config())
 	s.api.UseMiddleware(s.authenticate)
 	s.routes()
@@ -68,7 +77,11 @@ func New(svc *service.Service, log *slog.Logger) (*Server, error) {
 	s.specJSON = spec
 	mux.HandleFunc("GET /api/openapi.json", s.serveSpec)
 	mux.HandleFunc("GET /api/events", s.serveEvents)
-	mux.HandleFunc("GET /{$}", serveHome)
+	if ui != nil {
+		mux.HandleFunc("GET /", s.serveUI)
+	} else {
+		mux.HandleFunc("GET /{$}", serveHome)
+	}
 	return s, nil
 }
 
@@ -186,7 +199,7 @@ func serveHome(w http.ResponseWriter, _ *http.Request) {
 // Spec returns the API's OpenAPI description as indented JSON, without
 // needing a running server.
 func Spec() ([]byte, error) {
-	s, err := New(nil, slog.New(slog.DiscardHandler))
+	s, err := New(nil, slog.New(slog.DiscardHandler), nil)
 	if err != nil {
 		return nil, err
 	}

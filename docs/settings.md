@@ -63,14 +63,23 @@ Each record stores the rules version in force when it was saved.
   "units": [
     { "name": "Walk-in", "kind": "fridge" },
     { "name": "Drinks fridge", "kind": "fridge", "non_food": true },
-    { "name": "Chest freezer", "kind": "freezer" }
+    { "name": "Chest freezer", "kind": "freezer" },
+    { "name": "Bar fridge", "kind": "fridge", "checks": [
+      { "label": "Opening", "from": "08:00" },
+      { "label": "Mid-service", "from": "14:00" },
+      { "label": "Close", "from": "21:00" }
+    ] }
   ],
   "food_categories": ["poultry", "pork", "minced meat", "fish", "rice"],
-  "cleaning_tasks": [ { "task": "Deep clean fryer", "area": "Fryer station" } ]
+  "cleaning_tasks": [ { "task": "Deep clean fryer", "area": "Fryer station" } ],
+  "corrective_actions": [ { "type": "fridge", "text": "Moved food to a working unit" } ]
 }
 ```
 
-- An empty list accepts any name. Lists start empty.
+- The lists start with the prototype's: Walk-in fridge, Prep fridge and Chest freezer, its six daily cleaning tasks, and its quick-pick corrective actions.
+- `checks` sets a unit's daily check times. Each runs from its `from` time (HH:MM) until the next one starts; the first also covers the start of the day. Leave it out for AM (until 12:00) and PM.
+- `corrective_actions` are the quick-pick actions offered for each record type when a reading is not a pass. Staff can always write their own.
+- An empty list accepts any name.
 - Once a list has entries, a name not on it is refused (with `listed_names_only` on), and the error lists the names to choose from. Names match ignoring case, and the listed spelling is saved. This stops "Walkin" and "Walk-in" becoming two fridges with different limits.
 - Fridge readings must name a fridge, and freezer readings a freezer.
 - Limits for a fridge, freezer or food category must use a listed name too.
@@ -83,6 +92,7 @@ Dishes are not listed yet; they come with the menu (roadmap stage 2).
 
 | Setting | Default | Meaning |
 |---|---|---|
+| `restaurant_name` | empty | Shown at the top of every screen and on the inspection pack. |
 | `backup_interval_minutes` | 360 | How often to back up. 0 turns scheduled backups off; otherwise at least 15. |
 | `backup_keep` | 28 | How many backups to keep. 0 keeps every backup. |
 | `max_upload_mb` | 15 | Largest docket or invoice file accepted (1–100). |

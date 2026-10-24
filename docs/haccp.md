@@ -8,13 +8,15 @@ What Kishtin's HACCP log does today, and what it does not.
 |---|---|---|
 | `fridge` | unit, temperature | fridge limit (FSAI default ≤ 5°C) |
 | `freezer` | unit, temperature | freezer limit (FSAI default ≤ −18°C) |
-| `delivery` | supplier, product, chilled/frozen/ambient, temperature, optional docket photo | chilled ≤ 5°C (borderline to 8°C), frozen ≤ −18°C (borderline to −15°C), ambient: no limit |
+| `delivery` | supplier, product, chilled/frozen/ambient, temperature, packaging intact, in date, optional docket photo | chilled ≤ 5°C (borderline to 8°C), frozen ≤ −18°C (borderline to −15°C), ambient: no temperature limit. Packaging not intact or not in date fails. |
 | `cook` | food, core temperature, optional hold time | core ≥ 75°C, or any time–temperature combination the limit allows |
 | `reheat` | food, core temperature, optional hold time | core ≥ 70°C |
 | `cooling` | food, cooked at, into fridge at, temperature at 2h30 if late | into the fridge within 2 h; otherwise above 10°C at 2h30 means serve now or discard |
 | `hot_hold` | food, temperature | ≥ 63°C |
-| `batch_label` | product, made on, use by, quantity | no limit; use-by cannot be before made-on |
-| `cleaning` | task, area, done or not | not done is a fail |
+| `batch_label` | product, made on, use by (or shelf life in days), quantity | no limit; use-by cannot be before made-on |
+| `cleaning` | task, area, done or not | not done is a fail; a task can be done once a day |
+
+Delivery results also say what to do: a borderline delivery is accepted only if used or stored straight away; a failed one is rejected.
 
 Temperatures are compared to 0.1°C. A reading exactly on the limit passes. Fridge, freezer, food category and cleaning task names can be fixed to managed lists; see [settings.md](settings.md#lists).
 
@@ -47,11 +49,21 @@ The FSAI defaults are constants in `internal/haccp/limits.go`. The restaurant's 
 - A change creates a new version. Old versions are kept, and records already saved keep their result.
 - `kishtin limits set` first shows how recent records would have scored under the new limit, then asks before saving.
 
+## Today
+
+`kishtin haccp today` (or `GET /api/haccp/today`, or the Today screen) shows each fridge and freezer check for today as done, due or missed, the cleaning checklist, how many of the day's checks are done, today's out-of-limit records and whether each has an action, and batches in use.
+
+Each unit has daily check times (see [settings.md](settings.md#lists)); by default AM until 12:00 and PM. A reading counts for the check whose time it falls in; the latest reading in a check counts. A check not logged by the time the next one starts is missed. A correction fills the check of the record it corrects.
+
 ## Exports
 
 `kishtin haccp export --from DATE --to DATE` writes a CSV of the records in that range (both dates inclusive, Dublin time). Each row has the record ID, sequence number, UTC and Dublin times, who logged it, the reading, the result and reason, the corrective action, the limit version, and both hashes.
 
-`kishtin haccp export --limits` writes the full limit history. Hand both files to an inspector.
+Leave out `--from` and `--to` for every record; `--type` and `--fails` narrow it further.
+
+`kishtin haccp export --limits` writes the full limit history.
+
+`kishtin haccp export --pdf -o pack.pdf` writes the **inspection pack**: a summary (records, failures, hash chain head, attached file checks, the guidance in use), failed and borderline records with their actions, every record by day, and the limit versions those records were checked against. It takes the same filters.
 
 Text that starts with `=`, `+`, `-` or `@` is prefixed with `'` so spreadsheets do not run it as a formula.
 

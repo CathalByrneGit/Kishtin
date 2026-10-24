@@ -58,7 +58,7 @@ func newEnv(t *testing.T) *env {
 	dev, err := svc.CreateKey(ctx, mgr, auth.KeyDevice, "Pass tablet", "")
 	require.NoError(t, err)
 
-	h, err := New(svc, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	h, err := New(svc, slog.New(slog.NewTextHandler(io.Discard, nil)), nil)
 	require.NoError(t, err)
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)

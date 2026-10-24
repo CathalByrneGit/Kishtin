@@ -38,7 +38,7 @@ func server(t *testing.T) (url, key string) {
 	require.NoError(t, svc.Init(ctx))
 	res, err := svc.Setup(ctx, service.NewUser{Name: "Máire Manager", Password: "synthetic-password"})
 	require.NoError(t, err)
-	h, err := web.New(svc, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	h, err := web.New(svc, slog.New(slog.NewTextHandler(io.Discard, nil)), nil)
 	require.NoError(t, err)
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
@@ -167,6 +167,7 @@ func TestCLI(t *testing.T) {
 	out, _, err = run(t, url, key, "", "keys", "create", "--name", "Pass tablet")
 	require.NoError(t, err)
 	assert.Contains(t, out, "kishtin_key_")
+	assert.Contains(t, out, url+"/#pair=kishtin_key_")
 
 	out, _, err = run(t, url, key, "", "backup", "now")
 	require.NoError(t, err)

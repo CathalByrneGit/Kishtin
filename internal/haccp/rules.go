@@ -103,7 +103,7 @@ type Lists struct {
 	CleaningTasks  []CleaningTask `json:"cleaning_tasks"`
 	// CorrectiveActions are the quick-pick actions offered when a reading
 	// is not a pass. Staff can always write their own.
-	CorrectiveActions []ActionPreset `json:"corrective_actions"`
+	CorrectiveActions []ActionPreset `json:"corrective_actions" required:"false"`
 }
 
 // BuiltinListsID is the version ID of the built-in lists.

@@ -103,10 +103,7 @@
             "items": {
               "$ref": "#/components/schemas/Backup"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -310,10 +307,7 @@
             "items": {
               "$ref": "#/components/schemas/ErrorDetail"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "instance": {
             "description": "A URI reference that identifies the specific occurrence of the problem.",
@@ -406,10 +400,7 @@
             "items": {
               "$ref": "#/components/schemas/GuidanceCheck"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "name": {
             "type": "string"
@@ -438,10 +429,7 @@
             "items": {
               "$ref": "#/components/schemas/TimeTemp"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "cooling": {
             "$ref": "#/components/schemas/CoolingLimit"
@@ -467,10 +455,7 @@
             "items": {
               "$ref": "#/components/schemas/VersionedGuidance"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -485,10 +470,7 @@
             "items": {
               "$ref": "#/components/schemas/VersionedLists"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -503,10 +485,7 @@
             "items": {
               "$ref": "#/components/schemas/VersionedRules"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -521,10 +500,7 @@
             "items": {
               "$ref": "#/components/schemas/VersionedSystem"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -539,10 +515,7 @@
             "items": {
               "$ref": "#/components/schemas/APIKey"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -557,19 +530,13 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "below_guidance": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "changed": {
             "format": "int64",
@@ -588,10 +555,7 @@
             "items": {
               "$ref": "#/components/schemas/RecordRegrade"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "replaces": {
             "$ref": "#/components/schemas/LimitVersion"
@@ -619,10 +583,7 @@
             "items": {
               "$ref": "#/components/schemas/TimeTemp"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "cooling": {
             "$ref": "#/components/schemas/CoolingLimit"
@@ -680,19 +641,13 @@
             "items": {
               "$ref": "#/components/schemas/LimitVersion"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "history": {
             "items": {
               "$ref": "#/components/schemas/LimitVersion"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -708,44 +663,31 @@
             "items": {
               "$ref": "#/components/schemas/CleaningTask"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "corrective_actions": {
             "items": {
               "$ref": "#/components/schemas/ActionPreset"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "food_categories": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "units": {
             "items": {
               "$ref": "#/components/schemas/Unit"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
           "units",
           "food_categories",
-          "cleaning_tasks",
-          "corrective_actions"
+          "cleaning_tasks"
         ],
         "type": "object"
       },
@@ -861,10 +803,7 @@
             "items": {
               "$ref": "#/components/schemas/TimeTemp"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "cooling": {
             "$ref": "#/components/schemas/CoolingLimit"
@@ -1141,10 +1080,7 @@
             "items": {
               "$ref": "#/components/schemas/Record"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1308,10 +1244,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "current": {
             "$ref": "#/components/schemas/VersionedGuidance"
@@ -1320,19 +1253,13 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "notes": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "problem": {
             "type": "string"
@@ -1356,10 +1283,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "current": {
             "$ref": "#/components/schemas/VersionedLists"
@@ -1368,19 +1292,13 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "notes": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "problem": {
             "type": "string"
@@ -1404,10 +1322,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "current": {
             "$ref": "#/components/schemas/VersionedRules"
@@ -1416,19 +1331,13 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "notes": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "problem": {
             "type": "string"
@@ -1452,10 +1361,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "current": {
             "$ref": "#/components/schemas/VersionedSystem"
@@ -1464,19 +1370,13 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "notes": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "problem": {
             "type": "string"
@@ -1589,10 +1489,7 @@
             "items": {
               "$ref": "#/components/schemas/StaffEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1657,28 +1554,19 @@
             "items": {
               "$ref": "#/components/schemas/BatchToday"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "cleaning": {
             "items": {
               "$ref": "#/components/schemas/CleaningToday"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "corrective_actions": {
             "items": {
               "$ref": "#/components/schemas/ActionPreset"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "date": {
             "type": "string"
@@ -1691,10 +1579,7 @@
             "items": {
               "$ref": "#/components/schemas/Record"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "out_of_limit": {
             "format": "int64",
@@ -1718,10 +1603,7 @@
             "items": {
               "$ref": "#/components/schemas/UnitToday"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "without_action": {
             "format": "int64",
@@ -1752,10 +1634,7 @@
             "items": {
               "$ref": "#/components/schemas/CheckTime"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "kind": {
             "type": "string"
@@ -1792,10 +1671,7 @@
             "items": {
               "$ref": "#/components/schemas/SlotToday"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1868,10 +1744,7 @@
             "items": {
               "$ref": "#/components/schemas/User"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1889,10 +1762,7 @@
             "items": {
               "$ref": "#/components/schemas/FileProblem"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "files_checked": {
             "format": "int64",
@@ -1905,10 +1775,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -2385,10 +2252,7 @@
               "items": {
                 "type": "string"
               },
-              "type": [
-                "array",
-                "null"
-              ]
+              "type": "array"
             }
           },
           {
@@ -2401,10 +2265,7 @@
               "items": {
                 "type": "string"
               },
-              "type": [
-                "array",
-                "null"
-              ]
+              "type": "array"
             }
           }
         ],
@@ -2499,10 +2360,7 @@
               "items": {
                 "type": "string"
               },
-              "type": [
-                "array",
-                "null"
-              ]
+              "type": "array"
             }
           },
           {
@@ -2515,10 +2373,7 @@
               "items": {
                 "type": "string"
               },
-              "type": [
-                "array",
-                "null"
-              ]
+              "type": "array"
             }
           }
         ],
@@ -2786,10 +2641,7 @@
               "items": {
                 "type": "string"
               },
-              "type": [
-                "array",
-                "null"
-              ]
+              "type": "array"
             }
           },
           {
@@ -2802,10 +2654,7 @@
               "items": {
                 "type": "string"
               },
-              "type": [
-                "array",
-                "null"
-              ]
+              "type": "array"
             }
           },
           {

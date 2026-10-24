@@ -5,6 +5,9 @@
 # Default: ~/.kishtin, or /var/lib/kishtin when there is no home folder.
 # data_dir = "/var/lib/kishtin"
 
+# Starting restaurant name for the screens. A manager can change it in Setup.
+# restaurant_name = "The Synthetic Kitchen"
+
 [server]
 # Loopback only by default. To serve kitchen tablets over Wi-Fi, listen on
 # the network address and either set tls_cert and tls_key, or set

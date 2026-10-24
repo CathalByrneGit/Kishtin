@@ -204,6 +204,8 @@ func (c *cli) todayCmd() *cobra.Command {
 				switch {
 				case td.OutOfLimit == 0:
 					fmt.Fprintln(w, "No out-of-limit readings today.")
+				case td.OutOfLimit == 1 && td.WithoutAction == 0:
+					fmt.Fprintln(w, "1 out-of-limit reading today, with an action recorded.")
 				case td.WithoutAction == 0:
 					fmt.Fprintf(w, "%d out-of-limit readings today, each with an action recorded.\n", td.OutOfLimit)
 				default:
@@ -458,13 +460,14 @@ func (c *cli) exportCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			var body []byte
 			var summary string
-			if limits {
+			switch {
+			case limits:
 				res, err := c.api.ExportLimitsWithResponse(cmd.Context())
 				if err != nil {
 					return apiErr(err)
 				}
 				body, summary = res.Body, "Limit history exported."
-			} else if pdf {
+			case pdf:
 				q := &client.ExportPackQuery{Type: types}
 				if from != "" {
 					q.From = &from
@@ -486,7 +489,7 @@ func (c *cli) exportCmd() *cobra.Command {
 				if h := res.Headers200; h != nil {
 					summary = fmt.Sprintf("Inspection pack with %s records written. Hash chain OK: %s, head %s.", h.XKishtinRecords, h.XKishtinChainOK, h.XKishtinChainHead)
 				}
-			} else {
+			default:
 				q := &client.ExportRecordsQuery{Type: types}
 				if from != "" {
 					q.From = &from

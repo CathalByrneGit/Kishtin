@@ -388,6 +388,9 @@ func (c *cli) keysCmd() *cobra.Command {
 			}
 			return c.emit(res, func(w io.Writer) {
 				fmt.Fprintf(w, "Created %s key %q. Secret (shown once, store it safely):\n\n  %s\n", res.Key.Kind, res.Key.Name, res.Secret)
+				if res.Key.Kind == "device" {
+					fmt.Fprintf(w, "\nOpen this link once on the device to pair it:\n\n  %s/#pair=%s\n", strings.TrimRight(c.url, "/"), res.Secret)
+				}
 			})
 		},
 	}

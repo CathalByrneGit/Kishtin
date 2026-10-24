@@ -110,7 +110,13 @@ func apiErr(err error) error {
 	}
 	var em client.ErrorModel
 	if errors.As(err, &em) && em.Detail != nil {
-		return errors.New(*em.Detail)
+		msg := *em.Detail
+		for _, d := range em.Errors {
+			if d.Message != nil {
+				msg += "; " + strings.TrimPrefix(deref(d.Location), "body.") + " " + *d.Message
+			}
+		}
+		return errors.New(msg)
 	}
 	var ce *runtime.ClientAPIError
 	if errors.As(err, &ce) {
