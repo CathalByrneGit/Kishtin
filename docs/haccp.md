@@ -16,7 +16,7 @@ What Kishtin's HACCP log does today, and what it does not.
 | `batch_label` | product, made on, use by, quantity | no limit; use-by cannot be before made-on |
 | `cleaning` | task, area, done or not | not done is a fail |
 
-Temperatures are compared to 0.1°C. A reading exactly on the limit passes.
+Temperatures are compared to 0.1°C. A reading exactly on the limit passes. Fridge, freezer, food category and cleaning task names can be fixed to managed lists; see [settings.md](settings.md#lists).
 
 ## Results
 
@@ -25,7 +25,7 @@ Temperatures are compared to 0.1°C. A reading exactly on the limit passes.
 - **fail**: outside the limit.
 - **recorded**: no limit applies.
 
-A **fail** or **borderline** record cannot be saved without a corrective action. Check a reading first, without saving, with `kishtin haccp log … --dry-run` or `POST /api/haccp/check`.
+A **fail** always needs a corrective action before it can be saved. A **borderline** record needs one too, unless the food-safety rules say otherwise (see [settings.md](settings.md#food-safety-rules)). Each record stores the rules version that applied. Check a reading first, without saving, with `kishtin haccp log … --dry-run` or `POST /api/haccp/check`.
 
 ## Records cannot be changed
 
@@ -41,8 +41,9 @@ The FSAI defaults are constants in `internal/haccp/limits.go`. The restaurant's 
 
 - A limit can apply to a **dish**, a **food category**, a **fridge or freezer unit**, or a whole check type. The most specific one that exists is used, and each record says which level it came from.
 - Changing a limit needs a manager logged in with a password (or a manager API key). A PIN is not enough.
-- Every change needs a reason. A limit **less strict than FSAI guidance** also needs a HACCP plan reference. The exception is a unit marked non-food, such as a drinks fridge, which only needs a reason.
-- A cooking combination below 75°C counts as less strict than FSAI guidance, even a common equivalent like 70°C for 2 minutes, so it needs a plan reference.
+- Every change needs a reason. A limit **less strict than your reference guidance** also needs a HACCP plan reference. The guidance starts as the FSAI defaults and can be changed; see [settings.md](settings.md#reference-guidance). The exception is a unit marked non-food, such as a drinks fridge, which only needs a reason.
+- A cooking combination counts as less strict unless the guidance has one that is no hotter and held no longer. The FSAI guidance only has 75°C, so 70°C for 2 minutes needs a plan reference until you add it to your guidance.
+- Each limit stores the guidance version it was checked against. Previews also say when a limit is below the FSAI defaults, whatever the guidance says.
 - A change creates a new version. Old versions are kept, and records already saved keep their result.
 - `kishtin limits set` first shows how recent records would have scored under the new limit, then asks before saving.
 
@@ -56,15 +57,15 @@ Text that starts with `=`, `+`, `-` or `@` is prefixed with `'` so spreadsheets 
 
 ## Docket photos
 
-Upload a JPEG, PNG, WebP, HEIC photo or a PDF (`--docket file.jpg` on a delivery, or `POST /api/files`). It is stored under its SHA-256 in the data folder's `files/` folder, marked read-only, and never deleted by Kishtin. Kishtin does not read the docket's contents.
+Upload a JPEG, PNG, WebP, HEIC photo or a PDF, up to `max_upload_mb` (15 MB by default) (`--docket file.jpg` on a delivery, or `POST /api/files`). It is stored under its SHA-256 in the data folder's `files/` folder, marked read-only, and never deleted by Kishtin. Kishtin does not read the docket's contents.
 
 ## Backups
 
-Every `backup.interval` (6 hours by default), and on `kishtin backup now`, Kishtin:
+On the schedule in the system settings (every 6 hours by default; see [settings.md](settings.md#system-settings)), and on `kishtin backup now`, Kishtin:
 
 1. writes a consistent copy of the database with SQLite's `VACUUM INTO`,
 2. opens the copy read-only and verifies its HACCP chain,
 3. writes `<backup>.sha256` next to it,
-4. removes backups beyond `backup.keep` (28 by default).
+4. removes backups beyond `backup_keep` (28 by default).
 
 Backups stay on the server machine. Copy them somewhere else yourself. Attached files are not in the database backup: copy the `files/` folder too.

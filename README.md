@@ -12,6 +12,7 @@ Roadmap stage 1, backend part:
 
 - **HACCP log**: fridge, freezer, delivery, cook, reheat, cooling, hot holding, batch label and cleaning records, checked against FSAI limits. See [docs/haccp.md](docs/haccp.md).
 - **Versioned limits**: a manager can set limits per dish, food category or fridge. Every change is a new version, and every record stores the version it was checked against.
+- **Customisable guidance and rules**: the reference guidance limits are measured against (starts as FSAI), whether borderline readings need a corrective action, managed lists of fridges, food categories and cleaning tasks, and system settings such as the backup schedule. All versioned, previewed before saving, and audited. See [docs/settings.md](docs/settings.md).
 - **Tamper evidence**: records are append-only and hash-chained. Docket photos are stored under their SHA-256. `kishtin haccp verify` re-checks all of it.
 - **CSV export** of records and the limit history, for inspections.
 - **Backups** on a schedule. Each copy is verified and gets a `.sha256` file.
@@ -48,6 +49,7 @@ bin/kishtin haccp log fridge --unit "Walk-in" --temp 3.4
 bin/kishtin haccp list
 bin/kishtin haccp verify
 bin/kishtin haccp export --from 2026-05-01 --to 2026-05-31 -o may.csv
+bin/kishtin settings show guidance
 ```
 
 Every command takes `--json` for scripts and agents. Run `bin/kishtin --help` for the rest.

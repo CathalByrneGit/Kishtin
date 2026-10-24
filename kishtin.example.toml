@@ -22,6 +22,9 @@ driver = "sqlite"
 [backup]
 # A consistent copy of the database is written this often and its HACCP
 # chain is verified. Copy backups off the machine yourself.
+# interval, keep and [files] max_size_mb are starting values: once a manager
+# saves system settings (kishtin settings set system), those win. dir stays
+# here only.
 interval = "6h"
 keep = 28
 # dir = "/var/lib/kishtin/backups"

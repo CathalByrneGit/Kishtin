@@ -221,6 +221,15 @@ Limits are data, not code. A manager can set limits that match the restaurant's 
 - **Preview before saving.** A limit change shows how recent records would have scored under the new limit, then asks to confirm (show the plan, then act).
 - Export the full limit history alongside HACCP records, so the inspection pack is complete.
 
+#### Customisable guidance and rules
+
+Every guideline Kishtin checks against is customisable, not only the limits, with the same rules: versioned, previewed before saving, a reason every time, a HACCP plan reference for anything less strict, manager password, and no re-grading of saved records.
+
+- **Reference guidance.** The baseline limits are compared with when deciding "looser". It starts as the FSAI defaults and can be replaced by the restaurant's own HACCP plan, for example to recognise 70°C for 2 minutes as equal to 75°C. Guidance looser than the FSAI constants needs a plan reference; limits looser than the guidance need one. Each limit stores the guidance version it was checked against.
+- **Food-safety rules.** Whether borderline readings need a corrective action, and whether names must come from the managed lists. A failed reading always needs a corrective action; that rule is not customisable. Each record stores the rules version in force.
+- **Managed lists.** Fridges and freezers, food categories and cleaning tasks, so names stay consistent and unit or category limits apply reliably.
+- **System settings.** Backup schedule and retention, upload size, preview length. Paths, listen address and TLS stay in `kishtin.toml`.
+
 Rules:
 
 - A failed reading cannot be saved without a corrective action.
