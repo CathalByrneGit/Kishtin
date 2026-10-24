@@ -145,3 +145,9 @@ export function coolingTimes(date: string, cooked: string, fridge: string): Cool
   if (minutes >= 12 * 60) return null;
   return { cookedAt: start, intoFridgeAt: into, minutes };
 }
+
+/** shortDate writes a YYYY-MM-DD date as "Fri 1 May". */
+export function shortDate(date: string): string {
+  const [weekday = "", ...rest] = longDate(date).split(" ");
+  return [weekday.slice(0, 3), ...rest].join(" ");
+}

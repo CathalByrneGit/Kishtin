@@ -28,7 +28,7 @@
 </script>
 
 <Modal {title} {onclose} maxWidth="560px">
-  <div class="stack kitchen">
+  <div class="stack">
     {#if preview.changes.length > 0}
       <div>
         <strong>What changes</strong>
@@ -48,18 +48,18 @@
     {:else}
       <label class="field">
         <span>Reason for the change (required)</span>
-        <TextInput bind:value={reason} size="lg" block />
+        <TextInput bind:value={reason} block />
       </label>
       {#if lessStrict.length > 0}
         <label class="field">
           <span>HACCP plan section or validation (required)</span>
-          <TextInput bind:value={planRef} size="lg" block />
+          <TextInput bind:value={planRef} block />
         </label>
       {/if}
     {/if}
   </div>
   {#snippet footer()}
-    <div class="row kitchen">
+    <div class="row">
       <Button label="Cancel" onclick={onclose} />
       <Button
         tone="success"

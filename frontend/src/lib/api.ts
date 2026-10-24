@@ -94,6 +94,15 @@ export interface RecordFilter {
   newest?: boolean;
 }
 
+export interface ExportResult {
+  blob: Blob;
+  name: string;
+  /** evidence the server sends with every export */
+  records: number;
+  chainHead: string;
+  chainOK: boolean;
+}
+
 export const api = {
   staff: () => json<Schemas["StaffOutBody"]>("GET", "/auth/staff"),
   login: (body: { user_id: string; pin?: string; password?: string }) =>
@@ -108,11 +117,17 @@ export const api = {
   limits: () => json<Schemas["Limits"]>("GET", "/haccp/limits"),
   upload: (file: File) => json<Schemas["FileMeta"]>("POST", "/files", { query: { name: file.name }, raw: file }),
 
-  exportFile: async (kind: "csv" | "pdf", q: RecordFilter): Promise<{ blob: Blob; name: string }> => {
+  exportFile: async (kind: "csv" | "pdf", q: RecordFilter): Promise<ExportResult> => {
     const res = await send("GET", kind === "csv" ? "/haccp/export" : "/haccp/export/pdf", { query: { ...q } });
     const cd = res.headers.get("Content-Disposition") ?? "";
     const name = /filename="?([^";]+)"?/.exec(cd)?.[1] ?? `haccp-records.${kind}`;
-    return { blob: await res.blob(), name };
+    return {
+      blob: await res.blob(),
+      name,
+      records: Number(res.headers.get("X-Kishtin-Records") ?? "0"),
+      chainHead: res.headers.get("X-Kishtin-Chain-Head") ?? "",
+      chainOK: res.headers.get("X-Kishtin-Chain-OK") === "true",
+    };
   },
 
   guidance: () => json<Schemas["VersionedGuidance"]>("GET", "/settings/guidance"),
@@ -124,6 +139,35 @@ export const api = {
   previewSystem: (body: Schemas["SettingsChangeSystem"]) =>
     json<Schemas["SettingsPreviewSystem"]>("POST", "/settings/system/preview", { body }),
   saveSystem: (body: Schemas["SettingsChangeSystem"]) => json<Schemas["VersionedSystem"]>("PUT", "/settings/system", { body }),
+  rules: () => json<Schemas["VersionedRules"]>("GET", "/settings/rules"),
+  previewRules: (body: Schemas["SettingsChangeRules"]) =>
+    json<Schemas["SettingsPreviewRules"]>("POST", "/settings/rules/preview", { body }),
+  saveRules: (body: Schemas["SettingsChangeRules"]) => json<Schemas["VersionedRules"]>("PUT", "/settings/rules", { body }),
+
+  record: (id: string) => json<HaccpRecord>("GET", `/haccp/records/${encodeURIComponent(id)}`),
+  verify: () => json<Schemas["VerifyReport"]>("GET", "/haccp/verify"),
+  previewLimit: (body: Schemas["NewLimit"]) => json<Schemas["LimitPreview"]>("POST", "/haccp/limits/preview", { body }),
+  createLimit: (body: Schemas["NewLimit"]) => json<Schemas["LimitVersion"]>("POST", "/haccp/limits", { body }),
+  exportLimits: async (): Promise<{ blob: Blob; name: string }> => {
+    const res = await send("GET", "/haccp/limits/export");
+    return { blob: await res.blob(), name: "kishtin-limits.csv" };
+  },
+  /** file fetches an attachment as an object URL; revoke it when done. */
+  file: async (sha: string): Promise<{ url: string; type: string }> => {
+    const res = await send("GET", `/files/${encodeURIComponent(sha)}`);
+    const blob = await res.blob();
+    return { url: URL.createObjectURL(blob), type: blob.type };
+  },
+
+  users: () => json<Schemas["UsersOutBody"]>("GET", "/users"),
+  createUser: (body: Schemas["NewUser"]) => json<Schemas["User"]>("POST", "/users", { body }),
+  updateUser: (id: string, body: Schemas["UserChange"]) =>
+    json<Schemas["User"]>("PATCH", `/users/${encodeURIComponent(id)}`, { body }),
+  keys: () => json<Schemas["KeysOutBody"]>("GET", "/keys"),
+  createKey: (body: Schemas["NewKeyInBody"]) => json<Schemas["NewKeyResult"]>("POST", "/keys", { body }),
+  revokeKey: (id: string) => json<void>("DELETE", `/keys/${encodeURIComponent(id)}`),
+  backups: () => json<Schemas["BackupsOutBody"]>("GET", "/backups"),
+  backupNow: () => json<Schemas["Backup"]>("POST", "/backups"),
 };
 
 /** download hands a file to the browser to save. */

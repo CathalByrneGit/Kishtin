@@ -27,6 +27,6 @@
   .temp :global(input) {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
   }
 </style>

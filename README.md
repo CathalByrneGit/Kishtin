@@ -10,7 +10,7 @@ See [AGENTS.md](AGENTS.md) for the full plan. This README describes what is buil
 
 Roadmap stage 1: the HACCP log, ported from the browser prototype.
 
-- **Kitchen screens**: Today, Log check, Records and Setup, for phones and tablets, served by `kishtind` itself. See [docs/screens.md](docs/screens.md).
+- **Screens** for a computer, served by `kishtind` itself: Today, Records with a details panel, Exports, Verify, and Setup for fridges and tasks, limits and rules, staff, device keys, backups and settings. Search with Ctrl K. See [docs/screens.md](docs/screens.md).
 - **HACCP log**: fridge, freezer, delivery, cook, reheat, cooling, hot holding, batch label and cleaning records, checked against FSAI limits. See [docs/haccp.md](docs/haccp.md).
 - **Versioned limits**: a manager can set limits per dish, food category or fridge. Every change is a new version, and every record stores the version it was checked against.
 - **Customisable guidance and rules**: the reference guidance limits are measured against (starts as FSAI), whether borderline readings need a corrective action, managed lists of fridges, food categories and cleaning tasks, and system settings such as the backup schedule. All versioned, previewed before saving, and audited. See [docs/settings.md](docs/settings.md).
@@ -28,6 +28,7 @@ Roadmap stage 1: the HACCP log, ported from the browser prototype.
 - Postgres and DuckDB backends. Only SQLite is built.
 - Off-site backups. Kishtin writes backups on the server machine. Copying them somewhere else is up to you.
 - Saving while the server is unreachable. Screens keep showing the last data with a "Not connected" notice, but new records cannot be saved until the connection is back.
+- A layout designed for phones and kitchen tablets. The screens work on them, but they are laid out for a computer.
 - Printable batch labels.
 
 ## Install and run
@@ -59,14 +60,14 @@ bin/kishtin settings show guidance
 
 Every command takes `--json` for scripts and agents. Run `bin/kishtin --help` for the rest.
 
-To use the screens on a kitchen tablet, add staff and make a device key, then open the pairing link it prints on the tablet:
+To use the screens, add staff and make a device key, then open the pairing link it prints in the browser you will use. After that, staff, keys and limits can also be managed from the screens.
 
 ```sh
 bin/kishtin staff add --name "Liam Cook" --pin 1234
-bin/kishtin keys create --kind device --name "Pass tablet"
+bin/kishtin keys create --kind device --name "Office PC"
 ```
 
-The server only listens on the machine itself by default; see Configuration to serve tablets over Wi-Fi.
+The server only listens on the machine itself by default; see Configuration to serve other devices over Wi-Fi.
 
 ### Configuration
 

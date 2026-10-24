@@ -73,3 +73,78 @@ export function limitText(kind: string, maxC: number | null | undefined): string
   if (maxC === null || maxC === undefined) return "";
   return `${temp(maxC)} or ${kind === "freezer" ? "colder" : "below"}`;
 }
+
+/** readingRows lists every field of a reading as label and value, for a details panel. */
+export function readingRows(r: { type: string; reading: Reading }): [string, string][] {
+  const rd = r.reading;
+  const rows: [string, string][] = [];
+  const add = (label: string, v: string | undefined | null) => {
+    if (v !== undefined && v !== null && v !== "") rows.push([label, v]);
+  };
+  const yes = (b: boolean | undefined | null) => (b === undefined || b === null ? undefined : b ? "Yes" : "No");
+  add("Unit", rd.unit);
+  add("Supplier", rd.supplier);
+  add("Product", rd.product);
+  add("Dish", rd.dish);
+  add("Food", rd.food);
+  add("Food category", rd.food_category);
+  add("Delivery", rd.delivery_kind);
+  add(r.type === "cooling" ? "Core temperature going in" : "Temperature", rd.temp_c === undefined || rd.temp_c === null ? undefined : temp(rd.temp_c));
+  add("Held for", rd.hold_seconds ? `${Math.round(rd.hold_seconds / 60)} min` : undefined);
+  add("Finished cooking", rd.cooked_at ? dublinTime(rd.cooked_at) : undefined);
+  add("Into fridge", rd.into_fridge_at ? dublinTime(rd.into_fridge_at) : undefined);
+  add("At 2.5 h", rd.temp_at_cutoff_c === undefined || rd.temp_at_cutoff_c === null ? undefined : temp(rd.temp_at_cutoff_c));
+  add("Packaging intact", yes(rd.packaging_ok));
+  add("In date", yes(rd.in_date));
+  add("Made on", rd.made_on ? longDate(rd.made_on) : undefined);
+  add("Use by", rd.use_by ? longDate(rd.use_by) : undefined);
+  add("Quantity", rd.quantity);
+  add("Task", rd.task);
+  add("Area", rd.area);
+  add("Done", yes(rd.done));
+  add("Notes", rd.notes);
+  return rows;
+}
+
+/** CHECK_LABELS names each check type a limit can apply to. */
+export const CHECK_LABELS: Record<string, string> = {
+  fridge: "Fridge",
+  freezer: "Freezer",
+  cook: "Cooking, core",
+  reheat: "Reheating, core",
+  hot_hold: "Hot holding",
+  cooling: "Cooling",
+  delivery_chilled: "Chilled delivery",
+  delivery_frozen: "Frozen delivery",
+};
+
+interface LimitShape {
+  check: string;
+  max_c?: number | null;
+  borderline_max_c?: number | null;
+  min_c?: number | null;
+  combos?: { min_c: number; hold_seconds: number }[] | null;
+  cooling?: { into_fridge_within_seconds: number; cutoff_after_seconds: number; cutoff_max_c: number } | null;
+}
+
+const hours = (s: number) => {
+  const m = Math.round(s / 60);
+  return m % 60 === 0 ? `${m / 60} h` : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`;
+};
+
+/** limitWords describes a limit in plain words, such as "5.0°C or below". */
+export function limitWords(l: LimitShape): string {
+  const parts: string[] = [];
+  const colder = l.check === "freezer" || l.check === "delivery_frozen";
+  if (l.max_c !== undefined && l.max_c !== null) parts.push(`${temp(l.max_c)} or ${colder ? "colder" : "below"}`);
+  if (l.borderline_max_c !== undefined && l.borderline_max_c !== null) parts.push(`borderline to ${temp(l.borderline_max_c)}`);
+  if (l.min_c !== undefined && l.min_c !== null) parts.push(`${temp(l.min_c)} or above`);
+  const combos = (l.combos ?? []).map((c) => (c.hold_seconds ? `${temp(c.min_c)} for ${hours(c.hold_seconds)}` : `${temp(c.min_c)} or above`));
+  if (combos.length > 0) parts.push(`core ${combos.join(", or ")}`);
+  if (l.cooling) {
+    parts.push(
+      `into the fridge within ${hours(l.cooling.into_fridge_within_seconds)}; serve or discard if above ${temp(l.cooling.cutoff_max_c)} at ${hours(l.cooling.cutoff_after_seconds)}`,
+    );
+  }
+  return parts.join(", ");
+}

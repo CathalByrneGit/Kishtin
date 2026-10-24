@@ -1,16 +1,19 @@
 <script module lang="ts">
+  import type { HaccpRecord } from "../lib/api";
+
   export interface LogPreset {
     /** a record type, such as fridge or cleaning */
     type: string;
     unit?: string;
     task?: string;
+    /** a record to correct: the form starts from its values */
+    corrects?: HaccpRecord;
   }
 </script>
 
 <script lang="ts">
   import {
     Button,
-    Card,
     Checkbox,
     Chip,
     DatePicker,
@@ -23,8 +26,9 @@
   } from "@kenn-io/kit-ui";
   import { Camera } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import TempInput from "../components/TempInput.svelte";
+  import TempInput from "./TempInput.svelte";
   import { api, message, OfflineError, type Check, type Lists, type NewRecord } from "../lib/api";
+  import { title as recordTitle, typeLabel } from "../lib/labels";
   import { addDays, coolingTimes, dublinDate, dublinTime, isClock, longDate, normaliseClock, parseTemp } from "../lib/format";
   import { live, onChange } from "../lib/live.svelte";
   import { session } from "../lib/session.svelte";
@@ -70,6 +74,7 @@
   let task = $state("");
   let action = $state("");
   let notes = $state("");
+  let correctionReason = $state("");
 
   let verdict = $state<Check | null>(null);
   let verdictError = $state("");
@@ -93,9 +98,42 @@
     });
   });
 
+  /** startFrom fills the form from a record being corrected. */
+  function startFrom(r: HaccpRecord) {
+    const rd = r.reading;
+    const t = (c: number | undefined | null) => (c === undefined || c === null ? "" : String(c));
+    kind = r.type === "fridge" || r.type === "freezer" ? "temp" : r.type === "reheat" ? "cook" : (r.type as Kind);
+    if (r.type === "cook" || r.type === "reheat") stage = r.type;
+    unit = rd.unit ?? unit;
+    tempText = t(rd.temp_c);
+    supplier = rd.supplier ?? "";
+    product = rd.product ?? "";
+    deliveryKind = rd.delivery_kind ?? "chilled";
+    packagingOk = rd.packaging_ok ?? false;
+    inDate = rd.in_date ?? false;
+    docket = rd.docket_file ? { sha: rd.docket_file, name: "attached docket" } : null;
+    food = rd.food ?? "";
+    category = rd.food_category ?? "";
+    cookedAt = rd.cooked_at ? dublinTime(rd.cooked_at) : "";
+    fridgeAt = rd.into_fridge_at ? dublinTime(rd.into_fridge_at) : "";
+    cutoffText = t(rd.temp_at_cutoff_c);
+    if (rd.made_on) madeOn = rd.made_on;
+    if (rd.made_on && rd.use_by) {
+      shelfLife = String(Math.round((Date.parse(rd.use_by) - Date.parse(rd.made_on)) / 86_400_000));
+    }
+    task = rd.task ?? task;
+    notes = rd.notes ?? "";
+    action = "";
+    correctionReason = "";
+  }
+
+  const correcting = $derived(preset?.corrects ?? null);
+
   $effect(() => {
     if (!preset) return;
-    if (preset.type === "fridge" || preset.type === "freezer") {
+    if (preset.corrects) {
+      startFrom(preset.corrects);
+    } else if (preset.type === "fridge" || preset.type === "freezer") {
       kind = "temp";
       if (preset.unit) unit = preset.unit;
     } else if (preset.type === "cleaning") {
@@ -186,7 +224,13 @@
   const recordType = $derived("record" in draft ? draft.record.type : "");
   const presets = $derived((lists?.corrective_actions ?? []).filter((a) => a.type === recordType));
   const needsAction = $derived(Boolean(verdict?.needs_corrective_action));
-  const canSave = $derived(Boolean(verdict) && "record" in draft && (!needsAction || action.trim() !== "") && !saving);
+  const canSave = $derived(
+    Boolean(verdict) &&
+      "record" in draft &&
+      (!needsAction || action.trim() !== "") &&
+      (!correcting || correctionReason.trim() !== "") &&
+      !saving,
+  );
 
   async function pickPhoto(e: Event) {
     const file = (e.currentTarget as HTMLInputElement).files?.[0];
@@ -209,12 +253,17 @@
     try {
       const body: NewRecord = { ...draft.record, reading: { ...draft.record.reading, notes: notes || undefined } };
       if (needsAction) body.corrective_action = action.trim();
+      if (correcting) {
+        body.corrects = correcting.id;
+        body.correction_reason = correctionReason.trim();
+      }
       await api.log(body);
       live.saveFailed = false;
       showFlash("Saved", { tone: "success" });
       tempText = "";
       action = "";
       notes = "";
+      correctionReason = "";
       cutoffText = "";
       docket = null;
       if (kind !== "temp") {
@@ -252,15 +301,22 @@
   });
 </script>
 
-<div class="stack">
-  <div class="kinds">
-    {#each kinds as k (k.id)}
-      <Button label={k.label} tone={kind === k.id ? "info" : "neutral"} surface={kind === k.id ? "solid" : "outline"} onclick={() => (kind = k.id)} />
-    {/each}
-  </div>
+<div class="stack form">
+  {#if correcting}
+    <Notice
+      tone="info"
+      title={`Correcting record ${correcting.seq}: ${recordTitle(correcting)}`}
+      message={`The original ${typeLabel(correcting.type).toLowerCase()} record stays as it was. This new record points to it and takes its place on Today.`}
+    />
+  {:else}
+    <div class="kinds">
+      {#each kinds as k (k.id)}
+        <Button label={k.label} tone={kind === k.id ? "info" : "neutral"} surface={kind === k.id ? "solid" : "outline"} onclick={() => (kind = k.id)} />
+      {/each}
+    </div>
+  {/if}
 
-  <Card padding="md">
-    <div class="stack">
+  <div class="stack">
       {#if kind === "temp"}
         <label class="field">
           <span>Fridge or freezer</span>
@@ -273,8 +329,8 @@
         </label>
         <TempInput bind:value={tempText} label="Temperature (°C)" />
       {:else if kind === "delivery"}
-        <label class="field"><span>Supplier</span><TextInput bind:value={supplier} size="lg" block /></label>
-        <label class="field"><span>Product</span><TextInput bind:value={product} size="lg" block /></label>
+        <label class="field"><span>Supplier</span><TextInput bind:value={supplier} block /></label>
+        <label class="field"><span>Product</span><TextInput bind:value={product} block /></label>
         <SegmentedControl
           block
           ariaLabel="Delivery kind"
@@ -299,7 +355,7 @@
           {#if docket}<Chip tone="success" uppercase={false}>Attached: {docket.name}</Chip>{/if}
         </div>
       {:else if kind === "cook"}
-        <label class="field"><span>Food</span><TextInput bind:value={food} size="lg" block /></label>
+        <label class="field"><span>Food</span><TextInput bind:value={food} block /></label>
         <SegmentedControl
           block
           ariaLabel="Stage"
@@ -323,7 +379,7 @@
         {/if}
         <TempInput bind:value={tempText} label="Core temperature (°C)" />
       {:else if kind === "cooling"}
-        <label class="field"><span>Food</span><TextInput bind:value={food} size="lg" block /></label>
+        <label class="field"><span>Food</span><TextInput bind:value={food} block /></label>
         <div class="two">
           <div class="stack">
             <TempInput bind:value={cookedAt} label="Finished cooking" placeholder="14:30" mode="numeric" />
@@ -342,10 +398,10 @@
           <TempInput bind:value={cutoffText} label="Core temperature at 2.5 h (°C)" />
         {/if}
       {:else if kind === "hot_hold"}
-        <label class="field"><span>Food</span><TextInput bind:value={food} size="lg" block /></label>
+        <label class="field"><span>Food</span><TextInput bind:value={food} block /></label>
         <TempInput bind:value={tempText} label="Core temperature (°C)" />
       {:else if kind === "batch_label"}
-        <label class="field"><span>Item</span><TextInput bind:value={product} size="lg" block /></label>
+        <label class="field"><span>Item</span><TextInput bind:value={product} block /></label>
         <label class="field">
           <span>Made on</span>
           <DatePicker value={madeOn} onchange={(d) => (madeOn = d)} block ariaLabel="Made on" />
@@ -364,9 +420,14 @@
         </label>
       {/if}
 
-      <label class="field"><span>Notes (optional)</span><TextInput bind:value={notes} size="lg" block /></label>
-    </div>
-  </Card>
+      <label class="field"><span>Notes (optional)</span><TextInput bind:value={notes} block /></label>
+      {#if correcting}
+        <label class="field">
+          <span>Why the original was wrong (required)</span>
+          <TextInput bind:value={correctionReason} block placeholder="For example: read the wrong fridge" />
+        </label>
+      {/if}
+  </div>
 
   {#if verdict}
     <Notice tone={verdictTone} toneLabel={verdictTitle} message={verdict.result.reason + (limitSource ? ` ${limitSource}.` : "")} />
@@ -391,10 +452,13 @@
   {/if}
 
   <span class="muted">Logging as {session.user?.name}.</span>
-  <Button tone="success" surface="solid" label={saving ? "Saving…" : "Save record"} disabled={!canSave} onclick={save} />
+  <Button tone="success" surface="solid" label={saving ? "Saving…" : correcting ? "Save correction" : "Save record"} disabled={!canSave} onclick={save} />
 </div>
 
 <style>
+  .form {
+    padding: var(--space-5) var(--space-6) var(--space-7);
+  }
   .kinds {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

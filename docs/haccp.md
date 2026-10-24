@@ -31,7 +31,7 @@ A **fail** always needs a corrective action before it can be saved. A **borderli
 
 ## Records cannot be changed
 
-There is no way to edit or delete a record, in the API, the CLI or the store. To fix a mistake, save a new record of the same type with `--corrects <id>` and `--reason`. The original stays as it was.
+There is no way to edit or delete a record, in the screens, the API, the CLI or the store. To fix a mistake, save a new record of the same type with `--corrects <id>` and `--reason`, or use **Correct this record** in Records. The original stays as it was.
 
 Each record stores a SHA-256 hash of its content and of the record before it. `kishtin haccp verify` re-checks the chain from the first record and reports the first break. It also re-hashes every attached file and checks that every record's limit version exists.
 
@@ -39,7 +39,7 @@ What verify cannot catch: if someone deletes the newest records from the end of 
 
 ## Limits
 
-The FSAI defaults are constants in `internal/haccp/limits.go`. The restaurant's own limits are data, changed through `kishtin limits set` or `POST /api/haccp/limits`:
+The FSAI defaults are constants in `internal/haccp/limits.go`. The restaurant's own limits are data, changed in **Setup → Limits and rules**, with `kishtin limits set`, or with `POST /api/haccp/limits`:
 
 - A limit can apply to a **dish**, a **food category**, a **fridge or freezer unit**, or a whole check type. The most specific one that exists is used, and each record says which level it came from.
 - Changing a limit needs a manager logged in with a password (or a manager API key). A PIN is not enough.
@@ -47,7 +47,7 @@ The FSAI defaults are constants in `internal/haccp/limits.go`. The restaurant's 
 - A cooking combination counts as less strict unless the guidance has one that is no hotter and held no longer. The FSAI guidance only has 75°C, so 70°C for 2 minutes needs a plan reference until you add it to your guidance.
 - Each limit stores the guidance version it was checked against. Previews also say when a limit is below the FSAI defaults, whatever the guidance says.
 - A change creates a new version. Old versions are kept, and records already saved keep their result.
-- `kishtin limits set` first shows how recent records would have scored under the new limit, then asks before saving.
+- The screen and `kishtin limits set` first show how recent records would have scored under the new limit, then ask before saving.
 
 ## Today
 

@@ -1,34 +1,128 @@
 <script lang="ts">
-  import { Chip, FlashBanner, IconButton, Notice } from "@kenn-io/kit-ui";
-  import { ClipboardPlus, House, List, LogOut, Settings } from "@lucide/svelte";
+  import {
+    AppSidebar,
+    Button,
+    Chip,
+    CommandPalette,
+    DetailDrawer,
+    FlashBanner,
+    IconButton,
+    KbdBadge,
+    Notice,
+    ThemeToggle,
+    TopBar,
+    appShortcuts,
+    formatShortcutKeys,
+    initShortcuts,
+    type PaletteCommand,
+    type SidebarGroup,
+  } from "@kenn-io/kit-ui";
+  import {
+    Archive,
+    ClipboardPlus,
+    Download,
+    House,
+    KeyRound,
+    List,
+    ListChecks,
+    LogOut,
+    Search,
+    Settings,
+    ShieldCheck,
+    SlidersHorizontal,
+    Users,
+  } from "@lucide/svelte";
   import { onMount } from "svelte";
+  import LogForm from "./components/LogForm.svelte";
   import { api } from "./lib/api";
   import { dublinDate, dublinTime, longDate } from "./lib/format";
   import { connect, disconnect, live, onChange } from "./lib/live.svelte";
+  import { closeLog, logDrawer, openLog } from "./lib/logdrawer.svelte";
+  import { initRouter, navigate, route } from "./lib/router.svelte";
   import { endSession, session, takePairingFromURL } from "./lib/session.svelte";
-  import LogCheck, { type LogPreset } from "./screens/LogCheck.svelte";
   import Login from "./screens/Login.svelte";
   import Pair from "./screens/Pair.svelte";
-  import Records from "./screens/Records.svelte";
-  import Setup from "./screens/Setup.svelte";
-  import Today from "./screens/Today.svelte";
+  import Exports from "./views/Exports.svelte";
+  import Records from "./views/Records.svelte";
+  import Backups from "./views/setup/Backups.svelte";
+  import Keys from "./views/setup/Keys.svelte";
+  import Limits from "./views/setup/Limits.svelte";
+  import Lists from "./views/setup/Lists.svelte";
+  import SettingsView from "./views/setup/Settings.svelte";
+  import Staff from "./views/setup/Staff.svelte";
+  import Today from "./views/Today.svelte";
+  import Verify from "./views/Verify.svelte";
 
-  type Tab = "today" | "log" | "records" | "setup";
-  const tabs: { id: Tab; label: string; icon: typeof House }[] = [
-    { id: "today", label: "Today", icon: House },
-    { id: "log", label: "Log check", icon: ClipboardPlus },
-    { id: "records", label: "Records", icon: List },
-    { id: "setup", label: "Setup", icon: Settings },
+  interface Page {
+    path: string;
+    label: string;
+    section: string;
+    view: string | null;
+    group: string;
+  }
+
+  const pages: Page[] = [
+    { path: "/today", label: "Today", section: "today", view: null, group: "Daily" },
+    { path: "/records", label: "Records", section: "records", view: null, group: "Daily" },
+    { path: "/exports", label: "Exports", section: "exports", view: null, group: "Review and export" },
+    { path: "/verify", label: "Verify", section: "verify", view: null, group: "Review and export" },
+    { path: "/setup/lists", label: "Fridges and tasks", section: "setup", view: "lists", group: "Setup" },
+    { path: "/setup/limits", label: "Limits and rules", section: "setup", view: "limits", group: "Setup" },
+    { path: "/setup/staff", label: "Staff", section: "setup", view: "staff", group: "Setup" },
+    { path: "/setup/keys", label: "Device keys", section: "setup", view: "keys", group: "Setup" },
+    { path: "/setup/backups", label: "Backups", section: "setup", view: "backups", group: "Setup" },
+    { path: "/setup/settings", label: "Settings", section: "settings", view: null, group: "This device" },
   ];
 
-  let tab = $state<Tab>("today");
-  let preset = $state<LogPreset | null>(null);
+  const setupIcons: Record<string, typeof House> = {
+    lists: ListChecks,
+    limits: SlidersHorizontal,
+    staff: Users,
+    keys: KeyRound,
+    backups: Archive,
+  };
+
+  const groups: SidebarGroup[] = [
+    {
+      label: null,
+      sections: [
+        { id: "today", label: "Today", href: "/today", icon: House, viewRuns: [] },
+        { id: "records", label: "Records", href: "/records", icon: List, viewRuns: [] },
+      ],
+    },
+    {
+      label: "Review and export",
+      sections: [
+        { id: "exports", label: "Exports", href: "/exports", icon: Download, viewRuns: [] },
+        { id: "verify", label: "Verify", href: "/verify", icon: ShieldCheck, viewRuns: [] },
+      ],
+    },
+    {
+      label: "Setup",
+      sections: pages
+        .filter((p) => p.section === "setup")
+        .map((p) => ({ id: `setup-${p.view}`, label: p.label, href: p.path, icon: setupIcons[p.view ?? ""] ?? Settings, viewRuns: [] })),
+    },
+    {
+      label: null,
+      end: true,
+      sections: [{ id: "settings", label: "Settings", href: "/setup/settings", icon: Settings, viewRuns: [] }],
+    },
+  ];
+
   let restaurant = $state("");
   let today = $state(dublinDate(new Date()));
+  let paletteOpen = $state(false);
 
   takePairingFromURL();
 
   const loggedIn = $derived(Boolean(session.deviceKey && session.token));
+  const current = $derived(pages.find((p) => p.path === route.path) ?? null);
+  const location = $derived(
+    current
+      ? { section: current.section === "setup" ? `setup-${current.view}` : current.section, view: null }
+      : { section: null, view: null },
+  );
 
   async function loadName() {
     try {
@@ -51,13 +145,25 @@
     if (loggedIn) void loadName();
   });
 
+  $effect(() => {
+    if (!current) navigate("/today", true);
+  });
+
+  $effect(() => {
+    document.title = current ? `${current.label} · Kishtin` : "Kishtin";
+  });
+
   onMount(() => {
+    const offRouter = initRouter();
+    const offKeys = initShortcuts();
+    const offPalette = appShortcuts.register("mod+k", () => (paletteOpen = true), { description: "Open command palette" });
+    const offLog = appShortcuts.register("mod+l", () => openLog(), { description: "Log a check" });
     const off = onChange((kind) => {
       if ((kind === "settings" || kind === "ready") && session.token) void loadName();
     });
     const tick = setInterval(() => (today = dublinDate(new Date())), 30_000);
 
-    // Keep kitchen tablets awake during service.
+    // Keep a wall-mounted screen awake during service.
     let lock: WakeLockSentinel | null = null;
     const wake = async () => {
       try {
@@ -71,17 +177,16 @@
     void wake();
     document.addEventListener("visibilitychange", wake);
     return () => {
+      offRouter();
+      offPalette();
+      offLog();
+      offKeys();
       off();
       clearInterval(tick);
       document.removeEventListener("visibilitychange", wake);
       void lock?.release();
     };
   });
-
-  function logFrom(p: LogPreset) {
-    preset = p;
-    tab = "log";
-  }
 
   async function switchStaff() {
     try {
@@ -90,6 +195,22 @@
       // The session ends on this device either way.
     }
     endSession();
+  }
+
+  const commands = $derived<PaletteCommand[]>([
+    { id: "log", label: "Log a check", section: "Actions", keywords: "record temperature fridge delivery", combo: "mod+l" },
+    { id: "log-fridge", label: "Log a fridge or freezer temperature", section: "Actions", keywords: "temp" },
+    { id: "log-cleaning", label: "Log a cleaning task", section: "Actions", keywords: "clean" },
+    { id: "switch", label: "Switch staff", section: "Actions", keywords: "log out logout" },
+    ...pages.map((p) => ({ id: `go:${p.path}`, label: `Go to ${p.label}`, section: p.group, keywords: p.path })),
+  ]);
+
+  function run(c: PaletteCommand) {
+    if (c.id.startsWith("go:")) navigate(c.id.slice(3));
+    else if (c.id === "log") openLog();
+    else if (c.id === "log-fridge") openLog({ type: "fridge" });
+    else if (c.id === "log-cleaning") openLog({ type: "cleaning" });
+    else if (c.id === "switch") void switchStaff();
   }
 
   const connection = $derived(
@@ -103,157 +224,257 @@
 
 <FlashBanner />
 
+{#snippet brandName(rail: boolean)}
+  <a class="brand" href="/today" aria-label="Kishtin home">
+    {#if rail}
+      <span class="brand-mark">K</span>
+    {:else}
+      <span class="brand-mark">K</span>
+      <span class="brand-text">
+        <strong>{restaurant || "Kishtin"}</strong>
+        <span class="muted">{longDate(today)}</span>
+      </span>
+    {/if}
+  </a>
+{/snippet}
+
 {#if !session.deviceKey}
   <Pair />
 {:else if !session.token}
   <Login />
 {:else}
-  <div class="shell kitchen">
-    <header class="top">
-      <div class="title">
-        <h1>{restaurant || "Kishtin"}</h1>
-        <span class="muted">{longDate(today)}</span>
-      </div>
-      <Chip tone={connection.tone} dot uppercase={false}>{connection.label}</Chip>
-      <div class="who">
-        <span class="muted">{session.user?.name}</span>
-        <IconButton ariaLabel="Switch staff" title="Switch staff" onclick={switchStaff}>
-          <LogOut size={20} />
-        </IconButton>
-      </div>
-    </header>
+  <div class="app">
+    <AppSidebar {groups} {location} page={route.path + route.search} storageKey="kishtin-sidebar">
+      {#snippet brand({ rail })}
+        {@render brandName(rail)}
+      {/snippet}
+      {#snippet narrowBar()}
+        {@render brandName(false)}
+        <span class="grow"></span>
+        <Button tone="info" surface="solid" size="sm" label="Log check" onclick={() => openLog()} />
+      {/snippet}
+      {#snippet footer({ rail })}
+        <div class="side-footer" class:rail>
+          {#if !rail}
+            <div class="who">
+              <strong>{session.user?.name}</strong>
+              <span class="muted">{session.method === "password" ? "Manager password" : "PIN"} login</span>
+            </div>
+          {/if}
+          <ThemeToggle size={rail ? "md" : "sm"} />
+          <IconButton ariaLabel="Switch staff" title="Switch staff" onclick={switchStaff}>
+            <LogOut size={16} />
+          </IconButton>
+        </div>
+      {/snippet}
+    </AppSidebar>
 
-    {#if live.status === "offline"}
-      <div class="notice">
-        <Notice
-          tone="warning"
-          title="Not connected"
-          message={live.lastSeen
-            ? `Showing what was on screen at ${dublinTime(live.lastSeen)}. New records cannot be saved until the connection is back.`
-            : "Cannot reach the Kishtin server. New records cannot be saved until the connection is back."}
-        />
+    <div class="column">
+      <div class="top-bar">
+        <TopBar>
+          {#snippet left()}
+            <span class="where">{current?.group === "Setup" ? "Setup / " : ""}<strong>{current?.label ?? ""}</strong></span>
+          {/snippet}
+          {#snippet search()}
+            <button type="button" class="search-trigger kit-control-states" onclick={() => (paletteOpen = true)}>
+              <Search size={16} />
+              <span>Search or jump to…</span>
+              <KbdBadge keys={formatShortcutKeys("mod+k")} />
+            </button>
+          {/snippet}
+          {#snippet right()}
+            <Chip tone={connection.tone} dot uppercase={false}>{connection.label}</Chip>
+            <Button tone="info" surface="solid" label="Log check" onclick={() => openLog()}>
+              <ClipboardPlus size={16} />
+            </Button>
+          {/snippet}
+        </TopBar>
       </div>
-    {/if}
 
-    <main>
-      {#if tab === "today"}
-        <Today onlog={logFrom} />
-      {:else if tab === "log"}
-        <LogCheck {preset} onsaved={() => (preset = null)} />
-      {:else if tab === "records"}
-        <Records />
-      {:else}
-        <Setup />
+      {#if live.status === "offline"}
+        <div class="offline">
+          <Notice
+            tone="warning"
+            title="Not connected"
+            message={live.lastSeen
+              ? `Showing what was on screen at ${dublinTime(live.lastSeen)}. New records cannot be saved until the connection is back.`
+              : "Cannot reach the Kishtin server. New records cannot be saved until the connection is back."}
+          />
+        </div>
       {/if}
-    </main>
 
-    <nav class="tabs" aria-label="Screens">
-      {#each tabs as t (t.id)}
-        <button
-          type="button"
-          class="tab kit-control-states"
-          class:active={tab === t.id}
-          aria-current={tab === t.id ? "page" : undefined}
-          onclick={() => {
-            if (t.id !== "log") preset = null;
-            tab = t.id;
-          }}
-        >
-          <t.icon size={24} />
-          <span>{t.label}</span>
-        </button>
-      {/each}
-    </nav>
+      <main>
+        {#if route.path === "/today"}
+          <Today />
+        {:else if route.path === "/records"}
+          <Records />
+        {:else if route.path === "/exports"}
+          <Exports />
+        {:else if route.path === "/verify"}
+          <Verify />
+        {:else if route.path === "/setup/lists"}
+          <Lists />
+        {:else if route.path === "/setup/limits"}
+          <Limits />
+        {:else if route.path === "/setup/staff"}
+          <Staff />
+        {:else if route.path === "/setup/keys"}
+          <Keys />
+        {:else if route.path === "/setup/backups"}
+          <Backups />
+        {:else if route.path === "/setup/settings"}
+          <SettingsView />
+        {/if}
+      </main>
+    </div>
   </div>
+
+  <CommandPalette bind:open={paletteOpen} {commands} onrun={run} placeholder="Search pages and actions" />
+
+  {#if logDrawer.open}
+    <DetailDrawer
+      title={logDrawer.preset?.corrects ? "Correct a record" : "Log a check"}
+      onclose={closeLog}
+      width="min(620px, 100vw)"
+    >
+      <LogForm preset={logDrawer.preset} onsaved={closeLog} />
+    </DetailDrawer>
+  {/if}
 {/if}
 
 <style>
-  .shell {
-    max-width: 640px;
-    margin: 0 auto;
-    min-height: 100dvh;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom));
-  }
-
-  .top {
-    position: sticky;
-    top: 0;
-    z-index: 10;
+  .app {
     display: flex;
-    align-items: center;
-    gap: var(--space-5);
-    padding: var(--space-5) var(--space-6);
-    background: var(--bg-surface);
-    border-bottom: var(--border-width) solid var(--border-default);
+    min-height: 100vh;
+    background: var(--bg-primary);
   }
 
-  .title {
+  .column {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
   }
 
-  .title h1 {
-    font-size: var(--font-size-xl);
+  .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  main {
+    flex: 1;
+    padding: var(--space-7);
+    width: 100%;
+    max-width: 1600px;
+  }
+
+  .offline {
+    padding: var(--space-5) var(--space-7) 0;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-width: 0;
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-md);
+    background: var(--accent-blue);
+    color: var(--text-on-accent, var(--bg-surface));
+    font-weight: var(--font-weight-bold);
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    font-size: var(--font-size-sm);
+  }
+
+  .brand-text strong {
+    font-size: var(--font-size-md);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .who {
+  .grow {
+    flex: 1;
+  }
+
+  .side-footer {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
+    width: 100%;
   }
 
-  .notice {
-    padding: var(--space-5) var(--space-6) 0;
+  .side-footer.rail {
+    flex-direction: column;
   }
 
-  main {
-    padding: var(--space-5) var(--space-6);
-  }
-
-  .tabs {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    max-width: 640px;
-    margin: 0 auto;
-    padding-bottom: env(safe-area-inset-bottom);
-    background: var(--bg-surface);
-    border-top: var(--border-width) solid var(--border-default);
-  }
-
-  .tab {
+  .who {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+    font-size: var(--font-size-sm);
+  }
+
+  .where {
+    color: var(--text-secondary);
+  }
+
+  .where strong {
+    color: var(--text-primary);
+  }
+
+  .search-trigger {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: var(--space-1);
-    min-height: 72px;
-    border: 0;
-    background: none;
+    gap: var(--space-3);
+    min-width: 320px;
+    height: var(--kit-control-height, 32px);
+    padding: 0 var(--space-4);
+    border: var(--border-width) solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-inset);
     color: var(--text-secondary);
     font: inherit;
     font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
     cursor: pointer;
   }
 
-  .tab.active {
-    color: var(--accent-blue);
-    box-shadow: inset 0 3px 0 var(--accent-blue);
+  .search-trigger span {
+    flex: 1;
+    text-align: left;
   }
 
-  @media (max-width: 640px) {
-    .who span {
+  @media (max-width: 900px) {
+    .app {
+      flex-direction: column;
+    }
+
+    .top-bar {
       display: none;
+    }
+
+    main {
+      padding: var(--space-5);
+    }
+
+    .offline {
+      padding: var(--space-5) var(--space-5) 0;
     }
   }
 </style>

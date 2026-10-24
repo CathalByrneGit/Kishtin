@@ -7,6 +7,7 @@ import {
   dublinToDate,
   isClock,
   longDate,
+  shortDate,
   normaliseClock,
   parseTemp,
   temp,
@@ -43,6 +44,7 @@ describe("Dublin time", () => {
     expect(dublinDate(new Date("2026-05-01T23:30:00Z"))).toBe("2026-05-02");
     expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
     expect(longDate("2026-05-01")).toBe("Friday 1 May");
+    expect(shortDate("2026-05-01")).toBe("Fri 1 May");
   });
 });
 

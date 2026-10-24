@@ -27,6 +27,8 @@ kishtin settings set lists -f lists.json --reason "Add the fish fridge"
 
 The same actions are in the API under `/api/settings/{guidance,rules,lists,system}` (`GET`, `GET …/history`, `POST …/preview`, `PUT`).
 
+In the screens, lists are under **Setup → Fridges and tasks**, rules and limits under **Setup → Limits and rules**, and system settings under **Settings**. Each shows the same preview and asks for the same reason. The reference guidance is changed with the CLI or API only. See [screens.md](screens.md#setup).
+
 ## Reference guidance
 
 The reference guidance is what your limits are measured against. It starts as the FSAI defaults. Each check type (fridge, freezer, cook, reheat, hot hold, cooling, chilled and frozen delivery) has an entry, with the same fields as a limit.
