@@ -110,7 +110,7 @@
       "target": "2026-05-01T18:18:00Z",
       "planned_ready": "2026-05-01T18:21:00Z",
       "status": "at_risk",
-      "reason": "Due at 19:18, but equipment is busy: expected at 19:21."
+      "reason": "Due at 19:18; expected at 19:21. The flat-top is full until 19:03 (3 of 3 in use)."
     }
   ],
   "items": [

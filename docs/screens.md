@@ -14,9 +14,9 @@ To take a device out of use, revoke its key in **Device keys**, or use **Unpair 
 
 ## Layout
 
-- **Sidebar**: Today and Records; Review and export (Exports, Verify); Setup (Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
-- **Top bar**: where you are, a search box, the connection, and **Log check**.
-- **Search** (Ctrl K, or ⌘K on a Mac): jump to any page, or start logging a check.
+- **Sidebar**: Service (Pass, Stations, Orders); HACCP (Today, Records, Exports, Verify); Setup (Menu, Scheduler, Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
+- **Top bar**: where you are, a search box, the connection, **New order** and **Log check**.
+- **Search** (Ctrl K, or ⌘K on a Mac): jump to any page, start a new order, or start logging a check.
 - **Log check** (Ctrl L, or ⌘L): opens the log form in a panel on the right.
 
 The connection chip says:
@@ -26,6 +26,35 @@ The connection chip says:
 - **Not saving**: the server cannot be reached, or the last save failed. A "Not connected" notice says when the data on screen was last updated. Records cannot be saved until the connection is back.
 
 Each page has its own address, such as `/records?range=31&id=…`, so you can bookmark it and the back button works.
+
+## Service
+
+How the kitchen side works, and how the scheduler decides, is in [kitchen.md](kitchen.md). The Pass and Stations refresh after every change on any device and every 15 seconds, and their countdowns tick every second.
+
+### Pass
+
+Every open order as a card, for the head chef or expo:
+
+- **Figures**: open orders, and how many fired courses are on track, at risk, late, or ready to serve, and how many courses are held.
+- **Show**: all orders, only those that need action (at risk, late or ready), or those with held courses.
+- Each card shows the table or takeaway, ticket number, time entered, covers, notes, and an **Allergy** chip and red edge when flagged. Each course shows its state and the scheduler's status (on track, at risk, late, ready) with the reason, the target time with a countdown, and its items grouped as "2× Burger (Well done)" with their state.
+- Head chefs and managers get the buttons: **Fire** a held course; **Serve** a course once every item is ready; **Change time** (a new target, with a reason for the log); **Urgent**; and **Close order** once everything is served or voided. Other staff see the same cards without buttons.
+- The history icon opens the order: its courses and items, its full history (who did what, when), and **Add items**.
+
+### Stations
+
+Pick a station. Three columns:
+
+- **Start now**: what the scheduler says to start, such as "3× Burger on the flat-top for Table 4 and Takeaway #3", with the reason, and **Start** (or **Start all 3**). A card that is already past its latest start is marked **Late**.
+- **In progress**: items cooking, resting or plating, grouped when they finish together, with a countdown to the end of the phase (red when overdue) and **Done cooking**, **Done resting** or **Ready**.
+- **Coming up**: what to start later and when, with a countdown, the reason, and **Start early**.
+
+Line cooks, head chefs and managers get the buttons.
+
+### Orders
+
+- **New order** (front of house, head chefs and managers): table or takeaway, table number or customer name, covers, an allergy tick and notes. Tap dishes to add them, grouped by course; dishes that are 86 cannot be added. Each line has a quantity, its course, modifier chips and notes. Head chefs and managers can tick courses to **fire straight away**. **Send order** shows the ticket number.
+- **Today's orders**: open orders, or every order today, sortable. Select one to open it, with its history and **Add items**.
 
 ## Today
 
@@ -90,8 +119,10 @@ It runs when you open the page, and again with **Check again**. If something doe
 
 ## Setup
 
-Everyone can see **Fridges and tasks** and **Limits and rules**. Changing them, and opening **Staff**, **Device keys** and **Backups** at all, needs a manager logged in with their password. Use **Manager login** on the page. That logs this device in as the manager for 30 minutes.
+Everyone can see **Menu**, **Scheduler**, **Fridges and tasks** and **Limits and rules**. Changing them, and opening **Staff**, **Device keys** and **Backups** at all, needs a manager logged in with their password. Use **Manager login** on the page. That logs this device in as the manager for 30 minutes.
 
+- **Menu**: a card per station with its equipment and how many each holds, and every dish in a sortable table with its course, station, equipment and capacity, cook time, total time, how long it can wait, and status (Available, 86, off the menu). **Add station**, **Add equipment**, **Add dish** and **Edit** need the manager password. The dish form takes times in minutes or minutes:seconds, the food category from the HACCP lists, and modifiers with their extra cook minutes. **86** and **Back on** are open to head chefs, line cooks and managers.
+- **Scheduler**: the strategy, batching, priorities, how long a ready course can wait at the pass, how often screens re-plan, and a buffer per station. **Review changes** shows what changes before saving with a reason. A card lists what the scheduler does not do yet.
 - **Fridges and tasks**: fridges and freezers with their check times, and which fridges are non-food; daily cleaning tasks and their areas; food categories; quick-pick corrective actions per record type. Edit freely, then **Review changes** shows what changes and what it affects, and asks for a reason before saving.
 - **Limits and rules**: the limits in use, and the full history with who changed each one and why.
   - **Change** or **New limit** opens the limit form. It covers fridge and freezer maximums, delivery borderlines, hot-holding minimums, cooking time–temperature combinations and cooling times, for a dish, food category, unit or every one.
@@ -112,8 +143,16 @@ Everyone can see **Fridges and tasks** and **Limits and rules**. Changing them, 
 
 All taken with synthetic data at 1440 × 960.
 
-| Today | Records, with a record selected |
+| Pass | Stations: the grill |
 |---|---|
+| ![Pass](screenshots/pass.png) | ![Station](screenshots/station.png) |
+| **Station with burgers cooking** | **Order history** |
+| ![Station cooking](screenshots/station-cooking.png) | ![Order history](screenshots/order-history.png) |
+| **New order** | **Menu** |
+| ![New order](screenshots/new-order.png) | ![Menu](screenshots/menu.png) |
+| **Changing a dish** | **Scheduler** |
+| ![Dish editor](screenshots/dish-editor.png) | ![Scheduler](screenshots/scheduler.png) |
+| **Today** | **Records, with a record selected** |
 | ![Today](screenshots/today.png) | ![Records](screenshots/records.png) |
 | **Log check** | **Correcting a record** |
 | ![Log check](screenshots/log-check.png) | ![Correcting a record](screenshots/correct.png) |

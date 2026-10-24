@@ -19,13 +19,18 @@
   } from "@kenn-io/kit-ui";
   import {
     Archive,
+    ChefHat,
     ClipboardPlus,
+    CookingPot,
     Download,
     House,
     KeyRound,
     List,
     ListChecks,
     LogOut,
+    ReceiptText,
+    Timer,
+    UtensilsCrossed,
     Search,
     Settings,
     ShieldCheck,
@@ -43,6 +48,11 @@
   import Login from "./screens/Login.svelte";
   import Pair from "./screens/Pair.svelte";
   import Exports from "./views/Exports.svelte";
+  import OrdersView from "./views/Orders.svelte";
+  import Pass from "./views/Pass.svelte";
+  import Stations from "./views/Stations.svelte";
+  import MenuSetup from "./views/setup/Menu.svelte";
+  import SchedulerSetup from "./views/setup/Scheduler.svelte";
   import Records from "./views/Records.svelte";
   import Backups from "./views/setup/Backups.svelte";
   import Keys from "./views/setup/Keys.svelte";
@@ -62,10 +72,15 @@
   }
 
   const pages: Page[] = [
-    { path: "/today", label: "Today", section: "today", view: null, group: "Daily" },
-    { path: "/records", label: "Records", section: "records", view: null, group: "Daily" },
-    { path: "/exports", label: "Exports", section: "exports", view: null, group: "Review and export" },
-    { path: "/verify", label: "Verify", section: "verify", view: null, group: "Review and export" },
+    { path: "/pass", label: "Pass", section: "pass", view: null, group: "Service" },
+    { path: "/stations", label: "Stations", section: "stations", view: null, group: "Service" },
+    { path: "/orders", label: "Orders", section: "orders", view: null, group: "Service" },
+    { path: "/today", label: "Today", section: "today", view: null, group: "HACCP" },
+    { path: "/records", label: "Records", section: "records", view: null, group: "HACCP" },
+    { path: "/exports", label: "Exports", section: "exports", view: null, group: "HACCP" },
+    { path: "/verify", label: "Verify", section: "verify", view: null, group: "HACCP" },
+    { path: "/setup/menu", label: "Menu", section: "setup", view: "menu", group: "Setup" },
+    { path: "/setup/scheduler", label: "Scheduler", section: "setup", view: "scheduler", group: "Setup" },
     { path: "/setup/lists", label: "Fridges and tasks", section: "setup", view: "lists", group: "Setup" },
     { path: "/setup/limits", label: "Limits and rules", section: "setup", view: "limits", group: "Setup" },
     { path: "/setup/staff", label: "Staff", section: "setup", view: "staff", group: "Setup" },
@@ -75,6 +90,8 @@
   ];
 
   const setupIcons: Record<string, typeof House> = {
+    menu: UtensilsCrossed,
+    scheduler: Timer,
     lists: ListChecks,
     limits: SlidersHorizontal,
     staff: Users,
@@ -84,15 +101,18 @@
 
   const groups: SidebarGroup[] = [
     {
-      label: null,
+      label: "Service",
       sections: [
-        { id: "today", label: "Today", href: "/today", icon: House, viewRuns: [] },
-        { id: "records", label: "Records", href: "/records", icon: List, viewRuns: [] },
+        { id: "pass", label: "Pass", href: "/pass", icon: ChefHat, viewRuns: [] },
+        { id: "stations", label: "Stations", href: "/stations", icon: CookingPot, viewRuns: [] },
+        { id: "orders", label: "Orders", href: "/orders", icon: ReceiptText, viewRuns: [] },
       ],
     },
     {
-      label: "Review and export",
+      label: "HACCP",
       sections: [
+        { id: "today", label: "Today", href: "/today", icon: House, viewRuns: [] },
+        { id: "records", label: "Records", href: "/records", icon: List, viewRuns: [] },
         { id: "exports", label: "Exports", href: "/exports", icon: Download, viewRuns: [] },
         { id: "verify", label: "Verify", href: "/verify", icon: ShieldCheck, viewRuns: [] },
       ],
@@ -146,7 +166,7 @@
   });
 
   $effect(() => {
-    if (!current) navigate("/today", true);
+    if (!current) navigate("/pass", true);
   });
 
   $effect(() => {
@@ -198,6 +218,7 @@
   }
 
   const commands = $derived<PaletteCommand[]>([
+    { id: "new-order", label: "New order", section: "Actions", keywords: "table takeaway ticket" },
     { id: "log", label: "Log a check", section: "Actions", keywords: "record temperature fridge delivery", combo: "mod+l" },
     { id: "log-fridge", label: "Log a fridge or freezer temperature", section: "Actions", keywords: "temp" },
     { id: "log-cleaning", label: "Log a cleaning task", section: "Actions", keywords: "clean" },
@@ -207,6 +228,7 @@
 
   function run(c: PaletteCommand) {
     if (c.id.startsWith("go:")) navigate(c.id.slice(3));
+    else if (c.id === "new-order") navigate("/orders");
     else if (c.id === "log") openLog();
     else if (c.id === "log-fridge") openLog({ type: "fridge" });
     else if (c.id === "log-cleaning") openLog({ type: "cleaning" });
@@ -225,7 +247,7 @@
 <FlashBanner />
 
 {#snippet brandName(rail: boolean)}
-  <a class="brand" href="/today" aria-label="Kishtin home">
+  <a class="brand" href="/pass" aria-label="Kishtin home">
     {#if rail}
       <span class="brand-mark">K</span>
     {:else}
@@ -273,7 +295,7 @@
       <div class="top-bar">
         <TopBar>
           {#snippet left()}
-            <span class="where">{current?.group === "Setup" ? "Setup / " : ""}<strong>{current?.label ?? ""}</strong></span>
+            <span class="where">{current && current.group !== "This device" ? `${current.group} / ` : ""}<strong>{current?.label ?? ""}</strong></span>
           {/snippet}
           {#snippet search()}
             <button type="button" class="search-trigger kit-control-states" onclick={() => (paletteOpen = true)}>
@@ -284,6 +306,9 @@
           {/snippet}
           {#snippet right()}
             <Chip tone={connection.tone} dot uppercase={false}>{connection.label}</Chip>
+            <Button label="New order" onclick={() => navigate("/orders")}>
+              <ReceiptText size={16} />
+            </Button>
             <Button tone="info" surface="solid" label="Log check" onclick={() => openLog()}>
               <ClipboardPlus size={16} />
             </Button>
@@ -304,7 +329,17 @@
       {/if}
 
       <main>
-        {#if route.path === "/today"}
+        {#if route.path === "/pass"}
+          <Pass />
+        {:else if route.path === "/stations"}
+          <Stations />
+        {:else if route.path === "/orders"}
+          <OrdersView />
+        {:else if route.path === "/setup/menu"}
+          <MenuSetup />
+        {:else if route.path === "/setup/scheduler"}
+          <SchedulerSetup />
+        {:else if route.path === "/today"}
           <Today />
         {:else if route.path === "/records"}
           <Records />

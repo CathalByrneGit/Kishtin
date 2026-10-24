@@ -12,6 +12,12 @@ export type Today = Schemas["TodayView"];
 export type Check = Schemas["Check"];
 export type Lists = Schemas["Lists"];
 export type System = Schemas["System"];
+export type Setup = Schemas["Setup"];
+export type Dish = Schemas["Dish"];
+export type Order = Schemas["Order"];
+export type OrderItem = Schemas["Item"];
+export type KitchenView = Schemas["KitchenView"];
+export type Course = "starter" | "main" | "dessert";
 
 /** ApiError is an error the server explained. */
 export class ApiError extends Error {
@@ -168,6 +174,41 @@ export const api = {
   revokeKey: (id: string) => json<void>("DELETE", `/keys/${encodeURIComponent(id)}`),
   backups: () => json<Schemas["BackupsOutBody"]>("GET", "/backups"),
   backupNow: () => json<Schemas["Backup"]>("POST", "/backups"),
+
+  menu: () => json<Setup>("GET", "/menu"),
+  createStation: (body: Schemas["StationInput"]) => json<Schemas["Station"]>("POST", "/menu/stations", { body }),
+  updateStation: (id: string, body: Schemas["StationInput"]) =>
+    json<Schemas["Station"]>("PUT", `/menu/stations/${encodeURIComponent(id)}`, { body }),
+  createEquipment: (body: Schemas["EquipmentInput"]) => json<Schemas["Equipment"]>("POST", "/menu/equipment", { body }),
+  updateEquipment: (id: string, body: Schemas["EquipmentInput"]) =>
+    json<Schemas["Equipment"]>("PUT", `/menu/equipment/${encodeURIComponent(id)}`, { body }),
+  createDish: (body: Schemas["DishInput"]) => json<Dish>("POST", "/menu/dishes", { body }),
+  updateDish: (id: string, body: Schemas["DishInput"]) => json<Dish>("PUT", `/menu/dishes/${encodeURIComponent(id)}`, { body }),
+  setAvailability: (id: string, available: boolean) =>
+    json<Dish>("PUT", `/menu/dishes/${encodeURIComponent(id)}/availability`, { body: { available } }),
+
+  orders: (date?: string) => json<Schemas["OrdersBody"]>("GET", "/orders", { query: { date } }),
+  createOrder: (body: Schemas["NewOrder"]) => json<Order>("POST", "/orders", { body }),
+  order: (id: string) => json<Order>("GET", `/orders/${encodeURIComponent(id)}`),
+  orderEvents: (id: string) => json<Schemas["EventsBody"]>("GET", `/orders/${encodeURIComponent(id)}/events`),
+  addItems: (id: string, items: Schemas["NewItem"][]) =>
+    json<Order>("POST", `/orders/${encodeURIComponent(id)}/items`, { body: { items } }),
+  fire: (id: string, course: Course) => json<Order>("POST", `/orders/${encodeURIComponent(id)}/courses/${course}/fire`),
+  serve: (id: string, course: Course) => json<Order>("POST", `/orders/${encodeURIComponent(id)}/courses/${course}/serve`),
+  setTarget: (id: string, course: Course, target_at: string, reason: string) =>
+    json<Order>("PUT", `/orders/${encodeURIComponent(id)}/courses/${course}/target`, { body: { target_at, reason } }),
+  setUrgent: (id: string, course: Course, urgent: boolean) =>
+    json<Order>("PUT", `/orders/${encodeURIComponent(id)}/courses/${course}/urgent`, { body: { urgent } }),
+  closeOrder: (id: string) => json<Order>("POST", `/orders/${encodeURIComponent(id)}/close`),
+
+  kitchen: () => json<KitchenView>("GET", "/kitchen"),
+  moveItems: (body: Schemas["ItemMove"]) => json<Schemas["OrdersBody"]>("POST", "/kitchen/items", { body }),
+
+  scheduler: () => json<Schemas["VersionedSettings"]>("GET", "/settings/scheduler"),
+  previewScheduler: (body: Schemas["SettingsChangeSettings"]) =>
+    json<Schemas["SettingsPreviewSettings"]>("POST", "/settings/scheduler/preview", { body }),
+  saveScheduler: (body: Schemas["SettingsChangeSettings"]) =>
+    json<Schemas["VersionedSettings"]>("PUT", "/settings/scheduler", { body }),
 };
 
 /** download hands a file to the browser to save. */

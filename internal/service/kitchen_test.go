@@ -333,6 +333,7 @@ func TestSchedulerSettings(t *testing.T) {
 	pv, err := k.svc.Scheduler().Preview(ctx, k.manager, SettingsChange[scheduler.Settings]{Value: next, Reason: "Quiet lunch"})
 	require.NoError(t, err)
 	assert.NotEmpty(t, pv.Changes)
+	assert.Contains(t, pv.Notes, "Grill: buffer 0 s → 30 s.", "buffer changes name the station")
 	_, err = k.svc.Scheduler().Save(ctx, k.cook, SettingsChange[scheduler.Settings]{Value: next, Reason: "x"})
 	assert.Equal(t, KindForbidden, KindOf(err))
 	saved, err := k.svc.Scheduler().Save(ctx, k.manager, SettingsChange[scheduler.Settings]{Value: next, Reason: "Quiet lunch"})

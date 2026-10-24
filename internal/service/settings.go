@@ -165,9 +165,20 @@ func schedulerNotes(ctx context.Context, _ *Service, st store.Store, cur, next s
 		names[x.ID] = x.Name
 	}
 	var out []string
+	before := map[string]int{}
+	for _, b := range cur.StationBuffers {
+		before[b.StationID] = b.Seconds
+	}
+	after := map[string]int{}
 	for _, b := range next.StationBuffers {
+		after[b.StationID] = b.Seconds
 		if names[b.StationID] == "" {
 			out = append(out, fmt.Sprintf("Station %s does not exist; its buffer will have no effect.", b.StationID))
+		}
+	}
+	for _, x := range stations {
+		if before[x.ID] != after[x.ID] {
+			out = append(out, fmt.Sprintf("%s: buffer %d s → %d s.", x.Name, before[x.ID], after[x.ID]))
 		}
 	}
 	if cur.Strategy != next.Strategy {

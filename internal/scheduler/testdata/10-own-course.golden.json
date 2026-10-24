@@ -1,0 +1,125 @@
+{
+  "at": "2026-05-01T18:00:00Z",
+  "strategy": "backward",
+  "settings_version": "test-settings",
+  "stations": [
+    {
+      "station_id": "grill",
+      "name": "Grill",
+      "actions": [
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "quantity": 1,
+          "item_ids": [
+            "o7-2"
+          ],
+          "order_ids": [
+            "o7"
+          ],
+          "labels": [
+            "Table 7"
+          ],
+          "start_at": "2026-05-01T18:04:00Z",
+          "now": false,
+          "text": "Start 1× Burger on the flat-top at 19:04 for Table 7",
+          "reason": "Table 7 mains are due at 19:23. Burger: 8 min cook + 2 min rest + 1 min plate, so start by 19:12. The flat-top is full until 19:12 (3 of 3 in use). The course moved from 19:18 to 19:23 so every item finishes together. Table 7's items cannot all fit on the flat-top at once, so start this 8 min earlier; it waits at the pass longer than it should. Move the course later on the pass to avoid that."
+        },
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "steak2",
+          "dish_name": "Steak",
+          "quantity": 1,
+          "item_ids": [
+            "o7-3"
+          ],
+          "order_ids": [
+            "o7"
+          ],
+          "labels": [
+            "Table 7"
+          ],
+          "start_at": "2026-05-01T18:05:00Z",
+          "now": false,
+          "late": true,
+          "text": "Start 1× Steak on the flat-top at 19:05 for Table 7",
+          "reason": "Table 7 mains are due at 19:23. Steak: 12 min cook + 5 min rest + 1 min plate, so start by 19:05. The flat-top is full until 19:12 (3 of 3 in use). The course moved from 19:18 to 19:23 so every item finishes together."
+        },
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "quantity": 1,
+          "item_ids": [
+            "o7-1"
+          ],
+          "order_ids": [
+            "o7"
+          ],
+          "labels": [
+            "Table 7"
+          ],
+          "start_at": "2026-05-01T18:12:00Z",
+          "now": false,
+          "late": true,
+          "text": "Start 1× Burger on the flat-top at 19:12 for Table 7",
+          "reason": "Table 7 mains are due at 19:23. Burger: 8 min cook + 2 min rest + 1 min plate, so start by 19:12. The flat-top is full until 19:12 (3 of 3 in use). The course moved from 19:18 to 19:23 so every item finishes together."
+        }
+      ],
+      "in_progress": []
+    },
+    {
+      "station_id": "fryer",
+      "name": "Fryer",
+      "actions": [],
+      "in_progress": []
+    },
+    {
+      "station_id": "cold",
+      "name": "Cold section",
+      "actions": [],
+      "in_progress": []
+    }
+  ],
+  "courses": [
+    {
+      "order_id": "o7",
+      "label": "Table 7",
+      "course": "main",
+      "target": "2026-05-01T18:18:00Z",
+      "planned_ready": "2026-05-01T18:23:00Z",
+      "status": "at_risk",
+      "reason": "Due at 19:18; expected at 19:23. The flat-top is full until 19:12 (3 of 3 in use)."
+    }
+  ],
+  "items": [
+    {
+      "item_id": "o7-2",
+      "order_id": "o7",
+      "latest_start": "2026-05-01T18:12:00Z",
+      "start_at": "2026-05-01T18:04:00Z",
+      "ready_at": "2026-05-01T18:15:00Z"
+    },
+    {
+      "item_id": "o7-3",
+      "order_id": "o7",
+      "latest_start": "2026-05-01T18:05:00Z",
+      "start_at": "2026-05-01T18:05:00Z",
+      "ready_at": "2026-05-01T18:23:00Z"
+    },
+    {
+      "item_id": "o7-1",
+      "order_id": "o7",
+      "latest_start": "2026-05-01T18:12:00Z",
+      "start_at": "2026-05-01T18:12:00Z",
+      "ready_at": "2026-05-01T18:23:00Z"
+    }
+  ]
+}

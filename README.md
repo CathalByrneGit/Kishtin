@@ -8,9 +8,12 @@ See [AGENTS.md](AGENTS.md) for the full plan. This README describes what is buil
 
 ## What works now
 
-Roadmap stage 1: the HACCP log, ported from the browser prototype.
+Roadmap stages 1 to 4: the HACCP log, ported from the browser prototype; the menu with stations and equipment; manual orders and the pass; and the cook scheduler.
 
-- **Screens** for a computer, served by `kishtind` itself: Today, Records with a details panel, Exports, Verify, and Setup for fridges and tasks, limits and rules, staff, device keys, backups and settings. Search with Ctrl K. See [docs/screens.md](docs/screens.md).
+- **Screens** for a computer, served by `kishtind` itself: the Pass, Stations and Orders; HACCP Today, Records, Exports and Verify; and Setup for the menu, the scheduler, fridges and tasks, limits and rules, staff, device keys, backups and settings. Search with Ctrl K. See [docs/screens.md](docs/screens.md).
+- **Menu**: stations, equipment with how many units it holds, and dishes with cook, rest, plate and hold times, batch capacity, modifiers such as "well done +2 min", and 86 for sold out. See [docs/kitchen.md](docs/kitchen.md).
+- **Orders and the pass**: tables and takeaways with daily ticket numbers; courses held until fired; items moved from waiting to cooking, resting, plating, ready and served; a course served together; expo overrides (new target time, urgent) logged with every other change in each order's history.
+- **Cook scheduler**: backward scheduling within equipment capacity, with batching across tables, priorities and station buffers. It tells each station what to start and when, says why for every recommendation, and shows each course as on track, at risk or late. Its settings are versioned.
 - **HACCP log**: fridge, freezer, delivery, cook, reheat, cooling, hot holding, batch label and cleaning records, checked against FSAI limits. See [docs/haccp.md](docs/haccp.md).
 - **Versioned limits**: a manager can set limits per dish, food category or fridge. Every change is a new version, and every record stores the version it was checked against.
 - **Customisable guidance and rules**: the reference guidance limits are measured against (starts as FSAI), whether borderline readings need a corrective action, managed lists of fridges, food categories and cleaning tasks, and system settings such as the backup schedule. All versioned, previewed before saving, and audited. See [docs/settings.md](docs/settings.md).
@@ -24,7 +27,8 @@ Roadmap stage 1: the HACCP log, ported from the browser prototype.
 
 ## What does not exist yet
 
-- Menu, stations, orders, the pass view, the scheduler and voice control (roadmap stages 2–5).
+- Voice control (roadmap stage 5), cook times learned from real cooks (stage 6), and orders from Square (stage 7). Orders are entered by hand.
+- Scheduler service profiles, replaying a service under new settings, and a fixed pace between courses.
 - Postgres and DuckDB backends. Only SQLite is built.
 - Off-site backups. Kishtin writes backups on the server machine. Copying them somewhere else is up to you.
 - Saving while the server is unreachable. Screens keep showing the last data with a "Not connected" notice, but new records cannot be saved until the connection is back.
@@ -56,6 +60,9 @@ bin/kishtin haccp list
 bin/kishtin haccp verify
 bin/kishtin haccp export --from 2026-05-01 --to 2026-05-31 -o may.csv
 bin/kishtin settings show guidance
+bin/kishtin menu
+bin/kishtin order new --table 4 --item "2x Burger: well done" --fire main
+bin/kishtin pass --why
 ```
 
 Every command takes `--json` for scripts and agents. Run `bin/kishtin --help` for the rest.

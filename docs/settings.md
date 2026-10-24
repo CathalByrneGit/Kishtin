@@ -1,6 +1,6 @@
 # Settings
 
-Everything Kishtin checks HACCP records against can be changed by a manager. There are five parts:
+Everything Kishtin checks HACCP records against can be changed by a manager, and so can the cook scheduler. There are six parts:
 
 | What | Where | Changed with |
 |---|---|---|
@@ -9,6 +9,7 @@ Everything Kishtin checks HACCP records against can be changed by a manager. The
 | Food-safety rules | below | `kishtin settings set rules` |
 | Lists of fridges, freezers, food categories and cleaning tasks | below | `kishtin settings set lists` |
 | System settings | below | `kishtin settings set system` |
+| Scheduler settings | below, and [kitchen.md](kitchen.md#settings) | `kishtin settings set scheduler` |
 
 Every change works the same way:
 
@@ -25,9 +26,9 @@ kishtin settings show lists --value > lists.json
 kishtin settings set lists -f lists.json --reason "Add the fish fridge"
 ```
 
-The same actions are in the API under `/api/settings/{guidance,rules,lists,system}` (`GET`, `GET …/history`, `POST …/preview`, `PUT`).
+The same actions are in the API under `/api/settings/{guidance,rules,lists,system,scheduler}` (`GET`, `GET …/history`, `POST …/preview`, `PUT`).
 
-In the screens, lists are under **Setup → Fridges and tasks**, rules and limits under **Setup → Limits and rules**, and system settings under **Settings**. Each shows the same preview and asks for the same reason. The reference guidance is changed with the CLI or API only. See [screens.md](screens.md#setup).
+In the screens, lists are under **Setup → Fridges and tasks**, rules and limits under **Setup → Limits and rules**, system settings under **Settings**, and scheduler settings under **Setup → Scheduler**. Each shows the same preview and asks for the same reason. The reference guidance is changed with the CLI or API only. See [screens.md](screens.md#setup).
 
 ## Reference guidance
 
@@ -103,3 +104,9 @@ Dishes are not listed yet; they come with the menu (roadmap stage 2).
 Until you save a change, these come from `kishtin.toml` (`[backup] interval` and `keep`, `[files] max_size_mb`). Once saved, the saved version wins. Changes take effect without a restart.
 
 The backup folder, listen address and TLS stay in `kishtin.toml` only. They decide where files are written and who can connect, so they cannot be changed over the API.
+
+## Scheduler settings
+
+The cook scheduler's strategy, batching window, priorities, station buffers, how long a ready course can wait at the pass, and how often screens re-plan. Each field is explained in [kitchen.md](kitchen.md#settings).
+
+Changing them needs a manager password and a reason, like every settings change, but never a plan reference: they do not affect food safety. The preview names each station whose buffer changes. Every plan says which version of these settings produced it, and the expo's own changes on the pass always come first.

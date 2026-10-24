@@ -232,6 +232,9 @@ type job struct {
 	// early is how much earlier than its latest start the item starts,
 	// because the equipment is full then. It waits at the pass that long.
 	early time.Duration
+	// selfConflict is set when the item starts early, beyond what the dish
+	// can wait, because its own course's items cannot all cook at once.
+	selfConflict bool
 }
 
 type capacityWait struct {
@@ -350,7 +353,7 @@ func plan(state KitchenState, cfg Config, now time.Time, strategy string) Plan {
 	}
 
 	for ci := range courses {
-		p.Courses = append(p.Courses, courseStatus(&courses[ci], ci, shift[ci], jobs, cfg, now))
+		p.Courses = append(p.Courses, courseStatus(&courses[ci], ci, causes[ci], jobs, cfg, now))
 	}
 	return p
 }
@@ -616,7 +619,9 @@ func placeJob(j *job, pl *planner, cfg Config, now time.Time, strategy string) {
 		// own items alone fill the equipment (they cannot all start at
 		// once). Past that, the course moves later instead.
 		lo := j.desired.Add(-it.HoldMax)
-		if own := only(list, j.ci); !fits(own, j.desired, it.Cook, use) {
+		own := only(list, j.ci)
+		self := !fits(own, j.desired, it.Cook, use)
+		if self {
 			// Early enough to finish before the course's own long cook.
 			var longest time.Duration
 			for _, iv := range own {
@@ -630,6 +635,7 @@ func placeJob(j *job, pl *planner, cfg Config, now time.Time, strategy string) {
 		if t, found := latestFit(list, lo, j.desired, it.Cook, use); found {
 			start, ok = t, true
 			j.early = j.desired.Sub(t)
+			j.selfConflict = self && j.early > it.HoldMax
 		}
 	}
 	if !ok {
@@ -884,7 +890,11 @@ func action(g *group, shift []time.Duration, causes []cause, cfg Config, now tim
 	} else if first.waitedFor != nil {
 		why = append(why, fmt.Sprintf("The %s is full until %s (%s in use).", strings.ToLower(names[first.waitedFor.equipment]), cfg.clock(first.waitedFor.until), first.waitedFor.inUse))
 	}
-	if first.early > 0 && first.waitedFor == nil {
+	switch {
+	case first.selfConflict:
+		why = append(why, fmt.Sprintf("%s's items cannot all fit on the %s at once, so start this %s earlier; it waits at the pass longer than it should. Move the course later on the pass to avoid that.",
+			c.Label, strings.ToLower(a.EquipmentName), mins(first.early)))
+	case first.early > 0 && first.waitedFor == nil:
 		why = append(why, fmt.Sprintf("The %s is full at %s, so start %s earlier; it waits at the pass.", strings.ToLower(a.EquipmentName), cfg.clock(first.latest), mins(first.early)))
 	}
 	if first.rank > 0 && strategy != StrategyFIFO {
@@ -950,7 +960,7 @@ func priorityText(c *Course, cfg Config) string {
 }
 
 // courseStatus says whether a course will reach the pass on time.
-func courseStatus(c *Course, ci int, shift time.Duration, jobs []*job, cfg Config, now time.Time) CourseStatus {
+func courseStatus(c *Course, ci int, why cause, jobs []*job, cfg Config, now time.Time) CourseStatus {
 	cs := CourseStatus{OrderID: c.OrderID, Label: c.Label, Course: c.Course, Target: c.Target}
 	allReady, any := true, false
 	var planned time.Time
@@ -994,12 +1004,14 @@ func courseStatus(c *Course, ci int, shift time.Duration, jobs []*job, cfg Confi
 	case now.After(c.Target):
 		cs.Status = StatusLate
 		cs.Reason = fmt.Sprintf("Due at %s; expected at the pass at %s.", cfg.clock(c.Target), cfg.clock(planned))
+		if why.text != "" {
+			cs.Reason += " " + why.text
+		}
 	case planned.After(c.Target.Add(30 * time.Second)):
 		cs.Status = StatusAtRisk
-		if shift > 0 {
-			cs.Reason = fmt.Sprintf("Due at %s, but equipment is busy: expected at %s.", cfg.clock(c.Target), cfg.clock(planned))
-		} else {
-			cs.Reason = fmt.Sprintf("Due at %s; expected at %s.", cfg.clock(c.Target), cfg.clock(planned))
+		cs.Reason = fmt.Sprintf("Due at %s; expected at %s.", cfg.clock(c.Target), cfg.clock(planned))
+		if why.text != "" {
+			cs.Reason += " " + why.text
 		}
 	default:
 		cs.Status = StatusOnTrack

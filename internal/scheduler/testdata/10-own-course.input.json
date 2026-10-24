@@ -1,0 +1,105 @@
+{
+  "description": "Table 7 orders two burgers and a steak (which takes half the flat-top). They cannot all cook at once, so one burger starts early and waits; the reason says so.",
+  "now": "2026-05-01T18:00:00Z",
+  "stations": [
+    {
+      "id": "grill",
+      "name": "Grill"
+    },
+    {
+      "id": "fryer",
+      "name": "Fryer"
+    },
+    {
+      "id": "cold",
+      "name": "Cold section"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "flat-top",
+      "station_id": "grill",
+      "name": "Flat-top"
+    },
+    {
+      "id": "baskets",
+      "station_id": "fryer",
+      "name": "Fryer"
+    }
+  ],
+  "dishes": {
+    "burger": {
+      "name": "Burger",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "8m",
+      "rest": "2m",
+      "plate": "1m",
+      "hold": "3m",
+      "batchable": true
+    },
+    "steak": {
+      "name": "Steak",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "12m",
+      "rest": "5m",
+      "plate": "1m",
+      "hold": "0s"
+    },
+    "fries": {
+      "name": "Fries",
+      "station": "fryer",
+      "equipment": "baskets",
+      "capacity": 2,
+      "cook": "4m",
+      "plate": "30s",
+      "hold": "2m",
+      "batchable": true
+    },
+    "salad": {
+      "name": "Salad",
+      "station": "cold",
+      "plate": "3m",
+      "hold": "5m"
+    },
+    "steak2": {
+      "name": "Steak",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 2,
+      "cook": "12m",
+      "rest": "5m",
+      "plate": "1m",
+      "hold": "0s"
+    }
+  },
+  "courses": [
+    {
+      "order_id": "o7",
+      "label": "Table 7",
+      "course": "main",
+      "fired_at": "2026-05-01T18:00:00Z",
+      "target": "2026-05-01T18:18:00Z",
+      "items": [
+        {
+          "id": "o7-1",
+          "dish": "burger",
+          "state": "fired"
+        },
+        {
+          "id": "o7-2",
+          "dish": "burger",
+          "state": "fired"
+        },
+        {
+          "id": "o7-3",
+          "dish": "steak2",
+          "state": "fired"
+        }
+      ]
+    }
+  ]
+}
