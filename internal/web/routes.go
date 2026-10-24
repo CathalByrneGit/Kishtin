@@ -22,6 +22,7 @@ import (
 func (s *Server) routes() {
 	s.authRoutes()
 	s.haccpRoutes()
+	s.packRoute()
 	s.limitRoutes()
 	s.fileRoutes()
 	s.settingsRoutes()
@@ -317,6 +318,46 @@ func (s *Server) haccpRoutes() {
 		return &csvOut{
 			ContentType:        "text/csv; charset=utf-8",
 			ContentDisposition: fmt.Sprintf("attachment; filename=%q", safeFilename(name)),
+			Records:            sum.Records,
+			ChainHead:          sum.Chain.HeadHash,
+			ChainOK:            sum.Chain.OK,
+			Body:               buf.Bytes(),
+		}, nil
+	}))
+}
+
+type pdfOut struct {
+	ContentType        string `header:"Content-Type"`
+	ContentDisposition string `header:"Content-Disposition"`
+	Records            int    `header:"X-Kishtin-Records"`
+	ChainHead          string `header:"X-Kishtin-Chain-Head"`
+	ChainOK            bool   `header:"X-Kishtin-Chain-OK"`
+	Body               []byte
+}
+
+func (s *Server) packRoute() {
+	huma.Register(s.api, huma.Operation{
+		OperationID: "export-pack", Method: http.MethodGet, Path: "/haccp/export/pdf", Tags: []string{"HACCP"},
+		Summary:     "Export the HACCP inspection pack as PDF",
+		Description: "Takes the same filters as the CSV export. The pack has a summary with the hash chain and file checks, failed and borderline records with their actions, every record by day, and the limit versions used.",
+		Responses: map[string]*huma.Response{"200": {
+			Description: "The inspection pack.",
+			Content:     map[string]*huma.MediaType{"application/pdf": {Schema: &huma.Schema{Type: "string", Format: "binary"}}},
+		}},
+	}, wrap(s, func(ctx context.Context, in *exportIn) (*pdfOut, error) {
+		q, err := query(in.From, in.To, in.Types, in.Outcomes)
+		if err != nil {
+			return nil, err
+		}
+		var buf bytes.Buffer
+		sum, err := s.svc.ExportPackPDF(ctx, principal(ctx), q, &buf)
+		if err != nil {
+			return nil, err
+		}
+		name := fmt.Sprintf("haccp-inspection-pack-%s.pdf", time.Now().In(clock.Dublin).Format(haccp.DateLayout))
+		return &pdfOut{
+			ContentType:        "application/pdf",
+			ContentDisposition: fmt.Sprintf("attachment; filename=%q", name),
 			Records:            sum.Records,
 			ChainHead:          sum.Chain.HeadHash,
 			ChainOK:            sum.Chain.OK,

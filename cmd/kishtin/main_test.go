@@ -133,6 +133,16 @@ func TestCLI(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(string(data), "seq,record_id,"))
 
+	pdfPath := filepath.Join(t.TempDir(), "pack.pdf")
+	_, errOut, err = run(t, url, key, "", "haccp", "export", "--pdf", "-o", pdfPath)
+	require.NoError(t, err)
+	assert.Contains(t, errOut, "Inspection pack with")
+	pdf, err := os.ReadFile(pdfPath)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(string(pdf), "%PDF-"))
+	_, _, err = run(t, url, key, "", "haccp", "export", "--pdf")
+	assert.ErrorContains(t, err, "needs -o")
+
 	_, errOut, err = run(t, url, key, "n\n", "limits", "set", "--check", "fridge", "--scope", "unit:Walk-in fridge", "--max", "3", "--reason", "Fish in the walk-in")
 	require.NoError(t, err)
 	assert.Contains(t, errOut, "Would score differently: 1.")

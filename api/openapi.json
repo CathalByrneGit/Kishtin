@@ -2464,6 +2464,122 @@
         ]
       }
     },
+    "/haccp/export/pdf": {
+      "get": {
+        "description": "Takes the same filters as the CSV export. The pack has a summary with the hash chain and file checks, failed and borderline records with their actions, every record by day, and the limit versions used.",
+        "operationId": "export-pack",
+        "parameters": [
+          {
+            "description": "Start date (2026-05-01, Dublin time) or RFC 3339 time. Empty: from the first record.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "Start date (2026-05-01, Dublin time) or RFC 3339 time. Empty: from the first record.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End date, inclusive, or RFC 3339 time, exclusive. Empty: up to now.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "End date, inclusive, or RFC 3339 time, exclusive. Empty: up to now.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only these record types.",
+            "explode": false,
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "description": "Only these record types.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Only these outcomes: pass, borderline, fail, recorded.",
+            "explode": false,
+            "in": "query",
+            "name": "outcome",
+            "schema": {
+              "description": "Only these outcomes: pass, borderline, fail, recorded.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "contentMediaType": "application/octet-stream",
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The inspection pack.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kishtin-Chain-Head": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kishtin-Chain-OK": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "X-Kishtin-Records": {
+                "schema": {
+                  "format": "int64",
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Export the HACCP inspection pack as PDF",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
     "/haccp/limits": {
       "get": {
         "operationId": "list-limits",

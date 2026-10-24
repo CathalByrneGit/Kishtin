@@ -446,7 +446,7 @@ func (c *cli) verifyCmd() *cobra.Command {
 
 func (c *cli) exportCmd() *cobra.Command {
 	var from, to, outPath string
-	var limits, fails bool
+	var limits, fails, pdf bool
 	var types []string
 	cmd := &cobra.Command{
 		Use:   "export",
@@ -464,6 +464,28 @@ func (c *cli) exportCmd() *cobra.Command {
 					return apiErr(err)
 				}
 				body, summary = res.Body, "Limit history exported."
+			} else if pdf {
+				q := &client.ExportPackQuery{Type: types}
+				if from != "" {
+					q.From = &from
+				}
+				if to != "" {
+					q.To = &to
+				}
+				if fails {
+					q.Outcome = []string{"borderline", "fail"}
+				}
+				if outPath == "" || outPath == "-" {
+					return fmt.Errorf("a PDF needs -o FILE")
+				}
+				res, err := c.api.ExportPackWithResponse(cmd.Context(), &client.ExportPackRequestOptions{Query: q})
+				if err != nil {
+					return apiErr(err)
+				}
+				body = res.Body
+				if h := res.Headers200; h != nil {
+					summary = fmt.Sprintf("Inspection pack with %s records written. Hash chain OK: %s, head %s.", h.XKishtinRecords, h.XKishtinChainOK, h.XKishtinChainHead)
+				}
 			} else {
 				q := &client.ExportRecordsQuery{Type: types}
 				if from != "" {
@@ -505,5 +527,6 @@ func (c *cli) exportCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&limits, "limits", false, "export the limit history instead of records")
 	cmd.Flags().StringSliceVar(&types, "type", nil, "only these record types")
 	cmd.Flags().BoolVar(&fails, "fails", false, "only failed and borderline records")
+	cmd.Flags().BoolVar(&pdf, "pdf", false, "write the PDF inspection pack instead of CSV (needs -o)")
 	return cmd
 }
