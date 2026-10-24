@@ -1,0 +1,2142 @@
+{
+  "components": {
+    "schemas": {
+      "APIKey": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "revoked_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "created_by",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "Backup": {
+        "additionalProperties": false,
+        "properties": {
+          "head_hash": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "taken_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "size",
+          "sha256",
+          "taken_at",
+          "records",
+          "head_hash",
+          "verified"
+        ],
+        "type": "object"
+      },
+      "BackupsOutBody": {
+        "additionalProperties": false,
+        "properties": {
+          "backups": {
+            "items": {
+              "$ref": "#/components/schemas/Backup"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "backups"
+        ],
+        "type": "object"
+      },
+      "ChainBreak": {
+        "additionalProperties": false,
+        "properties": {
+          "problem": {
+            "type": "string"
+          },
+          "record_id": {
+            "type": "string"
+          },
+          "seq": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "seq",
+          "problem"
+        ],
+        "type": "object"
+      },
+      "ChainReport": {
+        "additionalProperties": false,
+        "properties": {
+          "break": {
+            "$ref": "#/components/schemas/ChainBreak"
+          },
+          "checked": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "head_hash": {
+            "type": "string"
+          },
+          "head_seq": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "checked",
+          "head_seq",
+          "head_hash"
+        ],
+        "type": "object"
+      },
+      "Check": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "$ref": "#/components/schemas/LimitVersion"
+          },
+          "needs_corrective_action": {
+            "type": "boolean"
+          },
+          "result": {
+            "$ref": "#/components/schemas/Result"
+          }
+        },
+        "required": [
+          "result",
+          "needs_corrective_action"
+        ],
+        "type": "object"
+      },
+      "CoolingLimit": {
+        "additionalProperties": false,
+        "properties": {
+          "cutoff_after_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "cutoff_max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "into_fridge_within_seconds": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "into_fridge_within_seconds",
+          "cutoff_after_seconds",
+          "cutoff_max_c"
+        ],
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "location": {
+            "description": "Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'",
+            "type": "string"
+          },
+          "message": {
+            "description": "Error message text",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value at the given location"
+          }
+        },
+        "type": "object"
+      },
+      "ErrorModel": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "description": "A human-readable explanation specific to this occurrence of the problem.",
+            "examples": [
+              "Property foo is required but is missing."
+            ],
+            "type": "string"
+          },
+          "errors": {
+            "description": "Optional list of individual error details",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "instance": {
+            "description": "A URI reference that identifies the specific occurrence of the problem.",
+            "examples": [
+              "https://example.com/error-log/abc123"
+            ],
+            "format": "uri",
+            "type": "string"
+          },
+          "status": {
+            "description": "HTTP status code",
+            "examples": [
+              400
+            ],
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "description": "A short, human-readable summary of the problem type. This value should not change between occurrences of the error.",
+            "examples": [
+              "Bad Request"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "about:blank",
+            "description": "A URI reference to human-readable documentation for the error.",
+            "examples": [
+              "https://example.com/errors/example"
+            ],
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "FileMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "mime": {
+            "type": "string"
+          },
+          "original_name": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sha256",
+          "mime",
+          "size",
+          "uploaded_by",
+          "uploaded_at"
+        ],
+        "type": "object"
+      },
+      "FileProblem": {
+        "additionalProperties": false,
+        "properties": {
+          "problem": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sha256",
+          "problem"
+        ],
+        "type": "object"
+      },
+      "KeysOutBody": {
+        "additionalProperties": false,
+        "properties": {
+          "keys": {
+            "items": {
+              "$ref": "#/components/schemas/APIKey"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "keys"
+        ],
+        "type": "object"
+      },
+      "LimitPreview": {
+        "additionalProperties": false,
+        "properties": {
+          "below_fsai": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "changed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/LimitVersion"
+          },
+          "problem": {
+            "type": "string"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/RecordRegrade"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "replaces": {
+            "$ref": "#/components/schemas/LimitVersion"
+          }
+        },
+        "required": [
+          "limit",
+          "recent",
+          "changed"
+        ],
+        "type": "object"
+      },
+      "LimitVersion": {
+        "additionalProperties": false,
+        "properties": {
+          "borderline_max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "check": {
+            "type": "string"
+          },
+          "combos": {
+            "items": {
+              "$ref": "#/components/schemas/TimeTemp"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "cooling": {
+            "$ref": "#/components/schemas/CoolingLimit"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "min_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "non_food": {
+            "type": "boolean"
+          },
+          "plan_ref": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "supersedes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "check",
+          "scope",
+          "created_by",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "Limits": {
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "items": {
+              "$ref": "#/components/schemas/LimitVersion"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/LimitVersion"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "current",
+          "history"
+        ],
+        "type": "object"
+      },
+      "LoginInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "pin": {
+            "type": "string"
+          },
+          "user_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "LoginResult": {
+        "additionalProperties": false,
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/Session"
+          },
+          "token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "token",
+          "session",
+          "user"
+        ],
+        "type": "object"
+      },
+      "MeOutBody": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/APIKey"
+          },
+          "method": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "type": "object"
+      },
+      "NewKeyInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "device",
+              "user"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "user_id": {
+            "description": "For a user key: who it acts as. Defaults to you.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name"
+        ],
+        "type": "object"
+      },
+      "NewKeyResult": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/APIKey"
+          },
+          "secret": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "secret"
+        ],
+        "type": "object"
+      },
+      "NewLimit": {
+        "additionalProperties": false,
+        "properties": {
+          "borderline_max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "check": {
+            "type": "string"
+          },
+          "combos": {
+            "items": {
+              "$ref": "#/components/schemas/TimeTemp"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "cooling": {
+            "$ref": "#/components/schemas/CoolingLimit"
+          },
+          "max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "min_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "non_food": {
+            "type": "boolean"
+          },
+          "plan_ref": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "required": [
+          "check",
+          "scope",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "NewRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "correction_reason": {
+            "type": "string"
+          },
+          "corrective_action": {
+            "type": "string"
+          },
+          "corrects": {
+            "type": "string"
+          },
+          "reading": {
+            "$ref": "#/components/schemas/Reading"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "reading"
+        ],
+        "type": "object"
+      },
+      "NewUser": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "pin": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "type": "object"
+      },
+      "Reading": {
+        "additionalProperties": false,
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "cooked_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "delivery_kind": {
+            "type": "string"
+          },
+          "dish": {
+            "type": "string"
+          },
+          "docket_file": {
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "food": {
+            "type": "string"
+          },
+          "food_category": {
+            "type": "string"
+          },
+          "hold_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "into_fridge_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "made_on": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "product": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "supplier": {
+            "type": "string"
+          },
+          "task": {
+            "type": "string"
+          },
+          "temp_at_cutoff_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "temp_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "use_by": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Record": {
+        "additionalProperties": false,
+        "properties": {
+          "correction_reason": {
+            "type": "string"
+          },
+          "corrective_action": {
+            "type": "string"
+          },
+          "corrects": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "limit_scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "limit_version_id": {
+            "type": "string"
+          },
+          "logged_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "logged_by": {
+            "type": "string"
+          },
+          "logged_by_name": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "outcome_reason": {
+            "type": "string"
+          },
+          "prev_hash": {
+            "type": "string"
+          },
+          "reading": {
+            "$ref": "#/components/schemas/Reading"
+          },
+          "seq": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "seq",
+          "type",
+          "logged_by",
+          "logged_by_name",
+          "logged_at",
+          "reading",
+          "outcome",
+          "outcome_reason",
+          "prev_hash",
+          "hash"
+        ],
+        "type": "object"
+      },
+      "RecordRegrade": {
+        "additionalProperties": false,
+        "properties": {
+          "changed": {
+            "type": "boolean"
+          },
+          "logged_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "proposed": {
+            "type": "string"
+          },
+          "proposed_reason": {
+            "type": "string"
+          },
+          "record_id": {
+            "type": "string"
+          },
+          "saved": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "logged_at",
+          "subject",
+          "saved",
+          "proposed",
+          "changed",
+          "proposed_reason"
+        ],
+        "type": "object"
+      },
+      "RecordsOutBody": {
+        "additionalProperties": false,
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/Record"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "records"
+        ],
+        "type": "object"
+      },
+      "Result": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "Scope": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "Session": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "method",
+          "created_at",
+          "expires_at"
+        ],
+        "type": "object"
+      },
+      "StaffEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "has_password": {
+            "type": "boolean"
+          },
+          "has_pin": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role",
+          "has_pin",
+          "has_password"
+        ],
+        "type": "object"
+      },
+      "StaffOutBody": {
+        "additionalProperties": false,
+        "properties": {
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/StaffEntry"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "staff"
+        ],
+        "type": "object"
+      },
+      "TimeTemp": {
+        "additionalProperties": false,
+        "properties": {
+          "hold_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "min_c": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "min_c",
+          "hold_seconds"
+        ],
+        "type": "object"
+      },
+      "User": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role",
+          "active",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "UserChange": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "pin": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UsersOutBody": {
+        "additionalProperties": false,
+        "properties": {
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/User"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "users"
+        ],
+        "type": "object"
+      },
+      "VerifyReport": {
+        "additionalProperties": false,
+        "properties": {
+          "chain": {
+            "$ref": "#/components/schemas/ChainReport"
+          },
+          "file_problems": {
+            "items": {
+              "$ref": "#/components/schemas/FileProblem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "files_checked": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "unknown_limits": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "chain",
+          "files_checked",
+          "ok"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "description": "A Kishtin API key.",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "session": {
+        "description": "A staff session from PIN or password login on a device.",
+        "in": "header",
+        "name": "X-Kishtin-Session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "Kishtin kitchen operations API. Every request needs an API key: `Authorization: Bearer kishtin_key_…`. Kitchen devices also send a staff session in X-Kishtin-Session.",
+    "title": "Kishtin API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "description": "Send a PIN for a 12-hour staff session, or a manager password for a 30-minute session that allows manager actions. Needs a device key.",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Log in on a kitchen device",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Kishtin-Session",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "End the staff session sent in X-Kishtin-Session",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOutBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show who this request is from",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/staff": {
+      "get": {
+        "operationId": "list-staff",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffOutBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List staff for the login screen",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/backups": {
+      "get": {
+        "operationId": "list-backups",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupsOutBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List backups, newest first",
+        "tags": [
+          "Backups"
+        ]
+      },
+      "post": {
+        "description": "Writes a consistent copy, verifies its HACCP chain, and writes a .sha256 file next to it. Copy backups off the machine yourself; Kishtin does not send them anywhere.",
+        "operationId": "create-backup",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Backup"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Back up the database now",
+        "tags": [
+          "Backups"
+        ]
+      }
+    },
+    "/files": {
+      "post": {
+        "description": "Send the file as the request body. JPEG, PNG, WebP, HEIC and PDF are accepted. Attach it to a delivery record with its sha256.",
+        "operationId": "upload-file",
+        "parameters": [
+          {
+            "description": "Original file name.",
+            "explode": false,
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "description": "Original file name.",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "contentMediaType": "application/octet-stream",
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileMeta"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Upload a docket or invoice photo",
+        "tags": [
+          "Files"
+        ]
+      }
+    },
+    "/files/{sha256}": {
+      "get": {
+        "operationId": "get-file",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sha256",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Download an attached file",
+        "tags": [
+          "Files"
+        ]
+      }
+    },
+    "/haccp/check": {
+      "post": {
+        "description": "Returns the pass, borderline or fail result and the limit it was checked against, so it can be shown before saving.",
+        "operationId": "check-record",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewRecord"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Check a reading without saving it",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
+    "/haccp/export": {
+      "get": {
+        "operationId": "export-records",
+        "parameters": [
+          {
+            "description": "Start date (2026-05-01) or RFC 3339 time.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "Start date (2026-05-01) or RFC 3339 time.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End date, inclusive, or RFC 3339 time, exclusive.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "End date, inclusive, or RFC 3339 time, exclusive.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "CSV of the records in the range.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kishtin-Chain-Head": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kishtin-Chain-OK": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "X-Kishtin-Records": {
+                "schema": {
+                  "format": "int64",
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Export HACCP records as CSV for an inspection",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
+    "/haccp/limits": {
+      "get": {
+        "operationId": "list-limits",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Limits"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List critical limits: the ones in force and the full history",
+        "tags": [
+          "Limits"
+        ]
+      },
+      "post": {
+        "description": "Needs a manager password login or a manager API key. A limit below FSAI guidance needs a reason and a HACCP plan reference.",
+        "operationId": "create-limit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewLimit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitVersion"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Save a new limit version",
+        "tags": [
+          "Limits"
+        ]
+      }
+    },
+    "/haccp/limits/export": {
+      "get": {
+        "operationId": "export-limits",
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "CSV of every limit version.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kishtin-Chain-Head": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kishtin-Chain-OK": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "X-Kishtin-Records": {
+                "schema": {
+                  "format": "int64",
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Export the full limit history as CSV",
+        "tags": [
+          "Limits"
+        ]
+      }
+    },
+    "/haccp/limits/preview": {
+      "post": {
+        "description": "Shows how recent records would have scored under the new limit, whether it is below FSAI guidance, and anything that stops it being saved. Saved records are never re-graded.",
+        "operationId": "preview-limit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewLimit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitPreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Preview a limit change",
+        "tags": [
+          "Limits"
+        ]
+      }
+    },
+    "/haccp/records": {
+      "get": {
+        "operationId": "list-records",
+        "parameters": [
+          {
+            "description": "Start, inclusive: a date (2026-05-01, Dublin time) or an RFC 3339 time.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "Start, inclusive: a date (2026-05-01, Dublin time) or an RFC 3339 time.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End: a date (inclusive, Dublin time) or an RFC 3339 time (exclusive).",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "End: a date (inclusive, Dublin time) or an RFC 3339 time (exclusive).",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only these record types.",
+            "explode": false,
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "description": "Only these record types.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "At most this many records (default and maximum 1000).",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "description": "At most this many records (default and maximum 1000).",
+              "format": "int64",
+              "maximum": 1000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Newest first.",
+            "explode": false,
+            "in": "query",
+            "name": "newest",
+            "schema": {
+              "description": "Newest first.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordsOutBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List HACCP records",
+        "tags": [
+          "HACCP"
+        ]
+      },
+      "post": {
+        "description": "A failed or borderline reading is refused unless it has a corrective action. Records cannot be changed later: to fix a mistake, save a new record with `corrects` set.",
+        "operationId": "log-record",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewRecord"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Save a HACCP record",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
+    "/haccp/records/{id}": {
+      "get": {
+        "operationId": "get-record",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get one HACCP record",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
+    "/haccp/verify": {
+      "get": {
+        "description": "Re-checks the hash chain from the first record, the limit versions records refer to, and every attached file.",
+        "operationId": "verify",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyReport"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Check HACCP records and files for tampering",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
+    "/keys": {
+      "get": {
+        "operationId": "list-keys",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeysOutBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List API keys",
+        "tags": [
+          "Keys"
+        ]
+      },
+      "post": {
+        "description": "A device key lets a shared kitchen device show the login screen. A user key acts as one person, for the CLI and scripts. The secret is shown once.",
+        "operationId": "create-key",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewKeyInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewKeyResult"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create an API key",
+        "tags": [
+          "Keys"
+        ]
+      }
+    },
+    "/keys/{id}": {
+      "delete": {
+        "operationId": "revoke-key",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Revoke an API key",
+        "tags": [
+          "Keys"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "list-users",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsersOutBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List staff, including deactivated staff",
+        "tags": [
+          "Staff"
+        ]
+      },
+      "post": {
+        "operationId": "create-user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add a staff member",
+        "tags": [
+          "Staff"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "patch": {
+        "operationId": "update-user",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change a staff member: name, role, PIN, password, or deactivate",
+        "tags": [
+          "Staff"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    },
+    {
+      "apiKey": [],
+      "session": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ]
+}
