@@ -902,7 +902,7 @@ func (c *cli) stationCmd() *cobra.Command {
 
 func (c *cli) itemsCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "items", Short: "Move items through the kitchen"}
-	var to, reason string
+	var to, reason, from string
 	move := func(use, short string, state *string) *cobra.Command {
 		return &cobra.Command{
 			Use: use + " ITEM...", Short: short, Args: cobra.MinimumNArgs(1),
@@ -913,6 +913,9 @@ func (c *cli) itemsCmd() *cobra.Command {
 				}
 				if reason != "" {
 					body.Reason = &reason
+				}
+				if from != "" {
+					body.From = &from
 				}
 				res, err := c.api.MoveItems(cmd.Context(), &client.MoveItemsRequestOptions{Body: &body})
 				if err != nil {
@@ -936,6 +939,9 @@ func (c *cli) itemsCmd() *cobra.Command {
 	set := move("move", "Move items to a state (--to cooking|resting|plating|ready|served|voided, or back one step)", &to)
 	set.Flags().StringVar(&to, "to", "", "the state to move to")
 	set.Flags().StringVar(&reason, "reason", "", "why (required to void)")
+	for _, sub := range []*cobra.Command{next, set} {
+		sub.Flags().StringVar(&from, "from", "", "the state you saw the items in; nothing moves if any has already changed")
+	}
 	cmd.AddCommand(next, set)
 	return cmd
 }

@@ -12397,6 +12397,7 @@ func (i Item) Validate() error {
 }
 
 type ItemMove struct {
+	From    *string  `json:"from,omitempty"`
 	ItemIds []string `json:"item_ids" validate:"required"`
 	Reason  *string  `json:"reason,omitempty"`
 	To      *string  `json:"to,omitempty"`

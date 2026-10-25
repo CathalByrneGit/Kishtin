@@ -47,6 +47,8 @@ Items then move through these states:
 
 Phases a dish does not have are skipped: fries with no rest time go from cooking to plating. A cook can move an item one step back to undo a tap made by mistake.
 
+When two people tap at once, or one taps on a screen that is out of date, only the first tap counts. Station screens send the state each item was shown in; if any item has already moved on, nothing in that tap moves and the error says who moved it and when. Scripts can do the same with `--from`.
+
 - **Serve** serves a whole course, and only once every item in it is ready, so a course leaves the pass together.
 - **Close** an order once every item is served or voided.
 - Every change goes in the order's **history**: who, when, and what. The history cannot be edited or deleted. Item state changes in it are the actual cook times that learned cook times will use later.
@@ -130,6 +132,7 @@ kishtin order close 4
 kishtin pass --why                               # every fired course: due, expected, status, why
 kishtin station grill                            # what to start now and next, and why
 kishtin items next ID...                         # one step forward
+kishtin items next --from fired ID...            # only if they are still waiting to start
 kishtin items move --to voided --reason "Dropped" ID
 
 kishtin settings show scheduler

@@ -174,6 +174,24 @@ func TestOrderLifecycle(t *testing.T) {
 		assert.Equal(t, orders.StateCooking, it.State)
 		require.NotNil(t, it.StartedAt)
 	}
+	// A second cook taps Start on the same burgers from a screen that has
+	// not refreshed: nothing moves, and the error says who started them.
+	_, err = k.svc.MoveItems(ctx, k.chef, ItemMove{ItemIDs: ids, From: orders.StateFired})
+	require.Error(t, err)
+	assert.Equal(t, KindConflict, KindOf(err))
+	assert.Contains(t, err.Error(), "Synthetic burger for Table 4 is already cooking (Liam Cook, 10:01)")
+	o, err = k.svc.GetOrder(ctx, k.cook, o.ID)
+	require.NoError(t, err)
+	for _, id := range ids {
+		it, _ := o.Item(id)
+		assert.Equal(t, orders.StateCooking, it.State, "the second tap moved nothing")
+	}
+	// One stale item in a batch stops the whole batch.
+	_, err = k.svc.MoveItems(ctx, k.cook, ItemMove{ItemIDs: append([]string{o.Items[0].ID}, ids...), From: orders.StateCooking})
+	assert.ErrorContains(t, err, "Synthetic salad for Table 4 is already held")
+	_, err = k.svc.MoveItems(ctx, k.cook, ItemMove{ItemIDs: ids, From: "burnt"})
+	assert.ErrorContains(t, err, "unknown state")
+
 	// A cook cannot serve.
 	_, err = k.svc.MoveItems(ctx, k.cook, ItemMove{ItemIDs: ids, To: orders.StateServed})
 	assert.Equal(t, KindForbidden, KindOf(err))

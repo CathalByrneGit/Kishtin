@@ -56,8 +56,12 @@ func TestKitchenCLI(t *testing.T) {
 	ids := regexp.MustCompile(`Items: (\S+) (\S+)`).FindStringSubmatch(out)
 	require.Len(t, ids, 3)
 
-	out = cli("items", "next", ids[1], ids[2])
+	out = cli("items", "next", "--from", "fired", ids[1], ids[2])
 	assert.Contains(t, out, "Table 4 Synthetic burger: cooking")
+	// A second tap from a screen that still shows them waiting moves nothing.
+	_, _, err = run(t, url, key, "", "items", "next", "--from", "fired", ids[1], ids[2])
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is already cooking (Máire Manager")
 	out = cli("station", "grill")
 	assert.Contains(t, out, "In progress:")
 

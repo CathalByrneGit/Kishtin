@@ -47,6 +47,12 @@ type ItemMove struct {
 	ItemIDs []string `json:"item_ids" minItems:"1"`
 	// To is the state to move to. Empty moves each item one step forward.
 	To orders.State `json:"to,omitempty"`
+	// From is the state the person saw each item in. If an item has
+	// already moved on (someone else tapped first, or the screen was out
+	// of date), nothing moves and the error says who moved it and when.
+	// Screens always send it; leave it out only from scripts that do not
+	// care.
+	From orders.State `json:"from,omitempty"`
 	// Reason is required to void an item.
 	Reason string `json:"reason,omitempty"`
 }
@@ -421,6 +427,9 @@ func (s *Service) MoveItems(ctx context.Context, p *auth.Principal, in ItemMove)
 	if in.To != "" && !in.To.Valid() {
 		return nil, newErr(KindInvalid, "unknown state %q", in.To)
 	}
+	if in.From != "" && !in.From.Valid() {
+		return nil, newErr(KindInvalid, "unknown state %q", in.From)
+	}
 	var changed []string
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
 		open, err := tx.Orders().ListOrders(ctx, store.OrderFilter{OpenOnly: true})
@@ -445,6 +454,9 @@ func (s *Service) MoveItems(ctx context.Context, p *auth.Principal, in ItemMove)
 				return newErr(KindNotFound, "item %s is not on an open order", id)
 			}
 			it, _ := o.Item(id)
+			if in.From != "" && it.State != in.From {
+				return s.alreadyMoved(ctx, tx, o, it)
+			}
 			to := in.To
 			if to == "" {
 				if to, err = orders.Advance(it); err != nil {
@@ -503,6 +515,35 @@ func (s *Service) MoveItems(ctx context.Context, p *auth.Principal, in ItemMove)
 		out = append(out, o)
 	}
 	return out, nil
+}
+
+// alreadyMoved explains that an item is no longer in the state the person
+// saw: who moved it, and when.
+func (s *Service) alreadyMoved(ctx context.Context, tx store.Store, o *orders.Order, it orders.Item) error {
+	what := fmt.Sprintf("%s for %s is already %s", it.DishName, o.Label(), itemStateWords(it.State))
+	evs, err := tx.Orders().ListEvents(ctx, o.ID)
+	if err != nil {
+		return err
+	}
+	for i := len(evs) - 1; i >= 0; i-- {
+		e := evs[i]
+		if e.ItemID == it.ID && e.Kind == orders.EventItemState {
+			what += fmt.Sprintf(" (%s, %s)", e.ByName, e.At.In(clock.Dublin).Format("15:04"))
+			break
+		}
+	}
+	return newErr(KindConflict, "%s. Nothing was changed; the screen now shows the latest.", what)
+}
+
+// itemStateWords is a state as staff say it.
+func itemStateWords(st orders.State) string {
+	switch st {
+	case orders.StateFired:
+		return "waiting to start"
+	case orders.StateHeld:
+		return "held"
+	}
+	return string(st)
 }
 
 // settleCourse marks a fired course served once every item in it is served

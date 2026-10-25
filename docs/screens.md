@@ -69,6 +69,8 @@ Pick a station. Three columns:
 
 Line cooks, head chefs and managers get the buttons.
 
+Each button sends the state the cook saw. If someone else has already moved those items, or the screen was out of date, nothing moves: the screen says who moved them and when, for example "Synthetic burger for Table 4 is already cooking (Liam Cook, 18:41)", and reloads. A double tap cannot move an item two steps.
+
 ### Orders
 
 - **New order** (front of house, head chefs and managers): table or takeaway, table number or customer name, covers, an allergy tick and notes. Tap dishes to add them, grouped by course; dishes that are 86 cannot be added. Each line has a quantity, its course, modifier chips and notes. Head chefs and managers can tick courses to **fire straight away**. **Send order** shows the ticket number.

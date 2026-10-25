@@ -38,14 +38,17 @@
     return out;
   });
 
-  async function move(key: string, ids: string[], done: string) {
+  // from is the state the cook saw. If someone else moved the items first,
+  // the server refuses and the screen reloads to show the latest.
+  async function move(key: string, ids: string[], from: string, done: string) {
     busy = key;
     try {
-      await api.moveItems({ item_ids: ids });
+      await api.moveItems({ item_ids: ids, from });
       showFlash(done, { tone: "success" });
       await feed.reload();
     } catch (err) {
       showFlash(message(err), { tone: "danger", durationMs: 8000 });
+      await feed.reload().catch(() => {});
     } finally {
       busy = null;
     }
@@ -104,7 +107,7 @@
               <span class="for">{a.equipment_name ? `On the ${a.equipment_name.toLowerCase()} · ` : ""}for {a.labels.join(" and ")}</span>
               <p class="why">{a.reason}</p>
               {#if cook}
-                <Button tone="success" surface="solid" size={big ? undefined : "lg"} label={busy === a.item_ids.join(",") ? "Starting…" : a.quantity > 1 ? `Start all ${a.quantity}` : "Start"} disabled={busy !== null} onclick={() => move(a.item_ids.join(","), a.item_ids, `Started ${a.quantity}× ${a.dish_name}`)}>
+                <Button tone="success" surface="solid" size={big ? undefined : "lg"} label={busy === a.item_ids.join(",") ? "Starting…" : a.quantity > 1 ? `Start all ${a.quantity}` : "Start"} disabled={busy !== null} onclick={() => move(a.item_ids.join(","), a.item_ids, "fired", `Started ${a.quantity}× ${a.dish_name}`)}>
                   <Play size={18} />
                 </Button>
               {/if}
@@ -130,7 +133,7 @@
                 <span class="muted">{new Date(p.phase_ends_at) < feed.now ? "overdue" : `until ${dublinTime(p.phase_ends_at)}`}</span>
               </div>
               {#if cook}
-                <Button tone="info" surface="solid" label={nextLabel(p.state)} disabled={busy !== null} onclick={() => move(g.key, g.items.map((x) => x.item_id), `${nextLabel(p.state)}: ${p.dish_name}`)} />
+                <Button tone="info" surface="solid" label={nextLabel(p.state)} disabled={busy !== null} onclick={() => move(g.key, g.items.map((x) => x.item_id), p.state, `${nextLabel(p.state)}: ${p.dish_name}`)} />
               {/if}
             </article>
           {:else}
@@ -149,7 +152,7 @@
               <span class="for">for {a.labels.join(" and ")}</span>
               <p class="why">{a.reason}</p>
               {#if cook}
-                <Button size={big ? undefined : "sm"} label="Start early" disabled={busy !== null} onclick={() => move(a.item_ids.join(","), a.item_ids, `Started ${a.quantity}× ${a.dish_name}`)} />
+                <Button size={big ? undefined : "sm"} label="Start early" disabled={busy !== null} onclick={() => move(a.item_ids.join(","), a.item_ids, "fired", `Started ${a.quantity}× ${a.dish_name}`)} />
               {/if}
             </article>
           {:else}

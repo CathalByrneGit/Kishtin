@@ -1379,6 +1379,7 @@ export interface components {
             void_reason?: string;
         };
         ItemMove: {
+            from?: string;
             item_ids: string[];
             reason?: string;
             to?: string;
