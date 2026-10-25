@@ -81,4 +81,5 @@ func TestValidate(t *testing.T) {
 	pos, err = cfg.SquareClient()
 	require.NoError(t, err)
 	assert.Equal(t, "square", pos.Name())
+	assert.Equal(t, "environment", cfg.Square.TokenFrom)
 }

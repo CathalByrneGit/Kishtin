@@ -29,18 +29,29 @@ Manual orders keep working as normal. The Square page shows **Square did not ans
 
 ## Setting it up
 
-1. In the Square Developer Dashboard, create an application and an access token for the restaurant's account with permission to read orders and the item catalog (`ORDERS_READ`, `ITEMS_READ`). Kishtin needs nothing else.
-2. Give the token to the server in the environment, `KISHTIN_SQUARE_TOKEN`, or as `square.token` in `kishtin.toml`, and restart `kishtind`. It is never stored in the database or backups. For a Square sandbox account, set `square.environment = "sandbox"`.
-3. On **Setup → Square**, log in as a manager with the password and **Load from Square**. Kishtin asks first, and says it will send Square the access token only.
-4. Map each till item to the dish it makes, and each till modifier to a dish modifier (such as "Well done"). **Use suggestions** fills in dishes and modifiers with the same names. Mark drinks and anything else not cooked **Not for the kitchen**. **Save changes**.
-5. Under **Turn import on or off**, switch on **Import orders from Square**, enter the location ID (Square Dashboard, Locations) and **Review changes**. The review says exactly what Kishtin will send to Square and what comes back. Save it with a reason. Turning import on is a versioned setting like any other, so it is recorded who turned it on, when and why.
+Everything is done on **Setup → Connections → Square**, by a manager logged in with the password. The page has the steps in order.
+
+1. **Connect your Square account.** In the Square Developer Dashboard, create an application and copy an access token for the restaurant's account with permission to read orders and the item catalog (`ORDERS_READ`, `ITEMS_READ`). Kishtin needs nothing else. Choose **Production** (the real till) or **Sandbox** (Square's test account), paste the token and **Check and connect**. Kishtin sends the token to Square to check it and asks for your locations. If Square refuses it, nothing is saved. If Square accepts it, the token is kept in a file in the data folder that only the server can read (`connectors/square.json`), outside the database, so it is never in a backup or export.
+2. **Map till items to dishes.** **Load from Square** (Kishtin asks first, and sends Square the token only), then map each till item to the dish it makes and each till modifier to a dish modifier (such as "Well done"). **Use suggestions** fills in dishes and modifiers with the same names. Mark drinks and anything else not cooked **Not for the kitchen**. **Save changes**.
+3. **Turn import on.** Switch on **Import orders from Square**, choose the location from the list, and **Review changes**. The review says exactly what Kishtin will send to Square and what comes back. Save it with a reason. Turning import on is a versioned setting like any other, so it is recorded who turned it on, when and why.
 
 Only orders changed on the till after import is turned on are imported. Earlier orders are not.
 
+**Disconnect** deletes the saved token. Turn import off first. Mappings and orders already imported stay.
+
+Instead of connecting on the screens, the token can be set on the server, in the environment (`KISHTIN_SQUARE_TOKEN`) or as `square.token` in `kishtin.toml`, with `square.environment = "sandbox"` for a sandbox account. A token set there wins, and the screens show it as set on the server and cannot change or disconnect it.
+
+Connect from a device that reaches the server over HTTPS, or on the server itself, so the token does not cross the kitchen Wi-Fi in the clear.
+
+## The Connections page
+
+**Setup → Connections** lists what Kishtin can connect to (Square, for now): what each does, exactly what it sends, whether it is connected and in use, when it last worked and the last problem. **Set up** or **Open** goes to its page.
+
 ## The Square page
 
-- **Import**: whether the server has a Square token, whether import is on, the location, how often it asks, when it last worked, and the last problem.
-- **Turn import on or off**: the switch, location ID and how often to ask, with **Review changes**.
+- **Connect your Square account**: connected or not, production or sandbox, where the token is kept, and **Check and connect** or **Disconnect**.
+- **Import status**: whether the server has a Square token, whether import is on, the location, how often it asks, when it last worked, and the last problem.
+- **Turn import on or off**: the switch, the location (chosen from your Square locations) and how often to ask, with **Review changes**.
 - **Till items and the kitchen**: every item and modifier on the till, how it maps, and a suggestion by name.
 - **Recent till orders**: the last 50 till orders seen, their state on the till and version, and anything that needs checking: items not mapped, and changes the pass must deal with.
 - **Sync now** asks Square straight away (head chef or manager).
@@ -48,6 +59,11 @@ Only orders changed on the till after import is turned on are imported. Earlier 
 ## Commands
 
 ```sh
+kishtin connectors                        # what Kishtin can connect to, and how each stands
+kishtin connectors connect square --environment sandbox --token-file token.txt
+                                          # or --token-file - to read it from standard input
+kishtin connectors disconnect square
+kishtin square locations                  # the account's locations and their IDs
 kishtin square status                     # on or off, last worked, recent till orders
 kishtin square catalog                    # till items and modifiers, and their mapping
 kishtin square map VAR_ID --dish Burger   # or --modifier "Well done", or --ignore
@@ -58,7 +74,9 @@ kishtin settings set square -f square.json --reason "Go live"
 
 `square.json` holds `{"enabled": true, "location_id": "L1234ABCD", "poll_seconds": 5}`. The command prints what will be sent to Square before saving.
 
-API: `GET /api/square`, `GET /api/square/catalog`, `PUT /api/square/mappings`, `POST /api/square/sync`, and `/api/settings/square` for the setting.
+The token is read from a file or standard input, never from the command line, so it does not end up in shell history.
+
+API: `GET /api/connectors`, `PUT` and `DELETE /api/connectors/square`, `GET /api/square/locations`, `GET /api/square`, `GET /api/square/catalog`, `PUT /api/square/mappings`, `POST /api/square/sync`, and `/api/settings/square` for the setting.
 
 ## What it does not do yet
 

@@ -50,8 +50,10 @@ max_size_mb = 15
 # wake_words = ["kishtin"]
 
 [square]
-# Orders from the Square till. The access token goes in the environment
-# (KISHTIN_SQUARE_TOKEN) or here; it is never stored in the database.
+# Orders from the Square till. A manager can connect Square on the screens
+# (Setup, Connections), which keeps the token in <data_dir>/connectors/,
+# outside the database. Or set the token here or in the environment
+# (KISHTIN_SQUARE_TOKEN); then it wins and the screens cannot change it.
 # Whether orders are imported, and for which location, is a manager's
 # setting on the Square page, which shows what is sent before it is saved.
 # See docs/square.md.

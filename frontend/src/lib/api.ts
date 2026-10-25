@@ -227,6 +227,10 @@ export const api = {
   voiceSpeak: async (text: string): Promise<Blob> => (await send("POST", "/voice/speak", { body: { text } })).blob(),
   voiceLog: (limit = 100) => json<Schemas["VoiceLogBody"]>("GET", "/voice/log", { query: { limit } }),
 
+  connectors: () => json<Schemas["ConnectorsBody"]>("GET", "/connectors"),
+  connectSquare: (body: Schemas["ConnectInput"]) => json<Schemas["ConnectResult"]>("PUT", "/connectors/square", { body }),
+  disconnectSquare: () => json<void>("DELETE", "/connectors/square"),
+  squareLocations: () => json<Schemas["LocationsBody"]>("GET", "/square/locations"),
   square: () => json<Schemas["SquareStatus"]>("GET", "/square"),
   previewSquare: (body: Schemas["SettingsChangePOSSettings"]) =>
     json<Schemas["SettingsPreviewPOSSettings"]>("POST", "/settings/square/preview", { body }),

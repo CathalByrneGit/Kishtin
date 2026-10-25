@@ -24,6 +24,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/config"
 	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
+	"github.com/cathalbyrnegit/kishtin/internal/integrations"
 	"github.com/cathalbyrnegit/kishtin/internal/service"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 	"github.com/cathalbyrnegit/kishtin/internal/store/sqlite"
@@ -114,13 +115,16 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 		return fail(err)
 	}
 	svc := service.New(service.Options{
-		POS:       pos,
-		Speech:    sp,
-		WakeWords: cfg.Speech.WakeWords,
-		Store:     st,
-		Files:     fs,
-		System:    cfg.SystemSettings(),
-		Events:    events.NewHub(),
+		POS:         pos,
+		POSSource:   cfg.Square.TokenFrom,
+		Credentials: &integrations.CredentialStore{Dir: cfg.CredentialsDir()},
+		NewSquare:   cfg.NewSquare,
+		Speech:      sp,
+		WakeWords:   cfg.Speech.WakeWords,
+		Store:       st,
+		Files:       fs,
+		System:      cfg.SystemSettings(),
+		Events:      events.NewHub(),
 		Backups: service.BackupConfig{
 			Dir:  cfg.Backup.Dir,
 			Open: func(ctx context.Context, path string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, path) },

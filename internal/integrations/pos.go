@@ -24,6 +24,17 @@ type POSAdapter interface {
 	// oldest change first. The same order can come back more than once,
 	// with the same or a newer version.
 	OrdersSince(ctx context.Context, locationID string, since time.Time) ([]TillOrder, error)
+	// Locations lists the account's locations. It is also how a new
+	// connection is checked.
+	Locations(ctx context.Context) ([]Location, error)
+}
+
+// Location is one of the account's places of business.
+type Location struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Active is false for a location closed on the till.
+	Active bool `json:"active"`
 }
 
 // EntryKind says what a catalog entry is.

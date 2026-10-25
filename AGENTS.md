@@ -344,7 +344,7 @@ The restaurant uses **Square** for its till and payments.
 - **Status out:** optionally write ticket progress back to Square so front of house sees it on the till.
 - **Payments:** stay entirely in Square POS and Square Terminal. This system never receives, logs or stores card data, which keeps it out of PCI DSS card-data scope.
 - **Offline:** if Square or the internet is unreachable, manual order entry keeps working, and orders sync when the connection returns. Never drop or duplicate an order: dedupe on Square's order ID and version.
-- Store the Square access token in config or the environment, never in the repo or database dumps.
+- Store the Square access token in config, the environment, or a credentials file the server writes in the data folder when a manager connects Square on the screens (readable by the server only). Never in the repo, the database, backups or exports.
 
 ## AI (later, after the core system works)
 

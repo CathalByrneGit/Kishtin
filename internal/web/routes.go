@@ -30,6 +30,7 @@ func (s *Server) routes() {
 	s.kitchenRoutes()
 	s.voiceRoutes()
 	s.squareRoutes()
+	s.connectorRoutes()
 }
 
 // --- Auth ---

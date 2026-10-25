@@ -82,9 +82,13 @@ type Square struct {
 	// Environment is "production" or "sandbox", or a URL for testing
 	// against a local stand-in.
 	Environment string `toml:"environment"`
-	// Token is the access token. KISHTIN_SQUARE_TOKEN overrides it.
+	// Token is the access token. KISHTIN_SQUARE_TOKEN overrides it. Without
+	// either, a manager can connect Square on the screens instead.
 	Token   string   `toml:"token"`
 	Timeout Duration `toml:"timeout"`
+	// TokenFrom says where Token came from: "environment" or
+	// "kishtin.toml".
+	TokenFrom string `toml:"-"`
 }
 
 // Duration is a time.Duration written as a string such as "6h".
@@ -150,8 +154,11 @@ func Load(path string, mustExist bool) (Config, error) {
 	if v := os.Getenv("KISHTIN_LISTEN"); v != "" {
 		cfg.Server.Listen = v
 	}
+	if cfg.Square.Token != "" {
+		cfg.Square.TokenFrom = "kishtin.toml"
+	}
 	if v := os.Getenv("KISHTIN_SQUARE_TOKEN"); v != "" {
-		cfg.Square.Token = v
+		cfg.Square.Token, cfg.Square.TokenFrom = v, "environment"
 	}
 	if v := os.Getenv("KISHTIN_STT_URL"); v != "" {
 		cfg.Speech.STTURL = v
@@ -202,11 +209,26 @@ func (c Config) SquareClient() (integrations.POSAdapter, error) {
 	if c.Square.Token == "" {
 		return nil, nil
 	}
+	return c.NewSquare(c.Square.Environment, c.Square.Token)
+}
+
+// NewSquare makes a Square client for an environment and token, with the
+// configured timeout. It is used for tokens saved on the screens too. When
+// square.environment is a URL (a local stand-in for testing), it is used
+// whatever environment was chosen.
+func (c Config) NewSquare(environment, token string) (integrations.POSAdapter, error) {
+	if strings.HasPrefix(c.Square.Environment, "http://") || strings.HasPrefix(c.Square.Environment, "https://") {
+		environment = c.Square.Environment
+	}
 	if c.Square.Timeout.Duration <= 0 {
 		return nil, errors.New("square.timeout must be positive, such as \"15s\"")
 	}
-	return square.New(c.Square.Environment, c.Square.Token, c.Square.Timeout.Duration)
+	return square.New(environment, token, c.Square.Timeout.Duration)
 }
+
+// CredentialsDir holds connector tokens saved on the screens: outside the
+// database, so they are never in a backup or export.
+func (c Config) CredentialsDir() string { return filepath.Join(c.DataDir, "connectors") }
 
 // FilesDir is where attachments are stored.
 func (c Config) FilesDir() string { return filepath.Join(c.DataDir, "files") }

@@ -23,6 +23,12 @@ type fakeTill struct {
 }
 
 func (f *fakeTill) Name() string { return "square" }
+func (f *fakeTill) Locations(context.Context) ([]integrations.Location, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return []integrations.Location{{ID: "loc-synthetic", Name: "The Synthetic Kitchen", Active: true}}, nil
+}
 func (f *fakeTill) Catalog(context.Context, string) ([]integrations.CatalogEntry, error) {
 	return f.catalog, f.err
 }
@@ -56,7 +62,7 @@ func TestSquareImport(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, st.Connected)
 	_, err = k.svc.SquareCatalog(ctx, k.manager)
-	assert.ErrorContains(t, err, "No Square access token")
+	assert.ErrorContains(t, err, "Square is not connected")
 
 	k.svc.pos = till
 

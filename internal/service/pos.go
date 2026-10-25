@@ -32,6 +32,7 @@ func (s *Service) Square() *Group[integrations.POSSettings] {
 	return &Group[integrations.POSSettings]{s: s, spec: groupSpec[integrations.POSSettings]{
 		kind:       settings.KindSquare,
 		builtinID:  "builtin-square-v1",
+		seeded:     true,
 		builtin:    func(*Service) integrations.POSSettings { return integrations.DefaultPOSSettings() },
 		normalize:  integrations.POSSettings.Normalize,
 		validate:   integrations.POSSettings.Validate,
@@ -57,8 +58,8 @@ func squareNotes(_ context.Context, s *Service, _ store.Store, cur, next integra
 	case next.Enabled:
 		out = append(out, fmt.Sprintf("Kishtin keeps asking Square for orders every %d seconds.", next.PollSeconds))
 	}
-	if s.pos == nil {
-		out = append(out, "No Square access token is set on the server (KISHTIN_SQUARE_TOKEN), so nothing will be imported until one is.")
+	if s.square() == nil {
+		out = append(out, "Square is not connected yet, so nothing will be imported until a manager connects it.")
 	}
 	return out, nil
 }
@@ -84,7 +85,7 @@ func (s *Service) SquareStatus(ctx context.Context, p *auth.Principal) (SquareSt
 	if err != nil {
 		return SquareStatus{}, err
 	}
-	out := SquareStatus{Connected: s.pos != nil, Settings: set}
+	out := SquareStatus{Connected: s.square() != nil, Settings: set}
 	if st, err := s.st.POS().GetPOSState(ctx, posSquare); err == nil {
 		out.State = &st
 	} else if !errors.Is(err, store.ErrNotFound) {
@@ -117,14 +118,15 @@ func (s *Service) SquareCatalog(ctx context.Context, p *auth.Principal) ([]Catal
 	if err := allow(p, auth.ActManageMenu); err != nil {
 		return nil, err
 	}
-	if s.pos == nil {
-		return nil, newErr(KindConflict, "No Square access token is set on the server. Set KISHTIN_SQUARE_TOKEN and restart kishtind.")
+	pos := s.square()
+	if pos == nil {
+		return nil, newErr(KindConflict, "Square is not connected. A manager connects it on Setup, Connections, Square.")
 	}
 	set, err := s.Square().current(ctx, s.st)
 	if err != nil {
 		return nil, err
 	}
-	entries, err := s.pos.Catalog(ctx, set.Value.LocationID)
+	entries, err := pos.Catalog(ctx, set.Value.LocationID)
 	if err != nil {
 		return nil, newErr(KindConflict, "Could not read the catalog: %s", err)
 	}
@@ -290,8 +292,9 @@ func (s *Service) SyncSquare(ctx context.Context) (SyncResult, error) {
 	if !set.Value.Enabled {
 		return res, newErr(KindConflict, "Order import from Square is off. A manager turns it on on the Square page.")
 	}
-	if s.pos == nil {
-		return res, newErr(KindConflict, "No Square access token is set on the server. Set KISHTIN_SQUARE_TOKEN and restart kishtind.")
+	pos := s.square()
+	if pos == nil {
+		return res, newErr(KindConflict, "Square is not connected. A manager connects it on Setup, Connections, Square.")
 	}
 	st, err := s.st.POS().GetPOSState(ctx, posSquare)
 	if errors.Is(err, store.ErrNotFound) {
@@ -302,7 +305,7 @@ func (s *Service) SyncSquare(ctx context.Context) (SyncResult, error) {
 	}
 	now := s.clk.Now()
 	st.LastPollAt = &now
-	list, err := s.pos.OrdersSince(ctx, set.Value.LocationID, st.Since)
+	list, err := pos.OrdersSince(ctx, set.Value.LocationID, st.Since)
 	if err != nil {
 		st.LastError = err.Error()
 		if serr := s.st.POS().SavePOSState(ctx, st); serr != nil {
@@ -530,7 +533,7 @@ func (s *Service) RunSquare(ctx context.Context, log *slog.Logger) {
 	for {
 		wait := 15 * time.Second
 		set, err := s.Square().current(ctx, s.st)
-		if err == nil && set.Value.Enabled && s.pos != nil {
+		if err == nil && set.Value.Enabled && s.square() != nil {
 			wait = time.Duration(set.Value.PollSeconds) * time.Second
 			if res, err := s.SyncSquare(ctx); err != nil {
 				wait = b.NextBackOff()

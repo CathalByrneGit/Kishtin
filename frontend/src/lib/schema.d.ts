@@ -96,6 +96,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List what Kishtin can connect to, what each sends, and whether it is connected */
+        get: operations["list-connectors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connectors/square": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Connect Square with an access token (manager password)
+         * @description Kishtin checks the token by asking Square for the account's locations, and saves it only if Square accepts it. It is kept in a file only the server can read, outside the database, so it is never in a backup or export. Not possible when the token is set in the environment or kishtin.toml.
+         */
+        put: operations["connect-square"];
+        post?: never;
+        /** Disconnect Square and delete the saved token (manager password); turn order import off first */
+        delete: operations["disconnect-square"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files": {
         parameters: {
             query?: never;
@@ -1172,6 +1210,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/square/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the Square account's locations (sends Square the access token only) */
+        get: operations["square-locations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/square/mappings": {
         parameters: {
             query?: never;
@@ -1451,6 +1506,32 @@ export interface components {
             area?: string;
             record?: components["schemas"]["Record"];
             task: string;
+        };
+        ConnectInput: {
+            /** @enum {string} */
+            environment: "production" | "sandbox";
+            token: string;
+        };
+        ConnectResult: {
+            connector: components["schemas"]["ConnectorStatus"];
+            locations: components["schemas"]["Location"][];
+        };
+        ConnectorStatus: {
+            connected: boolean;
+            enabled: boolean;
+            environment?: string;
+            environments: string[];
+            id: string;
+            last_error?: string;
+            /** Format: date-time */
+            last_ok_at?: string;
+            name: string;
+            sends: string;
+            source?: string;
+            summary: string;
+        };
+        ConnectorsBody: {
+            connectors: components["schemas"]["ConnectorStatus"][];
         };
         CoolingLimit: {
             /** Format: int64 */
@@ -1780,6 +1861,14 @@ export interface components {
             corrective_actions?: components["schemas"]["ActionPreset"][];
             food_categories: string[];
             units: components["schemas"]["Unit"][];
+        };
+        Location: {
+            active: boolean;
+            id: string;
+            name: string;
+        };
+        LocationsBody: {
+            locations: components["schemas"]["Location"][];
         };
         LogEntry: {
             /** Format: date-time */
@@ -2565,6 +2654,95 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Backup"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "connect-square": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "disconnect-square": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
@@ -4696,6 +4874,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "square-locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationsBody"];
                 };
             };
             /** @description Error */

@@ -33,7 +33,7 @@ Choose what a device shows in **Settings → This device → This device shows**
 
 ## Layout
 
-- **Sidebar**: Service (Pass, Stations, Orders, Voice); HACCP (Today, Records, Exports, Verify); Setup (Menu, Scheduler, Square, Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
+- **Sidebar**: Service (Pass, Stations, Orders, Voice); HACCP (Today, Records, Exports, Verify); Setup (Menu, Scheduler, Connections, Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
 - **Top bar**: where you are, a search box, the connection, **New order** and **Log check**.
 - **Search** (Ctrl K, or ⌘K on a Mac): jump to any page, start a new order, or start logging a check.
 - **Log check** (Ctrl L, or ⌘L): opens the log form in a panel on the right.
@@ -150,7 +150,7 @@ It runs when you open the page, and again with **Check again**. If something doe
 Everyone can see **Menu**, **Scheduler**, **Fridges and tasks** and **Limits and rules**. Changing them, and opening **Staff**, **Device keys** and **Backups** at all, needs a manager logged in with their password. Use **Manager login** on the page. That logs this device in as the manager for 30 minutes.
 
 - **Menu**: a card per station with its equipment and how many each holds, and every dish in a sortable table with its course, station, equipment and capacity, cook time, total time, how long it can wait, and status (Available, 86, off the menu). **Add station**, **Add equipment**, **Add dish** and **Edit** need the manager password. The dish form takes times in minutes or minutes:seconds, the food category from the HACCP lists, and modifiers with their extra cook minutes. **86** and **Back on** are open to head chefs, line cooks and managers.
-- **Square**: whether order import is on and working, the switch to turn it on (with a review of exactly what is sent to Square), mapping till items to dishes, and recent till orders with anything to check. See [square.md](square.md).
+- **Connections**: what Kishtin can connect to (Square, for now), what each sends, and whether it is connected and in use. **Set up** opens the connector's page. **Square** has its setup in three steps: connect the account (paste the access token, checked with Square before it is saved), map till items to dishes, and turn import on (with a review of exactly what is sent to Square); then recent till orders with anything to check. See [square.md](square.md).
 - **Scheduler**: the strategy, batching, priorities, how long a ready course can wait at the pass, how often screens re-plan, and a buffer per station. **Review changes** shows what changes before saving with a reason. A card lists what the scheduler does not do yet.
 - **Fridges and tasks**: fridges and freezers with their check times, and which fridges are non-food; daily cleaning tasks and their areas; food categories; quick-pick corrective actions per record type. Edit freely, then **Review changes** shows what changes and what it affects, and asks for a reason before saving.
 - **Limits and rules**: the limits in use, and the full history with who changed each one and why.
@@ -195,8 +195,10 @@ All taken with synthetic data, at 1440 × 960 unless noted.
 | ![Staff](screenshots/staff.png) | ![Device keys](screenshots/keys.png) |
 | **Backups** | **Settings** |
 | ![Backups](screenshots/backups.png) | ![Settings](screenshots/settings.png) |
-| **Voice** | **Square** |
-| ![Voice](screenshots/voice.png) | ![Square](screenshots/square.png) |
+| **Voice** | **Connections** |
+| ![Voice](screenshots/voice.png) | ![Connections](screenshots/connections.png) |
+| **Square** | |
+| ![Square](screenshots/square.png) | |
 
 ### Kitchen screens
 

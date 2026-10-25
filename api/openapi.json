@@ -418,6 +418,114 @@
         ],
         "type": "object"
       },
+      "ConnectInput": {
+        "additionalProperties": false,
+        "properties": {
+          "environment": {
+            "enum": [
+              "production",
+              "sandbox"
+            ],
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "environment",
+          "token"
+        ],
+        "type": "object"
+      },
+      "ConnectResult": {
+        "additionalProperties": false,
+        "properties": {
+          "connector": {
+            "$ref": "#/components/schemas/ConnectorStatus"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/Location"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "connector",
+          "locations"
+        ],
+        "type": "object"
+      },
+      "ConnectorStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "connected": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "environments": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "last_ok_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sends": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "connected",
+          "enabled",
+          "id",
+          "name",
+          "summary",
+          "sends",
+          "environments"
+        ],
+        "type": "object"
+      },
+      "ConnectorsBody": {
+        "additionalProperties": false,
+        "properties": {
+          "connectors": {
+            "items": {
+              "$ref": "#/components/schemas/ConnectorStatus"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "connectors"
+        ],
+        "type": "object"
+      },
       "CoolingLimit": {
         "additionalProperties": false,
         "properties": {
@@ -1505,6 +1613,41 @@
           "units",
           "food_categories",
           "cleaning_tasks"
+        ],
+        "type": "object"
+      },
+      "Location": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "active"
+        ],
+        "type": "object"
+      },
+      "LocationsBody": {
+        "additionalProperties": false,
+        "properties": {
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/Location"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "locations"
         ],
         "type": "object"
       },
@@ -4009,6 +4152,101 @@
         "summary": "Back up the database now",
         "tags": [
           "Backups"
+        ]
+      }
+    },
+    "/connectors": {
+      "get": {
+        "operationId": "list-connectors",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectorsBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List what Kishtin can connect to, what each sends, and whether it is connected",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connectors/square": {
+      "delete": {
+        "operationId": "disconnect-square",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Disconnect Square and delete the saved token (manager password); turn order import off first",
+        "tags": [
+          "Connections"
+        ]
+      },
+      "put": {
+        "description": "Kishtin checks the token by asking Square for the account's locations, and saves it only if Square accepts it. It is kept in a file only the server can read, outside the database, so it is never in a backup or export. Not possible when the token is set in the environment or kishtin.toml.",
+        "operationId": "connect-square",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Connect Square with an access token (manager password)",
+        "tags": [
+          "Connections"
         ]
       }
     },
@@ -6914,6 +7152,37 @@
           }
         },
         "summary": "Read the catalog from Square, with how each entry maps to the kitchen (manager password)",
+        "tags": [
+          "Square"
+        ]
+      }
+    },
+    "/square/locations": {
+      "get": {
+        "operationId": "square-locations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationsBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the Square account's locations (sends Square the access token only)",
         "tags": [
           "Square"
         ]

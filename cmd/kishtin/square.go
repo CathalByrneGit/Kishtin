@@ -29,7 +29,7 @@ after reading the preview of what is sent to Square.`,
 				set := res.Settings.Value
 				switch {
 				case !res.Connected:
-					fmt.Fprintln(w, "Square: no access token on the server (KISHTIN_SQUARE_TOKEN)")
+					fmt.Fprintln(w, "Square: not connected (kishtin connectors connect square --token-file FILE)")
 				case set.Enabled:
 					fmt.Fprintf(w, "Square: importing orders for location %s every %ds\n", set.LocationID, set.PollSeconds)
 				default:
@@ -157,6 +157,16 @@ after reading the preview of what is sent to Square.`,
 			})
 		},
 	}
-	cmd.AddCommand(status, catalog, mapCmd, sync)
+	locations := &cobra.Command{
+		Use: "locations", Short: "List the Square account's locations and their IDs", Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			res, err := c.api.SquareLocations(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) { printLocations(w, res.Locations) })
+		},
+	}
+	cmd.AddCommand(status, catalog, mapCmd, sync, locations)
 	return cmd
 }

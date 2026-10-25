@@ -58,6 +58,18 @@ type ClientInterface interface {
 	CreateBackup(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*CreateBackupResponse, error)
 	CreateBackupWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*CreateBackupResp, error)
 
+	// ListConnectors List what Kishtin can connect to, what each sends, and whether it is connected
+	ListConnectors(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResponse, error)
+	ListConnectorsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResp, error)
+
+	// DisconnectSquare Disconnect Square and delete the saved token (manager password); turn order import off first
+	DisconnectSquare(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*struct{}, error)
+	DisconnectSquareWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*DisconnectSquareResp, error)
+
+	// ConnectSquare Connect Square with an access token (manager password)
+	ConnectSquare(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResponse, error)
+	ConnectSquareWithResponse(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResp, error)
+
 	// UploadFile Upload a docket or invoice photo
 	UploadFile(ctx context.Context, options *UploadFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UploadFileResponse, error)
 	UploadFileWithResponse(ctx context.Context, options *UploadFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UploadFileResp, error)
@@ -321,6 +333,10 @@ type ClientInterface interface {
 	// SquareCatalog Read the catalog from Square, with how each entry maps to the kitchen (manager password)
 	SquareCatalog(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResponse, error)
 	SquareCatalogWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResp, error)
+
+	// SquareLocations List the Square account's locations (sends Square the access token only)
+	SquareLocations(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareLocationsResponse, error)
+	SquareLocationsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareLocationsResp, error)
 
 	// SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
 	SaveSquareMappings(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResponse, error)
@@ -717,6 +733,179 @@ func (c *Client) CreateBackup(ctx context.Context, reqEditors ...runtime.Request
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/backups")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ListConnectors List what Kishtin can connect to, what each sends, and whether it is connected
+func (c *Client) ListConnectors(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/connectors",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ListConnectorsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ListConnectorsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ListConnectorsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ListConnectorsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ListConnectorsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// DisconnectSquare Disconnect Square and delete the saved token (manager password); turn order import off first
+func (c *Client) DisconnectSquare(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*struct{}, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/connectors/square",
+		Method:     "DELETE",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*struct{}, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 204 {
+			target := new(DisconnectSquareErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "DisconnectSquareErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		return nil, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ConnectSquare Connect Square with an access token (manager password)
+func (c *Client) ConnectSquare(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/connectors/square",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ConnectSquareResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ConnectSquareErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ConnectSquareErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ConnectSquareResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ConnectSquareResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -4871,6 +5060,68 @@ func (c *Client) SquareCatalog(ctx context.Context, reqEditors ...runtime.Reques
 	return responseParser(ctx, resp)
 }
 
+// SquareLocations List the Square account's locations (sends Square the access token only)
+func (c *Client) SquareLocations(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareLocationsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square/locations",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareLocationsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SquareLocationsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SquareLocationsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SquareLocationsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SquareLocationsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/locations")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
 func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResponse, error) {
 	var err error
@@ -5602,6 +5853,50 @@ func (o *LogoutRequestOptions) GetBody() any {
 // GetHeader returns the headers as a map.
 func (o *LogoutRequestOptions) GetHeader() (map[string]string, error) {
 	return runtime.AsMap[string](o.Header)
+}
+
+// ConnectSquareRequestOptions is the options needed to make a request to ConnectSquare.
+type ConnectSquareRequestOptions struct {
+	Body *ConnectSquareBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ConnectSquareRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ConnectSquareRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *ConnectSquareRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ConnectSquareRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *ConnectSquareRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
 }
 
 // UploadFileRequestOptions is the options needed to make a request to UploadFile.
@@ -8349,6 +8644,174 @@ func (c *Client) CreateBackupWithResponse(ctx context.Context, reqEditors ...run
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "CreateBackupErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ListConnectors List what Kishtin can connect to, what each sends, and whether it is connected
+func (c *Client) ListConnectorsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/connectors",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ListConnectorsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ListConnectorsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListConnectorsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ListConnectorsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListConnectorsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// DisconnectSquare Disconnect Square and delete the saved token (manager password); turn order import off first
+func (c *Client) DisconnectSquareWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*DisconnectSquareResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/connectors/square",
+		Method:     "DELETE",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &DisconnectSquareResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 204:
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(DisconnectSquareErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "DisconnectSquareErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ConnectSquare Connect Square with an access token (manager password)
+func (c *Client) ConnectSquareWithResponse(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/connectors/square",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ConnectSquareResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ConnectSquareResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ConnectSquareResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ConnectSquareErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ConnectSquareErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -12346,6 +12809,66 @@ func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...ru
 	}
 }
 
+// SquareLocations List the Square account's locations (sends Square the access token only)
+func (c *Client) SquareLocationsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareLocationsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square/locations",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/locations")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SquareLocationsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SquareLocationsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareLocationsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SquareLocationsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareLocationsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
 func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResp, error) {
 	var err error
@@ -12962,6 +13485,23 @@ func (c *Client) VoiceSpeakWithResponse(ctx context.Context, options *VoiceSpeak
 	}
 }
 
+type ConnectInputEnvironment string
+
+const (
+	Production ConnectInputEnvironment = "production"
+	Sandbox    ConnectInputEnvironment = "sandbox"
+)
+
+// Validate checks if the ConnectInputEnvironment value is valid
+func (c ConnectInputEnvironment) Validate() error {
+	switch c {
+	case Production, Sandbox:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid ConnectInputEnvironment value, got: %v", c))
+	}
+}
+
 type MappingInputKind string
 
 const (
@@ -13362,6 +13902,8 @@ func (u UpdateUserPath) Validate() error {
 
 type LoginBody = LoginInBody
 
+type ConnectSquareBody = ConnectInput
+
 type UploadFileBody = runtime.File
 
 type CheckRecordBody = NewRecord
@@ -13531,6 +14073,16 @@ type ListBackupsErrorResponse = ErrorModel
 type CreateBackupResponse = Backup
 
 type CreateBackupErrorResponse = ErrorModel
+
+type ListConnectorsResponse = ConnectorsBody
+
+type ListConnectorsErrorResponse = ErrorModel
+
+type DisconnectSquareErrorResponse = ErrorModel
+
+type ConnectSquareResponse = ConnectResult
+
+type ConnectSquareErrorResponse = ErrorModel
 
 type UploadFileResponse = FileMeta
 
@@ -13792,6 +14344,10 @@ type SquareCatalogResponse = CatalogBody
 
 type SquareCatalogErrorResponse = ErrorModel
 
+type SquareLocationsResponse = LocationsBody
+
+type SquareLocationsErrorResponse = ErrorModel
+
 type SaveSquareMappingsResponse = MappingsBody
 
 type SaveSquareMappingsErrorResponse = ErrorModel
@@ -13877,6 +14433,29 @@ type CreateBackupResp struct {
 	StatusCode                        int
 	JSON201                           *CreateBackupResponse
 	ApplicationProblemPlusJSONDefault *CreateBackupErrorResponse
+}
+
+type ListConnectorsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ListConnectorsResponse
+	ApplicationProblemPlusJSONDefault *ListConnectorsErrorResponse
+}
+
+type DisconnectSquareResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	ApplicationProblemPlusJSONDefault *DisconnectSquareErrorResponse
+}
+
+type ConnectSquareResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ConnectSquareResponse
+	ApplicationProblemPlusJSONDefault *ConnectSquareErrorResponse
 }
 
 type UploadFileResp struct {
@@ -14429,6 +15008,14 @@ type SquareCatalogResp struct {
 	ApplicationProblemPlusJSONDefault *SquareCatalogErrorResponse
 }
 
+type SquareLocationsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SquareLocationsResponse
+	ApplicationProblemPlusJSONDefault *SquareLocationsErrorResponse
+}
+
 type SaveSquareMappingsResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -14814,6 +15401,95 @@ func (c CleaningToday) Validate() error {
 	}
 	if err := typesValidator.Var(c.Task, "required"); err != nil {
 		errors = errors.Append("Task", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ConnectInput struct {
+	Environment ConnectInputEnvironment `json:"environment" validate:"required"`
+	Token       string                  `json:"token" validate:"required,max=1000,min=1"`
+}
+
+func (c ConnectInput) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(c.Environment).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Environment", err)
+		}
+	}
+	if err := typesValidator.Var(c.Token, "required,max=1000,min=1"); err != nil {
+		errors = errors.Append("Token", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ConnectResult struct {
+	Connector ConnectorStatus `json:"connector"`
+	Locations []Location      `json:"locations" validate:"required"`
+}
+
+func (c ConnectResult) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(c.Connector).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Connector", err)
+		}
+	}
+	if err := typesValidator.Var(c.Locations, "required"); err != nil {
+		errors = errors.Append("Locations", err)
+	}
+	for i, item := range c.Locations {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Locations[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ConnectorStatus struct {
+	Connected    bool       `json:"connected"`
+	Enabled      bool       `json:"enabled"`
+	Environment  *string    `json:"environment,omitempty"`
+	Environments []string   `json:"environments" validate:"required"`
+	ID           string     `json:"id" validate:"required"`
+	LastError    *string    `json:"last_error,omitempty"`
+	LastOkAt     *time.Time `json:"last_ok_at,omitempty"`
+	Name         string     `json:"name" validate:"required"`
+	Sends        string     `json:"sends" validate:"required"`
+	Source       *string    `json:"source,omitempty"`
+	Summary      string     `json:"summary" validate:"required"`
+}
+
+func (c ConnectorStatus) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type ConnectorsBody struct {
+	Connectors []ConnectorStatus `json:"connectors" validate:"required"`
+}
+
+func (c ConnectorsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Connectors, "required"); err != nil {
+		errors = errors.Append("Connectors", err)
+	}
+	for i, item := range c.Connectors {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Connectors[%d]", i), err)
+			}
+		}
 	}
 	if len(errors) == 0 {
 		return nil
@@ -15698,6 +16374,38 @@ func (l Lists) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("Units[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Location struct {
+	Active bool   `json:"active"`
+	ID     string `json:"id" validate:"required"`
+	Name   string `json:"name" validate:"required"`
+}
+
+func (l Location) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(l))
+}
+
+type LocationsBody struct {
+	Locations []Location `json:"locations" validate:"required"`
+}
+
+func (l LocationsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(l.Locations, "required"); err != nil {
+		errors = errors.Append("Locations", err)
+	}
+	for i, item := range l.Locations {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Locations[%d]", i), err)
 			}
 		}
 	}

@@ -36,7 +36,7 @@
     Settings,
     ShieldCheck,
     SlidersHorizontal,
-    Store,
+    Plug,
     Users,
   } from "@lucide/svelte";
   import { onMount } from "svelte";
@@ -57,6 +57,7 @@
   import Stations from "./views/Stations.svelte";
   import MenuSetup from "./views/setup/Menu.svelte";
   import SchedulerSetup from "./views/setup/Scheduler.svelte";
+  import ConnectionsSetup from "./views/setup/Connections.svelte";
   import SquareSetup from "./views/setup/Square.svelte";
   import Records from "./views/Records.svelte";
   import Backups from "./views/setup/Backups.svelte";
@@ -75,6 +76,8 @@
     section: string;
     view: string | null;
     group: string;
+    /** sub-pages are reached from their parent page, not the sidebar */
+    sub?: boolean;
   }
 
   const pages: Page[] = [
@@ -88,7 +91,8 @@
     { path: "/verify", label: "Verify", section: "verify", view: null, group: "HACCP" },
     { path: "/setup/menu", label: "Menu", section: "setup", view: "menu", group: "Setup" },
     { path: "/setup/scheduler", label: "Scheduler", section: "setup", view: "scheduler", group: "Setup" },
-    { path: "/setup/square", label: "Square", section: "setup", view: "square", group: "Setup" },
+    { path: "/setup/connections", label: "Connections", section: "setup", view: "connections", group: "Setup" },
+    { path: "/setup/connections/square", label: "Square", section: "setup", view: "connections", group: "Setup / Connections", sub: true },
     { path: "/setup/lists", label: "Fridges and tasks", section: "setup", view: "lists", group: "Setup" },
     { path: "/setup/limits", label: "Limits and rules", section: "setup", view: "limits", group: "Setup" },
     { path: "/setup/staff", label: "Staff", section: "setup", view: "staff", group: "Setup" },
@@ -100,7 +104,7 @@
   const setupIcons: Record<string, typeof House> = {
     menu: UtensilsCrossed,
     scheduler: Timer,
-    square: Store,
+    connections: Plug,
     lists: ListChecks,
     limits: SlidersHorizontal,
     staff: Users,
@@ -130,7 +134,7 @@
     {
       label: "Setup",
       sections: pages
-        .filter((p) => p.section === "setup")
+        .filter((p) => p.section === "setup" && !p.sub)
         .map((p) => ({ id: `setup-${p.view}`, label: p.label, href: p.path, icon: setupIcons[p.view ?? ""] ?? Settings, viewRuns: [] })),
     },
     {
@@ -353,7 +357,9 @@
           <MenuSetup />
         {:else if route.path === "/setup/scheduler"}
           <SchedulerSetup />
-        {:else if route.path === "/setup/square"}
+        {:else if route.path === "/setup/connections"}
+          <ConnectionsSetup />
+        {:else if route.path === "/setup/connections/square"}
           <SquareSetup />
         {:else if route.path === "/today"}
           <Today />

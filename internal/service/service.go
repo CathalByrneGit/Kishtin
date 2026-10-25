@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 
@@ -75,8 +76,17 @@ type Service struct {
 	voice  voiceState
 	// wakeWords start a hands-free voice command.
 	wakeWords []string
-	// pos is the Square adapter; nil when no access token is set.
-	pos integrations.POSAdapter
+	// pos is the Square adapter; nil when Square is not connected. posMu
+	// guards it, because a manager can connect Square while the server
+	// runs.
+	posMu sync.RWMutex
+	pos   integrations.POSAdapter
+	// posSource is where the Square token came from: "environment" or
+	// "kishtin.toml" (fixed while the server runs), or "saved" (connected
+	// on the screens).
+	posSource string
+	creds     *integrations.CredentialStore
+	newSquare func(environment, token string) (integrations.POSAdapter, error)
 }
 
 // Options configures a Service.
@@ -94,8 +104,15 @@ type Options struct {
 	Speech *speech.Client
 	// WakeWords start a hands-free voice command. Empty uses "kishtin".
 	WakeWords []string
-	// POS reads orders from Square. Nil when no access token is set.
-	POS integrations.POSAdapter
+	// POS reads orders from Square, when the token is set in the
+	// environment or kishtin.toml; POSSource says which. It cannot be
+	// changed on the screens.
+	POS       integrations.POSAdapter
+	POSSource string
+	// Credentials keeps tokens saved on the screens, outside the database.
+	Credentials *integrations.CredentialStore
+	// NewSquare makes a Square client for a saved token.
+	NewSquare func(environment, token string) (integrations.POSAdapter, error)
 }
 
 // DefaultSystem returns the system settings used when none are configured.
@@ -117,7 +134,8 @@ func New(o Options) *Service {
 	if len(wake) == 0 {
 		wake = voice.DefaultWakeWords
 	}
-	return &Service{wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech, pos: o.POS}
+	return &Service{wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech, pos: o.POS,
+		posSource: o.POSSource, creds: o.Credentials, newSquare: o.NewSquare}
 }
 
 // Events returns the hub that change notices are published to.
@@ -128,8 +146,11 @@ func (s *Service) publish(kind, id string) { s.events.Publish(events.Event{Kind:
 // Init stores the built-in FSAI default limit versions and the built-in
 // guidance, rules and lists if they are missing.
 func (s *Service) Init(ctx context.Context) error {
+	if err := s.loadSavedSquare(); err != nil {
+		return err
+	}
 	return s.st.WithTx(ctx, func(tx store.Store) error {
-		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed} {
+		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed, s.Square().seed} {
 			if err := seed(ctx, tx); err != nil {
 				return err
 			}

@@ -1,5 +1,19 @@
 <script lang="ts">
-  import { Button, Card, Chip, Modal, Notice, SelectDropdown, Spinner, Table, TableHeaderCell, TextInput, Toggle, showFlash } from "@kenn-io/kit-ui";
+  import {
+    Button,
+    Card,
+    Chip,
+    Modal,
+    Notice,
+    SegmentedControl,
+    SelectDropdown,
+    Spinner,
+    Table,
+    TableHeaderCell,
+    TextInput,
+    Toggle,
+    showFlash,
+  } from "@kenn-io/kit-ui";
   import { RefreshCw } from "@lucide/svelte";
   import { onMount } from "svelte";
   import ManagerGate from "../../components/ManagerGate.svelte";
@@ -15,6 +29,14 @@
   let status = $state<Schemas["SquareStatus"] | null>(null);
   let menu = $state<Setup | null>(null);
   let error = $state("");
+
+  // Connection.
+  let connector = $state<Schemas["ConnectorStatus"] | null>(null);
+  let locations = $state<Schemas["Location"][] | null>(null);
+  let environment = $state<"production" | "sandbox">("production");
+  let token = $state("");
+  let connecting = $state(false);
+  let askDisconnect = $state(false);
 
   // Import settings form.
   let enabled = $state(false);
@@ -43,16 +65,61 @@
 
   async function load() {
     try {
-      const [s, m] = await Promise.all([api.square(), api.menu()]);
+      const [s, m, c] = await Promise.all([api.square(), api.menu(), api.connectors()]);
       const first = status === null;
       status = s;
       menu = m;
+      connector = c.connectors.find((x) => x.id === "square") ?? null;
       if (first) resetForm();
+      if (connector?.connected && canEdit && locations === null) void loadLocations();
       error = "";
     } catch (err) {
       error = message(err);
     }
   }
+
+  async function loadLocations() {
+    try {
+      locations = (await api.squareLocations()).locations;
+    } catch {
+      // The location can still be typed in.
+      locations = [];
+    }
+  }
+
+  async function connect() {
+    connecting = true;
+    try {
+      const r = await api.connectSquare({ environment, token: token.trim() });
+      token = "";
+      locations = r.locations;
+      if (!location && r.locations.length === 1) location = r.locations[0]?.id ?? "";
+      showFlash("Connected to Square", { tone: "success" });
+      await load();
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 10000 });
+    } finally {
+      connecting = false;
+    }
+  }
+
+  async function disconnect() {
+    askDisconnect = false;
+    try {
+      await api.disconnectSquare();
+      locations = null;
+      showFlash("Disconnected from Square. The saved token is deleted.", { tone: "success" });
+      await load();
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 8000 });
+    }
+  }
+
+  const SOURCES: Record<string, string> = {
+    saved: "Connected here. The token is kept on the server, outside the database and its backups.",
+    environment: "The token is set in the server's environment (KISHTIN_SQUARE_TOKEN). Change it there and restart kishtind.",
+    "kishtin.toml": "The token is set in kishtin.toml. Change it there and restart kishtind.",
+  };
 
   onMount(() => {
     void load();
@@ -193,64 +260,56 @@
   {#if !status}
     {#if !error}<Spinner />{/if}
   {:else}
-    <div class="grid">
-      <Card padding="md" title="Import">
-        <dl>
-          <dt>Square account</dt>
-          <dd>
-            <Chip uppercase={false} dot tone={status.connected ? "success" : "warning"}>{status.connected ? "Connected" : "No access token"}</Chip>
-          </dd>
-          <dt>Order import</dt>
-          <dd>
-            <Chip uppercase={false} dot tone={status.settings.value.enabled ? "success" : "neutral"}>{status.settings.value.enabled ? "On" : "Off"}</Chip>
-          </dd>
-          {#if status.settings.value.enabled}
-            <dt>Location</dt>
-            <dd class="num">{status.settings.value.location_id}</dd>
-            <dt>Asks every</dt>
-            <dd>{status.settings.value.poll_seconds} seconds</dd>
+    <Card padding="md" title="1. Connect your Square account">
+      {#if connector?.connected}
+        <div class="row between">
+          <div class="stack tight">
+            <div class="row">
+              <Chip uppercase={false} dot tone="success">Connected</Chip>
+              {#if connector.environment}<Chip uppercase={false}>{connector.environment === "sandbox" ? "Sandbox" : "Production"}</Chip>{/if}
+            </div>
+            <p class="muted small">{SOURCES[connector.source ?? ""] ?? ""}</p>
+          </div>
+          {#if canEdit && connector.source === "saved"}
+            <Button label="Disconnect" onclick={() => (askDisconnect = true)} />
           {/if}
-          {#if status.state?.last_ok_at}
-            <dt>Last worked</dt>
-            <dd class="num">{dublinTime(status.state.last_ok_at)}</dd>
-          {/if}
-        </dl>
-        {#if !status.connected}
-          <p class="muted small">Set KISHTIN_SQUARE_TOKEN (a Square access token with orders and catalog read access) on the server and restart kishtind.</p>
-        {/if}
-        {#if status.state?.last_error}
-          <Notice tone="warning" title="Square did not answer" message={`${status.state.last_error}. Orders can still be entered by hand; import carries on from the same point when Square answers.`} />
-        {/if}
-      </Card>
-
-      <Card padding="md" title="Turn import on or off">
-        <ManagerGate what="Square import" viewable>
+        </div>
+      {:else}
+        <ManagerGate what="Connecting Square">
           <div class="stack">
-            <Toggle checked={enabled} label="Import orders from Square" disabled={!canEdit} onchange={(on) => (enabled = on)} />
+            <p>
+              In the Square Developer Dashboard, create an application and copy an access token for the restaurant's
+              account that can read orders and items (ORDERS_READ, ITEMS_READ). Paste it here.
+            </p>
+            <SegmentedControl
+              ariaLabel="Square account"
+              value={environment}
+              onchange={(v) => (environment = v as "production" | "sandbox")}
+              options={[
+                { value: "production", label: "Production (the real till)" },
+                { value: "sandbox", label: "Sandbox (for testing)" },
+              ]}
+            />
             <label class="field">
-              <span>Location ID (from the Square Dashboard, Locations)</span>
-              <TextInput bind:value={location} placeholder="L1234ABCD" disabled={!canEdit} block />
+              <span>Access token</span>
+              <TextInput bind:value={token} type="password" autocomplete="off" placeholder="EAAA…" block />
             </label>
-            <label class="field">
-              <span>Ask for new orders every (seconds)</span>
-              <TextInput bind:value={pollText} disabled={!canEdit} block />
-            </label>
-            {#if typeof draft === "string"}<Notice tone="error" message={draft} />{/if}
-            {#if canEdit}
-              <div class="row">
-                <Button label="Undo changes" disabled={!dirty} onclick={resetForm} />
-                <Button tone="info" surface="solid" label="Review changes" disabled={!dirty} onclick={reviewChanges} />
-              </div>
-              <p class="muted small">Review changes shows exactly what Kishtin will send to Square before anything is saved.</p>
-            {/if}
+            <p class="muted small">
+              Check and connect sends the token to Square to check it, and asks for your locations. If Square accepts it,
+              Kishtin keeps it in a file only the server can read, outside the database, so it is never in a backup or
+              export. Nothing is imported until you turn import on below.
+            </p>
+            <div>
+              <Button tone="info" surface="solid" label={connecting ? "Checking with Square…" : "Check and connect"} disabled={connecting || !token.trim()} onclick={connect} />
+            </div>
           </div>
         </ManagerGate>
-      </Card>
-    </div>
+      {/if}
+    </Card>
 
     <section class="stack">
       <div class="row between">
-        <h2 class="section-title">Till items and the kitchen</h2>
+        <h2 class="section-title">2. Map till items to dishes</h2>
         {#if canEdit}
           <div class="row">
             {#if catalog}
@@ -298,6 +357,72 @@
       {/if}
     </section>
 
+    <div class="grid">
+      <Card padding="md" title="Import status">
+        <dl>
+          <dt>Square account</dt>
+          <dd>
+            <Chip uppercase={false} dot tone={status.connected ? "success" : "warning"}>{status.connected ? "Connected" : "Not connected"}</Chip>
+          </dd>
+          <dt>Order import</dt>
+          <dd>
+            <Chip uppercase={false} dot tone={status.settings.value.enabled ? "success" : "neutral"}>{status.settings.value.enabled ? "On" : "Off"}</Chip>
+          </dd>
+          {#if status.settings.value.enabled}
+            <dt>Location</dt>
+            <dd class="num">{status.settings.value.location_id}</dd>
+            <dt>Asks every</dt>
+            <dd>{status.settings.value.poll_seconds} seconds</dd>
+          {/if}
+          {#if status.state?.last_ok_at}
+            <dt>Last worked</dt>
+            <dd class="num">{dublinTime(status.state.last_ok_at)}</dd>
+          {/if}
+        </dl>
+        {#if status.state?.last_error}
+          <Notice tone="warning" title="Square did not answer" message={`${status.state.last_error}. Orders can still be entered by hand; import carries on from the same point when Square answers.`} />
+        {/if}
+      </Card>
+
+      <Card padding="md" title="3. Turn import on or off">
+        <ManagerGate what="Square import" viewable>
+          <div class="stack">
+            <Toggle checked={enabled} label="Import orders from Square" disabled={!canEdit} onchange={(on) => (enabled = on)} />
+            <label class="field">
+              <span>Location</span>
+              {#if locations && locations.length > 0}
+                <SelectDropdown
+                  value={location}
+                  options={[
+                    { value: "", label: "Choose a location" },
+                    ...locations.map((l) => ({ value: l.id, label: `${l.name}${l.active ? "" : " (closed)"}` })),
+                    ...(location && !locations.some((l) => l.id === location) ? [{ value: location, label: location }] : []),
+                  ]}
+                  onchange={(v) => (location = v)}
+                  disabled={!canEdit}
+                  title="Square location"
+                />
+              {:else}
+                <TextInput bind:value={location} placeholder="Location ID from the Square Dashboard, such as L1234ABCD" disabled={!canEdit} block />
+              {/if}
+            </label>
+            <label class="field">
+              <span>Ask for new orders every (seconds)</span>
+              <TextInput bind:value={pollText} disabled={!canEdit} block />
+            </label>
+            {#if typeof draft === "string"}<Notice tone="error" message={draft} />{/if}
+            {#if canEdit}
+              <div class="row">
+                <Button label="Undo changes" disabled={!dirty} onclick={resetForm} />
+                <Button tone="info" surface="solid" label="Review changes" disabled={!dirty} onclick={reviewChanges} />
+              </div>
+              <p class="muted small">Review changes shows exactly what Kishtin will send to Square before anything is saved.</p>
+            {/if}
+          </div>
+        </ManagerGate>
+      </Card>
+    </div>
+
     <section class="stack">
       <h2 class="section-title">Recent till orders{needsChecking ? ` · ${needsChecking} need checking` : ""}</h2>
       {#if status.recent.length === 0}
@@ -331,6 +456,18 @@
     </section>
   {/if}
 </div>
+
+{#if askDisconnect}
+  <Modal title="Disconnect Square" onclose={() => (askDisconnect = false)} maxWidth="480px">
+    <p>The saved token is deleted from this server. Mappings and orders already imported stay. You can connect again at any time.</p>
+    {#snippet footer()}
+      <div class="row">
+        <Button label="Cancel" onclick={() => (askDisconnect = false)} />
+        <Button tone="danger" surface="solid" label="Disconnect" onclick={disconnect} />
+      </div>
+    {/snippet}
+  </Modal>
+{/if}
 
 {#if askCatalog}
   <Modal title="Load the catalog from Square" onclose={() => (askCatalog = false)} maxWidth="520px">
@@ -372,6 +509,9 @@
   }
   .between {
     justify-content: space-between;
+  }
+  .tight {
+    gap: var(--space-2);
   }
   .small {
     font-size: var(--font-size-sm);

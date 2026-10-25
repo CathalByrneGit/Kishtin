@@ -320,3 +320,22 @@ func (c *Client) OrdersSince(ctx context.Context, locationID string, since time.
 	}
 	return nil, errors.New("too many changed orders from Square in one go") //nolint:staticcheck // Square is a name
 }
+
+// Locations lists the account's locations.
+func (c *Client) Locations(ctx context.Context) ([]integrations.Location, error) {
+	var res struct {
+		Locations []struct {
+			ID     string `json:"id"`
+			Name   string `json:"name"`
+			Status string `json:"status"`
+		} `json:"locations"`
+	}
+	if err := c.do(ctx, http.MethodGet, "/v2/locations", nil, &res); err != nil {
+		return nil, err
+	}
+	out := make([]integrations.Location, 0, len(res.Locations))
+	for _, l := range res.Locations {
+		out = append(out, integrations.Location{ID: l.ID, Name: l.Name, Active: l.Status == "ACTIVE"})
+	}
+	return out, nil
+}

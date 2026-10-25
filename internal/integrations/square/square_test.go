@@ -105,3 +105,16 @@ func TestErrors(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, SandboxURL, c.base)
 }
+
+func TestLocations(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v2/locations", r.URL.Path)
+		_, _ = w.Write([]byte(`{"locations":[{"id":"L1","name":"The Synthetic Kitchen","status":"ACTIVE"},{"id":"L2","name":"Old site","status":"INACTIVE"}]}`))
+	}))
+	defer srv.Close()
+	c, err := New(srv.URL, "synthetic-token", time.Second)
+	require.NoError(t, err)
+	got, err := c.Locations(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, []integrations.Location{{ID: "L1", Name: "The Synthetic Kitchen", Active: true}, {ID: "L2", Name: "Old site"}}, got)
+}
