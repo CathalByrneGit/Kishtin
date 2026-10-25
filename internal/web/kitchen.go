@@ -66,6 +66,12 @@ type holdIn struct {
 	Body   holdBody    `required:"false"`
 }
 
+type nameBody struct {
+	// Name is what the kitchen calls the order, such as a guest's name.
+	// Empty clears it, and the order goes back to its table or ticket.
+	Name string `json:"name" maxLength:"40"`
+}
+
 type urgentBody struct {
 	Urgent bool `json:"urgent"`
 }
@@ -210,6 +216,12 @@ func (s *Server) kitchenRoutes() {
 		Summary: "Flag a course urgent so the scheduler puts it first, or clear the flag",
 	}, wrap(s, func(ctx context.Context, in *courseIn[urgentBody]) (*out[orders.Order], error) {
 		return reply(s.svc.SetUrgent(ctx, principal(ctx), in.ID, in.Course, in.Body.Urgent))
+	}))
+	huma.Register(s.api, huma.Operation{
+		OperationID: "rename-order", Method: http.MethodPut, Path: "/orders/{id}/name", Tags: orderTags,
+		Summary: "Name an order, such as a guest's name, or clear the name (logged)",
+	}, wrap(s, func(ctx context.Context, in *idIn[nameBody]) (*out[orders.Order], error) {
+		return reply(s.svc.RenameOrder(ctx, principal(ctx), in.ID, in.Body.Name))
 	}))
 	huma.Register(s.api, huma.Operation{
 		OperationID: "close-order", Method: http.MethodPost, Path: "/orders/{id}/close", Tags: orderTags,

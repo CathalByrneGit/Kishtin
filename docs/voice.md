@@ -34,6 +34,8 @@ Without a text-to-speech sidecar, a device speaks replies with a voice built int
 | "Floors done" | Ticks a cleaning task from the list. "Cleaning" on its own asks which task. |
 | "Confirm", "cancel" | Answers a question. |
 
+An order with a name can be said by its name: "fire Aoife mains", "Aoife ready", "burgers on for Aoife". If two open orders share a name, Kishtin asks which.
+
 Numbers can be said as words or digits ("three point four", "minus eighteen"). Common mishearings are expected: "fryer table 4" is read as "fire table 4", "table for" as table 4, and "what's next on fire" as the fryer.
 
 ## Questions and confirmations

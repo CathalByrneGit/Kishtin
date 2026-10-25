@@ -20,7 +20,7 @@ Choose what a device shows in **Settings → This device → This device shows**
 |---|---|---|
 | Desktop, with the sidebar | the office computer | the full app, described below |
 | Pass screen | a wall-mounted tablet or TV at the pass | every open order in large type, with Fire, Serve, Mark ready, Change time, Hold again and Urgent for the head chef or a manager |
-| Station screen | a tablet at one station | that station's Start now, In progress and Coming up, with Start and Done buttons |
+| Station screen | a tablet at one station | that station's all-day counts, its tickets with a button per item, and recently done items to undo |
 | Phone | a phone | four tabs: Today (fridge and cleaning checks), Log check, New order (for staff who take orders), and the Pass |
 
 - The choice is kept in that device's browser only. A device with a phone-sized screen starts on the phone layout; anything else starts on the desktop.
@@ -55,18 +55,19 @@ How the kitchen side works, and how the scheduler decides, is in [kitchen.md](ki
 Every open order as a card, for the head chef or expo:
 
 - **Figures**: open orders, and how many fired courses are on track, at risk, late, or ready to serve, and how many courses are held.
+- **All day**: every dish not yet served, across the kitchen: to start, cooking, ready and held. Tap a dish to show only the orders with it.
 - **Show**: all orders, only those that need action (at risk, late or ready), or those with held courses.
-- Each card shows the table or takeaway, ticket number, time entered, covers, notes, a **Square** chip for orders from the till, and an **Allergy** chip and red edge when flagged. Each course shows its state and the scheduler's status (on track, at risk, late, ready) with the reason, the target time with a countdown, and its items grouped as "2× Burger (Well done)" with their state.
+- Each card's heading is the order's name if it has one (with the table or takeaway number under it), otherwise its table or takeaway number. It shows the ticket number, time entered, covers, notes, a **Square** chip for orders from the till, and an **Allergy** chip and red edge when flagged. Each course shows its state and the scheduler's status (on track, at risk, late, ready) with the reason, the target time with a countdown, and its items grouped as "2× Burger (Well done)" with their state.
 - Head chefs and managers get the buttons: **Fire** a held course; **Serve** a course once every item is ready; **Change time** (a new target, with a reason for the log); **Hold again** on a fired course while nothing in it has started; **Mark ready** once every item in a course has been started, when the plates are at the pass; **Urgent**; and **Close order** once everything is served or voided. Other staff see the same cards without buttons.
-- The history icon opens the order: its courses and items, its full history (who did what, when), **Add items**, **Hold again**, and **Change** on each item. Change shows the item as an editable line (dish, modifiers, notes) and an optional reason; **Replace item** voids the old one and adds the new one in its place.
+- The history icon opens the order: its courses and items, its full history (who did what, when), **Add items**, **Hold again**, **Add a name** or **Change name**, and on each item its next step (**Start**, **Done cooking** and so on) and **Change**. Change shows the item as an editable line (dish, modifiers, notes) and an optional reason; **Replace item** voids the old one and adds the new one in its place.
 
 ### Stations
 
-Pick a station. Three columns:
+Pick a station. Its screen has three parts:
 
-- **Start now**: what the scheduler says to start, such as "3× Burger on the flat-top for Table 4 and Takeaway #3", with the reason, and **Start** (or **Start all 3**). A card that is already past its latest start is marked **Late**.
-- **In progress**: items cooking, resting or plating, grouped when they finish together, with a countdown to the end of the phase (red when overdue) and **Done cooking**, **Done resting** or **Ready**.
-- **Coming up**: what to start later and when, with a countdown, the reason, and **Start early**.
+- **All day**: how many of each dish the station has in hand, such as "3 Burger: 2 to start, 1 cooking". Tap a dish to show only the tickets with it (and again to show them all). When the scheduler says to start several of a dish together, for different tables, **Start 3** starts them in one tap.
+- **Tickets**: one per order and course with work for this station, the one that needs a hand soonest first. The heading is the order's name, or its table or takeaway number, with the course, the time since it was fired, and its status (on track, at risk, late) as a coloured top edge and a chip. Each item is its own line with its own button: **Start**, **Done cooking**, **Done resting** or **Ready**. A line says **Start now**, **Start 18:42**, or how long is left on what it is doing (red once overdue). The i button shows why the scheduler chose that time. Items already ready are struck through until the whole ticket is done. Allergies show in red at the top.
+- **Recently done**: items made ready here in the last 15 minutes, with **Undo** to put one back a step.
 
 Line cooks, head chefs and managers get the buttons.
 
@@ -74,7 +75,7 @@ Each button sends the state the cook saw. If someone else has already moved thos
 
 ### Orders
 
-- **New order** (front of house, head chefs and managers): table or takeaway, table number or customer name, covers, an allergy tick and notes. Tap dishes to add them, grouped by course; dishes that are 86 cannot be added. Each line has a quantity, its course, modifier chips and notes. Head chefs and managers can tick courses to **fire straight away**. **Send order** shows the ticket number.
+- **New order** (front of house, head chefs and managers): table or takeaway, table number, an optional name (such as the guest's, shown instead of the table), covers, an allergy tick and notes. Tap dishes to add them, grouped by course; dishes that are 86 cannot be added. Each line has a quantity, its course, modifier chips and notes. Head chefs and managers can tick courses to **fire straight away**. **Send order** shows the ticket number.
 - **Today's orders**: open orders, or every order today, sortable. Select one to open it, with its history, **Add items** and **Change**.
 
 ### Voice

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -472,4 +473,34 @@ func TestReadyCourse(t *testing.T) {
 	assert.ErrorContains(t, err, "already ready")
 	_, err = k.svc.ServeCourse(ctx, k.chef, o.ID, menu.CourseMain)
 	require.NoError(t, err)
+}
+
+func TestRenameOrder(t *testing.T) {
+	k := setupKitchen(t)
+	ctx := context.Background()
+	o, err := k.svc.CreateOrder(ctx, k.foh, NewOrder{Kind: orders.KindTable, Table: "4", Name: "Aoife", Items: []NewItem{{DishID: k.burger.ID}}})
+	require.NoError(t, err)
+	assert.Equal(t, "Aoife", o.Name, "a table order keeps its name")
+	assert.Equal(t, "Table 4 (Aoife)", o.Label())
+
+	_, err = k.svc.RenameOrder(ctx, k.cook, o.ID, "Liam")
+	assert.Equal(t, KindForbidden, KindOf(err), "front of house, the head chef or a manager")
+	o, err = k.svc.RenameOrder(ctx, k.foh, o.ID, "  Synthetic party of 6 ")
+	require.NoError(t, err)
+	assert.Equal(t, "Synthetic party of 6", o.Name)
+	o, err = k.svc.RenameOrder(ctx, k.foh, o.ID, "")
+	require.NoError(t, err)
+	assert.Equal(t, "Table 4", o.Label())
+	_, err = k.svc.RenameOrder(ctx, k.foh, o.ID, strings.Repeat("x", 41))
+	assert.ErrorContains(t, err, "at most 40")
+
+	evs, err := k.svc.OrderEvents(ctx, k.chef, o.ID)
+	require.NoError(t, err)
+	var details []string
+	for _, e := range evs {
+		if e.Kind == orders.EventRenamed {
+			details = append(details, e.Detail)
+		}
+	}
+	assert.Equal(t, []string{"renamed from Aoife to Synthetic party of 6", "name Synthetic party of 6 cleared"}, details)
 }

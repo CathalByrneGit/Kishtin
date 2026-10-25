@@ -838,6 +838,39 @@ func (s *Service) ServeCourse(ctx context.Context, p *auth.Principal, orderID st
 	return out[0], nil
 }
 
+// RenameOrder sets what the kitchen calls an order, such as a guest's
+// name, or clears it with an empty name. The change is logged.
+func (s *Service) RenameOrder(ctx context.Context, p *auth.Principal, orderID, name string) (orders.Order, error) {
+	if err := allow(p, auth.ActTakeOrders); err != nil {
+		return orders.Order{}, err
+	}
+	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
+		name = strings.TrimSpace(name)
+		if name == o.Name {
+			return nil
+		}
+		from := o.Name
+		o.Name = name
+		if err := o.Validate(); err != nil {
+			return newErr(KindInvalid, "%s", err)
+		}
+		if err := tx.Orders().UpdateOrder(ctx, *o); err != nil {
+			return err
+		}
+		ev := s.event(p, *o, orders.EventRenamed)
+		ev.From, ev.To = from, name
+		switch {
+		case from == "":
+			ev.Detail = "named " + name
+		case name == "":
+			ev.Detail = "name " + from + " cleared"
+		default:
+			ev.Detail = "renamed from " + from + " to " + name
+		}
+		return tx.Orders().AppendEvent(ctx, ev)
+	})
+}
+
 // CloseOrder closes an order once everything is served or voided.
 func (s *Service) CloseOrder(ctx context.Context, p *auth.Principal, orderID string) (orders.Order, error) {
 	if err := allow(p, auth.ActRunPass); err != nil {

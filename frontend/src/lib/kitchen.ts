@@ -46,10 +46,21 @@ export function courseStatus(s: string): { label: string; tone: ChipTone } {
   return STATUS[s] ?? { label: s, tone: "neutral" };
 }
 
-/** orderLabel is "Table 4" or "Takeaway #12 (Aoife)". */
-export function orderLabel(o: Pick<Order, "kind" | "table" | "number" | "name">): string {
-  if (o.kind === "table") return `Table ${o.table ?? ""}`;
-  return `Takeaway #${o.number}${o.name ? ` (${o.name})` : ""}`;
+type OrderNaming = Pick<Order, "kind" | "table" | "number" | "name">;
+
+/** orderPlace is where an order goes: "Table 4" or "Takeaway #12". */
+export function orderPlace(o: OrderNaming): string {
+  return o.kind === "table" ? `Table ${o.table ?? ""}` : `Takeaway #${o.number}`;
+}
+
+/** orderLabel names an order in one line: "Table 4", "Table 4 (Aoife)", "Takeaway #12 (Aoife)". */
+export function orderLabel(o: OrderNaming): string {
+  return o.name ? `${orderPlace(o)} (${o.name})` : orderPlace(o);
+}
+
+/** orderTitle is an order's heading: its name if it has one, else where it goes. */
+export function orderTitle(o: OrderNaming): string {
+  return o.name || orderPlace(o);
 }
 
 /** itemName is "Burger (Well done)". */

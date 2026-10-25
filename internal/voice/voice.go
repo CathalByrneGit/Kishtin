@@ -59,6 +59,8 @@ type OrderRef struct {
 	Table  string
 	Number int
 	Label  string
+	// Name is the order's name, such as a guest's, when it has one.
+	Name string
 }
 
 // Vocab is what can be named right now.
@@ -220,7 +222,39 @@ func (p *parser) hasOrderRef() bool {
 			return true
 		}
 	}
-	return false
+	return len(p.namedOrders()) > 0
+}
+
+// namedOrders finds open orders said by name: "fire Aoife mains". A name
+// must match a whole word of at least 3 letters, so "a" or "Jo" do not
+// pick an order by accident.
+func (p *parser) namedOrders() []OrderRef {
+	var names []Name
+	for _, o := range p.v.Orders {
+		if o.Name != "" {
+			names = append(names, Name{ID: o.ID, Name: o.Name})
+		}
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	grammar := map[string]bool{}
+	for w := range courseWords {
+		grammar[w] = true
+	}
+	for _, w := range append(append(slices.Clone(fireWords), "hold", "ready", "up", "away", "void", "bin", "on", "for", "and", "because"), orderWords...) {
+		grammar[w] = true
+	}
+	m := bestNames(p.w, names, func(i int) bool { return grammar[p.w[i]] || len([]rune(p.w[i])) < 3 })
+	var out []OrderRef
+	for _, x := range m {
+		for _, o := range p.v.Orders {
+			if o.ID == x.ID {
+				out = append(out, o)
+			}
+		}
+	}
+	return out
 }
 
 // orderSpoken is one order as said: table 4, or takeaway number 12.
@@ -279,6 +313,21 @@ func tableWord(w string) (string, bool) {
 // sounds like one or more that are, it returns a question.
 func (p *parser) resolveOrders() ([]string, *Result) {
 	spoken := p.spokenOrders()
+	if len(spoken) == 0 {
+		switch named := p.namedOrders(); len(named) {
+		case 0:
+		case 1:
+			return []string{named[0].ID}, nil
+		default:
+			var opts []Option
+			labels := make([]string, len(named))
+			for i, o := range named {
+				labels[i] = o.Label
+				opts = append(opts, Option{Label: o.Label, Command: Command{OrderIDs: []string{o.ID}}})
+			}
+			return nil, &Result{Ask: orList(labels) + "?", Options: opts}
+		}
+	}
 	if len(spoken) == 0 {
 		return nil, &Result{Problem: fmt.Sprintf("Heard %q, but not which table. Say the table number, such as \"table 4\".", p.words)}
 	}
@@ -346,7 +395,11 @@ func (p *parser) nearOrders(s orderSpoken) []OrderRef {
 	var out []OrderRef
 	for _, o := range p.v.Orders {
 		name := strings.ToLower(o.Table)
-		if s.takeaway || name == "" {
+		if !s.takeaway && name == "" {
+			// A table said is never a takeaway's ticket number.
+			continue
+		}
+		if s.takeaway {
 			name = strconv.Itoa(o.Number)
 		}
 		switch {

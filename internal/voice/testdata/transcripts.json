@@ -491,5 +491,51 @@
       "Food-contact surfaces sanitised",
       "Chopping boards washed & sanitised"
     ]
+  },
+  {
+    "say": "Fire Aoife mains",
+    "intent": "fire",
+    "orders": [
+      "Table 52 (Aoife)"
+    ],
+    "course": "main"
+  },
+  {
+    "say": "aoife ready",
+    "intent": "ready",
+    "orders": [
+      "Table 52 (Aoife)"
+    ]
+  },
+  {
+    "say": "fire Liam Byrne",
+    "intent": "fire",
+    "orders": [
+      "Takeaway #16 (Liam Byrne)"
+    ]
+  },
+  {
+    "say": "fire Liam",
+    "ask": "Takeaway #16 (Liam Byrne) or Takeaway #17 (Liam Kelly)?",
+    "options": [
+      "Takeaway #16 (Liam Byrne)",
+      "Takeaway #17 (Liam Kelly)"
+    ]
+  },
+  {
+    "say": "burgers on for aoife",
+    "intent": "start",
+    "dish": "Burger",
+    "orders": [
+      "Table 52 (Aoife)"
+    ]
+  },
+  {
+    "say": "void fries aoife",
+    "intent": "void",
+    "dish": "Fries",
+    "orders": [
+      "Table 52 (Aoife)"
+    ]
   }
 ]

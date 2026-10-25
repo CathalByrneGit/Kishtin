@@ -25,6 +25,9 @@ var vocab = Vocab{
 		{ID: "o-7", Table: "7", Number: 2, Label: "Table 7"},
 		{ID: "o-14", Table: "14", Number: 5, Label: "Table 14"},
 		{ID: "o-t3", Number: 3, Label: "Takeaway #3"},
+		{ID: "o-52", Table: "52", Number: 6, Label: "Table 52 (Aoife)", Name: "Aoife"},
+		{ID: "o-t16", Number: 16, Label: "Takeaway #16 (Liam Byrne)", Name: "Liam Byrne"},
+		{ID: "o-t17", Number: 17, Label: "Takeaway #17 (Liam Kelly)", Name: "Liam Kelly"},
 	},
 	Tasks: []string{
 		"Food-contact surfaces sanitised", "Chopping boards washed & sanitised", "Fridge handles & seals wiped",
@@ -67,7 +70,7 @@ func label(id string) string {
 			return o.Label
 		}
 	}
-	for _, n := range append(vocab.Dishes, vocab.Stations...) {
+	for _, n := range append(append([]Name{}, vocab.Dishes...), vocab.Stations...) {
 		if n.ID == id {
 			return n.Name
 		}

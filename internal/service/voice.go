@@ -280,7 +280,7 @@ func (s *Service) vocab(ctx context.Context) (voice.Vocab, error) {
 		return v, err
 	}
 	for _, o := range open {
-		v.Orders = append(v.Orders, voice.OrderRef{ID: o.ID, Table: o.Table, Number: o.Number, Label: o.Label()})
+		v.Orders = append(v.Orders, voice.OrderRef{ID: o.ID, Table: o.Table, Number: o.Number, Label: o.Label(), Name: o.Name})
 	}
 	return v, nil
 }

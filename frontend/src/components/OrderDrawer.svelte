@@ -4,8 +4,8 @@
   import DishPicker, { toItems, type Line } from "./DishPicker.svelte";
   import { api, message, type Course, type Order, type OrderItem, type Schemas, type Setup } from "../lib/api";
   import { dublinTime } from "../lib/format";
-  import { courseLabel, itemName, itemState, orderLabel } from "../lib/kitchen";
-  import { canRunPass, canTakeOrders } from "../lib/kitchenfeed.svelte";
+  import { courseLabel, itemName, itemState, nextLabel, orderLabel } from "../lib/kitchen";
+  import { canRunPass, canTakeOrders, canWorkStation } from "../lib/kitchenfeed.svelte";
   import { onChange } from "../lib/live.svelte";
   import { session } from "../lib/session.svelte";
 
@@ -22,6 +22,7 @@
   let adding = $state(false);
   let lines = $state<Line[]>([]);
   let busy = $state(false);
+  let naming = $state<string | null>(null);
   // changing is the item being replaced, with the replacement as one line.
   let changing = $state<{ item: OrderItem; lines: Line[]; reason: string } | null>(null);
 
@@ -82,6 +83,20 @@
     }
   }
 
+  async function step(it: OrderItem) {
+    busy = true;
+    try {
+      await api.moveItems({ item_ids: [it.id], from: it.state });
+      showFlash(`${nextLabel(it.state)}: ${itemName(it)}`, { tone: "success" });
+      await load();
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 8000 });
+      await load();
+    } finally {
+      busy = false;
+    }
+  }
+
   async function hold(c: Course) {
     busy = true;
     try {
@@ -117,6 +132,21 @@
     }
   }
 
+  async function saveName() {
+    if (naming === null) return;
+    busy = true;
+    try {
+      order = await api.renameOrder(orderId, naming.trim());
+      showFlash(naming.trim() ? `Named ${naming.trim()}` : "Name cleared", { tone: "success" });
+      naming = null;
+      await load();
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 8000 });
+    } finally {
+      busy = false;
+    }
+  }
+
   async function close() {
     busy = true;
     try {
@@ -140,6 +170,7 @@
     urgent: "Urgent flag",
     served: "Course served",
     closed: "Order closed",
+    renamed: "Name changed",
     pos: "Changed on the till",
   };
 
@@ -163,6 +194,26 @@
         {#if order.allergy}<Chip uppercase={false} tone="danger">Allergy</Chip>{/if}
         <span class="muted">Entered {dublinTime(order.created_at)}{order.covers ? ` · ${order.covers} covers` : ""}</span>
       </div>
+      {#if order.status === "open" && canTakeOrders(session.user?.role)}
+        {#if naming === null}
+          <div class="row">
+            <span>{order.name ? `Name: ${order.name}` : "No name: shown by its table or ticket."}</span>
+            <Button size="sm" label={order.name ? "Change name" : "Add a name"} onclick={() => (naming = order?.name ?? "")} />
+          </div>
+        {:else}
+          <form
+            class="row"
+            onsubmit={(e) => {
+              e.preventDefault();
+              void saveName();
+            }}
+          >
+            <TextInput bind:value={naming} size="sm" placeholder="Such as the guest's name (empty clears it)" ariaLabel="Order name" />
+            <Button size="sm" label="Cancel" onclick={() => (naming = null)} />
+            <Button size="sm" tone="success" surface="solid" type="submit" label="Save name" disabled={busy} />
+          </form>
+        {/if}
+      {/if}
       {#if order.notes}<Notice tone="warning" title="Notes" message={order.notes} />{/if}
 
       {#each order.courses as c (c.course)}
@@ -186,6 +237,9 @@
                 <span class="row">
                   {#if it.void_reason}<span class="muted small">{it.void_reason}</span>{/if}
                   <Chip size="sm" uppercase={false} tone={st.tone}>{st.label}</Chip>
+                  {#if canWorkStation(session.user?.role) && ["fired", "cooking", "resting", "plating"].includes(it.state)}
+                    <Button size="sm" tone="info" surface="solid" label={nextLabel(it.state)} disabled={busy} onclick={() => step(it)} />
+                  {/if}
                   {#if canChange(it)}<Button size="sm" label="Change" disabled={busy || changing !== null} onclick={() => startChange(it)} />{/if}
                 </span>
               </li>

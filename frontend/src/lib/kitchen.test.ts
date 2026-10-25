@@ -1,11 +1,15 @@
 import { expect, test } from "bun:test";
-import { countdown, courseLabel, durationSeconds, itemName, minutesText, nextLabel, orderLabel, seconds } from "./kitchen";
+import { countdown, courseLabel, durationSeconds, itemName, minutesText, nextLabel, orderLabel, orderPlace, orderTitle, seconds } from "./kitchen";
 
 test("labels", () => {
   expect(courseLabel("main")).toBe("Mains");
   expect(courseLabel("starter", false)).toBe("Starter");
   expect(orderLabel({ kind: "table", table: "4", number: 1 })).toBe("Table 4");
   expect(orderLabel({ kind: "takeaway", number: 12, name: "Aoife" })).toBe("Takeaway #12 (Aoife)");
+  expect(orderLabel({ kind: "table", table: "4", number: 1, name: "Aoife" })).toBe("Table 4 (Aoife)");
+  expect(orderTitle({ kind: "table", table: "4", number: 1, name: "Aoife" })).toBe("Aoife");
+  expect(orderTitle({ kind: "table", table: "4", number: 1 })).toBe("Table 4");
+  expect(orderPlace({ kind: "takeaway", number: 12, name: "Aoife" })).toBe("Takeaway #12");
   expect(itemName({ dish_name: "Burger", modifiers: ["Well done"] })).toBe("Burger (Well done)");
   expect(itemName({ dish_name: "Burger", modifiers: [] })).toBe("Burger");
   expect(nextLabel("cooking")).toBe("Done cooking");

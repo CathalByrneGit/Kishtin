@@ -126,7 +126,8 @@ type Order struct {
 	Number int    `json:"number"`
 	Kind   Kind   `json:"kind"`
 	Table  string `json:"table,omitempty"`
-	// Name is the customer's name for a takeaway.
+	// Name is what the kitchen calls the order, such as a guest's name.
+	// Any order can have one; screens show it as the heading.
 	Name   string `json:"name,omitempty"`
 	Covers int    `json:"covers,omitempty"`
 	Notes  string `json:"notes,omitempty"`
@@ -141,16 +142,22 @@ type Order struct {
 	Items     []Item     `json:"items"`
 }
 
-// Label is how screens name the order: "Table 4" or "Takeaway #12 (Aoife)".
+// Label names the order in one line, in reasons, histories and replies:
+// "Table 4", "Table 4 (Aoife)" or "Takeaway #12 (Aoife)".
 func (o Order) Label() string {
-	if o.Kind == KindTable {
-		return "Table " + o.Table
-	}
-	l := fmt.Sprintf("Takeaway #%d", o.Number)
+	l := o.Place()
 	if o.Name != "" {
 		l += " (" + o.Name + ")"
 	}
 	return l
+}
+
+// Place is where the order goes: "Table 4" or "Takeaway #12".
+func (o Order) Place() string {
+	if o.Kind == KindTable {
+		return "Table " + o.Table
+	}
+	return fmt.Sprintf("Takeaway #%d", o.Number)
 }
 
 // Course returns the order's course c.
@@ -352,6 +359,8 @@ const (
 	// EventPOS records a change on the till the pass must deal with, such
 	// as a line removed after it reached the kitchen.
 	EventPOS EventKind = "pos"
+	// EventRenamed records a change to the order's name.
+	EventRenamed EventKind = "renamed"
 )
 
 // Event records something that happened to an order. Events are

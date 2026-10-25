@@ -230,6 +230,10 @@ type ClientInterface interface {
 	AddItems(ctx context.Context, options *AddItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AddItemsResponse, error)
 	AddItemsWithResponse(ctx context.Context, options *AddItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AddItemsResp, error)
 
+	// RenameOrder Name an order, such as a guest's name, or clear the name (logged)
+	RenameOrder(ctx context.Context, options *RenameOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RenameOrderResponse, error)
+	RenameOrderWithResponse(ctx context.Context, options *RenameOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RenameOrderResp, error)
+
 	// GetGuidance Show the reference guidance in force
 	GetGuidance(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResponse, error)
 	GetGuidanceWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResp, error)
@@ -3418,6 +3422,70 @@ func (c *Client) AddItems(ctx context.Context, options *AddItemsRequestOptions, 
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/items")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// RenameOrder Name an order, such as a guest's name, or clear the name (logged)
+func (c *Client) RenameOrder(ctx context.Context, options *RenameOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RenameOrderResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/name",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*RenameOrderResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(RenameOrderErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "RenameOrderErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(RenameOrderResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "RenameOrderResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/name")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -7441,6 +7509,59 @@ func (o *AddItemsRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// RenameOrderRequestOptions is the options needed to make a request to RenameOrder.
+type RenameOrderRequestOptions struct {
+	PathParams *RenameOrderPath
+	Body       *RenameOrderBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *RenameOrderRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *RenameOrderRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *RenameOrderRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *RenameOrderRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *RenameOrderRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // SaveGuidanceRequestOptions is the options needed to make a request to SaveGuidance.
 type SaveGuidanceRequestOptions struct {
 	Body *SaveGuidanceBody
@@ -11225,6 +11346,68 @@ func (c *Client) AddItemsWithResponse(ctx context.Context, options *AddItemsRequ
 	}
 }
 
+// RenameOrder Name an order, such as a guest's name, or clear the name (logged)
+func (c *Client) RenameOrderWithResponse(ctx context.Context, options *RenameOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RenameOrderResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/name",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/name")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &RenameOrderResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(RenameOrderResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "RenameOrderResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(RenameOrderErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "RenameOrderErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetGuidance Show the reference guidance in force
 func (c *Client) GetGuidanceWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResp, error) {
 	var err error
@@ -13892,6 +14075,14 @@ func (a AddItemsPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(a))
 }
 
+type RenameOrderPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (r RenameOrderPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(r))
+}
+
 type UpdateUserPath struct {
 	ID string `json:"id" validate:"required"`
 }
@@ -13941,6 +14132,8 @@ type HoldCourseBody = HoldBody
 type SetCourseTargetBody = TargetBody
 
 type SetCourseUrgentBody = UrgentBody
+
+type RenameOrderBody = NameBody
 
 type SaveGuidanceBody = SettingsChangeGuidance
 
@@ -14239,6 +14432,10 @@ type OrderEventsErrorResponse = ErrorModel
 type AddItemsResponse = Order
 
 type AddItemsErrorResponse = ErrorModel
+
+type RenameOrderResponse = Order
+
+type RenameOrderErrorResponse = ErrorModel
 
 type GetGuidanceResponse = VersionedGuidance
 
@@ -14798,6 +14995,14 @@ type AddItemsResp struct {
 	StatusCode                        int
 	JSON200                           *AddItemsResponse
 	ApplicationProblemPlusJSONDefault *AddItemsErrorResponse
+}
+
+type RenameOrderResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *RenameOrderResponse
+	ApplicationProblemPlusJSONDefault *RenameOrderErrorResponse
 }
 
 type GetGuidanceResp struct {
@@ -16593,6 +16798,14 @@ type Modifier struct {
 
 func (m Modifier) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(m))
+}
+
+type NameBody struct {
+	Name string `json:"name" validate:"required,max=40"`
+}
+
+func (n NameBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(n))
 }
 
 type NewItem struct {

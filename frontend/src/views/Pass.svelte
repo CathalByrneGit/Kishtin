@@ -4,7 +4,9 @@
   import OrderDrawer from "../components/OrderDrawer.svelte";
   import { api, message, type Course, type Order, type OrderItem, type Schemas } from "../lib/api";
   import { dublinTime, dublinToDate, dublinDate, isClock, normaliseClock } from "../lib/format";
-  import { countdown, courseLabel, courseStatus, itemName, itemState, orderLabel } from "../lib/kitchen";
+  import AllDayStrip from "../components/AllDayStrip.svelte";
+  import { allDay, lineKey } from "../lib/tickets";
+  import { countdown, courseLabel, courseStatus, itemName, itemState, orderLabel, orderPlace, orderTitle } from "../lib/kitchen";
   import { canRunPass, kitchenFeed } from "../lib/kitchenfeed.svelte";
   import { param, setParam } from "../lib/router.svelte";
   import { session } from "../lib/session.svelte";
@@ -44,10 +46,15 @@
     });
   }
 
+  /** the dish picked in the all-day strip, to show only orders with it */
+  let only = $state<string | null>(null);
+  const counts2 = $derived(feed.view ? allDay(feed.view) : []);
+
   const orders = $derived.by(() => {
-    const list = feed.view?.orders ?? [];
-    if (filter === "action") return list.filter(needsAction);
-    if (filter === "held") return list.filter((o) => o.courses.some((c) => c.state === "held"));
+    let list = feed.view?.orders ?? [];
+    if (filter === "action") list = list.filter(needsAction);
+    if (filter === "held") list = list.filter((o) => o.courses.some((c) => c.state === "held"));
+    if (only) list = list.filter((o) => o.items.some((it) => lineKey(it) === only && it.state !== "served" && it.state !== "voided"));
     return list;
   });
 
@@ -133,6 +140,8 @@
       />
     </div>
 
+    <AllDayStrip rows={counts2} selected={only} onselect={(k) => (only = k)} showHeld />
+
     {#if feed.view.orders.length === 0}
       <EmptyState title="No open orders" description="New orders appear here as soon as they are entered." />
     {:else if orders.length === 0}
@@ -144,8 +153,8 @@
         <article class="card" class:allergy={o.allergy}>
           <header>
             <div class="title">
-              <h2>{orderLabel(o)}</h2>
-              <span class="muted num">#{o.number} · {dublinTime(o.created_at)}{o.covers ? ` · ${o.covers} covers` : ""}</span>
+              <h2>{orderTitle(o)}</h2>
+              <span class="muted num">{o.name ? `${orderPlace(o)} · ` : ""}#{o.number} · {dublinTime(o.created_at)}{o.covers ? ` · ${o.covers} covers` : ""}</span>
             </div>
             {#if o.created_by === "pos:square"}<Chip uppercase={false}>Square</Chip>{/if}
             {#if o.allergy}<Chip tone="danger" uppercase={false}>Allergy</Chip>{/if}
@@ -184,7 +193,7 @@
               <ul class="items">
                 {#each group(items) as g (g.key)}
                   {@const s = itemState(g.item.state)}
-                  <li class:done={g.item.state === "served" || g.item.state === "voided"}>
+                  <li class:done={g.item.state === "served" || g.item.state === "voided"} class:picked={only !== null && lineKey(g.item) === only}>
                     <span><span class="num">{g.n}×</span> {itemName(g.item)}{#if g.item.notes}<span class="muted">: {g.item.notes}</span>{/if}</span>
                     <Chip size="sm" uppercase={false} tone={s.tone}>{s.label}</Chip>
                   </li>
@@ -346,6 +355,11 @@
   }
   .items li.done {
     color: var(--text-secondary);
+  }
+  .items li.picked {
+    font-weight: var(--font-weight-semibold);
+    background: var(--bg-inset);
+    border-radius: var(--radius-sm);
   }
   .actions {
     display: flex;

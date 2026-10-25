@@ -1878,6 +1878,19 @@
         ],
         "type": "object"
       },
+      "NameBody": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 40,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
       "NewItem": {
         "additionalProperties": false,
         "properties": {
@@ -6219,6 +6232,57 @@
           }
         },
         "summary": "Add items to an open order",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/name": {
+      "put": {
+        "operationId": "rename-order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Name an order, such as a guest's name, or clear the name (logged)",
         "tags": [
           "Orders"
         ]

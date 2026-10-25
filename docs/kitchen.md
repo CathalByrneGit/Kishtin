@@ -22,7 +22,7 @@ The menu is three kinds of thing:
 
 ## Orders
 
-An order is a **table** (with a table number) or a **takeaway** (with an optional name). It can have covers, notes for the kitchen, and an allergy flag that every screen highlights. Each order gets a ticket number, counting from 1 each day.
+An order is a **table** (with a table number) or a **takeaway**. Any order can also have a **name**, such as the guest's: screens then show the name as the order's heading, with the table or takeaway number under it. The name can be added or changed at any time (the change is logged), and voice commands can use it ("fire Aoife mains"). It can have covers, notes for the kitchen, and an allergy flag that every screen highlights. Each order gets a ticket number, counting from 1 each day.
 
 - Each item is one dish, so "2x burger" is two items, cooked and tracked on their own. An item copies its dish's station, equipment, capacity and times (with modifiers applied) when it is ordered, so a menu change does not change an order already in the kitchen.
 - Items are grouped into **courses**: starters, mains and desserts. A dish has a usual course; an order can put it in another.
@@ -132,6 +132,7 @@ kishtin order urgent "#3" main
 kishtin order ready 4 main                       # every started item to ready
 kishtin order serve 4 main
 kishtin order show 4 --history
+kishtin order name 4 "Aoife"                    # "" clears it; orders can then be found by name
 kishtin order close 4
 
 kishtin pass --why                               # every fired course: due, expected, status, why

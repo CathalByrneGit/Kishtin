@@ -64,7 +64,7 @@
       const o = await api.createOrder({
         kind,
         table: kind === "table" ? table.trim() : undefined,
-        name: kind === "takeaway" && name.trim() ? name.trim() : undefined,
+        name: name.trim() || undefined,
         covers: covers || undefined,
         allergy: allergy || undefined,
         notes: notes.trim() || undefined,
@@ -106,9 +106,11 @@
     <div class="two">
       {#if kind === "table"}
         <label class="field"><span>Table</span><TextInput bind:value={table} placeholder="4" block /></label>
-      {:else}
-        <label class="field"><span>Customer name (optional)</span><TextInput bind:value={name} block /></label>
       {/if}
+      <label class="field">
+        <span>Name (optional)</span>
+        <TextInput bind:value={name} placeholder={kind === "table" ? "Shown instead of the table, such as the guest" : "The customer's name"} block />
+      </label>
       <label class="field"><span>Covers (optional)</span><TextInput bind:value={coversText} placeholder="2" block /></label>
     </div>
     <Checkbox bind:checked={allergy} label="This order has an allergy" />
@@ -137,7 +139,7 @@
 <style>
   .two {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
     gap: var(--space-4);
   }
 </style>

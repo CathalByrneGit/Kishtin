@@ -214,6 +214,7 @@ export const api = {
     json<Order>("PUT", `/orders/${encodeURIComponent(id)}/courses/${course}/target`, { body: { target_at, reason } }),
   setUrgent: (id: string, course: Course, urgent: boolean) =>
     json<Order>("PUT", `/orders/${encodeURIComponent(id)}/courses/${course}/urgent`, { body: { urgent } }),
+  renameOrder: (id: string, name: string) => json<Order>("PUT", `/orders/${encodeURIComponent(id)}/name`, { body: { name } }),
   closeOrder: (id: string) => json<Order>("POST", `/orders/${encodeURIComponent(id)}/close`),
 
   kitchen: () => json<KitchenView>("GET", "/kitchen"),

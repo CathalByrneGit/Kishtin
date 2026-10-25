@@ -79,6 +79,10 @@ func TestOrderValidateAndLabel(t *testing.T) {
 	o := Order{Kind: KindTable, Table: "4"}
 	require.NoError(t, o.Validate())
 	assert.Equal(t, "Table 4", o.Label())
+	o.Name = "Aoife"
+	assert.Equal(t, "Table 4 (Aoife)", o.Label())
+	assert.Equal(t, "Table 4", o.Place())
+	o.Name = ""
 
 	assert.Error(t, Order{Kind: KindTable}.Validate())
 	assert.Error(t, Order{Kind: "delivery"}.Validate())

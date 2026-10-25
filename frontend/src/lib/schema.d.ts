@@ -807,6 +807,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{id}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Name an order, such as a guest's name, or clear the name (logged) */
+        put: operations["rename-order"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/guidance": {
         parameters: {
             query?: never;
@@ -1928,6 +1945,9 @@ export interface components {
         Modifier: {
             /** Format: int64 */
             add_seconds: number;
+            name: string;
+        };
+        NameBody: {
             name: string;
         };
         NewItem: {
@@ -4062,6 +4082,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AddItemsBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "rename-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NameBody"];
             };
         };
         responses: {

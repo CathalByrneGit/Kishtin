@@ -489,18 +489,18 @@ func parseItem(m *client.Setup, s string) (client.NewItem, error) {
 }
 
 func orderLabel(o client.Order) string {
-	if o.Kind == "table" {
-		return "Table " + deref(o.Table)
-	}
 	l := fmt.Sprintf("Takeaway #%d", o.Number)
+	if o.Kind == "table" {
+		l = "Table " + deref(o.Table)
+	}
 	if n := deref(o.Name); n != "" {
 		l += " (" + n + ")"
 	}
 	return l
 }
 
-// findOrder finds an open order by ID, ticket number ("#12") or table
-// ("4", "table 4").
+// findOrder finds an open order by ID, ticket number ("#12"), table ("4",
+// "table 4") or name.
 func (c *cli) findOrder(ctx context.Context, ref string) (client.Order, error) {
 	res, err := c.api.ListOrders(ctx, &client.ListOrdersRequestOptions{Query: &client.ListOrdersQuery{}})
 	if err != nil {
@@ -513,7 +513,19 @@ func (c *cli) findOrder(ctx context.Context, ref string) (client.Order, error) {
 			return o, nil
 		}
 	}
-	return client.Order{}, fmt.Errorf("no open order %q: use its ID, ticket number (#12) or table", ref)
+	var named []client.Order
+	for _, o := range res.Orders {
+		if n := deref(o.Name); n != "" && strings.EqualFold(n, strings.TrimSpace(ref)) {
+			named = append(named, o)
+		}
+	}
+	if len(named) == 1 {
+		return named[0], nil
+	}
+	if len(named) > 1 {
+		return client.Order{}, fmt.Errorf("more than one open order is called %q: use the ticket number (#12)", ref)
+	}
+	return client.Order{}, fmt.Errorf("no open order %q: use its ID, ticket number (#12), table or name", ref)
 }
 
 func printOrder(w io.Writer, o client.Order) {
@@ -605,7 +617,7 @@ func (c *cli) orderCmd() *cobra.Command {
 	}
 	newCmd.Flags().StringVar(&tableName, "table", "", "table number or name")
 	newCmd.Flags().BoolVar(&takeaway, "takeaway", false, "a takeaway order")
-	newCmd.Flags().StringVar(&name, "name", "", "customer name for a takeaway")
+	newCmd.Flags().StringVar(&name, "name", "", "a name for the order, such as the guest's")
 	newCmd.Flags().Int64Var(&covers, "covers", 0, "number of guests")
 	newCmd.Flags().BoolVar(&allergy, "allergy", false, "the order has an allergy")
 	newCmd.Flags().StringVar(&notes, "notes", "", "notes for the kitchen")
@@ -813,7 +825,23 @@ func (c *cli) orderCmd() *cobra.Command {
 			return c.emit(res, func(w io.Writer) { fmt.Fprintf(w, "Closed %s\n", orderLabel(*res)) })
 		},
 	}
-	cmd.AddCommand(newCmd, addCmd, list, show, fireCmd, hold, readyCmd, serveCmd, target, urgent, closeCmd)
+	rename := &cobra.Command{
+		Use: "name ORDER NAME", Short: `Name an order, such as a guest's name ("" clears it)`, Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			o, err := c.findOrder(cmd.Context(), args[0])
+			if err != nil {
+				return err
+			}
+			res, err := c.api.RenameOrder(cmd.Context(), &client.RenameOrderRequestOptions{
+				PathParams: &client.RenameOrderPath{ID: o.ID}, Body: &client.NameBody{Name: args[1]},
+			})
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) { fmt.Fprintf(w, "%s\n", orderLabel(*res)) })
+		},
+	}
+	cmd.AddCommand(newCmd, addCmd, list, show, fireCmd, hold, readyCmd, serveCmd, target, urgent, rename, closeCmd)
 	return cmd
 }
 
