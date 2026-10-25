@@ -38,6 +38,14 @@ h3 {
   min-height: var(--kit-control-height);
 }
 
+/* kit-ui's text input has fixed heights; on kitchen screens make it a
+   full-size field like every other control. */
+.kitchen .kit-text-input {
+  height: auto;
+  min-height: var(--kit-control-height);
+  font-size: var(--kit-control-font-size);
+}
+
 .stack {
   display: flex;
   flex-direction: column;

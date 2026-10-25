@@ -8,11 +8,12 @@ See [AGENTS.md](AGENTS.md) for the full plan. This README describes what is buil
 
 ## What works now
 
-Roadmap stages 1 to 4: the HACCP log, ported from the browser prototype; the menu with stations and equipment; manual orders and the pass; and the cook scheduler.
+Roadmap stages 1 to 5: the HACCP log, ported from the browser prototype; the menu with stations and equipment; manual orders and the pass; the cook scheduler; and voice control.
 
 - **Screens** for a computer, served by `kishtind` itself: the Pass, Stations and Orders; HACCP Today, Records, Exports and Verify; and Setup for the menu, the scheduler, fridges and tasks, limits and rules, staff, device keys, backups and settings. Search with Ctrl K. Each device can instead show a full-screen pass screen, station screen or phone layout, with large type and 56 px buttons. See [docs/screens.md](docs/screens.md).
 - **Menu**: stations, equipment with how many units it holds, and dishes with cook, rest, plate and hold times, batch capacity, modifiers such as "well done +2 min", and 86 for sold out. See [docs/kitchen.md](docs/kitchen.md).
-- **Orders and the pass**: tables and takeaways with daily ticket numbers; courses held until fired; items moved from waiting to cooking, resting, plating, ready and served; a course served together; expo overrides (new target time, urgent) logged with every other change in each order's history.
+- **Orders and the pass**: tables and takeaways with daily ticket numbers; courses held until fired, and held again if nothing has started; items moved from waiting to cooking, resting, plating, ready and served; items changed after ordering (voided and replaced in one step); a course served together; expo overrides (new target time, urgent) logged with every other change in each order's history.
+- **Voice control**: push-to-talk on kitchen screens for firing, holding, starting, readying, 86ing and asking what is next, and for fridge, freezer and cooking checks. Speech is recognised by a local whisper.cpp sidecar and replies spoken by a local Piper sidecar; no audio leaves the building. It asks when unsure, needs "confirm" for a HACCP fail, and logs every command. See [docs/voice.md](docs/voice.md).
 - **Cook scheduler**: backward scheduling within equipment capacity, with batching across tables, priorities and station buffers. It tells each station what to start and when, says why for every recommendation, and shows each course as on track, at risk or late. Its settings are versioned.
 - **HACCP log**: fridge, freezer, delivery, cook, reheat, cooling, hot holding, batch label and cleaning records, checked against FSAI limits. See [docs/haccp.md](docs/haccp.md).
 - **Versioned limits**: a manager can set limits per dish, food category or fridge. Every change is a new version, and every record stores the version it was checked against.
@@ -27,7 +28,8 @@ Roadmap stages 1 to 4: the HACCP log, ported from the browser prototype; the men
 
 ## What does not exist yet
 
-- Voice control (roadmap stage 5), cook times learned from real cooks (stage 6), and orders from Square (stage 7). Orders are entered by hand.
+- Cook times learned from real cooks (stage 6), and orders from Square (stage 7). Orders are entered by hand.
+- Voice for voids, deliveries, cooling, batch labels and cleaning, and a wake word.
 - Scheduler service profiles, replaying a service under new settings, and a fixed pace between courses.
 - Postgres and DuckDB backends. Only SQLite is built.
 - Off-site backups. Kishtin writes backups on the server machine. Copying them somewhere else is up to you.

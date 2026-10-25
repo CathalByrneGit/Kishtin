@@ -35,3 +35,13 @@ keep = 28
 [files]
 # Largest docket or invoice photo accepted.
 max_size_mb = 15
+
+[speech]
+# Local speech sidecars for voice control. Both are optional: without
+# stt_url, typed voice commands still work; without tts_url, replies show on
+# screen (and use an on-device voice if the device has one). Both must be on
+# this machine or the kitchen network: Kishtin refuses any other address,
+# so kitchen audio never leaves the building. See docs/voice.md.
+# stt_url = "http://127.0.0.1:8178"   # whisper.cpp server, started with --convert
+# tts_url = "http://127.0.0.1:5000"   # Piper HTTP server
+# timeout = "20s"

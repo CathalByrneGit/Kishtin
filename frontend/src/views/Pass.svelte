@@ -157,6 +157,7 @@
             {@const st = statusOf.get(`${o.id}|${c.course}`)}
             {@const allReady = items.every((it) => it.state === "ready" || it.state === "served" || it.state === "voided")}
             {@const canHold = items.every((it) => it.state === "fired" || it.state === "held" || it.state === "voided")}
+            {@const canReady = !allReady && items.every((it) => ["cooking", "resting", "plating", "ready", "served", "voided"].includes(it.state))}
             <section class="course" class:served={c.state === "served"}>
               <div class="course-head">
                 <strong>{courseLabel(c.course)}</strong>
@@ -195,6 +196,9 @@
                       <Flame size={16} />
                     </Button>
                   {:else if c.state === "fired"}
+                    {#if canReady}
+                      <Button tone="info" surface="solid" label="Mark ready" disabled={busy !== null} onclick={() => act(`${o.id}|${c.course}`, () => api.ready(o.id, c.course as Course), `${orderLabel(o)} ${courseLabel(c.course).toLowerCase()} ready at the pass`)} />
+                    {/if}
                     <Button tone="success" surface="solid" label={`Serve ${courseLabel(c.course).toLowerCase()}`} disabled={busy !== null || !allReady} onclick={() => act(`${o.id}|${c.course}`, () => api.serve(o.id, c.course as Course), `${orderLabel(o)} ${courseLabel(c.course).toLowerCase()} served`)} />
                     <Button label="Change time" disabled={busy !== null} onclick={() => openTarget(o, c)}><TimerReset size={16} /></Button>
                     {#if canHold}

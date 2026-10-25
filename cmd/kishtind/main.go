@@ -105,7 +105,12 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 	if err != nil {
 		return fail(err)
 	}
+	sp, err := cfg.SpeechClient()
+	if err != nil {
+		return fail(err)
+	}
 	svc := service.New(service.Options{
+		Speech: sp,
 		Store:  st,
 		Files:  fs,
 		System: cfg.SystemSettings(),

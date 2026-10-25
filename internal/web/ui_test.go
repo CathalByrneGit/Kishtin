@@ -35,6 +35,7 @@ func TestServeUI(t *testing.T) {
 	assert.Contains(t, body, "<title>Kishtin</title>")
 	assert.Equal(t, "no-store", res.Header.Get("Cache-Control"))
 	assert.Contains(t, res.Header.Get("Content-Security-Policy"), "default-src 'self'")
+	assert.Contains(t, res.Header.Get("Content-Security-Policy"), "media-src 'self' blob:", "spoken replies play from blob URLs")
 
 	res, body = get("/assets/app-1.js")
 	assert.Equal(t, "console.log(1)", body)

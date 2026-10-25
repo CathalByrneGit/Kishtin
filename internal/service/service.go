@@ -16,6 +16,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/files"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
+	"github.com/cathalbyrnegit/kishtin/internal/speech"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
 
@@ -67,6 +68,9 @@ type Service struct {
 	// a change is saved.
 	systemDefaults settings.System
 	events         *events.Hub
+	// speech is the local speech sidecar client; nil turns voice audio off.
+	speech *speech.Client
+	voice  voiceState
 }
 
 // Options configures a Service.
@@ -79,6 +83,9 @@ type Options struct {
 	System settings.System
 	// Events receives a notice of every change, for live screens.
 	Events *events.Hub
+	// Speech is the local speech-to-text and text-to-speech client. Nil
+	// leaves typed voice commands working and spoken ones off.
+	Speech *speech.Client
 }
 
 // DefaultSystem returns the system settings used when none are configured.
@@ -96,7 +103,7 @@ func New(o Options) *Service {
 	if sys == (settings.System{}) {
 		sys = DefaultSystem()
 	}
-	return &Service{st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events}
+	return &Service{st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech}
 }
 
 // Events returns the hub that change notices are published to.

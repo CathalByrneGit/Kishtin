@@ -192,3 +192,16 @@ type User struct {
 	CreatedAt    int64
 	UpdatedAt    int64
 }
+
+type VoiceLog struct {
+	ID         string
+	At         int64
+	UserID     string
+	UserName   string
+	Source     string
+	Transcript string
+	Intent     string
+	Outcome    string
+	Reply      string
+	Ref        string
+}

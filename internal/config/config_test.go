@@ -55,6 +55,8 @@ func TestValidate(t *testing.T) {
 		"postgres not built":  "[store]\ndriver = \"postgres\"\n",
 		"half TLS":            "[server]\ntls_cert = \"c.pem\"\n",
 		"bad listen":          "[server]\nlisten = \"8080\"\n",
+		"cloud speech":        "[speech]\nstt_url = \"https://speech.example.com\"\n",
+		"zero speech timeout": "[speech]\ntimeout = \"0s\"\n",
 	}
 	for name, body := range bad {
 		t.Run(name, func(t *testing.T) {
@@ -62,7 +64,11 @@ func TestValidate(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
-	ok := "[server]\nlisten = \"192.168.1.10:8080\"\ntrusted_network = true\n"
-	_, err := Load(write(t, ok), true)
-	assert.NoError(t, err)
+	ok := "[server]\nlisten = \"192.168.1.10:8080\"\ntrusted_network = true\n[speech]\nstt_url = \"http://127.0.0.1:8178\"\ntts_url = \"http://kitchen-pc.local:5000\"\n"
+	cfg, err := Load(write(t, ok), true)
+	require.NoError(t, err)
+	sp, err := cfg.SpeechClient()
+	require.NoError(t, err)
+	assert.True(t, sp.CanListen())
+	assert.True(t, sp.CanSpeak())
 }

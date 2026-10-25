@@ -748,6 +748,60 @@ func (s *Service) settleCourse(ctx context.Context, tx store.Store, p *auth.Prin
 	return tx.Orders().AppendEvent(ctx, ev)
 }
 
+// ReadyCourse marks a fired course ready at the pass: every started item
+// still cooking, resting or plating goes to ready, as when the expo sees
+// the plates arrive. It refuses while any item has not been started, so
+// nothing is marked ready that no one cooked.
+func (s *Service) ReadyCourse(ctx context.Context, p *auth.Principal, orderID string, course menu.Course) (orders.Order, error) {
+	if err := allow(p, auth.ActRunPass); err != nil {
+		return orders.Order{}, err
+	}
+	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
+		c, err := courseNamed(o, course)
+		if err != nil {
+			return err
+		}
+		if c.State != orders.CourseFired {
+			return newErr(KindConflict, "%s %s is %s, not fired", o.Label(), course, c.State)
+		}
+		var waiting []string
+		var moving []int
+		for i, it := range o.Items {
+			if it.Course != course {
+				continue
+			}
+			switch it.State {
+			case orders.StateFired, orders.StateHeld:
+				waiting = append(waiting, it.DishName)
+			case orders.StateCooking, orders.StateResting, orders.StatePlating:
+				moving = append(moving, i)
+			}
+		}
+		if len(waiting) > 0 {
+			return newErr(KindConflict, "%s %s is not all started: %s. Nothing was changed.", o.Label(), course, strings.Join(waiting, ", "))
+		}
+		if len(moving) == 0 {
+			return newErr(KindConflict, "%s %s is already ready", o.Label(), course)
+		}
+		now := s.clk.Now()
+		for _, i := range moving {
+			it := o.Items[i]
+			ready := orders.Move(it, orders.StateReady, now)
+			if err := tx.Orders().UpdateItem(ctx, ready); err != nil {
+				return err
+			}
+			o.Items[i] = ready
+			ev := s.event(p, *o, orders.EventItemState)
+			ev.ItemID, ev.Course, ev.From, ev.To = it.ID, course, string(it.State), string(orders.StateReady)
+			ev.Detail = it.DishName + ": marked ready at the pass"
+			if err := tx.Orders().AppendEvent(ctx, ev); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // ServeCourse serves every ready item in a course. It refuses while any
 // item is still cooking, so a course leaves the pass together.
 func (s *Service) ServeCourse(ctx context.Context, p *auth.Principal, orderID string, course menu.Course) (orders.Order, error) {

@@ -6,6 +6,7 @@
   import NewOrderForm from "../components/NewOrderForm.svelte";
   import PhoneToday from "../components/PhoneToday.svelte";
   import ScreenPicker from "../components/ScreenPicker.svelte";
+  import VoiceBar from "../components/VoiceBar.svelte";
   import { api } from "../lib/api";
   import { dublinTime } from "../lib/format";
   import { canTakeOrders } from "../lib/kitchenfeed.svelte";
@@ -103,6 +104,10 @@
       />
     </div>
   {/if}
+
+  <div class="voicebar">
+    <VoiceBar big={screen.kind !== "phone"} touch keys />
+  </div>
 
   <main>
     {#if screen.kind === "pass"}
@@ -230,6 +235,12 @@
   }
   .notice {
     padding: var(--space-5) var(--space-6) 0;
+  }
+  .voicebar {
+    padding: var(--space-4) var(--space-6) 0;
+  }
+  .phone .voicebar {
+    padding: var(--space-4) var(--space-5) 0;
   }
   main {
     flex: 1;

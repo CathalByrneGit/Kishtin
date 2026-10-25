@@ -444,3 +444,32 @@ func TestReplaceItem(t *testing.T) {
 	_, err = k.svc.ReplaceItem(ctx, k.chef, gone.ID, ItemReplace{Item: NewItem{DishID: k.burger.ID}})
 	assert.ErrorContains(t, err, "already voided")
 }
+
+func TestReadyCourse(t *testing.T) {
+	k := setupKitchen(t)
+	ctx := context.Background()
+	o, err := k.svc.CreateOrder(ctx, k.foh, NewOrder{Kind: orders.KindTable, Table: "7", Items: []NewItem{{DishID: k.burger.ID, Quantity: 2}}, Fire: nil})
+	require.NoError(t, err)
+	_, err = k.svc.ReadyCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	assert.ErrorContains(t, err, "is held, not fired")
+	o, err = k.svc.FireCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	require.NoError(t, err)
+	_, err = k.svc.MoveItems(ctx, k.cook, ItemMove{ItemIDs: []string{o.Items[0].ID}, From: orders.StateFired})
+	require.NoError(t, err)
+	_, err = k.svc.ReadyCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	assert.ErrorContains(t, err, "not all started: Synthetic burger. Nothing was changed.")
+	_, err = k.svc.MoveItems(ctx, k.cook, ItemMove{ItemIDs: []string{o.Items[1].ID}, From: orders.StateFired})
+	require.NoError(t, err)
+	_, err = k.svc.ReadyCourse(ctx, k.cook, o.ID, menu.CourseMain)
+	assert.Equal(t, KindForbidden, KindOf(err))
+	o, err = k.svc.ReadyCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	require.NoError(t, err)
+	for _, it := range o.Items {
+		assert.Equal(t, orders.StateReady, it.State)
+		assert.NotNil(t, it.ReadyAt)
+	}
+	_, err = k.svc.ReadyCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	assert.ErrorContains(t, err, "already ready")
+	_, err = k.svc.ServeCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	require.NoError(t, err)
+}

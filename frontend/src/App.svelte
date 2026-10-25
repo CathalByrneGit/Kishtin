@@ -28,6 +28,7 @@
     List,
     ListChecks,
     LogOut,
+    Mic,
     ReceiptText,
     Timer,
     UtensilsCrossed,
@@ -64,6 +65,7 @@
   import Staff from "./views/setup/Staff.svelte";
   import Today from "./views/Today.svelte";
   import Verify from "./views/Verify.svelte";
+  import VoiceView from "./views/Voice.svelte";
 
   interface Page {
     path: string;
@@ -77,6 +79,7 @@
     { path: "/pass", label: "Pass", section: "pass", view: null, group: "Service" },
     { path: "/stations", label: "Stations", section: "stations", view: null, group: "Service" },
     { path: "/orders", label: "Orders", section: "orders", view: null, group: "Service" },
+    { path: "/voice", label: "Voice", section: "voice", view: null, group: "Service" },
     { path: "/today", label: "Today", section: "today", view: null, group: "HACCP" },
     { path: "/records", label: "Records", section: "records", view: null, group: "HACCP" },
     { path: "/exports", label: "Exports", section: "exports", view: null, group: "HACCP" },
@@ -108,6 +111,7 @@
         { id: "pass", label: "Pass", href: "/pass", icon: ChefHat, viewRuns: [] },
         { id: "stations", label: "Stations", href: "/stations", icon: CookingPot, viewRuns: [] },
         { id: "orders", label: "Orders", href: "/orders", icon: ReceiptText, viewRuns: [] },
+        { id: "voice", label: "Voice", href: "/voice", icon: Mic, viewRuns: [] },
       ],
     },
     {
@@ -339,6 +343,8 @@
           <Stations />
         {:else if route.path === "/orders"}
           <OrdersView />
+        {:else if route.path === "/voice"}
+          <VoiceView />
         {:else if route.path === "/setup/menu"}
           <MenuSetup />
         {:else if route.path === "/setup/scheduler"}

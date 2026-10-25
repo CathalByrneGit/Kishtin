@@ -12,6 +12,7 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
+	"github.com/cathalbyrnegit/kishtin/internal/speech"
 )
 
 // Config is the server configuration.
@@ -22,6 +23,7 @@ type Config struct {
 	Store   Store  `toml:"store"`
 	Backup  Backup `toml:"backup"`
 	Files   Files  `toml:"files"`
+	Speech  Speech `toml:"speech"`
 	// RestaurantName is the starting restaurant name for the screens.
 	RestaurantName string `toml:"restaurant_name"`
 }
@@ -52,6 +54,18 @@ type Backup struct {
 // Files controls attachments.
 type Files struct {
 	MaxSizeMB int64 `toml:"max_size_mb"`
+}
+
+// Speech points at the local speech sidecars. Both are optional: without
+// stt_url, typed voice commands still work; without tts_url, replies are
+// shown but not spoken by the server. Both must be on this machine or the
+// local network.
+type Speech struct {
+	// STTURL is a whisper.cpp server, such as http://127.0.0.1:8178.
+	STTURL string `toml:"stt_url"`
+	// TTSURL is a Piper HTTP server, such as http://127.0.0.1:5000.
+	TTSURL  string   `toml:"tts_url"`
+	Timeout Duration `toml:"timeout"`
 }
 
 // Duration is a time.Duration written as a string such as "6h".
@@ -90,6 +104,7 @@ func Default() Config {
 		Store:   Store{Driver: "sqlite"},
 		Backup:  Backup{Interval: Duration{6 * time.Hour}, Keep: 28},
 		Files:   Files{MaxSizeMB: 15},
+		Speech:  Speech{Timeout: Duration{20 * time.Second}},
 	}
 }
 
@@ -115,6 +130,12 @@ func Load(path string, mustExist bool) (Config, error) {
 	if v := os.Getenv("KISHTIN_LISTEN"); v != "" {
 		cfg.Server.Listen = v
 	}
+	if v := os.Getenv("KISHTIN_STT_URL"); v != "" {
+		cfg.Speech.STTURL = v
+	}
+	if v := os.Getenv("KISHTIN_TTS_URL"); v != "" {
+		cfg.Speech.TTSURL = v
+	}
 	cfg.fill()
 	return cfg, cfg.Validate()
 }
@@ -138,6 +159,14 @@ func (c Config) SystemSettings() settings.System {
 		MaxUploadMB:           c.Files.MaxSizeMB,
 		PreviewRecords:        50,
 	}
+}
+
+// SpeechClient returns the client for the speech sidecars.
+func (c Config) SpeechClient() (*speech.Client, error) {
+	if c.Speech.Timeout.Duration <= 0 {
+		return nil, errors.New("speech.timeout must be positive, such as \"20s\"")
+	}
+	return speech.New(c.Speech.STTURL, c.Speech.TTSURL, c.Speech.Timeout.Duration)
 }
 
 // FilesDir is where attachments are stored.
@@ -173,6 +202,9 @@ func (c Config) Validate() error {
 	}
 	if c.Backup.Interval.Duration < 0 {
 		return errors.New("backup.interval cannot be negative")
+	}
+	if _, err := c.SpeechClient(); err != nil {
+		return err
 	}
 	if err := c.SystemSettings().Validate(); err != nil {
 		return fmt.Errorf("backup or files settings: %w", err)

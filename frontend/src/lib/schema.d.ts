@@ -661,6 +661,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{id}/courses/{course}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a fired course ready at the pass
+         * @description Every started item still cooking, resting or plating goes to ready, as when the plates arrive at the pass. Refused while any item has not been started.
+         */
+        post: operations["ready-course"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/{id}/courses/{course}/serve": {
         parameters: {
             query?: never;
@@ -1089,6 +1109,97 @@ export interface paths {
         patch: operations["update-user"];
         trace?: never;
     };
+    "/voice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show whether spoken commands and spoken replies are set up, and any question waiting for an answer */
+        get: operations["voice-status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/voice/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a spoken command
+         * @description Send push-to-talk audio as the request body. The server transcribes it with the local speech-to-text sidecar (no audio leaves the building), then runs it like a typed command. The audio is not stored; the transcript is logged.
+         */
+        post: operations["voice-audio"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/voice/command": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a typed voice command
+         * @description The same grammar as spoken commands, such as "fire table 4 mains" or "walk-in fridge 3.4 degrees". When the reply is waiting, the next command answers it (a choice, a corrective action, or "confirm"). Every command is logged with what was said.
+         */
+        post: operations["voice-command"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/voice/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent voice commands: what was heard, what it was taken to mean, and what happened */
+        get: operations["voice-log"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/voice/speak": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say a reply with the local text-to-speech sidecar; returns WAV audio */
+        post: operations["voice-speak"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1495,6 +1606,19 @@ export interface components {
             food_categories: string[];
             units: components["schemas"]["Unit"][];
         };
+        LogEntry: {
+            /** Format: date-time */
+            at: string;
+            id: string;
+            intent?: string;
+            outcome: string;
+            ref?: string;
+            reply: string;
+            source: string;
+            transcript: string;
+            user_id: string;
+            user_name: string;
+        };
         LoginInBody: {
             password?: string;
             pin?: string;
@@ -1806,6 +1930,9 @@ export interface components {
             status: string;
             until?: string;
         };
+        SpeakBody: {
+            text: string;
+        };
         StaffEntry: {
             has_password: boolean;
             has_pin: boolean;
@@ -1962,6 +2089,27 @@ export interface components {
             builtin: boolean;
             value: components["schemas"]["System"];
             version: components["schemas"]["SettingsVersion"];
+        };
+        VoiceCommandBody: {
+            text: string;
+        };
+        VoiceLogBody: {
+            entries: components["schemas"]["LogEntry"][];
+        };
+        VoiceReply: {
+            confirm?: boolean;
+            heard: string;
+            intent?: string;
+            options?: string[];
+            outcome: string;
+            ref?: string;
+            say: string;
+            waiting?: boolean;
+        };
+        VoiceStatus: {
+            listen: boolean;
+            speak: boolean;
+            waiting?: string;
         };
     };
     responses: never;
@@ -3278,6 +3426,38 @@ export interface operations {
             };
         };
     };
+    "ready-course": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                course: "starter" | "main" | "dessert";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "serve-course": {
         parameters: {
             query?: never;
@@ -4152,6 +4332,170 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["User"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "voice-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "voice-audio": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The recording's type, such as audio/webm or audio/wav. */
+                "Content-Type"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "audio/webm": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceReply"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "voice-command": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceCommandBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceReply"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "voice-log": {
+        parameters: {
+            query?: {
+                /** @description How many, newest first (default 100). */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceLogBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "voice-speak": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpeakBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Content-Type"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
             /** @description Error */

@@ -74,6 +74,9 @@ func TestKitchenCLI(t *testing.T) {
 
 	out = cli("items", "replace", ids[2], "--with", "Synthetic burger", "--reason", "dropped")
 	assert.Contains(t, out, "dropped by Synthetic burger")
+	_, _, err = run(t, url, key, "", "order", "ready", "4", "main")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not all started")
 
 	out = cli("order", "urgent", "#1", "main")
 	assert.Contains(t, out, "urgent")

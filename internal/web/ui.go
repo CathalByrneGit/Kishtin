@@ -8,8 +8,9 @@ import (
 )
 
 // uiCSP allows only the app's own files. Inline styles are allowed because
-// components set style attributes; inline scripts are not.
-const uiCSP = "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; " +
+// components set style attributes; inline scripts are not. Media from blob:
+// URLs plays spoken replies fetched from the server's text-to-speech.
+const uiCSP = "default-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; " +
 	"connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 
 // serveUI serves the built kitchen screens. Paths that are not files get

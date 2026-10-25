@@ -40,6 +40,7 @@ func Run(t *testing.T, newStore Factory) {
 		"Files":                   testFiles,
 		"NoMutationMethods":       testNoMutationMethods,
 		"Settings":                testSettings,
+		"VoiceLog":                testVoiceLog,
 	}
 	for name, fn := range kitchenTests() {
 		tests[name] = fn

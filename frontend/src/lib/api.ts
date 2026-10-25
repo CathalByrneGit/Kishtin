@@ -18,6 +18,8 @@ export type Order = Schemas["Order"];
 export type OrderItem = Schemas["Item"];
 export type KitchenView = Schemas["KitchenView"];
 export type Course = "starter" | "main" | "dessert";
+export type VoiceReply = Schemas["VoiceReply"];
+export type VoiceStatus = Schemas["VoiceStatus"];
 
 /** ApiError is an error the server explained. */
 export class ApiError extends Error {
@@ -54,11 +56,19 @@ function url(path: string, query?: Query): string {
   return u.pathname + u.search;
 }
 
-async function send(method: string, path: string, opts: { query?: Query; body?: unknown; raw?: Blob } = {}): Promise<Response> {
+interface SendOpts {
+  query?: Query;
+  body?: unknown;
+  raw?: Blob;
+  /** rawType is the raw body's type; octet-stream when not set. */
+  rawType?: string;
+}
+
+async function send(method: string, path: string, opts: SendOpts = {}): Promise<Response> {
   const headers = authHeaders();
   let body: BodyInit | undefined;
   if (opts.raw) {
-    headers["Content-Type"] = "application/octet-stream";
+    headers["Content-Type"] = opts.rawType || "application/octet-stream";
     body = opts.raw;
   } else if (opts.body !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -85,7 +95,7 @@ async function send(method: string, path: string, opts: { query?: Query; body?: 
   throw new ApiError(detail.charAt(0).toUpperCase() + detail.slice(1), res.status);
 }
 
-async function json<T>(method: string, path: string, opts?: { query?: Query; body?: unknown; raw?: Blob }): Promise<T> {
+async function json<T>(method: string, path: string, opts?: SendOpts): Promise<T> {
   const res = await send(method, path, opts);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -198,6 +208,7 @@ export const api = {
     json<Order>("POST", `/orders/${encodeURIComponent(id)}/courses/${course}/hold`, { body: { reason } }),
   replaceItem: (id: string, body: Schemas["ItemReplace"]) =>
     json<Order>("POST", `/kitchen/items/${encodeURIComponent(id)}/replace`, { body }),
+  ready: (id: string, course: Course) => json<Order>("POST", `/orders/${encodeURIComponent(id)}/courses/${course}/ready`),
   serve: (id: string, course: Course) => json<Order>("POST", `/orders/${encodeURIComponent(id)}/courses/${course}/serve`),
   setTarget: (id: string, course: Course, target_at: string, reason: string) =>
     json<Order>("PUT", `/orders/${encodeURIComponent(id)}/courses/${course}/target`, { body: { target_at, reason } }),
@@ -207,6 +218,13 @@ export const api = {
 
   kitchen: () => json<KitchenView>("GET", "/kitchen"),
   moveItems: (body: Schemas["ItemMove"]) => json<Schemas["OrdersBody"]>("POST", "/kitchen/items", { body }),
+
+  voiceStatus: () => json<VoiceStatus>("GET", "/voice"),
+  voiceCommand: (text: string) => json<VoiceReply>("POST", "/voice/command", { body: { text } }),
+  voiceAudio: (audio: Blob) => json<VoiceReply>("POST", "/voice/audio", { raw: audio, rawType: audio.type || "audio/webm" }),
+  /** voiceSpeak returns the reply as WAV audio from the server's local text-to-speech. */
+  voiceSpeak: async (text: string): Promise<Blob> => (await send("POST", "/voice/speak", { body: { text } })).blob(),
+  voiceLog: (limit = 100) => json<Schemas["VoiceLogBody"]>("GET", "/voice/log", { query: { limit } }),
 
   scheduler: () => json<Schemas["VersionedSettings"]>("GET", "/settings/scheduler"),
   previewScheduler: (body: Schemas["SettingsChangeSettings"]) =>

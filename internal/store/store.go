@@ -16,6 +16,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/menu"
 	"github.com/cathalbyrnegit/kishtin/internal/orders"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
+	"github.com/cathalbyrnegit/kishtin/internal/voice"
 )
 
 // ErrNotFound is returned when a record does not exist.
@@ -34,6 +35,7 @@ type Store interface {
 	Settings() SettingsStore
 	Menu() MenuStore
 	Orders() OrderStore
+	Voice() VoiceStore
 
 	// WithTx runs fn in one transaction. If fn returns an error the
 	// transaction is rolled back. Writes inside fn must use tx.
@@ -211,4 +213,12 @@ type OrderStore interface {
 	// ListItemEvents returns item state changes between from (inclusive)
 	// and to (exclusive), oldest first.
 	ListItemEvents(ctx context.Context, from, to time.Time) ([]orders.Event, error)
+}
+
+// VoiceStore stores the voice command log. Entries are append-only.
+type VoiceStore interface {
+	AppendVoiceLog(ctx context.Context, e voice.LogEntry) error
+	// ListVoiceLog returns entries before the given time (all when zero),
+	// newest first, at most limit of them.
+	ListVoiceLog(ctx context.Context, before time.Time, limit int) ([]voice.LogEntry, error)
 }

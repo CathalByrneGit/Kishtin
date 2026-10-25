@@ -186,6 +186,13 @@ func (s *Server) kitchenRoutes() {
 		return reply(s.svc.HoldCourse(ctx, principal(ctx), in.ID, in.Course, in.Body.Reason))
 	}))
 	huma.Register(s.api, huma.Operation{
+		OperationID: "ready-course", Method: http.MethodPost, Path: "/orders/{id}/courses/{course}/ready", Tags: orderTags,
+		Summary:     "Mark a fired course ready at the pass",
+		Description: "Every started item still cooking, resting or plating goes to ready, as when the plates arrive at the pass. Refused while any item has not been started.",
+	}, wrap(s, func(ctx context.Context, in *courseOnly) (*out[orders.Order], error) {
+		return reply(s.svc.ReadyCourse(ctx, principal(ctx), in.ID, in.Course))
+	}))
+	huma.Register(s.api, huma.Operation{
 		OperationID: "serve-course", Method: http.MethodPost, Path: "/orders/{id}/courses/{course}/serve", Tags: orderTags,
 		Summary: "Serve a course once every item is ready",
 	}, wrap(s, func(ctx context.Context, in *courseOnly) (*out[orders.Order], error) {

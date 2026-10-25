@@ -49,6 +49,7 @@ Phases a dish does not have are skipped: fries with no rest time go from cooking
 
 When two people tap at once, or one taps on a screen that is out of date, only the first tap counts. Station screens send the state each item was shown in; if any item has already moved on, nothing in that tap moves and the error says who moved it and when. Scripts can do the same with `--from`.
 
+- **Mark ready** puts every started item in a course straight to ready, for when the plates are at the pass but the cooks did not tap Done. It refuses while any item in the course has not been started, so nothing is marked ready that no one cooked. Saying "table 7 ready" does the same.
 - **Serve** serves a whole course, and only once every item in it is ready, so a course leaves the pass together.
 - **Close** an order once every item is served or voided.
 - **Change** an item that was ordered wrong (a burger that should be well done, the wrong dish): the old item is voided and the right one added in its place, in one step, so it can never end up half done. The void reason says what replaced it ("asked for well done by Burger (Well done)"). The new item joins the same course, and goes straight to its station if the course is fired. Front of house can change items in a held course; once the course is fired, only the head chef or a manager can, as with any void.
@@ -128,6 +129,7 @@ kishtin order fire "table 4" main                # orders by ID, #ticket or tabl
 kishtin order target 4 main 19:30 --reason "Table not ready"
 kishtin order hold 4 main --reason "Table outside"  # un-fire, while nothing has started
 kishtin order urgent "#3" main
+kishtin order ready 4 main                       # every started item to ready
 kishtin order serve 4 main
 kishtin order show 4 --history
 kishtin order close 4

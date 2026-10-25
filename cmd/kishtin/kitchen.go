@@ -719,6 +719,9 @@ func (c *cli) orderCmd() *cobra.Command {
 	fireCmd := courseCmd("fire", "Fire a course", func(ctx context.Context, id, course string) (*client.Order, error) {
 		return c.api.FireCourse(ctx, &client.FireCourseRequestOptions{PathParams: &client.FireCoursePath{ID: id, Course: client.FireCoursePathCourse(course)}})
 	})
+	readyCmd := courseCmd("ready", "Mark a fired course ready at the pass, once every item has been started", func(ctx context.Context, id, course string) (*client.Order, error) {
+		return c.api.ReadyCourse(ctx, &client.ReadyCourseRequestOptions{PathParams: &client.ReadyCoursePath{ID: id, Course: client.ReadyCoursePathCourse(course)}})
+	})
 	serveCmd := courseCmd("serve", "Serve a course once every item is ready", func(ctx context.Context, id, course string) (*client.Order, error) {
 		return c.api.ServeCourse(ctx, &client.ServeCourseRequestOptions{PathParams: &client.ServeCoursePath{ID: id, Course: client.ServeCoursePathCourse(course)}})
 	})
@@ -810,7 +813,7 @@ func (c *cli) orderCmd() *cobra.Command {
 			return c.emit(res, func(w io.Writer) { fmt.Fprintf(w, "Closed %s\n", orderLabel(*res)) })
 		},
 	}
-	cmd.AddCommand(newCmd, addCmd, list, show, fireCmd, hold, serveCmd, target, urgent, closeCmd)
+	cmd.AddCommand(newCmd, addCmd, list, show, fireCmd, hold, readyCmd, serveCmd, target, urgent, closeCmd)
 	return cmd
 }
 

@@ -19,12 +19,13 @@ Choose what a device shows in **Settings → This device → This device shows**
 | Layout | For | Shows |
 |---|---|---|
 | Desktop, with the sidebar | the office computer | the full app, described below |
-| Pass screen | a wall-mounted tablet or TV at the pass | every open order in large type, with Fire, Serve, Change time, Hold again and Urgent for the head chef or a manager |
+| Pass screen | a wall-mounted tablet or TV at the pass | every open order in large type, with Fire, Serve, Mark ready, Change time, Hold again and Urgent for the head chef or a manager |
 | Station screen | a tablet at one station | that station's Start now, In progress and Coming up, with Start and Done buttons |
 | Phone | a phone | four tabs: Today (fridge and cleaning checks), Log check, New order (for staff who take orders), and the Pass |
 
 - The choice is kept in that device's browser only. A device with a phone-sized screen starts on the phone layout; anything else starts on the desktop.
 - Kitchen screens have no sidebar: a top bar with what the screen is, the restaurant, a large clock (pass and station), the connection, who is logged in, and the menu. The menu switches staff, changes the screen, and sets the theme and high contrast.
+- Under the top bar, **Hold to talk** runs voice commands, and the keyboard button opens a field to type one. The reply shows below with what was heard, and a question shows its answers and **Confirm** or **Cancel** as buttons. Holding the space bar works like holding the button. See [voice.md](voice.md).
 - Every button, field and tab on a kitchen screen is at least 56 px tall, and type is larger, so they work with wet or gloved hands and read at arm's length.
 - The station screen's columns wrap on a portrait tablet: Start now and In progress side by side, Coming up below.
 - Kitchen screens keep the screen awake where the browser allows it, show the last known state with a "Not connected" notice if the server drops, and update after every change on any device.
@@ -32,7 +33,7 @@ Choose what a device shows in **Settings → This device → This device shows**
 
 ## Layout
 
-- **Sidebar**: Service (Pass, Stations, Orders); HACCP (Today, Records, Exports, Verify); Setup (Menu, Scheduler, Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
+- **Sidebar**: Service (Pass, Stations, Orders, Voice); HACCP (Today, Records, Exports, Verify); Setup (Menu, Scheduler, Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
 - **Top bar**: where you are, a search box, the connection, **New order** and **Log check**.
 - **Search** (Ctrl K, or ⌘K on a Mac): jump to any page, start a new order, or start logging a check.
 - **Log check** (Ctrl L, or ⌘L): opens the log form in a panel on the right.
@@ -56,7 +57,7 @@ Every open order as a card, for the head chef or expo:
 - **Figures**: open orders, and how many fired courses are on track, at risk, late, or ready to serve, and how many courses are held.
 - **Show**: all orders, only those that need action (at risk, late or ready), or those with held courses.
 - Each card shows the table or takeaway, ticket number, time entered, covers, notes, and an **Allergy** chip and red edge when flagged. Each course shows its state and the scheduler's status (on track, at risk, late, ready) with the reason, the target time with a countdown, and its items grouped as "2× Burger (Well done)" with their state.
-- Head chefs and managers get the buttons: **Fire** a held course; **Serve** a course once every item is ready; **Change time** (a new target, with a reason for the log); **Hold again** on a fired course while nothing in it has started; **Urgent**; and **Close order** once everything is served or voided. Other staff see the same cards without buttons.
+- Head chefs and managers get the buttons: **Fire** a held course; **Serve** a course once every item is ready; **Change time** (a new target, with a reason for the log); **Hold again** on a fired course while nothing in it has started; **Mark ready** once every item in a course has been started, when the plates are at the pass; **Urgent**; and **Close order** once everything is served or voided. Other staff see the same cards without buttons.
 - The history icon opens the order: its courses and items, its full history (who did what, when), **Add items**, **Hold again**, and **Change** on each item. Change shows the item as an editable line (dish, modifiers, notes) and an optional reason; **Replace item** voids the old one and adds the new one in its place.
 
 ### Stations
@@ -75,6 +76,13 @@ Each button sends the state the cook saw. If someone else has already moved thos
 
 - **New order** (front of house, head chefs and managers): table or takeaway, table number or customer name, covers, an allergy tick and notes. Tap dishes to add them, grouped by course; dishes that are 86 cannot be added. Each line has a quantity, its course, modifier chips and notes. Head chefs and managers can tick courses to **fire straight away**. **Send order** shows the ticket number.
 - **Today's orders**: open orders, or every order today, sortable. Select one to open it, with its history, **Add items** and **Change**.
+
+### Voice
+
+- **Try a command**: **Hold to talk** and a field to type a command, with the reply below.
+- **Set up**: whether spoken commands (speech-to-text) and spoken replies (text-to-speech) are set up on the server, whether this device's microphone can be used, and **Speak replies on this device**.
+- **What you can say**: every command, with what it does.
+- **Recent commands**: the last 50, newest first: when, who, what was heard (and whether it was typed), the outcome (done, answered, asked, not done, not understood, cancelled) and the reply.
 
 ## Today
 

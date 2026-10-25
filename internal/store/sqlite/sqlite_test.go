@@ -11,6 +11,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/orders"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 	"github.com/cathalbyrnegit/kishtin/internal/store/storetest"
+	"github.com/cathalbyrnegit/kishtin/internal/voice"
 )
 
 func open(t *testing.T, path string) store.Store {
@@ -58,7 +59,10 @@ func TestTriggersBlockEdits(t *testing.T) {
 	require.NoError(t, s.AppendSettings(ctx, store.SettingsVersion{ID: "s1", Kind: "rules", Body: []byte("{}"), CreatedBy: "x", Reason: "x"}))
 	require.NoError(t, s.CreateOrder(ctx, orders.Order{ID: "o1", Number: 1, Kind: orders.KindTakeaway, Status: orders.StatusOpen, CreatedBy: "x"}))
 	require.NoError(t, s.AppendEvent(ctx, orders.Event{ID: "e1", OrderID: "o1", Kind: orders.EventCreated, By: "x", ByName: "x"}))
+	require.NoError(t, s.AppendVoiceLog(ctx, voice.LogEntry{ID: "v1", UserID: "x", UserName: "x", Source: voice.SourceTyped, Transcript: "x", Outcome: voice.OutcomeDone, Reply: "x"}))
 	for _, q := range []string{
+		"UPDATE voice_log SET transcript = 'edited'",
+		"DELETE FROM voice_log",
 		"UPDATE order_events SET detail = 'edited'",
 		"DELETE FROM order_events",
 		"UPDATE haccp_records SET outcome = 'fail'",

@@ -194,6 +194,10 @@ type ClientInterface interface {
 	HoldCourse(ctx context.Context, options *HoldCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*HoldCourseResponse, error)
 	HoldCourseWithResponse(ctx context.Context, options *HoldCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*HoldCourseResp, error)
 
+	// ReadyCourse Mark a fired course ready at the pass
+	ReadyCourse(ctx context.Context, options *ReadyCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReadyCourseResponse, error)
+	ReadyCourseWithResponse(ctx context.Context, options *ReadyCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReadyCourseResp, error)
+
 	// ServeCourse Serve a course once every item is ready
 	ServeCourse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResponse, error)
 	ServeCourseWithResponse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResp, error)
@@ -305,6 +309,26 @@ type ClientInterface interface {
 	// UpdateUser Change a staff member: name, role, PIN, password, or deactivate
 	UpdateUser(ctx context.Context, options *UpdateUserRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateUserResponse, error)
 	UpdateUserWithResponse(ctx context.Context, options *UpdateUserRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateUserResp, error)
+
+	// VoiceStatus Show whether spoken commands and spoken replies are set up, and any question waiting for an answer
+	VoiceStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*VoiceStatusResponse, error)
+	VoiceStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*VoiceStatusResp, error)
+
+	// VoiceAudio Run a spoken command
+	VoiceAudio(ctx context.Context, options *VoiceAudioRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceAudioResponse, error)
+	VoiceAudioWithResponse(ctx context.Context, options *VoiceAudioRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceAudioResp, error)
+
+	// VoiceCommand Run a typed voice command
+	VoiceCommand(ctx context.Context, options *VoiceCommandRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceCommandResponse, error)
+	VoiceCommandWithResponse(ctx context.Context, options *VoiceCommandRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceCommandResp, error)
+
+	// VoiceLog List recent voice commands: what was heard, what it was taken to mean, and what happened
+	VoiceLog(ctx context.Context, options *VoiceLogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceLogResponse, error)
+	VoiceLogWithResponse(ctx context.Context, options *VoiceLogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceLogResp, error)
+
+	// VoiceSpeak Say a reply with the local text-to-speech sidecar; returns WAV audio
+	VoiceSpeak(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResponse, error)
+	VoiceSpeakWithResponse(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResp, error)
 }
 
 // Login Log in on a kitchen device
@@ -2798,6 +2822,69 @@ func (c *Client) HoldCourse(ctx context.Context, options *HoldCourseRequestOptio
 	return responseParser(ctx, resp)
 }
 
+// ReadyCourse Mark a fired course ready at the pass
+func (c *Client) ReadyCourse(ctx context.Context, options *ReadyCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReadyCourseResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/ready",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ReadyCourseResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ReadyCourseErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ReadyCourseErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ReadyCourseResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ReadyCourseResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/ready")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // ServeCourse Serve a course once every item is ready
 func (c *Client) ServeCourse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResponse, error) {
 	var err error
@@ -4566,6 +4653,328 @@ func (c *Client) UpdateUser(ctx context.Context, options *UpdateUserRequestOptio
 	return responseParser(ctx, resp)
 }
 
+// VoiceStatus Show whether spoken commands and spoken replies are set up, and any question waiting for an answer
+func (c *Client) VoiceStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*VoiceStatusResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/voice",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*VoiceStatusResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(VoiceStatusErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "VoiceStatusErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(VoiceStatusResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "VoiceStatusResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// VoiceAudio Run a spoken command
+func (c *Client) VoiceAudio(ctx context.Context, options *VoiceAudioRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceAudioResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/voice/audio",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "audio/webm",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*VoiceAudioResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(VoiceAudioErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "VoiceAudioErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(VoiceAudioResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "VoiceAudioResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/audio")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// VoiceCommand Run a typed voice command
+func (c *Client) VoiceCommand(ctx context.Context, options *VoiceCommandRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceCommandResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/voice/command",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*VoiceCommandResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(VoiceCommandErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "VoiceCommandErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(VoiceCommandResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "VoiceCommandResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/command")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// VoiceLog List recent voice commands: what was heard, what it was taken to mean, and what happened
+func (c *Client) VoiceLog(ctx context.Context, options *VoiceLogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceLogResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"limit": {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/voice/log",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*VoiceLogResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(VoiceLogErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "VoiceLogErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(VoiceLogResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "VoiceLogResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/log")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// VoiceSpeak Say a reply with the local text-to-speech sidecar; returns WAV audio
+func (c *Client) VoiceSpeak(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/voice/speak",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*VoiceSpeakResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(VoiceSpeakErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "VoiceSpeakErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(VoiceSpeakResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "VoiceSpeakResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/speak")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 var _ ClientInterface = (*Client)(nil)
 
 // LoginRequestOptions is the options needed to make a request to Login.
@@ -5907,6 +6316,50 @@ func (o *HoldCourseRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// ReadyCourseRequestOptions is the options needed to make a request to ReadyCourse.
+type ReadyCourseRequestOptions struct {
+	PathParams *ReadyCoursePath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ReadyCourseRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ReadyCourseRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *ReadyCourseRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ReadyCourseRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *ReadyCourseRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // ServeCourseRequestOptions is the options needed to make a request to ServeCourse.
 type ServeCourseRequestOptions struct {
 	PathParams *ServeCoursePath
@@ -6688,6 +7141,191 @@ func (o *UpdateUserRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *UpdateUserRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// VoiceAudioRequestOptions is the options needed to make a request to VoiceAudio.
+type VoiceAudioRequestOptions struct {
+	Body   *VoiceAudioBody
+	Header *VoiceAudioHeaders
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *VoiceAudioRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+
+	if o.Header != nil {
+		if v, ok := any(o.Header).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Header", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *VoiceAudioRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *VoiceAudioRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *VoiceAudioRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *VoiceAudioRequestOptions) GetHeader() (map[string]string, error) {
+	return runtime.AsMap[string](o.Header)
+}
+
+// VoiceCommandRequestOptions is the options needed to make a request to VoiceCommand.
+type VoiceCommandRequestOptions struct {
+	Body *VoiceCommandBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *VoiceCommandRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *VoiceCommandRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *VoiceCommandRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *VoiceCommandRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *VoiceCommandRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// VoiceLogRequestOptions is the options needed to make a request to VoiceLog.
+type VoiceLogRequestOptions struct {
+	Query *VoiceLogQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *VoiceLogRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *VoiceLogRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *VoiceLogRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *VoiceLogRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *VoiceLogRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// VoiceSpeakRequestOptions is the options needed to make a request to VoiceSpeak.
+type VoiceSpeakRequestOptions struct {
+	Body *VoiceSpeakBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *VoiceSpeakRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *VoiceSpeakRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *VoiceSpeakRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *VoiceSpeakRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *VoiceSpeakRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -9075,6 +9713,67 @@ func (c *Client) HoldCourseWithResponse(ctx context.Context, options *HoldCourse
 	}
 }
 
+// ReadyCourse Mark a fired course ready at the pass
+func (c *Client) ReadyCourseWithResponse(ctx context.Context, options *ReadyCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReadyCourseResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/ready",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/ready")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ReadyCourseResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ReadyCourseResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReadyCourseResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ReadyCourseErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReadyCourseErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // ServeCourse Serve a course once every item is ready
 func (c *Client) ServeCourseWithResponse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResp, error) {
 	var err error
@@ -10787,6 +11486,316 @@ func (c *Client) UpdateUserWithResponse(ctx context.Context, options *UpdateUser
 	}
 }
 
+// VoiceStatus Show whether spoken commands and spoken replies are set up, and any question waiting for an answer
+func (c *Client) VoiceStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*VoiceStatusResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/voice",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &VoiceStatusResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(VoiceStatusResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceStatusResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(VoiceStatusErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceStatusErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// VoiceAudio Run a spoken command
+func (c *Client) VoiceAudioWithResponse(ctx context.Context, options *VoiceAudioRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceAudioResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/voice/audio",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "audio/webm",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/audio")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &VoiceAudioResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(VoiceAudioResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceAudioResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(VoiceAudioErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceAudioErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// VoiceCommand Run a typed voice command
+func (c *Client) VoiceCommandWithResponse(ctx context.Context, options *VoiceCommandRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceCommandResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/voice/command",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/command")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &VoiceCommandResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(VoiceCommandResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceCommandResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(VoiceCommandErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceCommandErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// VoiceLog List recent voice commands: what was heard, what it was taken to mean, and what happened
+func (c *Client) VoiceLogWithResponse(ctx context.Context, options *VoiceLogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceLogResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/voice/log",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/log")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &VoiceLogResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(VoiceLogResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceLogResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(VoiceLogErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceLogErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// VoiceSpeak Say a reply with the local text-to-speech sidecar; returns WAV audio
+func (c *Client) VoiceSpeakWithResponse(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/voice/speak",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/speak")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &VoiceSpeakResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(VoiceSpeakResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceSpeakResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		out.Headers200 = &VoiceSpeakResp200Headers{
+			ContentType: resp.Headers.Get("Content-Type"),
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(VoiceSpeakErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceSpeakErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 type NewKeyInBodyKind string
 
 const (
@@ -10857,6 +11866,24 @@ func (h HoldCoursePathCourse) Validate() error {
 	}
 }
 
+type ReadyCoursePathCourse string
+
+const (
+	ReadyCoursePathCourseDessert ReadyCoursePathCourse = "dessert"
+	ReadyCoursePathCourseMain    ReadyCoursePathCourse = "main"
+	ReadyCoursePathCourseStarter ReadyCoursePathCourse = "starter"
+)
+
+// Validate checks if the ReadyCoursePathCourse value is valid
+func (r ReadyCoursePathCourse) Validate() error {
+	switch r {
+	case ReadyCoursePathCourseDessert, ReadyCoursePathCourseMain, ReadyCoursePathCourseStarter:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid ReadyCoursePathCourse value, got: %v", r))
+	}
+}
+
 type ServeCoursePathCourse string
 
 const (
@@ -10913,6 +11940,11 @@ func (s SetCourseUrgentPathCourse) Validate() error {
 
 type LogoutHeaders struct {
 	XKishtinSession *string `json:"X-Kishtin-Session,omitempty"`
+}
+
+type VoiceAudioHeaders struct {
+	// ContentType The recording's type, such as audio/webm or audio/wav.
+	ContentType *string `json:"Content-Type,omitempty"`
 }
 
 type GetFilePath struct {
@@ -11027,6 +12059,27 @@ func (h HoldCoursePath) Validate() error {
 		errors = errors.Append("ID", err)
 	}
 	if v, ok := any(h.Course).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Course", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ReadyCoursePath struct {
+	ID     string                `json:"id" validate:"required"`
+	Course ReadyCoursePathCourse `json:"course" validate:"required"`
+}
+
+func (r ReadyCoursePath) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(r.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if v, ok := any(r.Course).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
 			errors = errors.Append("Course", err)
 		}
@@ -11188,6 +12241,10 @@ type CreateUserBody = NewUser
 
 type UpdateUserBody = UserChange
 
+type VoiceAudioBody = runtime.File
+
+type VoiceSpeakBody = SpeakBody
+
 type UploadFileQuery struct {
 	// Name Original file name.
 	Name *string `json:"name,omitempty"`
@@ -11248,6 +12305,15 @@ func (l ListRecordsQuery) Validate() error {
 type ListOrdersQuery struct {
 	// Date A day (YYYY-MM-DD, Dublin time). Leave out for open orders.
 	Date *string `json:"date,omitempty"`
+}
+
+type VoiceLogQuery struct {
+	// Limit How many, newest first (default 100).
+	Limit *int64 `json:"limit,omitempty" validate:"omitempty,gte=0,lte=500"`
+}
+
+func (v VoiceLogQuery) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(v))
 }
 
 type LoginResponse = LoginResult
@@ -11404,6 +12470,10 @@ type HoldCourseResponse = Order
 
 type HoldCourseErrorResponse = ErrorModel
 
+type ReadyCourseResponse = Order
+
+type ReadyCourseErrorResponse = ErrorModel
+
 type ServeCourseResponse = Order
 
 type ServeCourseErrorResponse = ErrorModel
@@ -11515,6 +12585,26 @@ type CreateUserErrorResponse = ErrorModel
 type UpdateUserResponse = User
 
 type UpdateUserErrorResponse = ErrorModel
+
+type VoiceStatusResponse = VoiceStatus
+
+type VoiceStatusErrorResponse = ErrorModel
+
+type VoiceAudioResponse = VoiceReply
+
+type VoiceAudioErrorResponse = ErrorModel
+
+type VoiceCommandResponse = VoiceReply
+
+type VoiceCommandErrorResponse = ErrorModel
+
+type VoiceLogResponse = VoiceLogBody
+
+type VoiceLogErrorResponse = ErrorModel
+
+type VoiceSpeakResponse = string
+
+type VoiceSpeakErrorResponse = ErrorModel
 
 type LoginResp struct {
 	HTTPResponse                      *http.Response
@@ -11857,6 +12947,14 @@ type HoldCourseResp struct {
 	ApplicationProblemPlusJSONDefault *HoldCourseErrorResponse
 }
 
+type ReadyCourseResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ReadyCourseResponse
+	ApplicationProblemPlusJSONDefault *ReadyCourseErrorResponse
+}
+
 type ServeCourseResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -12079,6 +13177,51 @@ type UpdateUserResp struct {
 	StatusCode                        int
 	JSON200                           *UpdateUserResponse
 	ApplicationProblemPlusJSONDefault *UpdateUserErrorResponse
+}
+
+type VoiceStatusResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *VoiceStatusResponse
+	ApplicationProblemPlusJSONDefault *VoiceStatusErrorResponse
+}
+
+type VoiceAudioResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *VoiceAudioResponse
+	ApplicationProblemPlusJSONDefault *VoiceAudioErrorResponse
+}
+
+type VoiceCommandResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *VoiceCommandResponse
+	ApplicationProblemPlusJSONDefault *VoiceCommandErrorResponse
+}
+
+type VoiceLogResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *VoiceLogResponse
+	ApplicationProblemPlusJSONDefault *VoiceLogErrorResponse
+}
+
+type VoiceSpeakResp200Headers struct {
+	ContentType string `header:"Content-Type"`
+}
+
+type VoiceSpeakResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *VoiceSpeakResponse
+	Headers200                        *VoiceSpeakResp200Headers
+	ApplicationProblemPlusJSONDefault *VoiceSpeakErrorResponse
 }
 
 type APIKey struct {
@@ -13137,6 +14280,23 @@ func (l Lists) Validate() error {
 	return errors
 }
 
+type LogEntry struct {
+	At         time.Time `json:"at" validate:"required"`
+	ID         string    `json:"id" validate:"required"`
+	Intent     *string   `json:"intent,omitempty"`
+	Outcome    string    `json:"outcome" validate:"required"`
+	Ref        *string   `json:"ref,omitempty"`
+	Reply      string    `json:"reply" validate:"required"`
+	Source     string    `json:"source" validate:"required"`
+	Transcript string    `json:"transcript" validate:"required"`
+	UserID     string    `json:"user_id" validate:"required"`
+	UserName   string    `json:"user_name" validate:"required"`
+}
+
+func (l LogEntry) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(l))
+}
+
 type LoginInBody struct {
 	Password *string `json:"password,omitempty"`
 	Pin      *string `json:"pin,omitempty"`
@@ -14096,6 +15256,14 @@ func (s SlotToday) Validate() error {
 	return errors
 }
 
+type SpeakBody struct {
+	Text string `json:"text" validate:"required,max=500,min=1"`
+}
+
+func (s SpeakBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
 type StaffEntry struct {
 	HasPassword bool   `json:"has_password"`
 	HasPin      bool   `json:"has_pin"`
@@ -14576,6 +15744,57 @@ func (v VersionedSystem) Validate() error {
 		return nil
 	}
 	return errors
+}
+
+type VoiceCommandBody struct {
+	Text string `json:"text" validate:"required,max=300,min=1"`
+}
+
+func (v VoiceCommandBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(v))
+}
+
+type VoiceLogBody struct {
+	Entries []LogEntry `json:"entries" validate:"required"`
+}
+
+func (v VoiceLogBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(v.Entries, "required"); err != nil {
+		errors = errors.Append("Entries", err)
+	}
+	for i, item := range v.Entries {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Entries[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VoiceReply struct {
+	Confirm *bool    `json:"confirm,omitempty"`
+	Heard   string   `json:"heard" validate:"required"`
+	Intent  *string  `json:"intent,omitempty"`
+	Options []string `json:"options,omitempty"`
+	Outcome string   `json:"outcome" validate:"required"`
+	Ref     *string  `json:"ref,omitempty"`
+	Say     string   `json:"say" validate:"required"`
+	Waiting *bool    `json:"waiting,omitempty"`
+}
+
+func (v VoiceReply) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(v))
+}
+
+type VoiceStatus struct {
+	Listen  bool    `json:"listen"`
+	Speak   bool    `json:"speak"`
+	Waiting *string `json:"waiting,omitempty"`
 }
 
 var typesValidator *validator.Validate
