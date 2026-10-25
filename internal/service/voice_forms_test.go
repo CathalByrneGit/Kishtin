@@ -91,7 +91,7 @@ func TestVoiceRecordsInSteps(t *testing.T) {
 	}
 
 	// A delivery said in full is saved straight away.
-	r := say("delivery chilled chicken from Synthetic Farm 3 degrees packaging fine in date")
+	r := say("delivery chilled chicken from Synthetic Farm 3 degrees packaging fine in date van clean")
 	assert.Equal(t, "Delivery of Chicken from Synthetic Farm, 3 degrees. Pass. Saved.", r.Say)
 	rec := last()
 	assert.Equal(t, haccp.RecordDelivery, rec.Type)
@@ -113,6 +113,8 @@ func TestVoiceRecordsInSteps(t *testing.T) {
 	r = say("yes")
 	assert.Equal(t, "Is it all in date? Yes or no.", r.Say)
 	r = say("yes")
+	assert.Equal(t, "Was the delivery vehicle clean and cold? Yes or no.", r.Say)
+	r = say("yes")
 	assert.Contains(t, r.Say, "Delivery of Frozen peas from Synthetic foods, -12 degrees: Fail.")
 	assert.Contains(t, r.Say, "What did you do about it?")
 	r = say("rejected the delivery")
@@ -121,6 +123,8 @@ func TestVoiceRecordsInSteps(t *testing.T) {
 	rec = last()
 	assert.Equal(t, haccp.OutcomeFail, rec.Outcome)
 	assert.Equal(t, "Rejected the delivery", rec.CorrectiveAction)
+	require.NotNil(t, rec.Reading.VehicleOK)
+	assert.True(t, *rec.Reading.VehicleOK)
 
 	// Cooling: cooked 90 minutes ago, into the fridge now: a pass.
 	r = say("cooling rice cooked 90 minutes ago")

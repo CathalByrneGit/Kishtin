@@ -30,10 +30,10 @@ type readingFlags struct {
 	temp, tempAtCutoff                         float64
 	hold                                       time.Duration
 	cookedAt, intoFridgeAt                     string
-	supplier, product, kind, docket            string
+	supplier, product, kind, docket, batchCode string
 	madeOn, useBy, quantity, task, area, notes string
 	done, notDone                              bool
-	packagingOK, inDate                        bool
+	packagingOK, inDate, vehicleOK             bool
 	shelfLife                                  int
 	action, corrects, reason                   string
 	dryRun                                     bool
@@ -56,9 +56,11 @@ func (f *readingFlags) register(cmd *cobra.Command) {
 	fl.StringVar(&f.docket, "docket", "", "delivery: path to a docket photo or PDF to attach")
 	fl.BoolVar(&f.packagingOK, "packaging-ok", false, "delivery: packaging intact (required: --packaging-ok or --packaging-ok=false)")
 	fl.BoolVar(&f.inDate, "in-date", false, "delivery: in date (required: --in-date or --in-date=false)")
+	fl.BoolVar(&f.vehicleOK, "vehicle-ok", false, "delivery: the delivery vehicle passed its check (--vehicle-ok or --vehicle-ok=false; leave out if not checked)")
+	fl.StringVar(&f.batchCode, "batch-code", "", "delivery: the supplier's batch code")
 	fl.IntVar(&f.shelfLife, "shelf-life", 0, "batch label: shelf life in days, instead of --use-by")
 	fl.StringVar(&f.madeOn, "made-on", "", "batch label: date made (2026-05-01)")
-	fl.StringVar(&f.useBy, "use-by", "", "batch label: use-by date")
+	fl.StringVar(&f.useBy, "use-by", "", "batch label or delivery: use-by date (2026-05-07)")
 	fl.StringVar(&f.quantity, "quantity", "", "batch label: quantity")
 	fl.StringVar(&f.task, "task", "", "cleaning: task")
 	fl.StringVar(&f.area, "area", "", "cleaning: area")
@@ -103,6 +105,10 @@ func (f *readingFlags) build(cmd *cobra.Command, c *cli, typ string) (*client.Ne
 		MadeOn: str(cmd, "made-on", f.madeOn), UseBy: str(cmd, "use-by", f.useBy),
 		Quantity: str(cmd, "quantity", f.quantity), Task: str(cmd, "task", f.task),
 		Area: str(cmd, "area", f.area), Notes: str(cmd, "notes", f.notes),
+		BatchCode: str(cmd, "batch-code", f.batchCode),
+	}
+	if cmd.Flags().Changed("vehicle-ok") {
+		r.VehicleOk = runtime.Ptr(f.vehicleOK)
 	}
 	if cmd.Flags().Changed("temp") {
 		r.TempC = runtime.Ptr(f.temp)
@@ -257,7 +263,7 @@ func (c *cli) logCmd() *cobra.Command {
 			"  kishtin haccp log fridge --unit \"Walk-in\" --temp 3.4\n" +
 			"  kishtin haccp log cook --food \"Chicken thighs\" --category poultry --temp 78\n" +
 			"  kishtin haccp log delivery --supplier \"Synthetic Meats\" --product Chicken --kind chilled --temp 3.1 \\\n" +
-			"      --packaging-ok --in-date --docket docket.jpg\n" +
+			"      --packaging-ok --in-date --vehicle-ok --batch-code RB-1024 --use-by 2026-05-07 --docket docket.jpg\n" +
 			"  kishtin haccp log cooling --food \"Beef stew\" --cooked-at 14:00 --into-fridge-at 15:30\n" +
 			"  kishtin haccp log batch_label --product \"Grape soda syrup\" --made-on 2026-05-01 --shelf-life 5\n" +
 			"  kishtin haccp log cleaning --task \"Floors swept & mopped\" --done",

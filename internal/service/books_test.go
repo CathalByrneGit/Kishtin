@@ -241,3 +241,53 @@ func TestSignOff(t *testing.T) {
 	_, err = f.svc.SignOff(ctx, f.manager, SignOffInput{})
 	assert.Equal(t, KindConflict, KindOf(err))
 }
+
+func TestDeliveryAndDailyBooks(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	yes, no := true, false
+	_, err := f.svc.LogRecord(ctx, f.cook, NewRecord{Type: haccp.RecordDelivery, Reading: haccp.Reading{
+		Supplier: "Synthetic Meats", Product: "Roast beef", BatchCode: "RB-1", UseBy: "2026-05-07",
+		DeliveryKind: haccp.DeliveryChilled, TempC: fp(3.5), PackagingOK: &yes, InDate: &yes, VehicleOK: &yes,
+	}})
+	require.NoError(t, err)
+	_, err = f.svc.LogRecord(ctx, f.cook, NewRecord{Type: haccp.RecordDelivery, Reading: haccp.Reading{
+		Supplier: "Synthetic Poultry", Product: "Cooked turkey", DeliveryKind: haccp.DeliveryChilled, TempC: fp(4),
+		PackagingOK: &yes, InDate: &yes, VehicleOK: &no,
+	}})
+	assert.Equal(t, KindInvalid, KindOf(err), "a failed vehicle check fails the delivery, so it needs an action")
+	_, err = f.svc.LogRecord(ctx, f.cook, NewRecord{Type: haccp.RecordHotHold, Reading: haccp.Reading{Food: "Soup", TempC: fp(70)}})
+	require.NoError(t, err)
+	f.clk.Advance(3 * time.Hour)
+
+	sc1, err := f.svc.RecordBook(ctx, f.manager, "SC1", "")
+	require.NoError(t, err)
+	require.Len(t, sc1.Pages[0].Rows, 1)
+	assert.Equal(t, "RB-1", sc1.Pages[0].Rows[0].Cells[2].Text)
+	assert.Equal(t, "OK", sc1.Pages[0].Rows[0].Cells[6].Text)
+
+	// SC8 uses SC4 as the restaurant changed it.
+	g := f.svc.RecordBookSettings()
+	cur, err := g.Current(ctx, f.manager)
+	require.NoError(t, err)
+	next := cur.Value
+	next.Books = []books.BookSetting{{Template: "fsai-sc4", Columns: []books.Column{
+		{Label: "Date", Field: "date", Width: 1}, {Label: "Food", Field: "food", Width: 3}, {Label: "Temp", Field: "check_1", Width: 1},
+	}}}
+	_, err = g.Save(ctx, f.manager, SettingsChange[books.RecordBookSettings]{Value: next, Reason: "Shorter hot hold log"})
+	require.NoError(t, err)
+
+	sc8, err := f.svc.RecordBook(ctx, f.manager, "SC8", "")
+	require.NoError(t, err)
+	require.Len(t, sc8.Pages, 4, "today only, four sections")
+	assert.Equal(t, "2026-05-01", sc8.Pages[0].Day)
+	assert.Equal(t, "Roast beef", sc8.Pages[0].Rows[0].Cells[0].Text)
+	hot := sc8.Pages[3]
+	assert.Equal(t, "Hot Hold/Display Records", hot.Title)
+	require.Len(t, hot.Columns, 2, "SC4's changed columns, without the date")
+	assert.Equal(t, []string{"Soup", "70.0°C at 10:00"}, []string{hot.Rows[0].Cells[0].Text, hot.Rows[0].Cells[1].Text})
+	var buf bytes.Buffer
+	_, _, err = f.svc.RecordBookPDF(ctx, f.manager, "SC8", "", &buf)
+	require.NoError(t, err)
+	assert.True(t, bytes.HasPrefix(buf.Bytes(), []byte("%PDF")))
+}

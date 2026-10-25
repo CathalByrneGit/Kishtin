@@ -10,8 +10,8 @@ A bundle is one country's set of record books. Kishtin ships two:
 
 | Bundle | For | Booklets |
 |---|---|---|
-| FSAI Safe Catering record books | Ireland (the default) | SC1 to SC9. Kishtin can fill in SC2, SC3 and SC4. |
-| Kishtin general record books | Any country | T1 fridges and freezers, T2 cooking, cooling and reheating, T3 hot holding, in plain English. Use these where no bundle for your country exists, and change titles and columns to match your own booklets. |
+| FSAI Safe Catering record books | Ireland (the default) | SC1 to SC9. Kishtin can fill in SC1, SC2, SC3, SC4 and SC8. |
+| Kishtin general record books | Any country | T1 fridges and freezers, T2 cooking, cooling and reheating, T3 hot holding, T4 deliveries and T5 a daily record of all four, in plain English. Use these where no bundle for your country exists, and change titles and columns to match your own booklets. |
 
 Bundles for more countries are added to Kishtin as kitchens ask for them. A bundle is a data file in `internal/books/bundles/`, so adding one or updating it for a new edition needs no code, as long as its booklets use the kinds of row Kishtin already has (below).
 
@@ -40,6 +40,8 @@ Every change is shown before it is saved, needs a reason, and is saved as a new 
 | Fridge and freezer grid | A row per day, a column for each check on each fridge and freezer | day, readings, comments and actions, who logged |
 | Cooking, cooling and reheating | A row per cooking (with its cooling) and per reheat | date, food, time cooking finished, core temperature, time into the fridge, reheat temperature, who logged each, comments, record number |
 | Hot holding | A row per food per day, up to three checks | date, food, 1st/2nd/3rd check, comments, who logged, record number |
+| Deliveries | A row per delivery | date, food item, batch code, supplier, use-by date, temperature (or "ambient"), delivery vehicle check, chilled/frozen/ambient, comments, who logged, record number |
+| Daily record | A sheet per day, with a section for each of several other booklets in the bundle | none of its own: each section prints with that booklet's columns, as the restaurant set them, without the date column |
 
 A booklet that needs another kind of row, such as a checklist or a training record, needs new code.
 
@@ -50,7 +52,9 @@ A booklet that needs another kind of row, such as a checklist or a training reco
 | SC2 Fridge/Freezer/Chill Display Temperature Records | Yes | A month grid: a row per day, a column per check on each fridge and freezer (AM and PM, or the check times set in **Fridges and tasks**), six units per sheet. |
 | SC3 Cooking/Cooling/Reheating Records | Yes | A row per cooking record. A cooling record joins the row of the same food cooked within an hour of its "cooked at" time; otherwise it gets its own row. Reheats get their own rows. |
 | SC4 Hot Hold/Display Records | Yes | A row per food per day, with up to three checks. A fourth check starts a new row. |
-| SC1, SC5, SC6, SC7, SC8, SC9 | No | Kishtin does not record what they ask for yet. The screen says what is missing for each. |
+| SC1 Food Delivery Records | Yes | A row per delivery. The batch code, use-by date and vehicle check come from the delivery record; any not recorded print blank. |
+| SC8 All-in-One Daily Record | Yes | A sheet per day, from the first day records were kept up to today, with SC1, SC2, SC3 and SC4 sections for that day. The manager check line shows the sign-offs that cover that day. |
+| SC5, SC6, SC7, SC9 | No | Kishtin does not record what they ask for yet. The screen says what is missing for each. |
 
 Columns Kishtin does not record print blank, and the booklet says which ones they are:
 
@@ -100,6 +104,7 @@ API: `GET /api/haccp/books`, `GET /api/haccp/books/{book}?month=YYYY-MM`, `GET /
 
 ## What Kishtin does not do yet
 
+- Hot food deliveries (SC1's "Hot food: at or above 63°C") are not a delivery kind yet: deliveries are chilled, frozen or ambient.
 - Bundles ship with Kishtin. A restaurant can change booklets and add its own, but cannot load a new bundle file from the screens.
 - Kishtin does not read the uploaded PDF. It only compares the file with the edition the booklet was made from, and does not check the FSAI site for new editions.
 - It does not print onto the official PDF pages. It draws its own pages in the same layout.

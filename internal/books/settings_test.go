@@ -133,7 +133,7 @@ func TestResolve(t *testing.T) {
 	gen, gb, err := Resolve(all, RecordBookSettings{Bundle: "general"})
 	require.NoError(t, err)
 	assert.Equal(t, "Any country", gen.Country)
-	assert.Len(t, gb, 3)
+	assert.Len(t, gb, 5)
 	assert.Nil(t, gb[0].Copy)
 }
 

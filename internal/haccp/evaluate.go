@@ -60,7 +60,7 @@ func evaluateNoLimit(t RecordType, r Reading) Result {
 	}
 }
 
-// evaluateDelivery adds the packaging and date checks to a delivery's
+// evaluateDelivery adds the packaging, date and vehicle checks to a delivery's
 // temperature result, and says what to do with the delivery.
 func evaluateDelivery(r Reading, res Result) Result {
 	var problems []string
@@ -69,6 +69,9 @@ func evaluateDelivery(r Reading, res Result) Result {
 	}
 	if r.InDate != nil && !*r.InDate {
 		problems = append(problems, "Not in date.")
+	}
+	if r.VehicleOK != nil && !*r.VehicleOK {
+		problems = append(problems, "The delivery vehicle failed its check.")
 	}
 	if len(problems) > 0 {
 		reasons := problems

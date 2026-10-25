@@ -2549,11 +2549,23 @@
             },
             "type": "array"
           },
+          "day": {
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "rows": {
             "items": {
               "$ref": "#/components/schemas/Row"
             },
             "type": "array"
+          },
+          "title": {
+            "type": "string"
           }
         },
         "required": [
@@ -2652,6 +2664,9 @@
           "area": {
             "type": "string"
           },
+          "batch_code": {
+            "type": "string"
+          },
           "cooked_at": {
             "format": "date-time",
             "type": "string"
@@ -2732,6 +2747,9 @@
           },
           "use_by": {
             "type": "string"
+          },
+          "vehicle_ok": {
+            "type": "boolean"
           }
         },
         "type": "object"
@@ -2975,6 +2993,9 @@
               "$ref": "#/components/schemas/Cell"
             },
             "type": "array"
+          },
+          "date": {
+            "type": "string"
           }
         },
         "required": [
@@ -4072,6 +4093,12 @@
             "type": "string"
           },
           "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sections": {
             "items": {
               "type": "string"
             },

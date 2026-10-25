@@ -66,6 +66,8 @@ export function details(r: { type: string; reading: Reading }): string {
   if (rd.delivery_kind) parts.push(rd.delivery_kind);
   if (rd.packaging_ok === false) parts.push("packaging damaged");
   if (rd.in_date === false) parts.push("out of date");
+  if (rd.vehicle_ok === false) parts.push("vehicle failed its check");
+  if (rd.batch_code) parts.push(`batch ${rd.batch_code}`);
   if (rd.docket_file) parts.push("docket attached");
   if (rd.use_by) parts.push(`use by ${longDate(rd.use_by)}`);
   if (rd.done === false) parts.push("not done");
@@ -104,7 +106,9 @@ export function readingRows(r: { type: string; reading: Reading }): [string, str
   add("Unit", rd.unit);
   add("Supplier", rd.supplier);
   add("Product", rd.product);
+  add("Batch code", rd.batch_code);
   add("Dish", rd.dish);
+  if (r.type === "delivery") add("Vehicle check", yes(rd.vehicle_ok) === undefined ? undefined : rd.vehicle_ok ? "Passed" : "Failed");
   add("Food", rd.food);
   add("Food category", rd.food_category);
   add("Delivery", rd.delivery_kind);

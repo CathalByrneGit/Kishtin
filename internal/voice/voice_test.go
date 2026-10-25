@@ -57,6 +57,7 @@ type fixture struct {
 	DeliveryKind string `json:"delivery_kind"`
 	PackagingOK  *bool  `json:"packaging_ok"`
 	InDate       *bool  `json:"in_date"`
+	VehicleOK    *bool  `json:"vehicle_ok"`
 	CookedClock  string `json:"cooked_clock"`
 	CookedAgoMin int    `json:"cooked_ago_min"`
 	ShelfDays    int    `json:"shelf_days"`
@@ -130,6 +131,7 @@ func TestTranscripts(t *testing.T) {
 			assert.Equal(t, tc.DeliveryKind, c.DeliveryKind, "delivery kind")
 			assert.Equal(t, tc.PackagingOK, c.PackagingOK, "packaging")
 			assert.Equal(t, tc.InDate, c.InDate, "in date")
+			assert.Equal(t, tc.VehicleOK, c.VehicleOK, "vehicle")
 			assert.Equal(t, tc.ShelfDays, c.ShelfDays, "shelf days")
 			assert.Equal(t, tc.Quantity, c.Quantity, "quantity")
 			assert.Equal(t, tc.Task, c.Task, "task")

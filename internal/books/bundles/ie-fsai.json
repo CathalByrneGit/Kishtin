@@ -16,7 +16,64 @@
         "published": "2020-02",
         "sha256": "b1ec332172e5fa32565c208e0bbd3bfbf05d3a92c1e66968e5510759e777ac40"
       },
-      "missing": "Kishtin does not record the batch code, use-by date or delivery vehicle check this booklet asks for yet."
+      "builder": "delivery",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Food item",
+          "field": "food",
+          "width": 44
+        },
+        {
+          "label": "Batch code",
+          "field": "batch_code",
+          "width": 26
+        },
+        {
+          "label": "Supplied by",
+          "field": "supplier",
+          "width": 36
+        },
+        {
+          "label": "'Use-by' date",
+          "field": "use_by",
+          "width": 18
+        },
+        {
+          "label": "Temp. °C",
+          "field": "temp",
+          "width": 20
+        },
+        {
+          "label": "Delivery vehicle check",
+          "field": "vehicle",
+          "width": 20
+        },
+        {
+          "label": "Comments/Action",
+          "field": "comments",
+          "width": 55
+        },
+        {
+          "label": "Signed",
+          "field": "signed",
+          "width": 22
+        },
+        {
+          "label": "Kishtin ref",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "notes": [
+        "For large deliveries, monitor one or two food products from that delivery.",
+        "Chilled food: 0°C to 5°C; Frozen food: less than or equal to -18°C; Hot food: at or above 63°C."
+      ],
+      "manager_check": true
     },
     {
       "id": "fsai-sc2",
@@ -247,7 +304,14 @@
         "published": "2020-02",
         "sha256": "0058cd03d73d8815304d9fe9aa34e5e0bd0d33a50f98ae375b882aebaa95931a"
       },
-      "missing": "This booklet includes deliveries, and Kishtin does not record all the delivery details it asks for yet. Use SC2, SC3 and SC4 instead."
+      "builder": "daily",
+      "sections": [
+        "fsai-sc1",
+        "fsai-sc2",
+        "fsai-sc3",
+        "fsai-sc4"
+      ],
+      "manager_check": true
     },
     {
       "id": "fsai-sc9",

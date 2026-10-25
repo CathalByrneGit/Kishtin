@@ -28,14 +28,24 @@ type Cell struct {
 
 // Row is one line of a booklet page.
 type Row struct {
+	// Date is the day the row is about, as YYYY-MM-DD.
+	Date  string `json:"date,omitempty"`
 	Cells []Cell `json:"cells"`
 }
 
 // Page is one page of a booklet: its columns and rows. Long pages run on
 // to the next sheet when printed.
 type Page struct {
+	// Day is set on a daily record: the day the page belongs to. Pages
+	// of the same day print on one sheet.
+	Day string `json:"day,omitempty"`
+	// Title is a section heading on a daily record, such as "Food
+	// Delivery Records".
+	Title   string   `json:"title,omitempty"`
 	Columns []Column `json:"columns"`
 	Rows    []Row    `json:"rows"`
+	// Notes are a section's own notes, on a daily record.
+	Notes []string `json:"notes,omitempty"`
 }
 
 // Gap is a check that was due and has no reading.
@@ -92,6 +102,9 @@ type Input struct {
 	Records []haccp.Record
 	// Units are the fridges and freezers on the managed list.
 	Units []haccp.Unit
+	// Sections are the booklets a daily record is made of, as the
+	// restaurant uses them, in the template's order.
+	Sections []Template
 }
 
 // Build fills in a record book for a month.
@@ -130,6 +143,12 @@ func Build(in Input) (Book, error) {
 		b.cooking()
 	case BuilderHotHold:
 		b.hotHold()
+	case BuilderDelivery:
+		b.deliveries()
+	case BuilderDaily:
+		if err := b.daily(); err != nil {
+			return Book{}, err
+		}
 	}
 	b.signOffs()
 	return b.book, nil
@@ -351,7 +370,7 @@ func (b *builder) gridPage(units []gridUnit) Page {
 	page := Page{Columns: cols, Rows: []Row{}}
 	for d := 1; d <= days; d++ {
 		dayStart := time.Date(b.from.Year(), b.from.Month(), d, 0, 0, 0, 0, loc)
-		var row Row
+		row := Row{Date: dayStart.Format(haccp.DateLayout)}
 		for _, c := range t.Columns {
 			switch c.Field {
 			case "date":
@@ -445,7 +464,7 @@ func (b *builder) emit(rows []*logRow) {
 		if _, ok := r.values["signed"]; !ok {
 			r.values["signed"] = Cell{Text: strings.Join(r.signed, ", ")}
 		}
-		var row Row
+		row := Row{Date: r.at.In(b.in.Loc).Format(haccp.DateLayout)}
 		for _, c := range page.Columns {
 			if c.Field != "" {
 				row.Cells = append(row.Cells, r.values[c.Field])
@@ -561,4 +580,126 @@ func (b *builder) hotHold() {
 		b.add(r, e, ordinal(n)+" check")
 	}
 	b.emit(rows)
+}
+
+// shortDay turns 2026-10-31 into 31/10/26, as the booklets write dates.
+func shortDay(d string) string {
+	t, err := time.Parse(haccp.DateLayout, d)
+	if err != nil {
+		return d
+	}
+	return t.Format("02/01/06")
+}
+
+func (b *builder) deliveries() {
+	var rows []*logRow
+	// A failed check shows only its flag, which prints as FAIL.
+	vehicle := func(p *bool) Cell {
+		switch {
+		case p == nil:
+			return Cell{}
+		case *p:
+			return Cell{Text: "OK"}
+		}
+		return Cell{Flag: FlagFail}
+	}
+	for _, e := range b.recs {
+		if e.Type != haccp.RecordDelivery {
+			continue
+		}
+		rd := e.Reading
+		r := b.newRow(e.At, rd.Product)
+		r.values["batch_code"] = Cell{Text: rd.BatchCode}
+		r.values["supplier"] = Cell{Text: rd.Supplier}
+		if rd.UseBy != "" {
+			r.values["use_by"] = Cell{Text: shortDay(rd.UseBy)}
+		}
+		t := Cell{Text: temp(rd.TempC)}
+		if rd.TempC == nil {
+			t.Text = "ambient"
+		}
+		// The temperature is out when the result's reason says so; a
+		// delivery can also fail on packaging, date or vehicle alone.
+		if f := flag(e.Outcome); f != "" && strings.Contains(e.OutcomeReason, "°C is above") {
+			t.Flag = f
+		}
+		r.values["temp"] = t
+		r.values["vehicle"] = vehicle(rd.VehicleOK)
+		r.values["delivery_kind"] = Cell{Text: rd.DeliveryKind}
+		b.add(r, e, "")
+		rows = append(rows, r)
+	}
+	b.emit(rows)
+}
+
+// daily builds a sheet per day from the section booklets: every day of
+// the month from when record keeping started up to today.
+func (b *builder) daily() error {
+	type section struct {
+		tpl  Template
+		book Book
+	}
+	var secs []section
+	unfilled := map[string]bool{}
+	for _, t := range b.in.Sections {
+		in := b.in
+		in.Template, in.Sections = t, nil
+		sub, err := Build(in)
+		if err != nil {
+			return fmt.Errorf("section %s: %w", t.Code, err)
+		}
+		secs = append(secs, section{t, sub})
+		b.book.Gaps = append(b.book.Gaps, sub.Gaps...)
+		for _, u := range sub.Unfilled {
+			if !unfilled[u] {
+				unfilled[u] = true
+				b.book.Unfilled = append(b.book.Unfilled, u)
+			}
+		}
+		b.book.Records += sub.Records
+		b.book.Corrected += sub.Corrected
+		if sub.FirstSeq != 0 && (b.book.FirstSeq == 0 || sub.FirstSeq < b.book.FirstSeq) {
+			b.book.FirstSeq = sub.FirstSeq
+		}
+		b.book.LastSeq = max(b.book.LastSeq, sub.LastSeq)
+	}
+	slices.SortStableFunc(b.book.Gaps, func(x, y Gap) int { return strings.Compare(x.Date, y.Date) })
+	if b.in.Since.IsZero() {
+		return nil
+	}
+	first := b.in.Since.In(b.in.Loc).Format(haccp.DateLayout)
+	today := b.in.Now.In(b.in.Loc).Format(haccp.DateLayout)
+	for d := b.from; d.Before(b.to); d = d.AddDate(0, 0, 1) {
+		day := d.Format(haccp.DateLayout)
+		if day < first || day > today {
+			continue
+		}
+		for _, s := range secs {
+			for _, pg := range s.book.Pages {
+				// The sheet carries the date, so the sections drop their
+				// date column.
+				var keep []int
+				var cols []Column
+				for i, c := range pg.Columns {
+					if c.Field != "date" {
+						keep = append(keep, i)
+						cols = append(cols, c)
+					}
+				}
+				out := Page{Day: day, Title: s.tpl.Title, Columns: cols, Rows: []Row{}, Notes: s.tpl.Notes}
+				for _, r := range pg.Rows {
+					if r.Date != day {
+						continue
+					}
+					row := Row{Date: day}
+					for _, i := range keep {
+						row.Cells = append(row.Cells, r.Cells[i])
+					}
+					out.Rows = append(out.Rows, row)
+				}
+				b.book.Pages = append(b.book.Pages, out)
+			}
+		}
+	}
+	return nil
 }

@@ -409,6 +409,26 @@
     "in_date": true
   },
   {
+    "say": "delivery chilled cream from synthetic dairy 4 degrees packaging fine in date van clean",
+    "intent": "delivery",
+    "delivery_kind": "chilled",
+    "product": "Cream",
+    "supplier": "Synthetic Dairy",
+    "temp": 4,
+    "packaging_ok": true,
+    "in_date": true,
+    "vehicle_ok": true
+  },
+  {
+    "say": "delivery cooked turkey from synthetic poultry 11 degrees vehicle dirty",
+    "intent": "delivery",
+    "delivery_kind": "",
+    "product": "Cooked turkey",
+    "supplier": "Synthetic Poultry",
+    "temp": 11,
+    "vehicle_ok": false
+  },
+  {
     "say": "delivery dry goods from synthetic wholesale",
     "intent": "delivery",
     "delivery_kind": "ambient",

@@ -217,6 +217,10 @@
         {/if}
 
         {#each book.pages as page, pi (pi)}
+          {#if page.day && (pi === 0 || book.pages[pi - 1]?.day !== page.day)}
+            <h3 class="day">{longDate(page.day)}</h3>
+          {/if}
+          {#if page.title}<h4>{page.title}</h4>{/if}
           <div class="sheet" role="region" aria-label={`Sheet ${pi + 1}`}>
             <!-- A booklet page keeps the booklet's own order, so it does not sort. -->
             <Table bare unsorted class="booklet" ariaLabel={`${book.template.code} sheet ${pi + 1}`}>
@@ -238,7 +242,7 @@
                     {/each}
                   </tr>
                 {:else}
-                  <tr><td colspan={page.columns.length} class="muted">No records this month.</td></tr>
+                  <tr><td colspan={page.columns.length} class="muted">{page.day ? "None." : "No records this month."}</td></tr>
                 {/each}
               </tbody>
             </Table>
@@ -356,6 +360,15 @@
   }
   .end {
     align-items: flex-end;
+  }
+  .day {
+    margin: var(--space-6) 0 0;
+    padding-top: var(--space-4);
+    border-top: var(--border-width) solid var(--border-default);
+  }
+  h4 {
+    margin: var(--space-4) 0 0;
+    font-size: var(--font-size-md);
   }
   .notes {
     margin: 0 0 var(--space-4);

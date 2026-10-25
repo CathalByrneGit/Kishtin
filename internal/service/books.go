@@ -176,9 +176,17 @@ func (s *Service) RecordBook(ctx context.Context, p *auth.Principal, ref, month 
 	if err != nil {
 		return books.Book{}, err
 	}
+	var sections []books.Template
+	for _, id := range tpl.Sections {
+		sec, ok := books.Find(rb.Booklets, id)
+		if !ok {
+			return books.Book{}, fmt.Errorf("%s: section %s is not in the bundle", tpl.Code, id)
+		}
+		sections = append(sections, sec.Template)
+	}
 	b, err := books.Build(books.Input{
 		Template: tpl, Bundle: rb.Bundle, Year: start.Year(), Month: start.Month(), Loc: clock.Dublin,
-		Now: now, Since: since, Records: recs, Units: lists.Value.Units,
+		Now: now, Since: since, Records: recs, Units: lists.Value.Units, Sections: sections,
 	})
 	if err != nil {
 		return books.Book{}, fmt.Errorf("fill %s: %w", tpl.Code, err)

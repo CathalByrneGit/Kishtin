@@ -23,6 +23,7 @@ const (
 	slotTemp      = "temp"
 	slotPackaging = "packaging"
 	slotInDate    = "in_date"
+	slotVehicle   = "vehicle"
 	slotFood      = "food"
 	slotCooked    = "cooked"
 	slotShelf     = "shelf"
@@ -48,6 +49,8 @@ func missingSlot(c voice.Command) (string, string) {
 			return slotPackaging, "Is the packaging intact? Yes or no."
 		case c.InDate == nil:
 			return slotInDate, "Is it all in date? Yes or no."
+		case c.VehicleOK == nil:
+			return slotVehicle, "Was the delivery vehicle clean and cold? Yes or no."
 		}
 	case voice.IntentCooling:
 		switch {
@@ -95,12 +98,15 @@ func fillSlot(c *voice.Command, slot, text string) bool {
 		t, ok := voice.ReadNumber(text)
 		c.TempC = &t
 		return ok
-	case slotPackaging, slotInDate:
+	case slotPackaging, slotInDate, slotVehicle:
 		yes, ok := voice.ReadYesNo(text)
-		if slot == slotPackaging {
+		switch slot {
+		case slotPackaging:
 			c.PackagingOK = &yes
-		} else {
+		case slotInDate:
 			c.InDate = &yes
+		default:
+			c.VehicleOK = &yes
 		}
 		return ok
 	case slotCooked:
@@ -176,7 +182,7 @@ func (s *Service) formRecord(ctx context.Context, c voice.Command) (NewRecord, e
 	case voice.IntentDelivery:
 		return NewRecord{Type: haccp.RecordDelivery, Reading: haccp.Reading{
 			Supplier: c.Supplier, Product: c.Product, DeliveryKind: c.DeliveryKind, TempC: c.TempC,
-			PackagingOK: c.PackagingOK, InDate: c.InDate,
+			PackagingOK: c.PackagingOK, InDate: c.InDate, VehicleOK: c.VehicleOK,
 		}}, nil
 	case voice.IntentCooling:
 		cooked, err := cookedAt(*c.Cooked, now)

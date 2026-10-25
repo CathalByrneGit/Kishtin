@@ -32,6 +32,11 @@ const (
 	// BuilderHotHold is a row per food held hot, with up to three checks
 	// (SC4).
 	BuilderHotHold = "hot_hold"
+	// BuilderDelivery is a row per delivery (SC1).
+	BuilderDelivery = "delivery"
+	// BuilderDaily is a sheet per day made of other booklets of the same
+	// bundle, one section each (SC8). It has sections instead of columns.
+	BuilderDaily = "daily"
 )
 
 // Field is a record field a builder can put in a column.
@@ -66,6 +71,19 @@ var Builders = []Builder{
 		{"reheat_temp", "Core temperature after reheating"},
 		{"reheat_signed", "Who logged the reheat"},
 		{"comments", "Comments and actions"},
+		{"ref", "Kishtin record number"},
+	}},
+	{ID: BuilderDelivery, Label: "Deliveries: a row per delivery", Fields: []Field{
+		{"date", "Date"},
+		{"food", "Food item"},
+		{"batch_code", "Batch code"},
+		{"supplier", "Supplied by"},
+		{"use_by", "Use-by date"},
+		{"temp", "Temperature (or ambient)"},
+		{"vehicle", "Delivery vehicle check"},
+		{"delivery_kind", "Chilled, frozen or ambient"},
+		{"comments", "Comments and actions"},
+		{"signed", "Who logged"},
 		{"ref", "Kishtin record number"},
 	}},
 	{ID: BuilderHotHold, Label: "Hot holding: a row per food per day, up to three checks", Fields: []Field{
@@ -155,6 +173,9 @@ type Template struct {
 	Notes []string `json:"notes,omitempty"`
 	// ManagerCheck adds a manager or supervisor check line.
 	ManagerCheck bool `json:"manager_check,omitempty"`
+	// Sections are the IDs of the booklets a daily record is made of, in
+	// order. Only for the daily builder.
+	Sections []string `json:"sections,omitempty"`
 }
 
 // Supported reports whether Kishtin can fill this booklet.
@@ -187,6 +208,18 @@ func (t Template) Validate() error {
 			return fmt.Errorf("%s: say why Kishtin cannot fill it (missing)", t.Code)
 		}
 		return nil
+	}
+	if t.Builder == BuilderDaily {
+		if len(t.Sections) == 0 {
+			return fmt.Errorf("%s: a daily record needs its sections", t.Code)
+		}
+		if len(t.Columns) > 0 {
+			return fmt.Errorf("%s: a daily record takes its columns from its sections", t.Code)
+		}
+		return nil
+	}
+	if len(t.Sections) > 0 {
+		return fmt.Errorf("%s: only a daily record has sections", t.Code)
 	}
 	b, ok := findBuilder(t.Builder)
 	if !ok {
@@ -279,6 +312,14 @@ func ParseBundle(b []byte) (Bundle, error) {
 		}
 		seen[t.ID], seen["code:"+strings.ToLower(t.Code)] = true, true
 	}
+	for _, t := range p.Templates {
+		for _, id := range t.Sections {
+			sec, ok := findTemplate(p.Templates, id)
+			if !ok || !sec.Supported() || sec.Builder == BuilderDaily {
+				return p, fmt.Errorf("%s: section %q must be another booklet in the bundle that Kishtin can fill", t.Code, id)
+			}
+		}
+	}
 	return p, nil
 }
 
@@ -290,4 +331,13 @@ func FindBundle(bundles []Bundle, id string) (Bundle, bool) {
 		}
 	}
 	return Bundle{}, false
+}
+
+func findTemplate(list []Template, id string) (Template, bool) {
+	for _, t := range list {
+		if t.ID == id {
+			return t, true
+		}
+	}
+	return Template{}, false
 }

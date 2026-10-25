@@ -30,9 +30,9 @@ var missedBand = [3]int{228, 228, 228}
 func flagged(c books.Cell) (string, *[3]int) {
 	switch c.Flag {
 	case books.FlagFail:
-		return c.Text + " FAIL", &failBand
+		return strings.TrimSpace(c.Text + " FAIL"), &failBand
 	case books.FlagBorderline:
-		return c.Text + " CHECK", &warnBand
+		return strings.TrimSpace(c.Text + " CHECK"), &warnBand
 	case books.FlagMissed:
 		return "missed", &missedBand
 	}
@@ -150,25 +150,118 @@ func WriteBook(p Book, out io.Writer) error {
 			name, tpl.Code, month, refs, chain, shortHash(p.Chain.HeadHash), pdf.PageNo())), "", 0, "C", false, 0, "")
 	})
 
-	for i, page := range b.Pages {
+	managerCheck := func(sos []books.SignOff, unsigned []books.Span) {
+		pdf.Ln(1)
+		w.color(ink)
+		if len(sos) > 0 {
+			var parts []string
+			for _, so := range sos {
+				parts = append(parts, fmt.Sprintf("%s by %s (covers %s to %s, record #%d)", shortDate(so.Date), so.By, shortDate(so.From), shortDate(so.To), so.Seq))
+			}
+			pdf.SetFont("Helvetica", "B", 8.5)
+			label := w.text("Manager/Supervisor check:")
+			pdf.CellFormat(pdf.GetStringWidth(label)+2, 4.5, label, "", 0, "L", false, 0, "")
+			pdf.SetFont("Helvetica", "", 8.5)
+			pdf.MultiCell(0, 4.5, w.text(strings.Join(parts, "; ")), "", "L", false)
+		}
+		if len(unsigned) > 0 {
+			var spans []string
+			for _, sp := range unsigned {
+				if sp.From == sp.To {
+					spans = append(spans, shortDate(sp.From))
+				} else {
+					spans = append(spans, shortDate(sp.From)+" to "+shortDate(sp.To))
+				}
+			}
+			pdf.SetFont("Helvetica", "", 8.5)
+			pdf.MultiCell(0, 4.5, w.text("Not signed off: "+strings.Join(spans, ", ")+"."), "", "L", false)
+		}
+		if len(sos) == 0 || len(unsigned) > 0 {
+			pdf.SetFont("Helvetica", "", 9)
+			pdf.CellFormat(0, 5.5, w.text("Manager/Supervisor check on ____ / ____ / ________      Signed ______________________"), "", 1, "L", false, 0, "")
+		}
+	}
+	// forDay keeps the sign-offs and unsigned days that cover one day, for
+	// a daily record's sheet.
+	forDay := func(day string) ([]books.SignOff, []books.Span) {
+		var sos []books.SignOff
+		for _, so := range b.SignOffs {
+			if so.From <= day && day <= so.To {
+				sos = append(sos, so)
+			}
+		}
+		var unsigned []books.Span
+		for _, sp := range b.Unsigned {
+			if sp.From <= day && day <= sp.To {
+				unsigned = append(unsigned, books.Span{From: day, To: day})
+			}
+		}
+		return sos, unsigned
+	}
+
+	if len(b.Pages) == 0 {
 		pdf.AddPage()
 		pdf.SetFont("Helvetica", "B", 14)
 		w.color(ink)
 		pdf.CellFormat(0, 6.5, w.text(tpl.Code+" - "+tpl.Title), "", 1, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 10)
-		head := name + " · Month: " + month
-		if len(b.Pages) > 1 {
-			head += fmt.Sprintf(" · sheet %d of %d", i+1, len(b.Pages))
+		pdf.CellFormat(0, 5, w.text(name+" · Month: "+month), "", 1, "L", false, 0, "")
+		w.para("No records this month.")
+	}
+	sheets := 0
+	for i, page := range b.Pages {
+		if i == 0 || page.Day == "" || page.Day != b.Pages[i-1].Day {
+			sheets++
 		}
-		pdf.CellFormat(0, 5, w.text(head), "", 1, "L", false, 0, "")
-		pdf.Ln(1)
+	}
+	sheet := 0
+	for i, page := range b.Pages {
+		newSheet := i == 0 || page.Day == "" || page.Day != b.Pages[i-1].Day
+		lastOfSheet := i == len(b.Pages)-1 || page.Day == "" || b.Pages[i+1].Day != page.Day
+		if newSheet {
+			sheet++
+			pdf.AddPage()
+			pdf.SetFont("Helvetica", "B", 14)
+			w.color(ink)
+			pdf.CellFormat(0, 6.5, w.text(tpl.Code+" - "+tpl.Title), "", 1, "L", false, 0, "")
+			pdf.SetFont("Helvetica", "", 10)
+			head := name + " · Month: " + month
+			if page.Day != "" {
+				head = name + " · Date: " + shortDate(page.Day)
+			}
+			if sheets > 1 {
+				head += fmt.Sprintf(" · sheet %d of %d", sheet, sheets)
+			}
+			pdf.CellFormat(0, 5, w.text(head), "", 1, "L", false, 0, "")
+			pdf.Ln(1)
+		}
+		if page.Title != "" {
+			pdf.Ln(1)
+			pdf.SetFont("Helvetica", "B", 10)
+			w.color(ink)
+			pdf.CellFormat(0, 5.5, w.text(page.Title), "", 1, "L", false, 0, "")
+		}
 
 		widths := make([]float64, len(page.Columns))
 		labels := make([]string, len(page.Columns))
 		grouped := false
+		total := 0.0
 		for k, c := range page.Columns {
 			widths[k], labels[k] = c.Width, c.Label
 			grouped = grouped || c.Group != ""
+			total += c.Width
+		}
+		// A section without its date column still fills the page width.
+		if total > 0 && total < books.PageWidth-0.5 {
+			for k := range widths {
+				widths[k] *= books.PageWidth / total
+			}
+			cols := make([]books.Column, len(page.Columns))
+			for k, c := range page.Columns {
+				c.Width = widths[k]
+				cols[k] = c
+			}
+			page.Columns = cols
 		}
 		header := func() {
 			if grouped {
@@ -190,44 +283,28 @@ func WriteBook(p Book, out io.Writer) error {
 			w.gridRow(widths, cells, fills, false, 7.5, header)
 		}
 		if len(page.Rows) == 0 {
-			w.para("No records this month.")
+			if page.Day != "" {
+				w.para("None.")
+			} else {
+				w.para("No records this month.")
+			}
 		}
 
+		notes := tpl.Notes
+		if page.Day != "" {
+			notes = page.Notes
+		}
 		pdf.Ln(1.5)
 		pdf.SetFont("Helvetica", "", 7.5)
 		w.color(muted)
-		for _, n := range tpl.Notes {
+		for _, n := range notes {
 			pdf.MultiCell(0, 3.6, w.text(n), "", "L", false)
 		}
-		if tpl.ManagerCheck {
-			pdf.Ln(1)
-			w.color(ink)
-			if len(b.SignOffs) > 0 {
-				var parts []string
-				for _, so := range b.SignOffs {
-					parts = append(parts, fmt.Sprintf("%s by %s (covers %s to %s, record #%d)", shortDate(so.Date), so.By, shortDate(so.From), shortDate(so.To), so.Seq))
-				}
-				pdf.SetFont("Helvetica", "B", 8.5)
-				label := w.text("Manager/Supervisor check:")
-				pdf.CellFormat(pdf.GetStringWidth(label)+2, 4.5, label, "", 0, "L", false, 0, "")
-				pdf.SetFont("Helvetica", "", 8.5)
-				pdf.MultiCell(0, 4.5, w.text(strings.Join(parts, "; ")), "", "L", false)
-			}
-			if len(b.Unsigned) > 0 {
-				var spans []string
-				for _, sp := range b.Unsigned {
-					if sp.From == sp.To {
-						spans = append(spans, shortDate(sp.From))
-					} else {
-						spans = append(spans, shortDate(sp.From)+" to "+shortDate(sp.To))
-					}
-				}
-				pdf.SetFont("Helvetica", "", 8.5)
-				pdf.MultiCell(0, 4.5, w.text("Not signed off: "+strings.Join(spans, ", ")+"."), "", "L", false)
-			}
-			if len(b.SignOffs) == 0 || len(b.Unsigned) > 0 {
-				pdf.SetFont("Helvetica", "", 9)
-				pdf.CellFormat(0, 5.5, w.text("Manager/Supervisor check on ____ / ____ / ________      Signed ______________________"), "", 1, "L", false, 0, "")
+		if tpl.ManagerCheck && lastOfSheet {
+			if page.Day != "" {
+				managerCheck(forDay(page.Day))
+			} else {
+				managerCheck(b.SignOffs, b.Unsigned)
 			}
 		}
 	}

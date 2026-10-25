@@ -103,8 +103,10 @@ type Command struct {
 	DeliveryKind string `json:"delivery_kind,omitempty"`
 	PackagingOK  *bool  `json:"packaging_ok,omitempty"`
 	InDate       *bool  `json:"in_date,omitempty"`
-	ShelfDays    int    `json:"shelf_days,omitempty"`
-	Quantity     string `json:"quantity,omitempty"`
+	// VehicleOK is the delivery vehicle check: "van clean", "vehicle dirty".
+	VehicleOK *bool  `json:"vehicle_ok,omitempty"`
+	ShelfDays int    `json:"shelf_days,omitempty"`
+	Quantity  string `json:"quantity,omitempty"`
 	// Cooked is when food going into the fridge to cool was cooked.
 	Cooked *Cooked `json:"cooked,omitempty"`
 	// Task is the cleaning task done.

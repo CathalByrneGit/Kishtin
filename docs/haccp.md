@@ -8,7 +8,7 @@ What Kishtin's HACCP log does today, and what it does not.
 |---|---|---|
 | `fridge` | unit, temperature | fridge limit (FSAI default ≤ 5°C) |
 | `freezer` | unit, temperature | freezer limit (FSAI default ≤ −18°C) |
-| `delivery` | supplier, product, chilled/frozen/ambient, temperature, packaging intact, in date, optional docket photo | chilled ≤ 5°C (borderline to 8°C), frozen ≤ −18°C (borderline to −15°C), ambient: no temperature limit. Packaging not intact or not in date fails. |
+| `delivery` | supplier, product, chilled/frozen/ambient, temperature, packaging intact, in date; optional batch code, use-by date, delivery vehicle check and docket photo | chilled ≤ 5°C (borderline to 8°C), frozen ≤ −18°C (borderline to −15°C), ambient: no temperature limit. Packaging not intact, not in date, or a vehicle that failed its check fails. |
 | `cook` | food, core temperature, optional hold time | core ≥ 75°C, or any time–temperature combination the limit allows |
 | `reheat` | food, core temperature, optional hold time | core ≥ 70°C |
 | `cooling` | food, cooked at, into fridge at, temperature at 2h30 if late | into the fridge within 2 h; otherwise above 10°C at 2h30 means serve now or discard |

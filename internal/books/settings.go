@@ -140,6 +140,10 @@ func (s RecordBookSettings) Validate(bundles []Bundle) error {
 			errs = append(errs, fmt.Errorf("%s: choose what kind of booklet it is", t.Code))
 			continue
 		}
+		if t.Builder == BuilderDaily {
+			errs = append(errs, fmt.Errorf("%s: an added booklet cannot be a daily record", t.Code))
+			continue
+		}
 		if err := t.Validate(); err != nil {
 			errs = append(errs, err)
 			continue

@@ -36,9 +36,9 @@ export function recentMonths(now: Date, n: number): string[] {
 export function cellText(c: Cell): string {
   switch (c.flag) {
     case "fail":
-      return `${c.text} FAIL`;
+      return `${c.text} FAIL`.trim();
     case "borderline":
-      return `${c.text} CHECK`;
+      return `${c.text} CHECK`.trim();
     case "missed":
       return "missed";
   }

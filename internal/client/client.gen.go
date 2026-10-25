@@ -18998,7 +18998,10 @@ func (p POSSettings) Validate() error {
 
 type Page struct {
 	Columns []Column `json:"columns" validate:"required"`
+	Day     *string  `json:"day,omitempty"`
+	Notes   []string `json:"notes,omitempty"`
 	Rows    []Row    `json:"rows" validate:"required"`
+	Title   *string  `json:"title,omitempty"`
 }
 
 func (p Page) Validate() error {
@@ -19102,6 +19105,7 @@ func (p Progress) Validate() error {
 
 type Reading struct {
 	Area          *string    `json:"area,omitempty"`
+	BatchCode     *string    `json:"batch_code,omitempty"`
 	CookedAt      *time.Time `json:"cooked_at,omitempty"`
 	DeliveryKind  *string    `json:"delivery_kind,omitempty"`
 	Dish          *string    `json:"dish,omitempty"`
@@ -19127,6 +19131,7 @@ type Reading struct {
 	TempC         *float64   `json:"temp_c,omitempty"`
 	Unit          *string    `json:"unit,omitempty"`
 	UseBy         *string    `json:"use_by,omitempty"`
+	VehicleOk     *bool      `json:"vehicle_ok,omitempty"`
 }
 
 func (r Reading) Validate() error {
@@ -19355,7 +19360,8 @@ type Review struct {
 }
 
 type Row struct {
-	Cells []Cell `json:"cells" validate:"required"`
+	Cells []Cell  `json:"cells" validate:"required"`
+	Date  *string `json:"date,omitempty"`
 }
 
 func (r Row) Validate() error {
@@ -20244,6 +20250,7 @@ type Template struct {
 	ManagerCheck *bool    `json:"manager_check,omitempty"`
 	Missing      *string  `json:"missing,omitempty"`
 	Notes        []string `json:"notes,omitempty"`
+	Sections     []string `json:"sections,omitempty"`
 	Source       *Source  `json:"source,omitempty"`
 	Title        string   `json:"title" validate:"required"`
 	UnitsPerPage *int64   `json:"units_per_page,omitempty"`

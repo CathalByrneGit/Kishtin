@@ -80,8 +80,14 @@ type Reading struct {
 	// with either one false fails.
 	PackagingOK *bool `json:"packaging_ok,omitempty"`
 	InDate      *bool `json:"in_date,omitempty"`
+	// VehicleOK is the delivery vehicle check: clean and at the right
+	// temperature. Nil means not checked. A vehicle that fails fails the
+	// delivery.
+	VehicleOK *bool `json:"vehicle_ok,omitempty"`
+	// BatchCode is the supplier's batch or lot code, for tracing.
+	BatchCode string `json:"batch_code,omitempty"`
 
-	// Batch label.
+	// Batch label. UseBy is also a delivery's use-by date.
 	MadeOn string `json:"made_on,omitempty"`
 	UseBy  string `json:"use_by,omitempty"`
 	// ShelfLifeDays sets UseBy to MadeOn plus this many days when UseBy is
@@ -143,7 +149,7 @@ func (r Reading) Normalize() Reading {
 	for _, s := range []*string{
 		&r.Unit, &r.Food, &r.Dish, &r.FoodCategory, &r.Supplier, &r.Product,
 		&r.DeliveryKind, &r.DocketFile, &r.MadeOn, &r.UseBy, &r.Quantity,
-		&r.Task, &r.Area, &r.Notes, &r.PeriodFrom, &r.PeriodTo,
+		&r.Task, &r.Area, &r.Notes, &r.PeriodFrom, &r.PeriodTo, &r.BatchCode,
 	} {
 		*s = strings.TrimSpace(*s)
 	}
@@ -201,6 +207,14 @@ func (r Reading) Validate(t RecordType) error {
 		}
 		if r.PackagingOK == nil || r.InDate == nil {
 			return errors.New("say whether the packaging is intact (packaging_ok) and the delivery is in date (in_date)")
+		}
+		if r.UseBy != "" {
+			if _, err := time.Parse(DateLayout, r.UseBy); err != nil {
+				return errors.New("use_by must be a date like 2026-10-31")
+			}
+		}
+		if len([]rune(r.BatchCode)) > 60 {
+			return errors.New("batch_code is at most 60 characters")
 		}
 		switch r.DeliveryKind {
 		case DeliveryChilled, DeliveryFrozen:

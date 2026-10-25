@@ -137,19 +137,38 @@ func (p *parser) delivery() Result {
 	if p.hasPhrase("out of date") {
 		c.InDate = ptr(false)
 	}
+	for _, v := range []string{"van", "vehicle", "truck", "lorry"} {
+		for _, ok := range []string{"ok", "fine", "good", "clean", "cold"} {
+			if p.hasPhrase(v + " " + ok) {
+				c.VehicleOK = ptr(true)
+			}
+		}
+		for _, bad := range []string{"dirty", "warm", "failed", "bad"} {
+			if p.hasPhrase(v + " " + bad) {
+				c.VehicleOK = ptr(false)
+			}
+		}
+	}
 	if c.DeliveryKind == "ambient" {
 		c.TempC = nil
 	}
 	return Result{Command: c}
 }
 
-// yesNoPhrase returns how many words a packaging or date phrase at i
+// yesNoPhrase returns how many words a packaging, date or vehicle phrase at i
 // uses, so they are not taken as the product.
 func (p *parser) yesNoPhrase(i int) int {
 	rest := strings.Join(p.w[i:], " ") + " "
 	for _, ph := range []string{"packaging ok ", "packaging fine ", "packaging good ", "packaging intact ", "packaging damaged ", "packaging torn ", "packaging broken ", "out of date ", "in date "} {
 		if strings.HasPrefix(rest, ph) {
 			return len(strings.Fields(ph))
+		}
+	}
+	for _, v := range []string{"van ", "vehicle ", "truck ", "lorry "} {
+		for _, st := range []string{"ok ", "fine ", "good ", "clean ", "cold ", "dirty ", "warm ", "failed ", "bad "} {
+			if strings.HasPrefix(rest, v+st) {
+				return 2
+			}
 		}
 	}
 	return 0

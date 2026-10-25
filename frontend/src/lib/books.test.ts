@@ -15,6 +15,7 @@ test("cell text carries the flag as a word", () => {
   expect(cellText({ text: "7.2°C", flag: "fail" })).toBe("7.2°C FAIL");
   expect(cellText({ text: "6.0°C", flag: "borderline" })).toBe("6.0°C CHECK");
   expect(cellText({ text: "missed", flag: "missed" })).toBe("missed");
+  expect(cellText({ text: "", flag: "fail" })).toBe("FAIL");
 });
 
 test("gaps by date", () => {

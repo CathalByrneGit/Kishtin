@@ -12,13 +12,15 @@
     /** an added booklet: every part is the restaurant's own */
     custom: boolean;
     builders: Builder[];
+    /** booklet names by ID, to list a daily record's sections */
+    names?: Record<string, string>;
     /** a bundle booklet's changes */
     onsetting?: (s: BookSetting) => void;
     /** an added booklet, edited */
     ontemplate?: (t: Template) => void;
     onclose: () => void;
   }
-  let { base, setting, custom, builders, onsetting, ontemplate, onclose }: Props = $props();
+  let { base, setting, custom, builders, names = {}, onsetting, ontemplate, onclose }: Props = $props();
 
   interface Row {
     col: Column;
@@ -56,10 +58,13 @@
     { value: "", label: "Blank: filled in by hand" },
   ]);
   const grid = $derived(base.builder === "unit_grid");
+  // A daily record is made of other booklets: it has no columns of its own.
+  const daily = $derived(base.builder === "daily");
 
   const problem = $derived.by((): string => {
     if (custom && !code.trim()) return "Give the booklet a code, such as T4.";
     if (!title.trim()) return "Give the booklet a title.";
+    if (daily) return "";
     if (rows.length === 0) return "A booklet needs at least one column.";
     if (rows.some((r) => !r.col.label.trim())) return "Every column needs a heading.";
     if (rows.some((r) => !(Number(r.widthText) > 0))) return "Every width must be a number above 0.";
@@ -86,7 +91,7 @@
       off: setting?.off,
       copy_file: setting?.copy_file,
       title: title.trim() !== base.title ? title.trim() : undefined,
-      columns: sameColumns(cols, base.columns ?? []) ? undefined : cols,
+      columns: daily || sameColumns(cols, base.columns ?? []) ? undefined : cols,
       notes: notes().length ? notes() : undefined,
       units_per_page: grid && units !== base.units_per_page ? units : undefined,
       manager_check: managerCheck !== Boolean(base.manager_check) ? managerCheck : undefined,
@@ -114,35 +119,44 @@
     </div>
     <Toggle checked={managerCheck} label="Print a manager or supervisor check line" onchange={(on) => (managerCheck = on)} />
 
-    <div>
-      <div class="cols-head">
-        <strong>Columns</strong>
-        <span class="muted small">{builder?.label}. Widths are shares of the page.</span>
+    {#if daily}
+      <div>
+        <strong>Sections</strong>
+        <p class="muted small">
+          One sheet per day, made of: {(base.sections ?? []).map((id) => names[id] ?? id).join(", ")}. Each section prints with that booklet's own columns, so change them there.
+        </p>
       </div>
-      <ol class="cols">
-        {#each rows as r, i (i)}
-          <li>
-            <span class="num pos">{i + 1}</span>
-            <TextInput bind:value={r.col.label} ariaLabel={`Column ${i + 1} heading`} placeholder="Heading" size="sm" />
-            <TextInput bind:value={r.col.group} ariaLabel={`Column ${i + 1} group heading`} placeholder="Group heading (optional)" size="sm" />
-            <SelectDropdown value={r.col.field ?? ""} options={fieldOptions} onchange={(v) => (r.col.field = v || undefined)} title={`Column ${i + 1} shows`} />
-            <TextInput bind:value={r.widthText} ariaLabel={`Column ${i + 1} width`} size="sm" />
-            <span class="moves">
-              <IconButton ariaLabel={`Move column ${i + 1} up`} disabled={i === 0} onclick={() => (rows = moved(rows, i, -1))}><ArrowUp size={14} /></IconButton>
-              <IconButton ariaLabel={`Move column ${i + 1} down`} disabled={i === rows.length - 1} onclick={() => (rows = moved(rows, i, 1))}><ArrowDown size={14} /></IconButton>
-              <IconButton ariaLabel={`Remove column ${i + 1}`} onclick={() => rows.splice(i, 1)}><Trash2 size={14} /></IconButton>
-            </span>
-            {#if r.col.fixed}
-              <span class="muted small fixed">Prints "{r.col.fixed}"{r.col.fixed_when ? " when that row has a value in " + r.col.fixed_when : ""}.</span>
-            {/if}
-          </li>
-        {/each}
-      </ol>
-      <div class="row">
-        <Button size="sm" label="Add a column" onclick={() => rows.push(toRow({ label: "", width: 20 }))}><Plus size={14} /></Button>
-        {#if !custom}<Button size="sm" label="Use the bundle's columns" onclick={resetColumns} />{/if}
+    {:else}
+      <div>
+        <div class="cols-head">
+          <strong>Columns</strong>
+          <span class="muted small">{builder?.label}. Widths are shares of the page.</span>
+        </div>
+        <ol class="cols">
+          {#each rows as r, i (i)}
+            <li>
+              <span class="num pos">{i + 1}</span>
+              <TextInput bind:value={r.col.label} ariaLabel={`Column ${i + 1} heading`} placeholder="Heading" size="sm" />
+              <TextInput bind:value={r.col.group} ariaLabel={`Column ${i + 1} group heading`} placeholder="Group heading (optional)" size="sm" />
+              <SelectDropdown value={r.col.field ?? ""} options={fieldOptions} onchange={(v) => (r.col.field = v || undefined)} title={`Column ${i + 1} shows`} />
+              <TextInput bind:value={r.widthText} ariaLabel={`Column ${i + 1} width`} size="sm" />
+              <span class="moves">
+                <IconButton ariaLabel={`Move column ${i + 1} up`} disabled={i === 0} onclick={() => (rows = moved(rows, i, -1))}><ArrowUp size={14} /></IconButton>
+                <IconButton ariaLabel={`Move column ${i + 1} down`} disabled={i === rows.length - 1} onclick={() => (rows = moved(rows, i, 1))}><ArrowDown size={14} /></IconButton>
+                <IconButton ariaLabel={`Remove column ${i + 1}`} onclick={() => rows.splice(i, 1)}><Trash2 size={14} /></IconButton>
+              </span>
+              {#if r.col.fixed}
+                <span class="muted small fixed">Prints "{r.col.fixed}"{r.col.fixed_when ? " when that row has a value in " + r.col.fixed_when : ""}.</span>
+              {/if}
+            </li>
+          {/each}
+        </ol>
+        <div class="row">
+          <Button size="sm" label="Add a column" onclick={() => rows.push(toRow({ label: "", width: 20 }))}><Plus size={14} /></Button>
+          {#if !custom}<Button size="sm" label="Use the bundle's columns" onclick={resetColumns} />{/if}
+        </div>
       </div>
-    </div>
+    {/if}
 
     <label class="field">
       <span>{custom ? "Notes printed under the table, one per line" : "Your notes, one per line. They print under the booklet's own notes."}</span>

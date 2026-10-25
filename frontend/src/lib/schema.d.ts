@@ -2286,7 +2286,10 @@ export interface components {
         };
         Page: {
             columns: components["schemas"]["Column"][];
+            day?: string;
+            notes?: string[];
             rows: components["schemas"]["Row"][];
+            title?: string;
         };
         Plan: {
             /** Format: date-time */
@@ -2310,6 +2313,7 @@ export interface components {
         };
         Reading: {
             area?: string;
+            batch_code?: string;
             /** Format: date-time */
             cooked_at?: string;
             delivery_kind?: string;
@@ -2341,6 +2345,7 @@ export interface components {
             temp_c?: number;
             unit?: string;
             use_by?: string;
+            vehicle_ok?: boolean;
         };
         Record: {
             correction_reason?: string;
@@ -2404,6 +2409,7 @@ export interface components {
         };
         Row: {
             cells: components["schemas"]["Cell"][];
+            date?: string;
         };
         Rules: {
             borderline_needs_action: boolean;
@@ -2684,6 +2690,7 @@ export interface components {
             manager_check?: boolean;
             missing?: string;
             notes?: string[];
+            sections?: string[];
             source?: components["schemas"]["Source"];
             title: string;
             /** Format: int64 */

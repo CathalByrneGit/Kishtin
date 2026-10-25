@@ -265,6 +265,7 @@
     setting={editing.setting}
     custom={editing.custom}
     builders={info.builders}
+    names={Object.fromEntries(booklets.map((b) => [b.base.id, `${b.template.code} ${b.template.title}`]))}
     onsetting={saveSetting}
     ontemplate={saveCustom}
     onclose={() => (editing = null)}

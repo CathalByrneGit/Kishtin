@@ -83,7 +83,7 @@ func TestBuiltinBundles(t *testing.T) {
 			assert.NotEmpty(t, tpl.Missing, tpl.Code)
 		}
 	}
-	assert.Equal(t, []string{"SC2", "SC3", "SC4"}, supported)
+	assert.Equal(t, []string{"SC1", "SC2", "SC3", "SC4", "SC8"}, supported)
 
 	gen, ok := FindBundle(bundles, "general")
 	require.True(t, ok)
@@ -271,3 +271,89 @@ func TestOrdinal(t *testing.T) {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+func TestDeliveries(t *testing.T) {
+	tpl, bundle := book(t, "SC1")
+	yes, no := true, false
+	var r recs
+	r.add(haccp.RecordDelivery, on(1, 9, 0), haccp.Reading{Supplier: "Synthetic Meats", Product: "Roast beef", BatchCode: "123-11-20", UseBy: "2026-10-07",
+		DeliveryKind: haccp.DeliveryChilled, TempC: c(4), PackagingOK: &yes, InDate: &yes, VehicleOK: &yes}, haccp.OutcomePass)
+	r.add(haccp.RecordDelivery, on(2, 9, 0), haccp.Reading{Supplier: "Synthetic Poultry", Product: "Cooked turkey", BatchCode: "T32401",
+		DeliveryKind: haccp.DeliveryChilled, TempC: c(15), PackagingOK: &yes, InDate: &yes, VehicleOK: &no}, haccp.OutcomeFail, func(x *haccp.Record) {
+		x.OutcomeReason = "The delivery vehicle failed its check. 15.0°C is above the 8.0°C limit. Reject the delivery."
+		x.CorrectiveAction = "Rejected, rang supplier"
+	})
+	r.add(haccp.RecordDelivery, on(3, 9, 0), haccp.Reading{Supplier: "Synthetic Dry Goods", Product: "Flour",
+		DeliveryKind: haccp.DeliveryAmbient, PackagingOK: &no, InDate: &yes}, haccp.OutcomeFail, func(x *haccp.Record) {
+		x.OutcomeReason, x.CorrectiveAction = "Packaging is not intact. Reject the delivery.", "Returned"
+	})
+	b, err := Build(Input{Template: tpl, Bundle: bundle, Year: 2026, Month: time.October, Loc: dublin, Now: on(25, 12, 0), Records: r.list})
+	require.NoError(t, err)
+	rows := b.Pages[0].Rows
+	require.Len(t, rows, 3)
+	assert.Equal(t, []string{"01/10/26", "Roast beef", "123-11-20", "Synthetic Meats", "07/10/26", "4.0°C", "OK", "", "Aoife", "#1"}, texts(rows[0]))
+	assert.Equal(t, "2026-10-01", rows[0].Date)
+	assert.Equal(t, []string{"02/10/26", "Cooked turkey", "T32401", "Synthetic Poultry", "", "15.0°C", "",
+		"The delivery vehicle failed its check. 15.0°C is above the 8.0°C limit. Reject the delivery. Action: Rejected, rang supplier", "Aoife", "#2"}, texts(rows[1]))
+	assert.Equal(t, FlagFail, rows[1].Cells[5].Flag, "the temperature was out")
+	assert.Equal(t, FlagFail, rows[1].Cells[6].Flag)
+	assert.Equal(t, "ambient", rows[2].Cells[5].Text)
+	assert.Empty(t, rows[2].Cells[5].Flag, "failed on packaging, not temperature")
+	assert.Empty(t, rows[2].Cells[6].Text, "vehicle not checked")
+}
+
+func TestDaily(t *testing.T) {
+	bundles, err := Builtin()
+	require.NoError(t, err)
+	bundle, booklets, err := Resolve(bundles, DefaultSettings())
+	require.NoError(t, err)
+	sc8, ok := Find(booklets, "SC8")
+	require.True(t, ok)
+	var sections []Template
+	for _, id := range sc8.Template.Sections {
+		s, ok := Find(booklets, id)
+		require.True(t, ok)
+		sections = append(sections, s.Template)
+	}
+	yes := true
+	var r recs
+	r.add(haccp.RecordDelivery, on(2, 9, 0), haccp.Reading{Supplier: "Synthetic Meats", Product: "Roast beef", DeliveryKind: haccp.DeliveryChilled,
+		TempC: c(4), PackagingOK: &yes, InDate: &yes}, haccp.OutcomePass)
+	r.add(haccp.RecordFridge, on(2, 10, 0), haccp.Reading{Unit: "Walk-in fridge", TempC: c(3)}, haccp.OutcomePass)
+	r.add(haccp.RecordHotHold, on(3, 12, 0), haccp.Reading{Food: "Soup", TempC: c(70)}, haccp.OutcomePass)
+	units := []haccp.Unit{{Name: "Walk-in fridge", Kind: haccp.RecordFridge}}
+
+	b, err := Build(Input{Template: sc8.Template, Bundle: bundle, Year: 2026, Month: time.October, Loc: dublin,
+		Now: on(3, 13, 0), Since: on(2, 9, 0), Records: r.list, Units: units, Sections: sections})
+	require.NoError(t, err)
+	require.Len(t, b.Pages, 8, "two days (the 2nd and 3rd) of four sections")
+	var heads []string
+	for _, p := range b.Pages[:4] {
+		heads = append(heads, p.Day+" "+p.Title)
+	}
+	assert.Equal(t, []string{
+		"2026-10-02 Food Delivery Records",
+		"2026-10-02 Fridge/Freezer/Chill Display Temperature Records",
+		"2026-10-02 Cooking/Cooling/Reheating Records",
+		"2026-10-02 Hot Hold/Display Records",
+	}, heads)
+	assert.Equal(t, "Food item", b.Pages[0].Columns[0].Label, "the date column goes: the sheet has the date")
+	assert.Equal(t, "Roast beef", b.Pages[0].Rows[0].Cells[0].Text)
+	assert.Equal(t, []string{"3.0°C", "missed"}, texts(b.Pages[1].Rows[0])[:2], "the walk-in's AM and PM on the 2nd")
+	assert.Empty(t, b.Pages[3].Rows, "no hot holding on the 2nd")
+	assert.Equal(t, "Soup", b.Pages[7].Rows[0].Cells[0].Text)
+	assert.Equal(t, 3, b.Records)
+	assert.Equal(t, []string{"Time into hot hold"}, b.Unfilled)
+	require.Len(t, b.Gaps, 2)
+	assert.Equal(t, Gap{Date: "2026-10-02", Unit: "Walk-in fridge", Check: "PM"}, b.Gaps[0])
+	assert.Equal(t, Gap{Date: "2026-10-03", Unit: "Walk-in fridge", Check: "AM"}, b.Gaps[1])
+}
+
+func TestDailyValidate(t *testing.T) {
+	_, err := ParseBundle([]byte(`{"id":"p","name":"P","country":"X","templates":[{"id":"d","code":"D","title":"Daily","builder":"daily","sections":["nope"]}]}`))
+	assert.ErrorContains(t, err, `section "nope"`)
+	assert.ErrorContains(t, Template{ID: "d", Code: "D", Title: "D", Builder: BuilderDaily}.Validate(), "needs its sections")
+	assert.ErrorContains(t, Template{ID: "d", Code: "D", Title: "D", Builder: BuilderHotHold, Sections: []string{"x"}, Columns: []Column{{Label: "F", Field: "food", Width: 1}}}.Validate(), "only a daily record")
+	s := RecordBookSettings{Bundle: DefaultBundle, Custom: []Template{{ID: "custom-d", Code: "D9", Title: "Mine", Builder: BuilderDaily, Sections: []string{"fsai-sc2"}}}}
+	assert.ErrorContains(t, s.Normalize().Validate(bundles(t)), "cannot be a daily record")
+}

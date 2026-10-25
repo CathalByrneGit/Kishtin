@@ -12,10 +12,26 @@
       "builder": "unit_grid",
       "units_per_page": 6,
       "columns": [
-        { "label": "Day", "field": "date", "width": 14 },
-        { "label": "Unit", "field": "unit_checks", "width": 168 },
-        { "label": "Comments and action taken", "field": "comments", "width": 66 },
-        { "label": "Checked by", "field": "signed", "width": 25 }
+        {
+          "label": "Day",
+          "field": "date",
+          "width": 14
+        },
+        {
+          "label": "Unit",
+          "field": "unit_checks",
+          "width": 168
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 66
+        },
+        {
+          "label": "Checked by",
+          "field": "signed",
+          "width": 25
+        }
       ],
       "manager_check": true
     },
@@ -25,17 +41,68 @@
       "title": "Cooking, cooling and reheating",
       "builder": "cooking",
       "columns": [
-        { "label": "Date", "field": "date", "width": 17 },
-        { "label": "Food", "field": "food", "width": 46 },
-        { "label": "Cooking finished", "group": "Cooking", "field": "cook_finished", "width": 20 },
-        { "label": "Core temp", "group": "Cooking", "field": "core_temp", "width": 22 },
-        { "label": "By", "group": "Cooking", "field": "cook_signed", "width": 19 },
-        { "label": "Into fridge", "group": "Cooling", "field": "into_fridge", "width": 24 },
-        { "label": "By", "group": "Cooling", "field": "cool_signed", "width": 19 },
-        { "label": "Core temp", "group": "Reheating", "field": "reheat_temp", "width": 22 },
-        { "label": "By", "group": "Reheating", "field": "reheat_signed", "width": 19 },
-        { "label": "Comments and action taken", "field": "comments", "width": 51 },
-        { "label": "Record", "field": "ref", "width": 14 }
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 17
+        },
+        {
+          "label": "Food",
+          "field": "food",
+          "width": 46
+        },
+        {
+          "label": "Cooking finished",
+          "group": "Cooking",
+          "field": "cook_finished",
+          "width": 20
+        },
+        {
+          "label": "Core temp",
+          "group": "Cooking",
+          "field": "core_temp",
+          "width": 22
+        },
+        {
+          "label": "By",
+          "group": "Cooking",
+          "field": "cook_signed",
+          "width": 19
+        },
+        {
+          "label": "Into fridge",
+          "group": "Cooling",
+          "field": "into_fridge",
+          "width": 24
+        },
+        {
+          "label": "By",
+          "group": "Cooling",
+          "field": "cool_signed",
+          "width": 19
+        },
+        {
+          "label": "Core temp",
+          "group": "Reheating",
+          "field": "reheat_temp",
+          "width": 22
+        },
+        {
+          "label": "By",
+          "group": "Reheating",
+          "field": "reheat_signed",
+          "width": 19
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 51
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
       ],
       "manager_check": true
     },
@@ -45,14 +112,118 @@
       "title": "Hot holding",
       "builder": "hot_hold",
       "columns": [
-        { "label": "Date", "field": "date", "width": 18 },
-        { "label": "Food", "field": "food", "width": 62 },
-        { "label": "1st check", "field": "check_1", "width": 30 },
-        { "label": "2nd check", "field": "check_2", "width": 30 },
-        { "label": "3rd check", "field": "check_3", "width": 30 },
-        { "label": "Comments and action taken", "field": "comments", "width": 65 },
-        { "label": "By", "field": "signed", "width": 24 },
-        { "label": "Record", "field": "ref", "width": 14 }
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Food",
+          "field": "food",
+          "width": 62
+        },
+        {
+          "label": "1st check",
+          "field": "check_1",
+          "width": 30
+        },
+        {
+          "label": "2nd check",
+          "field": "check_2",
+          "width": 30
+        },
+        {
+          "label": "3rd check",
+          "field": "check_3",
+          "width": 30
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 65
+        },
+        {
+          "label": "By",
+          "field": "signed",
+          "width": 24
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "general-deliveries",
+      "code": "T4",
+      "title": "Deliveries",
+      "builder": "delivery",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Product",
+          "field": "food",
+          "width": 44
+        },
+        {
+          "label": "Batch code",
+          "field": "batch_code",
+          "width": 26
+        },
+        {
+          "label": "Supplier",
+          "field": "supplier",
+          "width": 38
+        },
+        {
+          "label": "Use by",
+          "field": "use_by",
+          "width": 18
+        },
+        {
+          "label": "Temperature",
+          "field": "temp",
+          "width": 22
+        },
+        {
+          "label": "Vehicle",
+          "field": "vehicle",
+          "width": 18
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 53
+        },
+        {
+          "label": "By",
+          "field": "signed",
+          "width": 22
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "general-daily",
+      "code": "T5",
+      "title": "Daily record",
+      "builder": "daily",
+      "sections": [
+        "general-deliveries",
+        "general-fridges",
+        "general-cooking",
+        "general-hot-hold"
       ],
       "manager_check": true
     }

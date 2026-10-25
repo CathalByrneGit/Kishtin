@@ -61,6 +61,10 @@
   let deliveryKind = $state("chilled");
   let packagingOk = $state(false);
   let inDate = $state(false);
+  let batchCode = $state("");
+  let deliveryUseBy = $state<string | null>(null);
+  /** vehicle is the delivery vehicle check: not checked, OK or failed. */
+  let vehicle = $state<"" | "ok" | "failed">("");
   let docket = $state<{ sha: string; name: string } | null>(null);
   let uploading = $state(false);
   let food = $state("");
@@ -111,6 +115,9 @@
     deliveryKind = rd.delivery_kind ?? "chilled";
     packagingOk = rd.packaging_ok ?? false;
     inDate = rd.in_date ?? false;
+    batchCode = rd.batch_code ?? "";
+    deliveryUseBy = r.type === "delivery" ? (rd.use_by ?? null) : null;
+    vehicle = rd.vehicle_ok === true ? "ok" : rd.vehicle_ok === false ? "failed" : "";
     docket = rd.docket_file ? { sha: rd.docket_file, name: "attached docket" } : null;
     food = rd.food ?? "";
     category = rd.food_category ?? "";
@@ -160,6 +167,9 @@
           supplier, product, delivery_kind: deliveryKind, packaging_ok: packagingOk, in_date: inDate,
         };
         if (docket) reading.docket_file = docket.sha;
+        if (batchCode.trim()) reading.batch_code = batchCode.trim();
+        if (deliveryUseBy) reading.use_by = deliveryUseBy;
+        if (vehicle) reading.vehicle_ok = vehicle === "ok";
         if (deliveryKind !== "ambient") {
           const m = needTemp("probe temperature");
           if (m) return m;
@@ -274,6 +284,9 @@
         fridgeAt = "";
         packagingOk = false;
         inDate = false;
+        batchCode = "";
+        deliveryUseBy = null;
+        vehicle = "";
       }
       onsaved();
     } catch (err) {
@@ -347,6 +360,28 @@
         {/if}
         <Checkbox bind:checked={packagingOk} label="Packaging intact" />
         <Checkbox bind:checked={inDate} label="In date" />
+        <div class="field">
+          <span>Delivery vehicle check</span>
+          <SegmentedControl
+            block
+            ariaLabel="Delivery vehicle check"
+            value={vehicle}
+            onchange={(v) => (vehicle = v as typeof vehicle)}
+            options={[
+              { value: "", label: "Not checked" },
+              { value: "ok", label: "Clean and cold" },
+              { value: "failed", label: "Failed" },
+            ]}
+          />
+        </div>
+        <label class="field"><span>Batch code (optional)</span><TextInput bind:value={batchCode} block /></label>
+        <div class="field">
+          <span>Use-by date (optional)</span>
+          <div class="row">
+            <DatePicker value={deliveryUseBy} onchange={(d) => (deliveryUseBy = d)} ariaLabel="Use-by date" block />
+            {#if deliveryUseBy}<Button label="Clear" onclick={() => (deliveryUseBy = null)} />{/if}
+          </div>
+        </div>
         <div class="row">
           <input bind:this={fileInput} class="kit-sr-only" type="file" accept="image/*,application/pdf" capture="environment" onchange={pickPhoto} />
           <Button label={uploading ? "Uploading…" : docket ? "Replace docket photo" : "Add docket photo"} disabled={uploading} onclick={() => fileInput?.click()}>

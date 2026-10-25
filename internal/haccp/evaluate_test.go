@@ -1,6 +1,7 @@
 package haccp
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -81,6 +82,18 @@ func chilled(c float64) Reading {
 
 func frozen(c float64) Reading {
 	return Reading{Supplier: "Synthetic Frozen Ltd", Product: "Peas", DeliveryKind: DeliveryFrozen, TempC: &c, PackagingOK: b(true), InDate: b(true)}
+}
+
+func TestDeliveryVehicle(t *testing.T) {
+	ok := chilled(4)
+	assert.Equal(t, OutcomePass, evalDefault(t, RecordDelivery, ok).Outcome, "no vehicle check recorded")
+	ok.VehicleOK = b(true)
+	assert.Equal(t, OutcomePass, evalDefault(t, RecordDelivery, ok).Outcome)
+	dirty := chilled(4)
+	dirty.VehicleOK = b(false)
+	res := evalDefault(t, RecordDelivery, dirty)
+	assert.Equal(t, OutcomeFail, res.Outcome)
+	assert.Equal(t, "The delivery vehicle failed its check. Reject the delivery.", res.Reason)
 }
 
 func TestDeliveryChecks(t *testing.T) {
@@ -229,4 +242,16 @@ func TestNormalize(t *testing.T) {
 	assert.Equal(t, 123456000, r.CookedAt.Nanosecond())
 	assert.Equal(t, "chilled", r.DeliveryKind)
 	assert.Equal(t, "abc", r.DocketFile)
+}
+
+func TestDeliveryFieldsValidate(t *testing.T) {
+	r := chilled(4)
+	r.BatchCode, r.UseBy = " T32401 ", "2026-11-02"
+	r = r.Normalize()
+	assert.Equal(t, "T32401", r.BatchCode)
+	assert.NoError(t, r.Validate(RecordDelivery))
+	r.UseBy = "2 Nov"
+	assert.ErrorContains(t, r.Validate(RecordDelivery), "use_by must be a date")
+	r.UseBy, r.BatchCode = "", strings.Repeat("x", 61)
+	assert.ErrorContains(t, r.Validate(RecordDelivery), "batch_code")
 }

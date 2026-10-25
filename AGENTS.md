@@ -244,7 +244,7 @@ Rules:
 Official record books (for example Ireland's FSAI Safe Catering booklets) are filled in from HACCP records, never typed in twice.
 
 - A **bundle** is one country's or issuer's set of booklets, kept as a data file in `internal/books/bundles/`. Developers add a bundle when a country needs one. A new edition with renamed or reordered columns is a data change.
-- Each booklet is a template: its columns, the record field in each, its notes, and the edition and SHA-256 of the official PDF it copies. Rows come from a small set of pure builders (fridge grid, cooking log, hot holding log). Only a booklet that needs a new kind of row needs code.
+- Each booklet is a template: its columns, the record field in each, its notes, and the edition and SHA-256 of the official PDF it copies. Rows come from a small set of pure builders (fridge grid, cooking log, hot holding log, deliveries, and a daily record made of other booklets' sections). Only a booklet that needs a new kind of row needs code.
 - The restaurant picks its bundle and changes what is relevant (booklets in use, titles, columns, notes, sheet layout, manager check, its own added booklets, its uploaded copy) through the versioned `record_books` settings. The same rules as limits apply: preview, reason, manager password, history.
 - These settings change only how records print. They never change a record or its result.
 - A manager's sign-off of a period is a `sign_off` HACCP record in the hash chain, saved only through the sign-off action (manager password), never through ordinary logging. It stores what the period held when signed. A period with missed checks or readings without an action needs a note.
