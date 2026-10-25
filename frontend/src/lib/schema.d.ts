@@ -171,6 +171,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/haccp/books": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the official record books Kishtin can fill in
+         * @description Each pack is a set of booklets from one issuer, such as the FSAI Safe Catering pack. Booklets Kishtin cannot fill yet say why in missing.
+         */
+        get: operations["list-record-books"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/books/{book}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fill in a record book for a month, to preview
+         * @description Returns the booklet's pages as rows of cells, the checks that were due and have no reading (gaps), and the columns Kishtin does not record. Nothing is saved.
+         */
+        get: operations["get-record-book"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/books/{book}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a filled-in record book as PDF
+         * @description The same pages as the preview, laid out like the official booklet, with record numbers and the hash chain head in the footer.
+         */
+        get: operations["export-record-book"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/haccp/check": {
         parameters: {
             query?: never;
@@ -1475,6 +1535,26 @@ export interface components {
             status: string;
             use_by: string;
         };
+        Book: {
+            /** Format: int64 */
+            corrected: number;
+            /** Format: int64 */
+            first_seq?: number;
+            gaps: components["schemas"]["Gap"][];
+            issuer: string;
+            /** Format: int64 */
+            last_seq?: number;
+            month: string;
+            pack_name: string;
+            pages: components["schemas"]["Page"][];
+            /** Format: int64 */
+            records: number;
+            template: components["schemas"]["Template"];
+            unfilled: string[];
+        };
+        BookPacksBody: {
+            packs: components["schemas"]["Pack"][];
+        };
         CatalogBody: {
             entries: components["schemas"]["CatalogRow"][];
         };
@@ -1489,6 +1569,10 @@ export interface components {
             label: string;
             mapping?: components["schemas"]["Mapping"];
             suggested?: string;
+        };
+        Cell: {
+            flag?: string;
+            text: string;
         };
         ChainBreak: {
             problem: string;
@@ -1523,6 +1607,15 @@ export interface components {
             area?: string;
             record?: components["schemas"]["Record"];
             task: string;
+        };
+        Column: {
+            field?: string;
+            fixed?: string;
+            fixed_when?: string;
+            group?: string;
+            label: string;
+            /** Format: double */
+            width: number;
         };
         ConnectInput: {
             /** @enum {string} */
@@ -1719,6 +1812,11 @@ export interface components {
         FileProblem: {
             problem: string;
             sha256: string;
+        };
+        Gap: {
+            check: string;
+            date: string;
+            unit: string;
         };
         Guidance: {
             checks: components["schemas"]["GuidanceCheck"][];
@@ -2038,6 +2136,18 @@ export interface components {
             /** Format: int64 */
             poll_seconds: number;
         };
+        Pack: {
+            id: string;
+            issuer: string;
+            jurisdiction: string;
+            name: string;
+            templates: components["schemas"]["Template"][];
+            url: string;
+        };
+        Page: {
+            columns: components["schemas"]["Column"][];
+            rows: components["schemas"]["Row"][];
+        };
         Plan: {
             /** Format: date-time */
             at: string;
@@ -2126,6 +2236,9 @@ export interface components {
         Result: {
             outcome: string;
             reason: string;
+        };
+        Row: {
+            cells: components["schemas"]["Cell"][];
         };
         Rules: {
             borderline_needs_action: boolean;
@@ -2260,6 +2373,11 @@ export interface components {
             status: string;
             until?: string;
         };
+        Source: {
+            published: string;
+            sha256: string;
+            url: string;
+        };
         SpeakBody: {
             text: string;
         };
@@ -2343,6 +2461,19 @@ export interface components {
             reason?: string;
             /** Format: date-time */
             target_at: string;
+        };
+        Template: {
+            builder?: string;
+            code: string;
+            columns?: components["schemas"]["Column"][];
+            id: string;
+            manager_check?: boolean;
+            missing?: string;
+            notes?: string[];
+            source: components["schemas"]["Source"];
+            title: string;
+            /** Format: int64 */
+            units_per_page?: number;
         };
         TillLine: {
             catalog_id?: string;
@@ -2828,6 +2959,110 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-record-books": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookPacksBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-record-book": {
+        parameters: {
+            query?: {
+                /** @description Month as YYYY-MM, Dublin time. Leave out for this month. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Record book ID or code, such as SC2 */
+                book: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Book"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "export-record-book": {
+        parameters: {
+            query?: {
+                /** @description Month as YYYY-MM, Dublin time. Leave out for this month. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Record book ID or code, such as SC2 */
+                book: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The filled-in record book. */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    "Content-Type"?: string;
+                    "X-Kishtin-Chain-Head"?: string;
+                    "X-Kishtin-Chain-OK"?: boolean;
+                    "X-Kishtin-Records"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
             };
             /** @description Error */
             default: {

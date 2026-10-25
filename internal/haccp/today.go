@@ -95,33 +95,34 @@ type TodayInput struct {
 	Limits      []LimitVersion
 }
 
-// effective is a record after corrections, placed at the time of the
+// Effective is a record after corrections, placed at the time of the
 // record it corrects.
-type effective struct {
+type Effective struct {
 	Record
-	at time.Time
+	// At is when the original record was logged.
+	At time.Time
 }
 
-// applyCorrections replaces each corrected record with its latest
+// ApplyCorrections replaces each corrected record with its latest
 // correction. A correction keeps the time of the original it corrects, so
 // it fills the same check. Corrections of records not in the set (from
 // another day) are left out.
-func applyCorrections(recs []Record) []effective {
+func ApplyCorrections(recs []Record) []Effective {
 	byID := map[string]int{}
-	out := make([]effective, 0, len(recs))
+	out := make([]Effective, 0, len(recs))
 	sorted := slices.Clone(recs)
 	slices.SortFunc(sorted, func(a, b Record) int { return int(a.Seq - b.Seq) })
 	for _, r := range sorted {
 		if r.Corrects == "" {
 			byID[r.ID] = len(out)
-			out = append(out, effective{Record: r, at: r.LoggedAt})
+			out = append(out, Effective{Record: r, At: r.LoggedAt})
 			continue
 		}
 		i, ok := byID[r.Corrects]
 		if !ok {
 			continue
 		}
-		out[i] = effective{Record: r, at: out[i].at}
+		out[i] = Effective{Record: r, At: out[i].At}
 		byID[r.ID] = i
 	}
 	return out
@@ -155,7 +156,7 @@ func BuildToday(in TodayInput) Today {
 	day := now.Format(DateLayout)
 	t := Today{Date: day, Units: []UnitToday{}, Cleaning: []CleaningToday{}, NeedsAttention: []Record{}, Batches: []BatchToday{}}
 
-	recs := applyCorrections(in.Records)
+	recs := ApplyCorrections(in.Records)
 
 	for _, u := range in.Lists.Units {
 		checks := u.ChecksOrDefault()
@@ -167,14 +168,14 @@ func BuildToday(in TodayInput) Today {
 			Name: u.Name, Kind: u.Kind, NonFood: u.NonFood,
 			Limit: Resolve(in.Limits, check, Scopes(u.Kind, Reading{Unit: u.Name})),
 		}
-		latest := make([]*effective, len(checks))
+		latest := make([]*Effective, len(checks))
 		for k := range recs {
 			r := &recs[k]
 			if r.Type != u.Kind || !strings.EqualFold(r.Reading.Unit, u.Name) {
 				continue
 			}
-			i := slotIndex(checks, minutes(r.at, loc))
-			if latest[i] == nil || !r.at.Before(latest[i].at) {
+			i := slotIndex(checks, minutes(r.At, loc))
+			if latest[i] == nil || !r.At.Before(latest[i].At) {
 				latest[i] = r
 			}
 		}
@@ -236,8 +237,8 @@ func BuildToday(in TodayInput) Today {
 	}
 
 	oldest := now.AddDate(0, 0, -3).Format(DateLayout)
-	batches := applyCorrections(in.BatchLabels)
-	slices.SortFunc(batches, func(a, b effective) int { return int(b.Seq - a.Seq) })
+	batches := ApplyCorrections(in.BatchLabels)
+	slices.SortFunc(batches, func(a, b Effective) int { return int(b.Seq - a.Seq) })
 	for _, b := range batches {
 		if b.Type != RecordBatchLabel || b.Reading.UseBy < oldest {
 			continue
@@ -260,7 +261,7 @@ func BuildToday(in TodayInput) Today {
 // DoneToday returns today's effective cleaning record for a task, if the
 // task is done.
 func DoneToday(todays []Record, task string) *Record {
-	for _, e := range applyCorrections(todays) {
+	for _, e := range ApplyCorrections(todays) {
 		r := e.Record
 		if r.Type == RecordCleaning && strings.EqualFold(r.Reading.Task, task) && r.Reading.Done != nil && *r.Reading.Done {
 			return &r

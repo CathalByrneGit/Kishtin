@@ -1,0 +1,152 @@
+{
+  "id": "fsai-safe-catering",
+  "name": "FSAI Safe Catering record books",
+  "issuer": "Food Safety Authority of Ireland",
+  "jurisdiction": "IE",
+  "url": "https://www.fsai.ie/publications/safe-catering-pack-record-books",
+  "templates": [
+    {
+      "id": "fsai-sc1",
+      "code": "SC1",
+      "title": "Food Delivery Records",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/d48ce1a3-f504-4cf8-be09-9b792e719dbc/Safe-Catering-Pack-Record-Books-1-(Food-Delivery).pdf",
+        "published": "2020-02",
+        "sha256": "b1ec332172e5fa32565c208e0bbd3bfbf05d3a92c1e66968e5510759e777ac40"
+      },
+      "missing": "Kishtin does not record the batch code, use-by date or delivery vehicle check this booklet asks for yet."
+    },
+    {
+      "id": "fsai-sc2",
+      "code": "SC2",
+      "title": "Fridge/Freezer/Chill Display Temperature Records",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/0e2f40b3-271d-48cf-877b-3963268bf931/SC2-2012-refrigeration.pdf",
+        "published": "2012-10",
+        "sha256": "b987e38308398fda3b688a987e69de6ce9a9eaeb3511a7fc75d53b1e4ff528e9"
+      },
+      "builder": "unit_grid",
+      "units_per_page": 6,
+      "columns": [
+        { "label": "Date", "field": "date", "width": 14 },
+        { "label": "Unit", "field": "unit_checks", "width": 168 },
+        { "label": "Comments/Action", "field": "comments", "width": 66 },
+        { "label": "Sign", "field": "signed", "width": 25 }
+      ],
+      "notes": [
+        "Chilled food: 0°C to 5°C; frozen food: less than or equal to -18°C.",
+        "It is recommended that fridge/freezer temperatures are checked at least once per day. Some businesses may wish to check fridges more frequently."
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "fsai-sc3",
+      "code": "SC3",
+      "title": "Cooking/Cooling/Reheating Records",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/09587431-fce2-4b7f-93b3-3e061fa630b6/Safe-Catering-Pack-Record-Books-3-(Cooking-Cooling-Reheating).pdf",
+        "published": "2020-02",
+        "sha256": "c61c4793c8d3e24ab2108103f981b05120be33463ca8403b53d40da000a613ec"
+      },
+      "builder": "cooking",
+      "columns": [
+        { "label": "Date", "field": "date", "width": 17 },
+        { "label": "Food", "field": "food", "width": 42 },
+        { "label": "Time started cooking", "group": "Cooking", "fixed": "N/A", "fixed_when": "core_temp", "width": 18 },
+        { "label": "Time finished cooking", "group": "Cooking", "field": "cook_finished", "width": 18 },
+        { "label": "Core temp", "group": "Cooking", "field": "core_temp", "width": 18 },
+        { "label": "Signed", "group": "Cooking", "field": "cook_signed", "width": 19 },
+        { "label": "Time into fridge/blast chiller", "group": "Cooling", "field": "into_fridge", "width": 22 },
+        { "label": "Signed", "group": "Cooling", "field": "cool_signed", "width": 19 },
+        { "label": "Core temp", "group": "Reheating", "field": "reheat_temp", "width": 18 },
+        { "label": "Signed", "group": "Reheating", "field": "reheat_signed", "width": 19 },
+        { "label": "Comments/Action", "field": "comments", "width": 49 },
+        { "label": "Kishtin ref", "field": "ref", "width": 14 }
+      ],
+      "notes": [
+        "Cooking: core temperature 75°C or above. Cooling: cool food as quickly as possible and place in fridge within 2 hours. Time finished cooking needs to be recorded if food is being cooled. Reheating: core temperature 70°C or above.",
+        "It is not necessary to record the time started cooking, if the core temperature is checked."
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "fsai-sc4",
+      "code": "SC4",
+      "title": "Hot Hold/Display Records",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/1546c484-e68a-4b1e-afef-026a33f5d0f6/Safe-Catering-Pack-Record-Books-4-(Hot-Hold-Display).pdf",
+        "published": "2020-02",
+        "sha256": "55035b8233ea5131d8e6907cfafa751a28bf532cb621818024da69a77d33609c"
+      },
+      "builder": "hot_hold",
+      "columns": [
+        { "label": "Date", "field": "date", "width": 18 },
+        { "label": "Food", "field": "food", "width": 56 },
+        { "label": "Time into hot hold", "width": 22 },
+        { "label": "Core temp (1st check)", "field": "check_1", "width": 27 },
+        { "label": "Core temp (2nd check)", "field": "check_2", "width": 27 },
+        { "label": "Core temp (3rd check)", "field": "check_3", "width": 27 },
+        { "label": "Comments/Action", "field": "comments", "width": 60 },
+        { "label": "Signed", "field": "signed", "width": 22 },
+        { "label": "Kishtin ref", "field": "ref", "width": 14 }
+      ],
+      "notes": ["Keep hot food at or above 63°C."],
+      "manager_check": true
+    },
+    {
+      "id": "fsai-sc5",
+      "code": "SC5",
+      "title": "Hygiene Inspection Checklist",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/b601f203-5062-43d4-b9d7-5bd1a2e7d7d5/SC5-2012-inspection.pdf",
+        "published": "2012-10",
+        "sha256": "378c70cb1dd02698a0aa78546a5631172640ce40e2b68170f5f0ad846738cfe2"
+      },
+      "missing": "Kishtin has no hygiene inspection checklist yet."
+    },
+    {
+      "id": "fsai-sc6",
+      "code": "SC6",
+      "title": "Hygiene Training Records",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/4bb6a8de-6138-4c3b-a7b6-b54a8ff9a961/SC6-2012-training.pdf",
+        "published": "2012-10",
+        "sha256": "2925c6bfeb525b74d9f6a9938ab1568f02795dc9236d7e3ad0de454ce0ded7d7"
+      },
+      "missing": "Kishtin does not keep training records yet."
+    },
+    {
+      "id": "fsai-sc7",
+      "code": "SC7",
+      "title": "Fitness to Work Assessment",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/1c707005-0675-4255-beb3-3451ae9170d3/SC7-2012-fitness.pdf",
+        "published": "2012-10",
+        "sha256": "6b84783af694aed20946adf17546e53807554b1f712b50ced4c802270ab66f8b"
+      },
+      "missing": "Kishtin does not keep fitness to work assessments. They hold health information, so keep them on paper for now."
+    },
+    {
+      "id": "fsai-sc8",
+      "code": "SC8",
+      "title": "All-in-One Daily Record",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/c577594c-faac-4330-9f6a-5c604e0af585/Safe-Catering-Pack-Record-Books-8-(All-in-One-Daily-Record).pdf",
+        "published": "2020-02",
+        "sha256": "0058cd03d73d8815304d9fe9aa34e5e0bd0d33a50f98ae375b882aebaa95931a"
+      },
+      "missing": "This booklet includes deliveries, and Kishtin does not record all the delivery details it asks for yet. Use SC2, SC3 and SC4 instead."
+    },
+    {
+      "id": "fsai-sc9",
+      "code": "SC9",
+      "title": "Transport and Delivery Records",
+      "source": {
+        "url": "https://www.fsai.ie/getmedia/e7d143a1-7a14-4ca6-8f98-bc99ddfa6abd/safe-catering-pack-9-transport-delivery.pdf",
+        "published": "2012-10",
+        "sha256": "d3feff861cdd016608d64f7b56d3d315876a86284091e47552c44c91fb07a58e"
+      },
+      "missing": "Kishtin does not record deliveries to customers yet."
+    }
+  ]
+}

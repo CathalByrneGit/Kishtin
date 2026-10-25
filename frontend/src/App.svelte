@@ -22,6 +22,7 @@
     ChefHat,
     ClipboardPlus,
     CookingPot,
+    BookOpen,
     Download,
     House,
     KeyRound,
@@ -52,6 +53,7 @@
   import Login from "./screens/Login.svelte";
   import Pair from "./screens/Pair.svelte";
   import Exports from "./views/Exports.svelte";
+  import Books from "./views/Books.svelte";
   import OrdersView from "./views/Orders.svelte";
   import Pass from "./views/Pass.svelte";
   import Stations from "./views/Stations.svelte";
@@ -87,6 +89,7 @@
     { path: "/voice", label: "Voice", section: "voice", view: null, group: "Service" },
     { path: "/today", label: "Today", section: "today", view: null, group: "HACCP" },
     { path: "/records", label: "Records", section: "records", view: null, group: "HACCP" },
+    { path: "/books", label: "Record books", section: "books", view: null, group: "HACCP" },
     { path: "/exports", label: "Exports", section: "exports", view: null, group: "HACCP" },
     { path: "/verify", label: "Verify", section: "verify", view: null, group: "HACCP" },
     { path: "/setup/menu", label: "Menu", section: "setup", view: "menu", group: "Setup" },
@@ -127,6 +130,7 @@
       sections: [
         { id: "today", label: "Today", href: "/today", icon: House, viewRuns: [] },
         { id: "records", label: "Records", href: "/records", icon: List, viewRuns: [] },
+        { id: "books", label: "Record books", href: "/books", icon: BookOpen, viewRuns: [] },
         { id: "exports", label: "Exports", href: "/exports", icon: Download, viewRuns: [] },
         { id: "verify", label: "Verify", href: "/verify", icon: ShieldCheck, viewRuns: [] },
       ],
@@ -365,6 +369,8 @@
           <Today />
         {:else if route.path === "/records"}
           <Records />
+        {:else if route.path === "/books"}
+          <Books />
         {:else if route.path === "/exports"}
           <Exports />
         {:else if route.path === "/verify"}

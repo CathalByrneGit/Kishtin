@@ -78,6 +78,18 @@ type ClientInterface interface {
 	GetFile(ctx context.Context, options *GetFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*struct{}, error)
 	GetFileWithResponse(ctx context.Context, options *GetFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetFileResp, error)
 
+	// ListRecordBooks List the official record books Kishtin can fill in
+	ListRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResponse, error)
+	ListRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResp, error)
+
+	// GetRecordBook Fill in a record book for a month, to preview
+	GetRecordBook(ctx context.Context, options *GetRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordBookResponse, error)
+	GetRecordBookWithResponse(ctx context.Context, options *GetRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordBookResp, error)
+
+	// ExportRecordBook Download a filled-in record book as PDF
+	ExportRecordBook(ctx context.Context, options *ExportRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordBookResponse, error)
+	ExportRecordBookWithResponse(ctx context.Context, options *ExportRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordBookResp, error)
+
 	// CheckRecord Check a reading without saving it
 	CheckRecord(ctx context.Context, options *CheckRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CheckRecordResponse, error)
 	CheckRecordWithResponse(ctx context.Context, options *CheckRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CheckRecordResp, error)
@@ -1042,6 +1054,190 @@ func (c *Client) GetFile(ctx context.Context, options *GetFileRequestOptions, re
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/files/{sha256}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ListRecordBooks List the official record books Kishtin can fill in
+func (c *Client) ListRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/books",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ListRecordBooksResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ListRecordBooksErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ListRecordBooksErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ListRecordBooksResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ListRecordBooksResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetRecordBook Fill in a record book for a month, to preview
+func (c *Client) GetRecordBook(ctx context.Context, options *GetRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordBookResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"month": {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/haccp/books/{book}",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetRecordBookResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetRecordBookErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetRecordBookErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetRecordBookResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetRecordBookResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ExportRecordBook Download a filled-in record book as PDF
+func (c *Client) ExportRecordBook(ctx context.Context, options *ExportRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordBookResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"month": {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/haccp/books/{book}/pdf",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ExportRecordBookResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ExportRecordBookErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ExportRecordBookErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		result := ExportRecordBookResponse(bodyBytes)
+		return &result, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}/pdf")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -6064,6 +6260,112 @@ func (o *GetFileRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// GetRecordBookRequestOptions is the options needed to make a request to GetRecordBook.
+type GetRecordBookRequestOptions struct {
+	PathParams *GetRecordBookPath
+	Query      *GetRecordBookQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *GetRecordBookRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *GetRecordBookRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *GetRecordBookRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *GetRecordBookRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *GetRecordBookRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// ExportRecordBookRequestOptions is the options needed to make a request to ExportRecordBook.
+type ExportRecordBookRequestOptions struct {
+	PathParams *ExportRecordBookPath
+	Query      *ExportRecordBookQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ExportRecordBookRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ExportRecordBookRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *ExportRecordBookRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ExportRecordBookRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *ExportRecordBookRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // CheckRecordRequestOptions is the options needed to make a request to CheckRecord.
 type CheckRecordRequestOptions struct {
 	Body *CheckRecordBody
@@ -9042,6 +9344,181 @@ func (c *Client) GetFileWithResponse(ctx context.Context, options *GetFileReques
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "GetFileErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ListRecordBooks List the official record books Kishtin can fill in
+func (c *Client) ListRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/books",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ListRecordBooksResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ListRecordBooksResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListRecordBooksResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ListRecordBooksErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListRecordBooksErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// GetRecordBook Fill in a record book for a month, to preview
+func (c *Client) GetRecordBookWithResponse(ctx context.Context, options *GetRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordBookResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/books/{book}",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetRecordBookResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetRecordBookResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetRecordBookResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetRecordBookErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetRecordBookErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ExportRecordBook Download a filled-in record book as PDF
+func (c *Client) ExportRecordBookWithResponse(ctx context.Context, options *ExportRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordBookResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/books/{book}/pdf",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}/pdf")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ExportRecordBookResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.Headers200 = &ExportRecordBookResp200Headers{
+			ContentDisposition: resp.Headers.Get("Content-Disposition"),
+			ContentType:        resp.Headers.Get("Content-Type"),
+			XKishtinChainHead:  resp.Headers.Get("X-Kishtin-Chain-Head"),
+			XKishtinChainOK:    resp.Headers.Get("X-Kishtin-Chain-OK"),
+			XKishtinRecords:    resp.Headers.Get("X-Kishtin-Records"),
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ExportRecordBookErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ExportRecordBookErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -13861,6 +14338,24 @@ func (g GetFilePath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(g))
 }
 
+type GetRecordBookPath struct {
+	// Book Record book ID or code, such as SC2
+	Book string `json:"book" validate:"required"`
+}
+
+func (g GetRecordBookPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(g))
+}
+
+type ExportRecordBookPath struct {
+	// Book Record book ID or code, such as SC2
+	Book string `json:"book" validate:"required"`
+}
+
+func (e ExportRecordBookPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(e))
+}
+
 type GetRecordPath struct {
 	ID string `json:"id" validate:"required"`
 }
@@ -14174,6 +14669,38 @@ type UploadFileQuery struct {
 	Name *string `json:"name,omitempty"`
 }
 
+type GetRecordBookQuery struct {
+	// Month Month as YYYY-MM, Dublin time. Leave out for this month.
+	Month *string `json:"month,omitempty"`
+}
+
+func (g GetRecordBookQuery) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := runtime.ValidatePattern(g.Month, `^[0-9]{4}-[0-9]{2}$`); err != nil {
+		errors = errors.Append("Month", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ExportRecordBookQuery struct {
+	// Month Month as YYYY-MM, Dublin time. Leave out for this month.
+	Month *string `json:"month,omitempty"`
+}
+
+func (e ExportRecordBookQuery) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := runtime.ValidatePattern(e.Month, `^[0-9]{4}-[0-9]{2}$`); err != nil {
+		errors = errors.Append("Month", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type ExportRecordsQuery struct {
 	// From Start date (2026-05-01, Dublin time) or RFC 3339 time. Empty: from the first record.
 	From *string `json:"from,omitempty"`
@@ -14282,6 +14809,18 @@ type UploadFileResponse = FileMeta
 type UploadFileErrorResponse = ErrorModel
 
 type GetFileErrorResponse = ErrorModel
+
+type ListRecordBooksResponse = BookPacksBody
+
+type ListRecordBooksErrorResponse = ErrorModel
+
+type GetRecordBookResponse = Book
+
+type GetRecordBookErrorResponse = ErrorModel
+
+type ExportRecordBookResponse = []byte
+
+type ExportRecordBookErrorResponse = ErrorModel
 
 type CheckRecordResponse = Check
 
@@ -14668,6 +15207,38 @@ type GetFileResp struct {
 	Body                              []byte
 	StatusCode                        int
 	ApplicationProblemPlusJSONDefault *GetFileErrorResponse
+}
+
+type ListRecordBooksResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ListRecordBooksResponse
+	ApplicationProblemPlusJSONDefault *ListRecordBooksErrorResponse
+}
+
+type GetRecordBookResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetRecordBookResponse
+	ApplicationProblemPlusJSONDefault *GetRecordBookErrorResponse
+}
+
+type ExportRecordBookResp200Headers struct {
+	ContentDisposition string `header:"Content-Disposition"`
+	ContentType        string `header:"Content-Type"`
+	XKishtinChainHead  string `header:"X-Kishtin-Chain-Head"`
+	XKishtinChainOK    string `header:"X-Kishtin-Chain-OK"`
+	XKishtinRecords    string `header:"X-Kishtin-Records"`
+}
+
+type ExportRecordBookResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	Headers200                        *ExportRecordBookResp200Headers
+	ApplicationProblemPlusJSONDefault *ExportRecordBookErrorResponse
 }
 
 type CheckRecordResp struct {
@@ -15442,6 +16013,87 @@ func (b BatchToday) Validate() error {
 	return errors
 }
 
+type Book struct {
+	Corrected int64    `json:"corrected"`
+	FirstSeq  *int64   `json:"first_seq,omitempty"`
+	Gaps      []Gap    `json:"gaps" validate:"required"`
+	Issuer    string   `json:"issuer" validate:"required"`
+	LastSeq   *int64   `json:"last_seq,omitempty"`
+	Month     string   `json:"month" validate:"required"`
+	PackName  string   `json:"pack_name" validate:"required"`
+	Pages     []Page   `json:"pages" validate:"required"`
+	Records   int64    `json:"records"`
+	Template  Template `json:"template"`
+	Unfilled  []string `json:"unfilled" validate:"required"`
+}
+
+func (b Book) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(b.Gaps, "required"); err != nil {
+		errors = errors.Append("Gaps", err)
+	}
+	for i, item := range b.Gaps {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Gaps[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(b.Issuer, "required"); err != nil {
+		errors = errors.Append("Issuer", err)
+	}
+	if err := typesValidator.Var(b.Month, "required"); err != nil {
+		errors = errors.Append("Month", err)
+	}
+	if err := typesValidator.Var(b.PackName, "required"); err != nil {
+		errors = errors.Append("PackName", err)
+	}
+	if err := typesValidator.Var(b.Pages, "required"); err != nil {
+		errors = errors.Append("Pages", err)
+	}
+	for i, item := range b.Pages {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Pages[%d]", i), err)
+			}
+		}
+	}
+	if v, ok := any(b.Template).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Template", err)
+		}
+	}
+	if err := typesValidator.Var(b.Unfilled, "required"); err != nil {
+		errors = errors.Append("Unfilled", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type BookPacksBody struct {
+	Packs []Pack `json:"packs" validate:"required"`
+}
+
+func (b BookPacksBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(b.Packs, "required"); err != nil {
+		errors = errors.Append("Packs", err)
+	}
+	for i, item := range b.Packs {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Packs[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type CatalogBody struct {
 	Entries []CatalogRow `json:"entries" validate:"required"`
 }
@@ -15503,6 +16155,15 @@ func (c CatalogRow) Validate() error {
 		return nil
 	}
 	return errors
+}
+
+type Cell struct {
+	Flag *string `json:"flag,omitempty"`
+	Text string  `json:"text" validate:"required"`
+}
+
+func (c Cell) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
 }
 
 type ChainBreak struct {
@@ -15611,6 +16272,19 @@ func (c CleaningToday) Validate() error {
 		return nil
 	}
 	return errors
+}
+
+type Column struct {
+	Field     *string `json:"field,omitempty"`
+	Fixed     *string `json:"fixed,omitempty"`
+	FixedWhen *string `json:"fixed_when,omitempty"`
+	Group     *string `json:"group,omitempty"`
+	Label     string  `json:"label" validate:"required"`
+	Width     float64 `json:"width"`
+}
+
+func (c Column) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
 }
 
 type ConnectInput struct {
@@ -15978,6 +16652,16 @@ type FileProblem struct {
 
 func (f FileProblem) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(f))
+}
+
+type Gap struct {
+	Check string `json:"check" validate:"required"`
+	Date  string `json:"date" validate:"required"`
+	Unit  string `json:"unit" validate:"required"`
+}
+
+func (g Gap) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(g))
 }
 
 type Guidance struct {
@@ -17072,6 +17756,81 @@ func (p POSSettings) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(p))
 }
 
+type Pack struct {
+	ID           string     `json:"id" validate:"required"`
+	Issuer       string     `json:"issuer" validate:"required"`
+	Jurisdiction string     `json:"jurisdiction" validate:"required"`
+	Name         string     `json:"name" validate:"required"`
+	Templates    []Template `json:"templates" validate:"required"`
+	URL          string     `json:"url" validate:"required"`
+}
+
+func (p Pack) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if err := typesValidator.Var(p.Issuer, "required"); err != nil {
+		errors = errors.Append("Issuer", err)
+	}
+	if err := typesValidator.Var(p.Jurisdiction, "required"); err != nil {
+		errors = errors.Append("Jurisdiction", err)
+	}
+	if err := typesValidator.Var(p.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(p.Templates, "required"); err != nil {
+		errors = errors.Append("Templates", err)
+	}
+	for i, item := range p.Templates {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Templates[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.URL, "required"); err != nil {
+		errors = errors.Append("URL", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Page struct {
+	Columns []Column `json:"columns" validate:"required"`
+	Rows    []Row    `json:"rows" validate:"required"`
+}
+
+func (p Page) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.Columns, "required"); err != nil {
+		errors = errors.Append("Columns", err)
+	}
+	for i, item := range p.Columns {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Columns[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.Rows, "required"); err != nil {
+		errors = errors.Append("Rows", err)
+	}
+	for i, item := range p.Rows {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Rows[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type Plan struct {
 	At              time.Time      `json:"at" validate:"required"`
 	Courses         []CourseStatus `json:"courses" validate:"required"`
@@ -17279,6 +18038,28 @@ type Result struct {
 
 func (r Result) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(r))
+}
+
+type Row struct {
+	Cells []Cell `json:"cells" validate:"required"`
+}
+
+func (r Row) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(r.Cells, "required"); err != nil {
+		errors = errors.Append("Cells", err)
+	}
+	for i, item := range r.Cells {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Cells[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Rules struct {
@@ -17760,6 +18541,16 @@ func (s SlotToday) Validate() error {
 	return errors
 }
 
+type Source struct {
+	Published string `json:"published" validate:"required"`
+	Sha256    string `json:"sha256" validate:"required"`
+	URL       string `json:"url" validate:"required"`
+}
+
+func (s Source) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
 type SpeakBody struct {
 	Text string `json:"text" validate:"required,max=500,min=1"`
 }
@@ -17961,6 +18752,48 @@ type TargetBody struct {
 
 func (t TargetBody) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(t))
+}
+
+type Template struct {
+	Builder      *string  `json:"builder,omitempty"`
+	Code         string   `json:"code" validate:"required"`
+	Columns      []Column `json:"columns,omitempty"`
+	ID           string   `json:"id" validate:"required"`
+	ManagerCheck *bool    `json:"manager_check,omitempty"`
+	Missing      *string  `json:"missing,omitempty"`
+	Notes        []string `json:"notes,omitempty"`
+	Source       Source   `json:"source"`
+	Title        string   `json:"title" validate:"required"`
+	UnitsPerPage *int64   `json:"units_per_page,omitempty"`
+}
+
+func (t Template) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(t.Code, "required"); err != nil {
+		errors = errors.Append("Code", err)
+	}
+	for i, item := range t.Columns {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Columns[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if v, ok := any(t.Source).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Source", err)
+		}
+	}
+	if err := typesValidator.Var(t.Title, "required"); err != nil {
+		errors = errors.Append("Title", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type TillLine struct {

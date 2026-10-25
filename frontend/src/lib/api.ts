@@ -146,6 +146,20 @@ export const api = {
     };
   },
 
+  bookPacks: () => json<Schemas["BookPacksBody"]>("GET", "/haccp/books"),
+  book: (ref: string, month: string) => json<Schemas["Book"]>("GET", `/haccp/books/${encodeURIComponent(ref)}`, { query: { month } }),
+  bookPDF: async (ref: string, month: string): Promise<ExportResult> => {
+    const res = await send("GET", `/haccp/books/${encodeURIComponent(ref)}/pdf`, { query: { month } });
+    const cd = res.headers.get("Content-Disposition") ?? "";
+    return {
+      blob: await res.blob(),
+      name: /filename="?([^";]+)"?/.exec(cd)?.[1] ?? `${ref}-${month}.pdf`,
+      records: Number(res.headers.get("X-Kishtin-Records") ?? "0"),
+      chainHead: res.headers.get("X-Kishtin-Chain-Head") ?? "",
+      chainOK: res.headers.get("X-Kishtin-Chain-OK") === "true",
+    };
+  },
+
   guidance: () => json<Schemas["VersionedGuidance"]>("GET", "/settings/guidance"),
   lists: () => json<Schemas["VersionedLists"]>("GET", "/settings/lists"),
   previewLists: (body: Schemas["SettingsChangeLists"]) =>
