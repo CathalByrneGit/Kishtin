@@ -13,6 +13,7 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
+	"github.com/cathalbyrnegit/kishtin/internal/integrations"
 	"github.com/cathalbyrnegit/kishtin/internal/menu"
 	"github.com/cathalbyrnegit/kishtin/internal/orders"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
@@ -36,6 +37,7 @@ type Store interface {
 	Menu() MenuStore
 	Orders() OrderStore
 	Voice() VoiceStore
+	POS() POSStore
 
 	// WithTx runs fn in one transaction. If fn returns an error the
 	// transaction is rolled back. Writes inside fn must use tx.
@@ -221,4 +223,23 @@ type VoiceStore interface {
 	// ListVoiceLog returns entries before the given time (all when zero),
 	// newest first, at most limit of them.
 	ListVoiceLog(ctx context.Context, before time.Time, limit int) ([]voice.LogEntry, error)
+}
+
+// POSStore stores how Kishtin reads from a point-of-sale system: catalog
+// mappings, the till orders it has seen, and where polling has got to.
+type POSStore interface {
+	// SaveMapping creates or replaces the mapping for a catalog entry.
+	SaveMapping(ctx context.Context, m integrations.Mapping) error
+	ListMappings(ctx context.Context, pos string) ([]integrations.Mapping, error)
+
+	// GetImported returns ErrNotFound for an order not seen before.
+	GetImported(ctx context.Context, pos, externalID string) (integrations.Imported, error)
+	// SaveImported creates or replaces a till order's record.
+	SaveImported(ctx context.Context, o integrations.Imported) error
+	// ListImported returns the most recently seen orders first.
+	ListImported(ctx context.Context, pos string, limit int) ([]integrations.Imported, error)
+
+	// GetPOSState returns ErrNotFound before the first poll.
+	GetPOSState(ctx context.Context, pos string) (integrations.SyncState, error)
+	SavePOSState(ctx context.Context, st integrations.SyncState) error
 }

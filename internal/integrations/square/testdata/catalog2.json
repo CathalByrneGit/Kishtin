@@ -1,0 +1,2 @@
+{"objects": [{"type": "ITEM", "id": "item-cola", "item_data": {"name": "Synthetic cola", "variations": [
+  {"type": "ITEM_VARIATION", "id": "var-cola", "item_variation_data": {"name": "Regular"}}]}}]}

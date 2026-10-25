@@ -45,3 +45,13 @@ max_size_mb = 15
 # stt_url = "http://127.0.0.1:8178"   # whisper.cpp server, started with --convert
 # tts_url = "http://127.0.0.1:5000"   # Piper HTTP server
 # timeout = "20s"
+
+[square]
+# Orders from the Square till. The access token goes in the environment
+# (KISHTIN_SQUARE_TOKEN) or here; it is never stored in the database.
+# Whether orders are imported, and for which location, is a manager's
+# setting on the Square page, which shows what is sent before it is saved.
+# See docs/square.md.
+# environment = "production"   # or "sandbox"
+# token = ""
+# timeout = "15s"

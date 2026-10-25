@@ -1,0 +1,14 @@
+{
+  "objects": [
+    {"type": "ITEM", "id": "item-burger", "item_data": {"name": "Synthetic burger", "variations": [
+      {"type": "ITEM_VARIATION", "id": "var-burger", "item_variation_data": {"name": "Regular"}},
+      {"type": "ITEM_VARIATION", "id": "var-burger-dbl", "item_variation_data": {"name": "Double"}},
+      {"type": "ITEM_VARIATION", "id": "var-old", "is_deleted": true, "item_variation_data": {"name": "Old"}}
+    ]}},
+    {"type": "ITEM", "id": "item-gone", "is_deleted": true, "item_data": {"name": "Gone", "variations": []}},
+    {"type": "MODIFIER_LIST", "id": "ml-cook", "modifier_list_data": {"name": "Cooking", "modifiers": [
+      {"type": "MODIFIER", "id": "mod-welldone", "modifier_data": {"name": "Well done"}}
+    ]}}
+  ],
+  "cursor": "page2"
+}

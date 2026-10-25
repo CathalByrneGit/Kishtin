@@ -1,0 +1,15 @@
+{
+  "orders": [
+    {"id": "sq-order-1", "version": 3, "state": "OPEN", "ticket_name": "Table 4", "updated_at": "2026-10-25T18:01:02Z",
+     "line_items": [
+       {"uid": "l1", "catalog_object_id": "var-burger", "name": "Synthetic burger", "variation_name": "Regular", "quantity": "2", "note": "no onion",
+        "modifiers": [{"catalog_object_id": "mod-welldone", "name": "Well done"}]},
+       {"uid": "l2", "catalog_object_id": "var-cola", "name": "Synthetic cola", "quantity": "1"},
+       {"uid": "l3", "name": "Cheese", "quantity": "0.25"}
+     ]},
+    {"id": "sq-order-2", "version": 1, "state": "OPEN", "updated_at": "2026-10-25T18:02:00Z",
+     "fulfillments": [{"type": "PICKUP", "pickup_details": {"recipient": {"display_name": "Synthetic customer"}}}],
+     "line_items": [{"uid": "m1", "catalog_object_id": "var-burger-dbl", "name": "Synthetic burger", "variation_name": "Double", "quantity": "1"}]},
+    {"id": "sq-draft", "version": 1, "state": "DRAFT", "updated_at": "2026-10-25T18:03:00Z"}
+  ]
+}

@@ -36,6 +36,7 @@
     Settings,
     ShieldCheck,
     SlidersHorizontal,
+    Store,
     Users,
   } from "@lucide/svelte";
   import { onMount } from "svelte";
@@ -56,6 +57,7 @@
   import Stations from "./views/Stations.svelte";
   import MenuSetup from "./views/setup/Menu.svelte";
   import SchedulerSetup from "./views/setup/Scheduler.svelte";
+  import SquareSetup from "./views/setup/Square.svelte";
   import Records from "./views/Records.svelte";
   import Backups from "./views/setup/Backups.svelte";
   import Keys from "./views/setup/Keys.svelte";
@@ -86,6 +88,7 @@
     { path: "/verify", label: "Verify", section: "verify", view: null, group: "HACCP" },
     { path: "/setup/menu", label: "Menu", section: "setup", view: "menu", group: "Setup" },
     { path: "/setup/scheduler", label: "Scheduler", section: "setup", view: "scheduler", group: "Setup" },
+    { path: "/setup/square", label: "Square", section: "setup", view: "square", group: "Setup" },
     { path: "/setup/lists", label: "Fridges and tasks", section: "setup", view: "lists", group: "Setup" },
     { path: "/setup/limits", label: "Limits and rules", section: "setup", view: "limits", group: "Setup" },
     { path: "/setup/staff", label: "Staff", section: "setup", view: "staff", group: "Setup" },
@@ -97,6 +100,7 @@
   const setupIcons: Record<string, typeof House> = {
     menu: UtensilsCrossed,
     scheduler: Timer,
+    square: Store,
     lists: ListChecks,
     limits: SlidersHorizontal,
     staff: Users,
@@ -349,6 +353,8 @@
           <MenuSetup />
         {:else if route.path === "/setup/scheduler"}
           <SchedulerSetup />
+        {:else if route.path === "/setup/square"}
+          <SquareSetup />
         {:else if route.path === "/today"}
           <Today />
         {:else if route.path === "/records"}

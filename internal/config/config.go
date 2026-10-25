@@ -11,6 +11,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"github.com/cathalbyrnegit/kishtin/internal/integrations"
+	"github.com/cathalbyrnegit/kishtin/internal/integrations/square"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/speech"
 )
@@ -24,6 +26,7 @@ type Config struct {
 	Backup  Backup `toml:"backup"`
 	Files   Files  `toml:"files"`
 	Speech  Speech `toml:"speech"`
+	Square  Square `toml:"square"`
 	// RestaurantName is the starting restaurant name for the screens.
 	RestaurantName string `toml:"restaurant_name"`
 }
@@ -68,6 +71,19 @@ type Speech struct {
 	Timeout Duration `toml:"timeout"`
 }
 
+// Square connects to Square for importing orders. Whether import is on,
+// and for which location, is a manager's setting in Kishtin; this only
+// holds how to reach Square. The access token belongs in the environment
+// (KISHTIN_SQUARE_TOKEN) or this file, never in the database.
+type Square struct {
+	// Environment is "production" or "sandbox", or a URL for testing
+	// against a local stand-in.
+	Environment string `toml:"environment"`
+	// Token is the access token. KISHTIN_SQUARE_TOKEN overrides it.
+	Token   string   `toml:"token"`
+	Timeout Duration `toml:"timeout"`
+}
+
 // Duration is a time.Duration written as a string such as "6h".
 type Duration struct{ time.Duration }
 
@@ -105,6 +121,7 @@ func Default() Config {
 		Backup:  Backup{Interval: Duration{6 * time.Hour}, Keep: 28},
 		Files:   Files{MaxSizeMB: 15},
 		Speech:  Speech{Timeout: Duration{20 * time.Second}},
+		Square:  Square{Environment: "production", Timeout: Duration{15 * time.Second}},
 	}
 }
 
@@ -129,6 +146,9 @@ func Load(path string, mustExist bool) (Config, error) {
 	}
 	if v := os.Getenv("KISHTIN_LISTEN"); v != "" {
 		cfg.Server.Listen = v
+	}
+	if v := os.Getenv("KISHTIN_SQUARE_TOKEN"); v != "" {
+		cfg.Square.Token = v
 	}
 	if v := os.Getenv("KISHTIN_STT_URL"); v != "" {
 		cfg.Speech.STTURL = v
@@ -169,6 +189,17 @@ func (c Config) SpeechClient() (*speech.Client, error) {
 	return speech.New(c.Speech.STTURL, c.Speech.TTSURL, c.Speech.Timeout.Duration)
 }
 
+// SquareClient returns the Square client, or nil when no token is set.
+func (c Config) SquareClient() (integrations.POSAdapter, error) {
+	if c.Square.Token == "" {
+		return nil, nil
+	}
+	if c.Square.Timeout.Duration <= 0 {
+		return nil, errors.New("square.timeout must be positive, such as \"15s\"")
+	}
+	return square.New(c.Square.Environment, c.Square.Token, c.Square.Timeout.Duration)
+}
+
 // FilesDir is where attachments are stored.
 func (c Config) FilesDir() string { return filepath.Join(c.DataDir, "files") }
 
@@ -204,6 +235,9 @@ func (c Config) Validate() error {
 		return errors.New("backup.interval cannot be negative")
 	}
 	if _, err := c.SpeechClient(); err != nil {
+		return err
+	}
+	if _, err := c.SquareClient(); err != nil {
 		return err
 	}
 	if err := c.SystemSettings().Validate(); err != nil {

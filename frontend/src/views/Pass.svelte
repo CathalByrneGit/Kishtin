@@ -147,6 +147,7 @@
               <h2>{orderLabel(o)}</h2>
               <span class="muted num">#{o.number} · {dublinTime(o.created_at)}{o.covers ? ` · ${o.covers} covers` : ""}</span>
             </div>
+            {#if o.created_by === "pos:square"}<Chip uppercase={false}>Square</Chip>{/if}
             {#if o.allergy}<Chip tone="danger" uppercase={false}>Allergy</Chip>{/if}
             <IconButton ariaLabel={`History for ${orderLabel(o)}`} title="Order and history" onclick={() => (drawer = o.id)}><History size={16} /></IconButton>
           </header>

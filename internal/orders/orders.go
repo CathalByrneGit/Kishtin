@@ -349,6 +349,9 @@ const (
 	EventUrgent EventKind = "urgent"
 	EventServed EventKind = "served"
 	EventClosed EventKind = "closed"
+	// EventPOS records a change on the till the pass must deal with, such
+	// as a line removed after it reached the kitchen.
+	EventPOS EventKind = "pos"
 )
 
 // Event records something that happened to an order. Events are

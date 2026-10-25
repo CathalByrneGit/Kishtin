@@ -134,10 +134,28 @@ func (c *cli) settingsGroups() map[string]settingsOps {
 				return result(c.api.SaveScheduler(ctx, &client.SaveSchedulerRequestOptions{Body: body}))
 			},
 		},
+		"square": {
+			get:     func(ctx context.Context) (any, error) { return result(c.api.GetSquare(ctx)) },
+			history: func(ctx context.Context) (any, error) { return result(c.api.SquareHistory(ctx)) },
+			preview: func(ctx context.Context, b []byte) (any, error) {
+				body, err := decodeInto[client.SettingsChangePOSSettings](b)
+				if err != nil {
+					return nil, err
+				}
+				return result(c.api.PreviewSquare(ctx, &client.PreviewSquareRequestOptions{Body: body}))
+			},
+			save: func(ctx context.Context, b []byte) (any, error) {
+				body, err := decodeInto[client.SettingsChangePOSSettings](b)
+				if err != nil {
+					return nil, err
+				}
+				return result(c.api.SaveSquare(ctx, &client.SaveSquareRequestOptions{Body: body}))
+			},
+		},
 	}
 }
 
-var settingsKinds = []string{"guidance", "rules", "lists", "system", "scheduler"}
+var settingsKinds = []string{"guidance", "rules", "lists", "system", "scheduler", "square"}
 
 // versioned is the JSON shape of a settings version with its value.
 type versioned struct {
@@ -187,7 +205,7 @@ func (c *cli) settingsCmd() *cobra.Command {
 	kindsHelp := strings.Join(settingsKinds, ", ")
 	cmd := &cobra.Command{
 		Use:   "settings",
-		Short: "Show and change reference guidance, food-safety rules, lists, system and scheduler settings",
+		Short: "Show and change reference guidance, food-safety rules, lists, system, scheduler and Square settings",
 		Long: "Settings groups: " + kindsHelp + ".\n\n" +
 			"  guidance  the reference limits are measured against (starts as FSAI)\n" +
 			"  rules     whether borderline readings need a corrective action, and listed names only\n" +

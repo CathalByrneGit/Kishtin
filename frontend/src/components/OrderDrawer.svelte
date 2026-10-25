@@ -140,6 +140,7 @@
     urgent: "Urgent flag",
     served: "Course served",
     closed: "Order closed",
+    pos: "Changed on the till",
   };
 
   function change(e: Schemas["Event"]): string {

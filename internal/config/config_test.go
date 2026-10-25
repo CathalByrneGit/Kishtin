@@ -57,6 +57,7 @@ func TestValidate(t *testing.T) {
 		"bad listen":          "[server]\nlisten = \"8080\"\n",
 		"cloud speech":        "[speech]\nstt_url = \"https://speech.example.com\"\n",
 		"zero speech timeout": "[speech]\ntimeout = \"0s\"\n",
+		"bad square env":      "[square]\ntoken = \"x\"\nenvironment = \"staging\"\n",
 	}
 	for name, body := range bad {
 		t.Run(name, func(t *testing.T) {
@@ -71,4 +72,13 @@ func TestValidate(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, sp.CanListen())
 	assert.True(t, sp.CanSpeak())
+	pos, err := cfg.SquareClient()
+	require.NoError(t, err)
+	assert.Nil(t, pos, "no token, no Square")
+	t.Setenv("KISHTIN_SQUARE_TOKEN", "synthetic-token")
+	cfg, err = Load(write(t, ok), true)
+	require.NoError(t, err)
+	pos, err = cfg.SquareClient()
+	require.NoError(t, err)
+	assert.Equal(t, "square", pos.Name())
 }

@@ -226,6 +226,15 @@ export const api = {
   voiceSpeak: async (text: string): Promise<Blob> => (await send("POST", "/voice/speak", { body: { text } })).blob(),
   voiceLog: (limit = 100) => json<Schemas["VoiceLogBody"]>("GET", "/voice/log", { query: { limit } }),
 
+  square: () => json<Schemas["SquareStatus"]>("GET", "/square"),
+  previewSquare: (body: Schemas["SettingsChangePOSSettings"]) =>
+    json<Schemas["SettingsPreviewPOSSettings"]>("POST", "/settings/square/preview", { body }),
+  saveSquare: (body: Schemas["SettingsChangePOSSettings"]) => json<Schemas["VersionedPOSSettings"]>("PUT", "/settings/square", { body }),
+  squareCatalog: () => json<Schemas["CatalogBody"]>("GET", "/square/catalog"),
+  saveSquareMappings: (mappings: Schemas["MappingInput"][]) =>
+    json<Schemas["MappingsBody"]>("PUT", "/square/mappings", { body: { mappings } }),
+  squareSync: () => json<Schemas["SyncResult"]>("POST", "/square/sync"),
+
   scheduler: () => json<Schemas["VersionedSettings"]>("GET", "/settings/scheduler"),
   previewScheduler: (body: Schemas["SettingsChangeSettings"]) =>
     json<Schemas["SettingsPreviewSettings"]>("POST", "/settings/scheduler/preview", { body }),

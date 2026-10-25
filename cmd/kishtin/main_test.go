@@ -24,6 +24,12 @@ import (
 
 func server(t *testing.T) (url, key string) {
 	t.Helper()
+	return serverWith(t, nil)
+}
+
+// serverWith starts a server, letting the test change its options.
+func serverWith(t *testing.T, opts func(*service.Options)) (url, key string) {
+	t.Helper()
 	ctx := context.Background()
 	dir := t.TempDir()
 	st, err := sqlite.Open(ctx, filepath.Join(dir, "kishtin.db"))
@@ -31,10 +37,14 @@ func server(t *testing.T) (url, key string) {
 	t.Cleanup(func() { st.Close() })
 	fs, err := files.New(filepath.Join(dir, "files"))
 	require.NoError(t, err)
-	svc := service.New(service.Options{Store: st, Files: fs, Backups: service.BackupConfig{
+	o := service.Options{Store: st, Files: fs, Backups: service.BackupConfig{
 		Dir:  filepath.Join(dir, "backups"),
 		Open: func(ctx context.Context, p string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, p) },
-	}})
+	}}
+	if opts != nil {
+		opts(&o)
+	}
+	svc := service.New(o)
 	require.NoError(t, svc.Init(ctx))
 	res, err := svc.Setup(ctx, service.NewUser{Name: "Máire Manager", Password: "synthetic-password"})
 	require.NoError(t, err)

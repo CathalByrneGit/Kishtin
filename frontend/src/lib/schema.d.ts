@@ -1013,6 +1013,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/square": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show the Square settings in force
+         * @description Whether orders are imported from Square, for which location, and how often Kishtin asks. The preview says exactly what is sent to Square. Turning it on needs the manager password.
+         */
+        get: operations["get-square"];
+        /**
+         * Save a new version of the Square settings
+         * @description Needs a manager password login or a manager API key, and a reason. A change that makes food safety less strict also needs plan_ref. Saved records are never re-graded.
+         */
+        put: operations["save-square"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/square/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every saved version of the Square settings, oldest first */
+        get: operations["square-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/square/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a change to the Square settings
+         * @description Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.
+         */
+        post: operations["preview-square"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/system": {
         parameters: {
             query?: never;
@@ -1068,6 +1129,83 @@ export interface paths {
          * @description Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.
          */
         post: operations["preview-system"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/square": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show whether order import from Square is on and working, recent till orders, and mappings */
+        get: operations["square-status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/square/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the catalog from Square, with how each entry maps to the kitchen (manager password)
+         * @description Sends Square only the access token. Suggestions match dishes and modifiers by name; nothing is saved until mappings are saved.
+         */
+        get: operations["square-catalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/square/mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Map till items to dishes and till modifiers to dish modifiers (manager password)
+         * @description Mark an entry ignore for anything not for the kitchen, such as drinks. Open till orders with items that are now mapped get them added.
+         */
+        put: operations["save-square-mappings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/square/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask Square for new and changed orders now
+         * @description Kishtin also asks on its own while import is on. Orders are deduped on Square's order ID and version.
+         */
+        post: operations["square-sync"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1264,6 +1402,21 @@ export interface components {
             record: components["schemas"]["Record"];
             status: string;
             use_by: string;
+        };
+        CatalogBody: {
+            entries: components["schemas"]["CatalogRow"][];
+        };
+        CatalogEntry: {
+            group?: string;
+            id: string;
+            kind: string;
+            name: string;
+        };
+        CatalogRow: {
+            entry: components["schemas"]["CatalogEntry"];
+            label: string;
+            mapping?: components["schemas"]["Mapping"];
+            suggested?: string;
         };
         ChainBreak: {
             problem: string;
@@ -1491,6 +1644,9 @@ export interface components {
         HistoryOutListsBody: {
             versions: components["schemas"]["VersionedLists"][];
         };
+        HistoryOutPOSSettingsBody: {
+            versions: components["schemas"]["VersionedPOSSettings"][];
+        };
         HistoryOutRulesBody: {
             versions: components["schemas"]["VersionedRules"][];
         };
@@ -1502,6 +1658,25 @@ export interface components {
         };
         HoldBody: {
             reason?: string;
+        };
+        Imported: {
+            added: {
+                [key: string]: number;
+            };
+            external_id: string;
+            /** Format: date-time */
+            first_seen: string;
+            label: string;
+            /** Format: date-time */
+            last_seen: string;
+            notices: string[];
+            order_id?: string;
+            payload: components["schemas"]["TillOrder"];
+            pos: string;
+            state: string;
+            unmapped: string[];
+            /** Format: int64 */
+            version: number;
         };
         Item: {
             /** Format: int64 */
@@ -1629,6 +1804,33 @@ export interface components {
             token: string;
             user: components["schemas"]["User"];
         };
+        Mapping: {
+            dish_id?: string;
+            external_id: string;
+            ignore?: boolean;
+            kind: string;
+            modifier?: string;
+            name: string;
+            pos: string;
+            /** Format: date-time */
+            updated_at: string;
+            updated_by: string;
+        };
+        MappingInput: {
+            dish_id?: string;
+            external_id: string;
+            ignore?: boolean;
+            /** @enum {string} */
+            kind: "item" | "modifier";
+            modifier?: string;
+            name: string;
+        };
+        MappingsBody: {
+            mappings: components["schemas"]["Mapping"][];
+        };
+        MappingsIn: {
+            mappings: components["schemas"]["MappingInput"][];
+        };
         MeOutBody: {
             key: components["schemas"]["APIKey"];
             method?: string;
@@ -1720,6 +1922,12 @@ export interface components {
         };
         OrdersBody: {
             orders: components["schemas"]["Order"][];
+        };
+        POSSettings: {
+            enabled: boolean;
+            location_id: string;
+            /** Format: int64 */
+            poll_seconds: number;
         };
         Plan: {
             /** Format: date-time */
@@ -1853,6 +2061,11 @@ export interface components {
             reason: string;
             value: components["schemas"]["Lists"];
         };
+        SettingsChangePOSSettings: {
+            plan_ref?: string;
+            reason: string;
+            value: components["schemas"]["POSSettings"];
+        };
         SettingsChangeRules: {
             plan_ref?: string;
             reason: string;
@@ -1883,6 +2096,14 @@ export interface components {
             notes: string[];
             problem?: string;
             proposed: components["schemas"]["Lists"];
+        };
+        SettingsPreviewPOSSettings: {
+            changes: string[];
+            current: components["schemas"]["VersionedPOSSettings"];
+            less_strict?: string[];
+            notes: string[];
+            problem?: string;
+            proposed: components["schemas"]["POSSettings"];
         };
         SettingsPreviewRules: {
             changes: string[];
@@ -1933,6 +2154,13 @@ export interface components {
         SpeakBody: {
             text: string;
         };
+        SquareStatus: {
+            connected: boolean;
+            mappings: components["schemas"]["Mapping"][];
+            recent: components["schemas"]["Imported"][];
+            settings: components["schemas"]["VersionedPOSSettings"];
+            state?: components["schemas"]["SyncState"];
+        };
         StaffEntry: {
             has_password: boolean;
             has_pin: boolean;
@@ -1971,6 +2199,26 @@ export interface components {
             name: string;
             station_id: string;
         };
+        SyncResult: {
+            /** Format: int64 */
+            created: number;
+            /** Format: int64 */
+            seen: number;
+            /** Format: int64 */
+            skipped: number;
+            /** Format: int64 */
+            updated: number;
+        };
+        SyncState: {
+            last_error?: string;
+            /** Format: date-time */
+            last_ok_at?: string;
+            /** Format: date-time */
+            last_poll_at?: string;
+            pos: string;
+            /** Format: date-time */
+            since: string;
+        };
         System: {
             /** Format: int64 */
             backup_interval_minutes: number;
@@ -1986,6 +2234,31 @@ export interface components {
             reason?: string;
             /** Format: date-time */
             target_at: string;
+        };
+        TillLine: {
+            catalog_id?: string;
+            modifiers?: components["schemas"]["TillModifier"][];
+            name: string;
+            note?: string;
+            /** Format: int64 */
+            quantity: number;
+            uid: string;
+        };
+        TillModifier: {
+            catalog_id?: string;
+            name: string;
+        };
+        TillOrder: {
+            customer?: string;
+            id: string;
+            lines: components["schemas"]["TillLine"][];
+            state: string;
+            takeaway?: boolean;
+            ticket?: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: int64 */
+            version: number;
         };
         TimeTemp: {
             /** Format: int64 */
@@ -2073,6 +2346,11 @@ export interface components {
         VersionedLists: {
             builtin: boolean;
             value: components["schemas"]["Lists"];
+            version: components["schemas"]["SettingsVersion"];
+        };
+        VersionedPOSSettings: {
+            builtin: boolean;
+            value: components["schemas"]["POSSettings"];
             version: components["schemas"]["SettingsVersion"];
         };
         VersionedRules: {
@@ -4124,6 +4402,130 @@ export interface operations {
             };
         };
     };
+    "get-square": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedPOSSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "save-square": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangePOSSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedPOSSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "square-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryOutPOSSettingsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-square": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangePOSSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsPreviewPOSSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-system": {
         parameters: {
             query?: never;
@@ -4235,6 +4637,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsPreviewSystem"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "square-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SquareStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "square-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "save-square-mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MappingsIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MappingsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "square-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncResult"];
                 };
             };
             /** @description Error */

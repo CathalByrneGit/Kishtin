@@ -282,6 +282,22 @@ type ClientInterface interface {
 	PreviewScheduler(ctx context.Context, options *PreviewSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSchedulerResponse, error)
 	PreviewSchedulerWithResponse(ctx context.Context, options *PreviewSchedulerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSchedulerResp, error)
 
+	// GetSquare Show the Square settings in force
+	GetSquare(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSquareResponse, error)
+	GetSquareWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSquareResp, error)
+
+	// SaveSquare Save a new version of the Square settings
+	SaveSquare(ctx context.Context, options *SaveSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareResponse, error)
+	SaveSquareWithResponse(ctx context.Context, options *SaveSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareResp, error)
+
+	// SquareHistory List every saved version of the Square settings, oldest first
+	SquareHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareHistoryResponse, error)
+	SquareHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareHistoryResp, error)
+
+	// PreviewSquare Preview a change to the Square settings
+	PreviewSquare(ctx context.Context, options *PreviewSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSquareResponse, error)
+	PreviewSquareWithResponse(ctx context.Context, options *PreviewSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSquareResp, error)
+
 	// GetSystem Show the system settings in force
 	GetSystem(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResponse, error)
 	GetSystemWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResp, error)
@@ -297,6 +313,22 @@ type ClientInterface interface {
 	// PreviewSystem Preview a change to the system settings
 	PreviewSystem(ctx context.Context, options *PreviewSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSystemResponse, error)
 	PreviewSystemWithResponse(ctx context.Context, options *PreviewSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSystemResp, error)
+
+	// SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
+	SquareStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResponse, error)
+	SquareStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResp, error)
+
+	// SquareCatalog Read the catalog from Square, with how each entry maps to the kitchen (manager password)
+	SquareCatalog(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResponse, error)
+	SquareCatalogWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResp, error)
+
+	// SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
+	SaveSquareMappings(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResponse, error)
+	SaveSquareMappingsWithResponse(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResp, error)
+
+	// SquareSync Ask Square for new and changed orders now
+	SquareSync(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResponse, error)
+	SquareSyncWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResp, error)
 
 	// ListUsers List staff, including deactivated staff
 	ListUsers(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListUsersResponse, error)
@@ -4211,6 +4243,258 @@ func (c *Client) PreviewScheduler(ctx context.Context, options *PreviewScheduler
 	return responseParser(ctx, resp)
 }
 
+// GetSquare Show the Square settings in force
+func (c *Client) GetSquare(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSquareResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/square",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetSquareResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetSquareErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetSquareErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetSquareResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetSquareResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveSquare Save a new version of the Square settings
+func (c *Client) SaveSquare(ctx context.Context, options *SaveSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/square",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveSquareResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveSquareErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveSquareErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveSquareResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveSquareResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SquareHistory List every saved version of the Square settings, oldest first
+func (c *Client) SquareHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/square/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SquareHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SquareHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SquareHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SquareHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/square/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewSquare Preview a change to the Square settings
+func (c *Client) PreviewSquare(ctx context.Context, options *PreviewSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSquareResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/square/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewSquareResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewSquareErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewSquareErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewSquareResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewSquareResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/square/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // GetSystem Show the system settings in force
 func (c *Client) GetSystem(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResponse, error) {
 	var err error
@@ -4457,6 +4741,256 @@ func (c *Client) PreviewSystem(ctx context.Context, options *PreviewSystemReques
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/system/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
+func (c *Client) SquareStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareStatusResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SquareStatusErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SquareStatusErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SquareStatusResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SquareStatusResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SquareCatalog Read the catalog from Square, with how each entry maps to the kitchen (manager password)
+func (c *Client) SquareCatalog(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square/catalog",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareCatalogResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SquareCatalogErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SquareCatalogErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SquareCatalogResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SquareCatalogResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/catalog")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
+func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/square/mappings",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveSquareMappingsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveSquareMappingsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveSquareMappingsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveSquareMappingsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveSquareMappingsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/mappings")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SquareSync Ask Square for new and changed orders now
+func (c *Client) SquareSync(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square/sync",
+		Method:     "POST",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareSyncResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SquareSyncErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SquareSyncErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SquareSyncResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SquareSyncResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/sync")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -6959,6 +7493,94 @@ func (o *PreviewSchedulerRequestOptions) GetHeader() (map[string]string, error) 
 	return nil, nil
 }
 
+// SaveSquareRequestOptions is the options needed to make a request to SaveSquare.
+type SaveSquareRequestOptions struct {
+	Body *SaveSquareBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveSquareRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveSquareRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveSquareRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveSquareRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveSquareRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewSquareRequestOptions is the options needed to make a request to PreviewSquare.
+type PreviewSquareRequestOptions struct {
+	Body *PreviewSquareBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewSquareRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewSquareRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewSquareRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewSquareRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewSquareRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // SaveSystemRequestOptions is the options needed to make a request to SaveSystem.
 type SaveSystemRequestOptions struct {
 	Body *SaveSystemBody
@@ -7044,6 +7666,50 @@ func (o *PreviewSystemRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *PreviewSystemRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SaveSquareMappingsRequestOptions is the options needed to make a request to SaveSquareMappings.
+type SaveSquareMappingsRequestOptions struct {
+	Body *SaveSquareMappingsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveSquareMappingsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveSquareMappingsRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveSquareMappingsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveSquareMappingsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveSquareMappingsRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -11058,6 +11724,250 @@ func (c *Client) PreviewSchedulerWithResponse(ctx context.Context, options *Prev
 	}
 }
 
+// GetSquare Show the Square settings in force
+func (c *Client) GetSquareWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSquareResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/square",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetSquareResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetSquareResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSquareResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetSquareErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSquareErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveSquare Save a new version of the Square settings
+func (c *Client) SaveSquareWithResponse(ctx context.Context, options *SaveSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/square",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveSquareResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveSquareResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSquareResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveSquareErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSquareErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SquareHistory List every saved version of the Square settings, oldest first
+func (c *Client) SquareHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/square/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/square/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SquareHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SquareHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SquareHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewSquare Preview a change to the Square settings
+func (c *Client) PreviewSquareWithResponse(ctx context.Context, options *PreviewSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSquareResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/square/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/square/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewSquareResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewSquareResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSquareResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewSquareErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSquareErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetSystem Show the system settings in force
 func (c *Client) GetSystemWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResp, error) {
 	var err error
@@ -11293,6 +12203,248 @@ func (c *Client) PreviewSystemWithResponse(ctx context.Context, options *Preview
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "PreviewSystemErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
+func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SquareStatusResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SquareStatusResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareStatusResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SquareStatusErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareStatusErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SquareCatalog Read the catalog from Square, with how each entry maps to the kitchen (manager password)
+func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square/catalog",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/catalog")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SquareCatalogResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SquareCatalogResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareCatalogResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SquareCatalogErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareCatalogErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
+func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/square/mappings",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/mappings")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveSquareMappingsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveSquareMappingsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSquareMappingsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveSquareMappingsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSquareMappingsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SquareSync Ask Square for new and changed orders now
+func (c *Client) SquareSyncWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square/sync",
+		Method:     "POST",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/sync")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SquareSyncResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SquareSyncResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareSyncResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SquareSyncErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareSyncErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -11796,6 +12948,23 @@ func (c *Client) VoiceSpeakWithResponse(ctx context.Context, options *VoiceSpeak
 	}
 }
 
+type MappingInputKind string
+
+const (
+	MappingInputKindItem     MappingInputKind = "item"
+	MappingInputKindModifier MappingInputKind = "modifier"
+)
+
+// Validate checks if the MappingInputKind value is valid
+func (m MappingInputKind) Validate() error {
+	switch m {
+	case MappingInputKindItem, MappingInputKindModifier:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid MappingInputKind value, got: %v", m))
+	}
+}
+
 type NewKeyInBodyKind string
 
 const (
@@ -12233,9 +13402,15 @@ type SaveSchedulerBody = SettingsChangeSettings
 
 type PreviewSchedulerBody = SettingsChangeSettings
 
+type SaveSquareBody = SettingsChangePOSSettings
+
+type PreviewSquareBody = SettingsChangePOSSettings
+
 type SaveSystemBody = SettingsChangeSystem
 
 type PreviewSystemBody = SettingsChangeSystem
+
+type SaveSquareMappingsBody = MappingsIn
 
 type CreateUserBody = NewUser
 
@@ -12558,6 +13733,22 @@ type PreviewSchedulerResponse = SettingsPreviewSettings
 
 type PreviewSchedulerErrorResponse = ErrorModel
 
+type GetSquareResponse = VersionedPOSSettings
+
+type GetSquareErrorResponse = ErrorModel
+
+type SaveSquareResponse = VersionedPOSSettings
+
+type SaveSquareErrorResponse = ErrorModel
+
+type SquareHistoryResponse = HistoryOutPOSSettingsBody
+
+type SquareHistoryErrorResponse = ErrorModel
+
+type PreviewSquareResponse = SettingsPreviewPOSSettings
+
+type PreviewSquareErrorResponse = ErrorModel
+
 type GetSystemResponse = VersionedSystem
 
 type GetSystemErrorResponse = ErrorModel
@@ -12573,6 +13764,22 @@ type SystemHistoryErrorResponse = ErrorModel
 type PreviewSystemResponse = SettingsPreviewSystem
 
 type PreviewSystemErrorResponse = ErrorModel
+
+type SquareStatusResponse = SquareStatus
+
+type SquareStatusErrorResponse = ErrorModel
+
+type SquareCatalogResponse = CatalogBody
+
+type SquareCatalogErrorResponse = ErrorModel
+
+type SaveSquareMappingsResponse = MappingsBody
+
+type SaveSquareMappingsErrorResponse = ErrorModel
+
+type SquareSyncResponse = SyncResult
+
+type SquareSyncErrorResponse = ErrorModel
 
 type ListUsersResponse = UsersOutBody
 
@@ -13123,6 +14330,38 @@ type PreviewSchedulerResp struct {
 	ApplicationProblemPlusJSONDefault *PreviewSchedulerErrorResponse
 }
 
+type GetSquareResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetSquareResponse
+	ApplicationProblemPlusJSONDefault *GetSquareErrorResponse
+}
+
+type SaveSquareResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveSquareResponse
+	ApplicationProblemPlusJSONDefault *SaveSquareErrorResponse
+}
+
+type SquareHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SquareHistoryResponse
+	ApplicationProblemPlusJSONDefault *SquareHistoryErrorResponse
+}
+
+type PreviewSquareResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewSquareResponse
+	ApplicationProblemPlusJSONDefault *PreviewSquareErrorResponse
+}
+
 type GetSystemResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -13153,6 +14392,38 @@ type PreviewSystemResp struct {
 	StatusCode                        int
 	JSON200                           *PreviewSystemResponse
 	ApplicationProblemPlusJSONDefault *PreviewSystemErrorResponse
+}
+
+type SquareStatusResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SquareStatusResponse
+	ApplicationProblemPlusJSONDefault *SquareStatusErrorResponse
+}
+
+type SquareCatalogResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SquareCatalogResponse
+	ApplicationProblemPlusJSONDefault *SquareCatalogErrorResponse
+}
+
+type SaveSquareMappingsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveSquareMappingsResponse
+	ApplicationProblemPlusJSONDefault *SaveSquareMappingsErrorResponse
+}
+
+type SquareSyncResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SquareSyncResponse
+	ApplicationProblemPlusJSONDefault *SquareSyncErrorResponse
 }
 
 type ListUsersResp struct {
@@ -13353,6 +14624,69 @@ func (b BatchToday) Validate() error {
 	}
 	if err := typesValidator.Var(b.UseBy, "required"); err != nil {
 		errors = errors.Append("UseBy", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type CatalogBody struct {
+	Entries []CatalogRow `json:"entries" validate:"required"`
+}
+
+func (c CatalogBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Entries, "required"); err != nil {
+		errors = errors.Append("Entries", err)
+	}
+	for i, item := range c.Entries {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Entries[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type CatalogEntry struct {
+	Group *string `json:"group,omitempty"`
+	ID    string  `json:"id" validate:"required"`
+	Kind  string  `json:"kind" validate:"required"`
+	Name  string  `json:"name" validate:"required"`
+}
+
+func (c CatalogEntry) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type CatalogRow struct {
+	Entry     CatalogEntry `json:"entry"`
+	Label     string       `json:"label" validate:"required"`
+	Mapping   *Mapping     `json:"mapping,omitempty"`
+	Suggested *string      `json:"suggested,omitempty"`
+}
+
+func (c CatalogRow) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(c.Entry).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Entry", err)
+		}
+	}
+	if err := typesValidator.Var(c.Label, "required"); err != nil {
+		errors = errors.Append("Label", err)
+	}
+	if c.Mapping != nil {
+		if v, ok := any(c.Mapping).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Mapping", err)
+			}
+		}
 	}
 	if len(errors) == 0 {
 		return nil
@@ -13851,6 +15185,28 @@ func (h HistoryOutListsBody) Validate() error {
 	return errors
 }
 
+type HistoryOutPOSSettingsBody struct {
+	Versions []VersionedPOSSettings `json:"versions" validate:"required"`
+}
+
+func (h HistoryOutPOSSettingsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range h.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type HistoryOutRulesBody struct {
 	Versions []VersionedRules `json:"versions" validate:"required"`
 }
@@ -13919,6 +15275,58 @@ func (h HistoryOutSystemBody) Validate() error {
 
 type HoldBody struct {
 	Reason *string `json:"reason,omitempty"`
+}
+
+type Imported struct {
+	Added      map[string]int64 `json:"added"`
+	ExternalID string           `json:"external_id" validate:"required"`
+	FirstSeen  time.Time        `json:"first_seen" validate:"required"`
+	Label      string           `json:"label" validate:"required"`
+	LastSeen   time.Time        `json:"last_seen" validate:"required"`
+	Notices    []string         `json:"notices" validate:"required"`
+	OrderID    *string          `json:"order_id,omitempty"`
+	Payload    TillOrder        `json:"payload"`
+	Pos        string           `json:"pos" validate:"required"`
+	State      string           `json:"state" validate:"required"`
+	Unmapped   []string         `json:"unmapped" validate:"required"`
+	Version    int64            `json:"version"`
+}
+
+func (i Imported) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(i.ExternalID, "required"); err != nil {
+		errors = errors.Append("ExternalID", err)
+	}
+	if err := typesValidator.Var(i.FirstSeen, "required"); err != nil {
+		errors = errors.Append("FirstSeen", err)
+	}
+	if err := typesValidator.Var(i.Label, "required"); err != nil {
+		errors = errors.Append("Label", err)
+	}
+	if err := typesValidator.Var(i.LastSeen, "required"); err != nil {
+		errors = errors.Append("LastSeen", err)
+	}
+	if err := typesValidator.Var(i.Notices, "required"); err != nil {
+		errors = errors.Append("Notices", err)
+	}
+	if v, ok := any(i.Payload).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Payload", err)
+		}
+	}
+	if err := typesValidator.Var(i.Pos, "required"); err != nil {
+		errors = errors.Append("Pos", err)
+	}
+	if err := typesValidator.Var(i.State, "required"); err != nil {
+		errors = errors.Append("State", err)
+	}
+	if err := typesValidator.Var(i.Unmapped, "required"); err != nil {
+		errors = errors.Append("Unmapped", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Item struct {
@@ -14334,6 +15742,97 @@ func (l LoginResult) Validate() error {
 	return errors
 }
 
+type Mapping struct {
+	DishID     *string   `json:"dish_id,omitempty"`
+	ExternalID string    `json:"external_id" validate:"required"`
+	Ignore     *bool     `json:"ignore,omitempty"`
+	Kind       string    `json:"kind" validate:"required"`
+	Modifier   *string   `json:"modifier,omitempty"`
+	Name       string    `json:"name" validate:"required"`
+	Pos        string    `json:"pos" validate:"required"`
+	UpdatedAt  time.Time `json:"updated_at" validate:"required"`
+	UpdatedBy  string    `json:"updated_by" validate:"required"`
+}
+
+func (m Mapping) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(m))
+}
+
+type MappingInput struct {
+	DishID     *string          `json:"dish_id,omitempty"`
+	ExternalID string           `json:"external_id" validate:"required"`
+	Ignore     *bool            `json:"ignore,omitempty"`
+	Kind       MappingInputKind `json:"kind" validate:"required"`
+	Modifier   *string          `json:"modifier,omitempty"`
+	Name       string           `json:"name" validate:"required"`
+}
+
+func (m MappingInput) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(m.ExternalID, "required"); err != nil {
+		errors = errors.Append("ExternalID", err)
+	}
+	if v, ok := any(m.Kind).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Kind", err)
+		}
+	}
+	if err := typesValidator.Var(m.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type MappingsBody struct {
+	Mappings []Mapping `json:"mappings" validate:"required"`
+}
+
+func (m MappingsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(m.Mappings, "required"); err != nil {
+		errors = errors.Append("Mappings", err)
+	}
+	for i, item := range m.Mappings {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Mappings[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type MappingsIn struct {
+	Mappings []MappingInput `json:"mappings" validate:"required"`
+}
+
+func (m MappingsIn) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(m.Mappings, "required"); err != nil {
+		errors = errors.Append("Mappings", err)
+	}
+	if m.Mappings != nil && len(m.Mappings) < 1 {
+		errors = errors.Add("Mappings", fmt.Sprintf("must have at least 1 items, got %d", len(m.Mappings)))
+	}
+	for i, item := range m.Mappings {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Mappings[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type MeOutBody struct {
 	Key    APIKey  `json:"key"`
 	Method *string `json:"method,omitempty"`
@@ -14621,6 +16120,16 @@ func (o OrdersBody) Validate() error {
 		return nil
 	}
 	return errors
+}
+
+type POSSettings struct {
+	Enabled     bool   `json:"enabled"`
+	LocationID  string `json:"location_id" validate:"required"`
+	PollSeconds int64  `json:"poll_seconds"`
+}
+
+func (p POSSettings) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(p))
 }
 
 type Plan struct {
@@ -14935,6 +16444,28 @@ func (s SettingsChangeLists) Validate() error {
 	return errors
 }
 
+type SettingsChangePOSSettings struct {
+	PlanRef *string     `json:"plan_ref,omitempty"`
+	Reason  string      `json:"reason" validate:"required"`
+	Value   POSSettings `json:"value"`
+}
+
+func (s SettingsChangePOSSettings) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Reason, "required"); err != nil {
+		errors = errors.Append("Reason", err)
+	}
+	if v, ok := any(s.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type SettingsChangeRules struct {
 	PlanRef *string `json:"plan_ref,omitempty"`
 	Reason  string  `json:"reason" validate:"required"`
@@ -15044,6 +16575,39 @@ type SettingsPreviewLists struct {
 }
 
 func (s SettingsPreviewLists) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Changes, "required"); err != nil {
+		errors = errors.Append("Changes", err)
+	}
+	if v, ok := any(s.Current).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Current", err)
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(s.Proposed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Proposed", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsPreviewPOSSettings struct {
+	Changes    []string             `json:"changes" validate:"required"`
+	Current    VersionedPOSSettings `json:"current"`
+	LessStrict []string             `json:"less_strict,omitempty"`
+	Notes      []string             `json:"notes" validate:"required"`
+	Problem    *string              `json:"problem,omitempty"`
+	Proposed   POSSettings          `json:"proposed"`
+}
+
+func (s SettingsPreviewPOSSettings) Validate() error {
 	var errors runtime.ValidationErrors
 	if err := typesValidator.Var(s.Changes, "required"); err != nil {
 		errors = errors.Append("Changes", err)
@@ -15264,6 +16828,54 @@ func (s SpeakBody) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
+type SquareStatus struct {
+	Connected bool                 `json:"connected"`
+	Mappings  []Mapping            `json:"mappings" validate:"required"`
+	Recent    []Imported           `json:"recent" validate:"required"`
+	Settings  VersionedPOSSettings `json:"settings"`
+	State     *SyncState           `json:"state,omitempty"`
+}
+
+func (s SquareStatus) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Mappings, "required"); err != nil {
+		errors = errors.Append("Mappings", err)
+	}
+	for i, item := range s.Mappings {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Mappings[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Recent, "required"); err != nil {
+		errors = errors.Append("Recent", err)
+	}
+	for i, item := range s.Recent {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Recent[%d]", i), err)
+			}
+		}
+	}
+	if v, ok := any(s.Settings).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Settings", err)
+		}
+	}
+	if s.State != nil {
+		if v, ok := any(s.State).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("State", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type StaffEntry struct {
 	HasPassword bool   `json:"has_password"`
 	HasPin      bool   `json:"has_pin"`
@@ -15371,6 +16983,25 @@ func (s StationPlan) Validate() error {
 	return errors
 }
 
+type SyncResult struct {
+	Created int64 `json:"created"`
+	Seen    int64 `json:"seen"`
+	Skipped int64 `json:"skipped"`
+	Updated int64 `json:"updated"`
+}
+
+type SyncState struct {
+	LastError  *string    `json:"last_error,omitempty"`
+	LastOkAt   *time.Time `json:"last_ok_at,omitempty"`
+	LastPollAt *time.Time `json:"last_poll_at,omitempty"`
+	Pos        string     `json:"pos" validate:"required"`
+	Since      time.Time  `json:"since" validate:"required"`
+}
+
+func (s SyncState) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
 type System struct {
 	BackupIntervalMinutes int64  `json:"backup_interval_minutes"`
 	BackupKeep            int64  `json:"backup_keep"`
@@ -15390,6 +17021,83 @@ type TargetBody struct {
 
 func (t TargetBody) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(t))
+}
+
+type TillLine struct {
+	CatalogID *string        `json:"catalog_id,omitempty"`
+	Modifiers []TillModifier `json:"modifiers,omitempty"`
+	Name      string         `json:"name" validate:"required"`
+	Note      *string        `json:"note,omitempty"`
+	Quantity  int64          `json:"quantity"`
+	UID       string         `json:"uid" validate:"required"`
+}
+
+func (t TillLine) Validate() error {
+	var errors runtime.ValidationErrors
+	for i, item := range t.Modifiers {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Modifiers[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(t.UID, "required"); err != nil {
+		errors = errors.Append("UID", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type TillModifier struct {
+	CatalogID *string `json:"catalog_id,omitempty"`
+	Name      string  `json:"name" validate:"required"`
+}
+
+func (t TillModifier) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(t))
+}
+
+type TillOrder struct {
+	Customer  *string    `json:"customer,omitempty"`
+	ID        string     `json:"id" validate:"required"`
+	Lines     []TillLine `json:"lines" validate:"required"`
+	State     string     `json:"state" validate:"required"`
+	Takeaway  *bool      `json:"takeaway,omitempty"`
+	Ticket    *string    `json:"ticket,omitempty"`
+	UpdatedAt time.Time  `json:"updated_at" validate:"required"`
+	Version   int64      `json:"version"`
+}
+
+func (t TillOrder) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(t.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if err := typesValidator.Var(t.Lines, "required"); err != nil {
+		errors = errors.Append("Lines", err)
+	}
+	for i, item := range t.Lines {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Lines[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.State, "required"); err != nil {
+		errors = errors.Append("State", err)
+	}
+	if err := typesValidator.Var(t.UpdatedAt, "required"); err != nil {
+		errors = errors.Append("UpdatedAt", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type TimeTemp struct {
@@ -15657,6 +17365,30 @@ type VersionedLists struct {
 }
 
 func (v VersionedLists) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(v.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if v, ok := any(v.Version).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Version", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionedPOSSettings struct {
+	Builtin bool            `json:"builtin"`
+	Value   POSSettings     `json:"value"`
+	Version SettingsVersion `json:"version"`
+}
+
+func (v VersionedPOSSettings) Validate() error {
 	var errors runtime.ValidationErrors
 	if v, ok := any(v.Value).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {

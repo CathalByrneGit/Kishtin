@@ -4,9 +4,11 @@ go 1.27.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
+	github.com/cenkalti/backoff/v7 v7.0.1
 	github.com/danielgtaylor/huma/v2 v2.39.1
 	github.com/doordash-oss/oapi-codegen-dd/v3 v3.76.3
 	github.com/gabriel-vasile/mimetype v1.4.16
+	github.com/go-pdf/fpdf v0.9.0
 	github.com/go-playground/validator/v10 v10.30.4
 	github.com/gofrs/flock v0.13.1
 	github.com/google/uuid v1.6.0
@@ -21,7 +23,6 @@ require (
 
 require (
 	github.com/dustin/go-humanize v1.1.0 // indirect
-	github.com/go-pdf/fpdf v0.9.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

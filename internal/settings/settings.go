@@ -24,10 +24,12 @@ const (
 	KindSystem Kind = "system"
 	// KindScheduler is the cook scheduler's settings.
 	KindScheduler Kind = "scheduler"
+	// KindSquare is how Kishtin imports orders from Square.
+	KindSquare Kind = "square"
 )
 
 // Kinds lists every kind.
-var Kinds = []Kind{KindGuidance, KindRules, KindLists, KindSystem, KindScheduler}
+var Kinds = []Kind{KindGuidance, KindRules, KindLists, KindSystem, KindScheduler, KindSquare}
 
 // Valid reports whether k is a known kind.
 func (k Kind) Valid() bool { return slices.Contains(Kinds, k) }

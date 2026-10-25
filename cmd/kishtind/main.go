@@ -109,7 +109,12 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 	if err != nil {
 		return fail(err)
 	}
+	pos, err := cfg.SquareClient()
+	if err != nil {
+		return fail(err)
+	}
 	svc := service.New(service.Options{
+		POS:    pos,
 		Speech: sp,
 		Store:  st,
 		Files:  fs,
@@ -173,6 +178,7 @@ func serve(ctx context.Context, cfgPath string) error {
 	}
 
 	go a.svc.RunBackups(ctx, log)
+	go a.svc.RunSquare(ctx, log)
 	go cleanSessions(ctx, a.svc, log)
 
 	errc := make(chan error, 1)

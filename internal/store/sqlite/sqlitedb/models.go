@@ -154,6 +154,41 @@ type OrderItem struct {
 	VoidReason    string
 }
 
+type PosMapping struct {
+	Pos        string
+	ExternalID string
+	Kind       string
+	Name       string
+	DishID     string
+	Modifier   string
+	Ignore     int64
+	UpdatedAt  int64
+	UpdatedBy  string
+}
+
+type PosOrder struct {
+	Pos        string
+	ExternalID string
+	Version    int64
+	State      string
+	OrderID    string
+	Label      string
+	Added      string
+	Unmapped   string
+	Notices    string
+	Payload    string
+	FirstSeen  int64
+	LastSeen   int64
+}
+
+type PosState struct {
+	Pos        string
+	Since      int64
+	LastPollAt sql.NullInt64
+	LastOkAt   sql.NullInt64
+	LastError  string
+}
+
 type Session struct {
 	TokenHash string
 	UserID    string

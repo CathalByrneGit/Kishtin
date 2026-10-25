@@ -33,7 +33,7 @@ Choose what a device shows in **Settings → This device → This device shows**
 
 ## Layout
 
-- **Sidebar**: Service (Pass, Stations, Orders, Voice); HACCP (Today, Records, Exports, Verify); Setup (Menu, Scheduler, Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
+- **Sidebar**: Service (Pass, Stations, Orders, Voice); HACCP (Today, Records, Exports, Verify); Setup (Menu, Scheduler, Square, Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
 - **Top bar**: where you are, a search box, the connection, **New order** and **Log check**.
 - **Search** (Ctrl K, or ⌘K on a Mac): jump to any page, start a new order, or start logging a check.
 - **Log check** (Ctrl L, or ⌘L): opens the log form in a panel on the right.
@@ -56,7 +56,7 @@ Every open order as a card, for the head chef or expo:
 
 - **Figures**: open orders, and how many fired courses are on track, at risk, late, or ready to serve, and how many courses are held.
 - **Show**: all orders, only those that need action (at risk, late or ready), or those with held courses.
-- Each card shows the table or takeaway, ticket number, time entered, covers, notes, and an **Allergy** chip and red edge when flagged. Each course shows its state and the scheduler's status (on track, at risk, late, ready) with the reason, the target time with a countdown, and its items grouped as "2× Burger (Well done)" with their state.
+- Each card shows the table or takeaway, ticket number, time entered, covers, notes, a **Square** chip for orders from the till, and an **Allergy** chip and red edge when flagged. Each course shows its state and the scheduler's status (on track, at risk, late, ready) with the reason, the target time with a countdown, and its items grouped as "2× Burger (Well done)" with their state.
 - Head chefs and managers get the buttons: **Fire** a held course; **Serve** a course once every item is ready; **Change time** (a new target, with a reason for the log); **Hold again** on a fired course while nothing in it has started; **Mark ready** once every item in a course has been started, when the plates are at the pass; **Urgent**; and **Close order** once everything is served or voided. Other staff see the same cards without buttons.
 - The history icon opens the order: its courses and items, its full history (who did what, when), **Add items**, **Hold again**, and **Change** on each item. Change shows the item as an editable line (dish, modifiers, notes) and an optional reason; **Replace item** voids the old one and adds the new one in its place.
 
@@ -150,6 +150,7 @@ It runs when you open the page, and again with **Check again**. If something doe
 Everyone can see **Menu**, **Scheduler**, **Fridges and tasks** and **Limits and rules**. Changing them, and opening **Staff**, **Device keys** and **Backups** at all, needs a manager logged in with their password. Use **Manager login** on the page. That logs this device in as the manager for 30 minutes.
 
 - **Menu**: a card per station with its equipment and how many each holds, and every dish in a sortable table with its course, station, equipment and capacity, cook time, total time, how long it can wait, and status (Available, 86, off the menu). **Add station**, **Add equipment**, **Add dish** and **Edit** need the manager password. The dish form takes times in minutes or minutes:seconds, the food category from the HACCP lists, and modifiers with their extra cook minutes. **86** and **Back on** are open to head chefs, line cooks and managers.
+- **Square**: whether order import is on and working, the switch to turn it on (with a review of exactly what is sent to Square), mapping till items to dishes, and recent till orders with anything to check. See [square.md](square.md).
 - **Scheduler**: the strategy, batching, priorities, how long a ready course can wait at the pass, how often screens re-plan, and a buffer per station. **Review changes** shows what changes before saving with a reason. A card lists what the scheduler does not do yet.
 - **Fridges and tasks**: fridges and freezers with their check times, and which fridges are non-food; daily cleaning tasks and their areas; food categories; quick-pick corrective actions per record type. Edit freely, then **Review changes** shows what changes and what it affects, and asks for a reason before saving.
 - **Limits and rules**: the limits in use, and the full history with who changed each one and why.
@@ -194,12 +195,18 @@ All taken with synthetic data, at 1440 × 960 unless noted.
 | ![Staff](screenshots/staff.png) | ![Device keys](screenshots/keys.png) |
 | **Backups** | **Settings** |
 | ![Backups](screenshots/backups.png) | ![Settings](screenshots/settings.png) |
+| **Voice** | **Square** |
+| ![Voice](screenshots/voice.png) | ![Square](screenshots/square.png) |
 
 ### Kitchen screens
 
 | Pass screen on a landscape tablet (1280 × 800) | Station screen on a portrait tablet (800 × 1280) |
 |---|---|
 | ![Pass screen](screenshots/pass-screen.png) | ![Station screen](screenshots/station-screen.png) |
+
+A voice question waiting for "confirm" on the pass screen:
+
+![Voice confirm](screenshots/voice-confirm.png)
 
 The pass screen on a TV (1920 × 1080):
 

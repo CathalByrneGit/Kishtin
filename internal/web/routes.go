@@ -29,6 +29,7 @@ func (s *Server) routes() {
 	s.adminRoutes()
 	s.kitchenRoutes()
 	s.voiceRoutes()
+	s.squareRoutes()
 }
 
 // --- Auth ---
