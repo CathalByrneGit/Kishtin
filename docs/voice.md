@@ -27,6 +27,11 @@ Without a text-to-speech sidecar, a device speaks replies with a voice built int
 | "86 salmon", "salmon back on" | Marks a dish sold out, or back on. |
 | "Walk-in fridge 3.4 degrees" | Logs a fridge or freezer reading and says pass, borderline or fail. "Chest freezer minus 18" works too. |
 | "Core temp chicken 78" | Logs a cooking check. "Reheat soup 74" and "hot hold curry 65" log reheating and hot holding. A dish on the menu gets its own limits. |
+| "Void burger table 4" | Voids items. Kishtin asks how many (if there is more than one), which ones (if some are cooking and some are waiting), and why, then needs **"confirm void"**. Head chef or manager only. "Void 2 burgers table 4 because dropped" says it all at once. |
+| "Delivery chilled chicken from Synthetic Farm 3 degrees" | Logs a delivery. Whatever is not said is asked, one question at a time: who it is from, what it is, chilled, frozen or ambient, the temperature, whether the packaging is intact, and whether it is all in date. "Packaging fine, in date" can be said up front. |
+| "Cooling rice cooked at 14:30" | Logs food going into the fridge to cool, now. "Cooked 90 minutes ago" and "cooked at 2 pm" work too. A time later than now is taken as yesterday. |
+| "Batch grape syrup 5 days" | Logs a batch label made today, with its use-by date. "Label 2 litres of stock 3 days" records the quantity. |
+| "Floors done" | Ticks a cleaning task from the list. "Cleaning" on its own asks which task. |
 | "Confirm", "cancel" | Answers a question. |
 
 Numbers can be said as words or digits ("three point four", "minus eighteen"). Common mishearings are expected: "fryer table 4" is read as "fire table 4", "table for" as table 4, and "what's next on fire" as the fryer.
@@ -38,6 +43,9 @@ Kishtin asks rather than guesses.
 - If a table is not open but sounds like one that is, it asks: "Table 4 or Table 14?" Answer with the table ("fourteen"), "the second one", or tap the answer on screen.
 - If a dish could be more than one ("chicken" with both chicken supreme and chicken wings), it asks which.
 - A HACCP reading that fails (or is borderline, when the rules say borderline readings need an action) is not saved straight away. Kishtin says the result and asks what you did about it. Say the action ("moved the stock to the cold room"), then **"confirm"** to save it, or "cancel" to save nothing. The buttons on screen do the same.
+- A void is read back with its reason ("Void 1 Burger (cooking) for Table 4: dropped. Say confirm void, or cancel.") and nothing is voided until you say **"confirm void"**.
+- Saving a failed reading and voiding need the word **"confirm"**. "Yes" or "go ahead" are not enough there, because they are easily said to someone else in a busy kitchen.
+- A record logged in steps asks one question at a time. "Cancel" at any step saves nothing.
 - A question waits for one minute, then lapses. Each person has their own: one chef's answer never answers another's question.
 
 The same permissions apply as on the screens. A front-of-house login cannot fire a course by voice, for example, and Kishtin says so.
@@ -86,7 +94,7 @@ API: `GET /api/voice`, `POST /api/voice/command`, `POST /api/voice/audio`, `POST
 ## What voice does not do
 
 - No always-on listening and no wake word. It only listens while the button or key is held.
-- No voids, discards or replacements, and nothing that deletes. Use the screens.
-- No delivery, cooling, batch label or cleaning records yet. Log those on the screen.
+- No replacing an item (Change on the screen), and nothing that deletes.
+- No docket photo for a delivery: add it on the screen.
 - It understands a fixed set of commands, not free conversation. "Get table 4's mains going" is not understood; "fire table 4 mains" is.
 - It has not yet been tuned on recordings from a real kitchen.

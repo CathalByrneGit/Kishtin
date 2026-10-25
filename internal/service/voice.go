@@ -61,6 +61,8 @@ const (
 	pendingChoose  pendingKind = iota + 1 // pick one of options
 	pendingAction                         // say the corrective action
 	pendingConfirm                        // say confirm or cancel
+	pendingForm                           // answer the next question about a record or void
+	pendingVoid                           // say "confirm void" or cancel
 )
 
 type pending struct {
@@ -70,6 +72,9 @@ type pending struct {
 	record  NewRecord
 	intent  voice.Intent
 	expires time.Time
+	// cmd and slot are the command being filled in and the detail asked.
+	cmd  voice.Command
+	slot string
 }
 
 // voiceState holds each person's open question.
@@ -212,6 +217,9 @@ func (s *Service) vocab(ctx context.Context) (voice.Vocab, error) {
 	for _, u := range lists.Value.Units {
 		v.Units = append(v.Units, voice.Unit{Name: u.Name, Kind: string(u.Kind)})
 	}
+	for _, t := range lists.Value.CleaningTasks {
+		v.Tasks = append(v.Tasks, t.Task)
+	}
 	open, err := s.st.Orders().ListOrders(ctx, store.OrderFilter{OpenOnly: true})
 	if err != nil {
 		return v, err
@@ -225,7 +233,7 @@ func (s *Service) vocab(ctx context.Context) (voice.Vocab, error) {
 // prompt biases speech recognition toward what can be said right now.
 func prompt(v voice.Vocab) string {
 	var b strings.Builder
-	b.WriteString("Kitchen commands: fire, hold, ready, 86, back on, what's next on, core temp, reheat, hot hold, degrees, confirm, cancel.")
+	b.WriteString("Kitchen commands: fire, hold, ready, 86, back on, what's next on, core temp, reheat, hot hold, void, delivery, chilled, frozen, ambient, cooling, cooked at, batch, days, cleaning, done, degrees, confirm void, confirm, cancel.")
 	add := func(label string, names []string) {
 		if len(names) > 0 {
 			b.WriteString(" " + label + ": " + strings.Join(names, ", ") + ".")
@@ -308,10 +316,20 @@ func (s *Service) answer(ctx context.Context, p *auth.Principal, text string, v 
 			pd.ask = fmt.Sprintf("Action: %s. Say confirm to save, or cancel.", pd.record.CorrectiveAction)
 			return keep(pd.ask)
 		case pendingConfirm:
-			if !isConfirm {
+			if !saidConfirm(text) {
 				return keep("Say confirm to save, or cancel.")
 			}
 			return s.saveRecord(ctx, p, pd.record, pd.intent)
+		case pendingForm:
+			if !fillSlot(&pd.cmd, pd.slot, text) {
+				return keep("Sorry, I did not catch that. " + pd.ask)
+			}
+			return s.voiceForm(ctx, p, pd.cmd)
+		case pendingVoid:
+			if !saidConfirm(text) {
+				return keep("Say confirm void, or cancel.")
+			}
+			return s.voidItems(ctx, p, pd.cmd)
 		}
 	}
 
@@ -331,8 +349,20 @@ func (s *Service) answer(ctx context.Context, p *auth.Principal, text string, v 
 	return s.execute(ctx, p, *r.Command)
 }
 
+// saidConfirm reports whether the word "confirm" was said. Saving a
+// failed reading and voiding need it: "yes" is too easily said to someone
+// else in a busy kitchen.
+func saidConfirm(text string) bool {
+	return slices.Contains(strings.Fields(strings.ToLower(strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) {
+			return r
+		}
+		return ' '
+	}, text))), "confirm")
+}
+
 func (s *Service) waitingReply(pd pending, say string) VoiceReply {
-	r := VoiceReply{Say: say, Outcome: voice.OutcomeAsked, Intent: pd.intent, Waiting: true, Confirm: pd.kind == pendingConfirm}
+	r := VoiceReply{Say: say, Outcome: voice.OutcomeAsked, Intent: pd.intent, Waiting: true, Confirm: pd.kind == pendingConfirm || pd.kind == pendingVoid}
 	for _, o := range pd.options {
 		r.Options = append(r.Options, o.Label)
 	}
@@ -384,6 +414,8 @@ func (s *Service) execute(ctx context.Context, p *auth.Principal, c voice.Comman
 		return done(c.Intent, d.ID, "%s is 86.", d.Name)
 	case voice.IntentUnitTemp, voice.IntentFoodTemp:
 		return s.voiceTemp(ctx, p, c)
+	case voice.IntentVoid, voice.IntentDelivery, voice.IntentCooling, voice.IntentBatch, voice.IntentCleaning:
+		return s.voiceForm(ctx, p, c)
 	}
 	return VoiceReply{Say: "Nothing is waiting for an answer.", Outcome: voice.OutcomeNotUnderstood, Intent: c.Intent}, nil
 }
@@ -634,11 +666,9 @@ func (s *Service) voiceTemp(ctx context.Context, p *auth.Principal, c voice.Comm
 		return VoiceReply{Say: "No temperature was heard.", Outcome: voice.OutcomeNotUnderstood, Intent: c.Intent}, nil
 	}
 	nr := NewRecord{Reading: haccp.Reading{TempC: c.TempC}}
-	what := ""
 	if c.Intent == voice.IntentUnitTemp {
 		nr.Type = haccp.RecordType(c.UnitKind)
 		nr.Reading.Unit = c.Unit
-		what = c.Unit
 	} else {
 		nr.Type = haccp.RecordType(c.Check)
 		nr.Reading.Food = sentence(c.Food)
@@ -647,18 +677,24 @@ func (s *Service) voiceTemp(ctx context.Context, p *auth.Principal, c voice.Comm
 				nr.Reading.Food, nr.Reading.Dish, nr.Reading.FoodCategory = d.Name, d.Name, d.FoodCategory
 			}
 		}
-		what = nr.Reading.Food
 	}
+	return s.voiceRecord(ctx, p, nr, c.Intent)
+}
+
+// voiceRecord checks a HACCP record and saves it if it needs nothing
+// more. A reading that needs a corrective action asks for one, then for
+// a spoken confirmation.
+func (s *Service) voiceRecord(ctx context.Context, p *auth.Principal, nr NewRecord, i voice.Intent) (VoiceReply, error) {
 	check, err := s.CheckRecord(ctx, p, nr)
 	if err != nil {
-		return refused(c.Intent, err)
+		return refused(i, err)
 	}
-	reading := fmt.Sprintf("%s %s degrees", what, formatTemp(*c.TempC))
 	if !check.NeedsCorrectiveAction {
-		return s.saveRecord(ctx, p, nr, c.Intent)
+		return s.saveRecord(ctx, p, nr, i)
 	}
-	ask := fmt.Sprintf("%s: %s. %s What did you do about it? Or say cancel.", reading, outcomeWord(check.Result.Outcome), check.Result.Reason)
-	pd := pending{kind: pendingAction, ask: ask, record: nr, intent: c.Intent, expires: s.clk.Now().Add(pendingTTL)}
+	nr.Reading = nr.Reading.Normalize()
+	ask := fmt.Sprintf("%s: %s. %s What did you do about it? Or say cancel.", describe(nr.Type, nr.Reading), outcomeWord(check.Result.Outcome), check.Result.Reason)
+	pd := pending{kind: pendingAction, ask: ask, record: nr, intent: i, expires: s.clk.Now().Add(pendingTTL)}
 	s.voice.put(p.User.ID, pd)
 	return s.waitingReply(pd, ask), nil
 }
@@ -668,15 +704,49 @@ func (s *Service) saveRecord(ctx context.Context, p *auth.Principal, nr NewRecor
 	if err != nil {
 		return refused(i, err)
 	}
-	what := rec.Reading.Unit
-	if what == "" {
-		what = rec.Reading.Food
+	what := describe(rec.Type, rec.Reading)
+	switch {
+	case rec.Outcome == haccp.OutcomeRecorded, rec.Type == haccp.RecordCleaning && rec.Outcome == haccp.OutcomePass:
+		return done(i, rec.ID, "%s. Saved.", what)
+	case rec.Outcome != haccp.OutcomePass && rec.OutcomeReason != "":
+		return done(i, rec.ID, "%s. %s: %s Saved.", what, outcomeWord(rec.Outcome), rec.OutcomeReason)
 	}
-	say := fmt.Sprintf("%s %s degrees. %s. Saved.", what, formatTemp(*rec.Reading.TempC), outcomeWord(rec.Outcome))
-	if rec.Outcome != haccp.OutcomePass && rec.OutcomeReason != "" {
-		say = fmt.Sprintf("%s %s degrees. %s: %s Saved.", what, formatTemp(*rec.Reading.TempC), outcomeWord(rec.Outcome), rec.OutcomeReason)
+	return done(i, rec.ID, "%s. %s. Saved.", what, outcomeWord(rec.Outcome))
+}
+
+// describe says a record the way it is read back.
+func describe(t haccp.RecordType, r haccp.Reading) string {
+	temp := ""
+	if r.TempC != nil {
+		temp = formatTemp(*r.TempC) + " degrees"
 	}
-	return done(i, rec.ID, "%s", say)
+	switch t {
+	case haccp.RecordFridge, haccp.RecordFreezer:
+		return r.Unit + " " + temp
+	case haccp.RecordDelivery:
+		out := fmt.Sprintf("Delivery of %s from %s", r.Product, r.Supplier)
+		if temp != "" {
+			out += ", " + temp
+		}
+		return out
+	case haccp.RecordCooling:
+		if r.CookedAt == nil {
+			return r.Food + " into the fridge"
+		}
+		return fmt.Sprintf("%s into the fridge, cooked at %s", r.Food, r.CookedAt.In(clock.Dublin).Format("15:04"))
+	case haccp.RecordBatchLabel:
+		out := r.Product
+		if r.Quantity != "" {
+			out += ", " + r.Quantity
+		}
+		if d, err := time.Parse(haccp.DateLayout, r.UseBy); err == nil {
+			out += ", use by " + d.Format("Monday 2 January")
+		}
+		return out
+	case haccp.RecordCleaning:
+		return r.Task + ": done"
+	}
+	return r.Food + " " + temp
 }
 
 func outcomeWord(o haccp.Outcome) string {

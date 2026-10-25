@@ -180,7 +180,13 @@
             <Button tone="info" surface="solid" label={opt} disabled={voice.phase === "sending"} onclick={() => sendText(opt)} />
           {/each}
           {#if voice.reply.confirm}
-            <Button tone="danger" surface="solid" label="Confirm" disabled={voice.phase === "sending"} onclick={() => sendText("confirm")} />
+            <Button
+              tone="danger"
+              surface="solid"
+              label={voice.reply.intent === "void" ? "Confirm void" : "Confirm"}
+              disabled={voice.phase === "sending"}
+              onclick={() => sendText(voice.reply?.intent === "void" ? "confirm void" : "confirm")}
+            />
           {/if}
           <Button label="Cancel" disabled={voice.phase === "sending"} onclick={() => sendText("cancel")} />
         </div>

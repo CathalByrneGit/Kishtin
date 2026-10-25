@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,6 +26,10 @@ var vocab = Vocab{
 		{ID: "o-14", Table: "14", Number: 5, Label: "Table 14"},
 		{ID: "o-t3", Number: 3, Label: "Takeaway #3"},
 	},
+	Tasks: []string{
+		"Food-contact surfaces sanitised", "Chopping boards washed & sanitised", "Fridge handles & seals wiped",
+		"Floors swept & mopped", "Bins emptied & cleaned", "Hand-wash sinks stocked (soap, towels)",
+	},
 }
 
 type fixture struct {
@@ -42,6 +47,18 @@ type fixture struct {
 	Ask     string   `json:"ask"`
 	Options []string `json:"options"`
 	Problem string   `json:"problem"`
+
+	Reason       string `json:"reason"`
+	Supplier     string `json:"supplier"`
+	Product      string `json:"product"`
+	DeliveryKind string `json:"delivery_kind"`
+	PackagingOK  *bool  `json:"packaging_ok"`
+	InDate       *bool  `json:"in_date"`
+	CookedClock  string `json:"cooked_clock"`
+	CookedAgoMin int    `json:"cooked_ago_min"`
+	ShelfDays    int    `json:"shelf_days"`
+	Quantity     string `json:"quantity"`
+	Task         string `json:"task"`
 }
 
 func label(id string) string {
@@ -101,6 +118,27 @@ func TestTranscripts(t *testing.T) {
 			if tc.Temp != nil {
 				require.NotNil(t, c.TempC)
 				assert.InDelta(t, *tc.Temp, *c.TempC, 0.001)
+			} else if tc.Intent == IntentDelivery {
+				assert.Nil(t, c.TempC, "temp")
+			}
+			assert.Equal(t, tc.Reason, c.Reason, "reason")
+			assert.Equal(t, tc.Supplier, c.Supplier, "supplier")
+			assert.Equal(t, tc.Product, c.Product, "product")
+			assert.Equal(t, tc.DeliveryKind, c.DeliveryKind, "delivery kind")
+			assert.Equal(t, tc.PackagingOK, c.PackagingOK, "packaging")
+			assert.Equal(t, tc.InDate, c.InDate, "in date")
+			assert.Equal(t, tc.ShelfDays, c.ShelfDays, "shelf days")
+			assert.Equal(t, tc.Quantity, c.Quantity, "quantity")
+			assert.Equal(t, tc.Task, c.Task, "task")
+			switch {
+			case tc.CookedClock != "":
+				require.NotNil(t, c.Cooked)
+				assert.Equal(t, tc.CookedClock, c.Cooked.Clock)
+			case tc.CookedAgoMin != 0:
+				require.NotNil(t, c.Cooked)
+				assert.Equal(t, time.Duration(tc.CookedAgoMin)*time.Minute, c.Cooked.Ago)
+			default:
+				assert.Nil(t, c.Cooked, "cooked")
 			}
 		})
 	}
@@ -159,4 +197,46 @@ func TestNumbers(t *testing.T) {
 		assert.Equal(t, []string{want}, normalize(in), in)
 	}
 	assert.Equal(t, []string{"tables", "4", "and", "7"}, normalize("tables 4, and 7"))
+}
+
+func TestReaders(t *testing.T) {
+	for in, want := range map[string]bool{"yes": true, "Yeah, all good": true, "fine": true, "no": false, "No, the box was torn": false, "out of date": false} {
+		got, ok := ReadYesNo(in)
+		assert.True(t, ok, in)
+		assert.Equal(t, want, got, in)
+	}
+	_, ok := ReadYesNo("maybe")
+	assert.False(t, ok)
+
+	for in, want := range map[string]Cooked{
+		"14:30": {Clock: "14:30"}, "at 2 pm": {Clock: "14:00"}, "half two": {}, "1430": {Clock: "14:30"},
+		"ninety minutes ago": {Ago: 90 * time.Minute}, "an hour ago": {Ago: time.Hour}, "2 hours ago": {Ago: 2 * time.Hour},
+		"cooked at 12 15 am": {Clock: "00:15"},
+	} {
+		got, ok := ReadCooked(in)
+		if want == (Cooked{}) {
+			assert.False(t, ok, in)
+			continue
+		}
+		assert.True(t, ok, in)
+		assert.Equal(t, want, got, in)
+	}
+	_, ok = ReadCooked("25 70")
+	assert.False(t, ok)
+
+	for in, want := range map[string]int{"5": 5, "five days": 5, "a week": 7, "2 weeks": 14} {
+		got, ok := ReadDays(in)
+		assert.True(t, ok, in)
+		assert.Equal(t, want, got, in)
+	}
+	k, ok := ReadDeliveryKind("it's frozen")
+	assert.True(t, ok)
+	assert.Equal(t, "frozen", k)
+	n, ok := ReadNumber("minus eighteen")
+	assert.True(t, ok)
+	assert.InDelta(t, -18, n, 0.01)
+	task, ok := ChooseTask("the chopping boards", vocab.Tasks)
+	assert.True(t, ok)
+	assert.Equal(t, "Chopping boards washed & sanitised", task)
+	assert.Equal(t, "Synthetic Farm", ReadText("synthetic Farm."))
 }

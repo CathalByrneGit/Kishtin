@@ -67,6 +67,8 @@ type Vocab struct {
 	Stations []Name
 	Units    []Unit
 	Orders   []OrderRef
+	// Tasks are the cleaning tasks.
+	Tasks []string
 }
 
 // Command is a fully understood command.
@@ -88,6 +90,23 @@ type Command struct {
 	// Food is what was checked, as said, for a food reading.
 	Food  string   `json:"food,omitempty"`
 	TempC *float64 `json:"temp_c,omitempty"`
+	// Reason is why items are voided, when said.
+	Reason string `json:"reason,omitempty"`
+	// ItemIDs picks exact items, when a question narrowed them down.
+	ItemIDs []string `json:"item_ids,omitempty"`
+	// Supplier, Product, DeliveryKind, PackagingOK and InDate are a
+	// delivery's details; Product, ShelfDays and Quantity a batch label's.
+	Supplier     string `json:"supplier,omitempty"`
+	Product      string `json:"product,omitempty"`
+	DeliveryKind string `json:"delivery_kind,omitempty"`
+	PackagingOK  *bool  `json:"packaging_ok,omitempty"`
+	InDate       *bool  `json:"in_date,omitempty"`
+	ShelfDays    int    `json:"shelf_days,omitempty"`
+	Quantity     string `json:"quantity,omitempty"`
+	// Cooked is when food going into the fridge to cool was cooked.
+	Cooked *Cooked `json:"cooked,omitempty"`
+	// Task is the cleaning task done.
+	Task string `json:"task,omitempty"`
 	// Words is what was said, normalized, for logging.
 	Words string `json:"words"`
 }
@@ -146,6 +165,14 @@ func (p *parser) parse() Result {
 	}
 	first := p.w[0]
 	switch {
+	case slices.Contains(voidWords, first):
+		return p.void()
+	case first == "delivery" || first == "deliveries" || first == "delivered":
+		return p.delivery()
+	case first == "cooling" || first == "cooled" || p.hasPhrase("into fridge") || p.hasPhrase("in fridge to cool") || p.hasPhrase("blast chiller"):
+		return p.cooling()
+	case first == "batch" || first == "label":
+		return p.batch()
 	case slices.Contains(fireWords, first) && p.hasOrderRef():
 		return p.course(IntentFire, 1)
 	case first == "hold" && p.hasOrderRef():
@@ -160,6 +187,9 @@ func (p *parser) parse() Result {
 		return p.foodTemp()
 	}
 	if r, ok := p.unitTemp(); ok {
+		return r
+	}
+	if r, ok := p.cleaning(); ok {
 		return r
 	}
 	if p.hasOrderRef() && (p.has("ready") || p.has("up")) && !p.has("on") {

@@ -34,7 +34,12 @@
     ["86 salmon / Salmon back on", "Marks a dish sold out, or back on."],
     ["Walk-in fridge 3.4 degrees", "Logs a fridge or freezer reading. A fail asks what you did about it, then needs \"confirm\"."],
     ["Core temp chicken 78", "Logs a cooking check. Also \"reheat soup 74\" and \"hot hold curry 65\"."],
-    ["Confirm / Cancel", "Answers a question. \"Table 4 or table 14?\" is answered with the table, or a tap."],
+    ["Void burger table 4", "Asks how many and why, then needs \"confirm void\". Head chef or manager."],
+    ["Delivery chilled chicken from Synthetic Farm 3 degrees", "Logs a delivery. Anything not said is asked: supplier, product, chilled, frozen or ambient, temperature, packaging and dates."],
+    ["Cooling rice cooked at 14:30", "Logs food going into the fridge now. \"Cooked 90 minutes ago\" works too."],
+    ["Batch grape syrup 5 days", "Logs a batch label made today, with its use-by date."],
+    ["Floors done", "Ticks a cleaning task from the list."],
+    ["Confirm / Cancel", "Answers a question. \"Table 4 or table 14?\" is answered with the table, or a tap. Saving a failed reading or a void needs the word \"confirm\"."],
   ];
 
   const OUTCOME_LABEL: Record<string, string> = {
@@ -106,7 +111,7 @@
           <li><strong>“{say}”</strong><span class="muted">{does}</span></li>
         {/each}
       </ul>
-      <p class="muted small">Voice cannot void items or delete anything. Everything here can also be done by touch.</p>
+      <p class="muted small">Voice never deletes anything. Everything here can also be done by touch.</p>
     </Card>
   </div>
 
