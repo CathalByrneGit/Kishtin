@@ -86,13 +86,29 @@ type ClientInterface interface {
 	GetRecordBook(ctx context.Context, options *GetRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordBookResponse, error)
 	GetRecordBookWithResponse(ctx context.Context, options *GetRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordBookResp, error)
 
+	// CompareCopy Compare a booklet with an uploaded copy of its official PDF
+	CompareCopy(ctx context.Context, options *CompareCopyRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CompareCopyResponse, error)
+	CompareCopyWithResponse(ctx context.Context, options *CompareCopyRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CompareCopyResp, error)
+
 	// ExportRecordBook Download a filled-in record book as PDF
 	ExportRecordBook(ctx context.Context, options *ExportRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordBookResponse, error)
 	ExportRecordBookWithResponse(ctx context.Context, options *ExportRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordBookResp, error)
 
+	// SuggestColumns Ask the local model to read a copy's columns (manager password)
+	SuggestColumns(ctx context.Context, options *SuggestColumnsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SuggestColumnsResponse, error)
+	SuggestColumnsWithResponse(ctx context.Context, options *SuggestColumnsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SuggestColumnsResp, error)
+
 	// CheckRecord Check a reading without saving it
 	CheckRecord(ctx context.Context, options *CheckRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CheckRecordResponse, error)
 	CheckRecordWithResponse(ctx context.Context, options *CheckRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CheckRecordResp, error)
+
+	// EditionTargets List the official PDFs that checking for new editions would download
+	EditionTargets(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*EditionTargetsResponse, error)
+	EditionTargetsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*EditionTargetsResp, error)
+
+	// CheckEditions Download the official PDFs and compare their editions (manager password)
+	CheckEditions(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*CheckEditionsResponse, error)
+	CheckEditionsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*CheckEditionsResp, error)
 
 	// ExportRecords Export HACCP records as CSV for an inspection
 	ExportRecords(ctx context.Context, options *ExportRecordsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordsResponse, error)
@@ -117,6 +133,18 @@ type ClientInterface interface {
 	// PreviewLimit Preview a limit change
 	PreviewLimit(ctx context.Context, options *PreviewLimitRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewLimitResponse, error)
 	PreviewLimitWithResponse(ctx context.Context, options *PreviewLimitRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewLimitResp, error)
+
+	// ImportPaper Save rows transcribed from a photo of a paper page, all or none
+	ImportPaper(ctx context.Context, options *ImportPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ImportPaperResponse, error)
+	ImportPaperWithResponse(ctx context.Context, options *ImportPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ImportPaperResp, error)
+
+	// PreviewPaper Check rows transcribed from a photo of a paper page, without saving
+	PreviewPaper(ctx context.Context, options *PreviewPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewPaperResponse, error)
+	PreviewPaperWithResponse(ctx context.Context, options *PreviewPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewPaperResp, error)
+
+	// ReadPaper Ask the local model to read a photo of a paper page into draft rows
+	ReadPaper(ctx context.Context, options *ReadPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReadPaperResponse, error)
+	ReadPaperWithResponse(ctx context.Context, options *ReadPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReadPaperResp, error)
 
 	// ListRecords List HACCP records
 	ListRecords(ctx context.Context, options *ListRecordsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListRecordsResponse, error)
@@ -1214,6 +1242,70 @@ func (c *Client) GetRecordBook(ctx context.Context, options *GetRecordBookReques
 	return responseParser(ctx, resp)
 }
 
+// CompareCopy Compare a booklet with an uploaded copy of its official PDF
+func (c *Client) CompareCopy(ctx context.Context, options *CompareCopyRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CompareCopyResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/books/{book}/compare",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CompareCopyResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(CompareCopyErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CompareCopyErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CompareCopyResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CompareCopyResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}/compare")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // ExportRecordBook Download a filled-in record book as PDF
 func (c *Client) ExportRecordBook(ctx context.Context, options *ExportRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordBookResponse, error) {
 	var err error
@@ -1262,6 +1354,70 @@ func (c *Client) ExportRecordBook(ctx context.Context, options *ExportRecordBook
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}/pdf")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SuggestColumns Ask the local model to read a copy's columns (manager password)
+func (c *Client) SuggestColumns(ctx context.Context, options *SuggestColumnsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SuggestColumnsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/books/{book}/suggest",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SuggestColumnsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SuggestColumnsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SuggestColumnsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SuggestColumnsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SuggestColumnsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}/suggest")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -1326,6 +1482,130 @@ func (c *Client) CheckRecord(ctx context.Context, options *CheckRecordRequestOpt
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/check")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// EditionTargets List the official PDFs that checking for new editions would download
+func (c *Client) EditionTargets(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*EditionTargetsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/editions",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*EditionTargetsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(EditionTargetsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "EditionTargetsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(EditionTargetsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "EditionTargetsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/editions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// CheckEditions Download the official PDFs and compare their editions (manager password)
+func (c *Client) CheckEditions(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*CheckEditionsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/editions/check",
+		Method:     "POST",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CheckEditionsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(CheckEditionsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CheckEditionsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CheckEditionsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CheckEditionsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/editions/check")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -1678,6 +1958,198 @@ func (c *Client) PreviewLimit(ctx context.Context, options *PreviewLimitRequestO
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/limits/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ImportPaper Save rows transcribed from a photo of a paper page, all or none
+func (c *Client) ImportPaper(ctx context.Context, options *ImportPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ImportPaperResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/paper",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ImportPaperResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 201 {
+			target := new(ImportPaperErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ImportPaperErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ImportPaperResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ImportPaperResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/paper")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewPaper Check rows transcribed from a photo of a paper page, without saving
+func (c *Client) PreviewPaper(ctx context.Context, options *PreviewPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewPaperResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/paper/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewPaperResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewPaperErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewPaperErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewPaperResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewPaperResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/paper/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ReadPaper Ask the local model to read a photo of a paper page into draft rows
+func (c *Client) ReadPaper(ctx context.Context, options *ReadPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReadPaperResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/paper/read",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ReadPaperResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ReadPaperErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ReadPaperErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ReadPaperResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ReadPaperResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/paper/read")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -6722,6 +7194,59 @@ func (o *GetRecordBookRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// CompareCopyRequestOptions is the options needed to make a request to CompareCopy.
+type CompareCopyRequestOptions struct {
+	PathParams *CompareCopyPath
+	Body       *CompareCopyBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *CompareCopyRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *CompareCopyRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *CompareCopyRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *CompareCopyRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *CompareCopyRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // ExportRecordBookRequestOptions is the options needed to make a request to ExportRecordBook.
 type ExportRecordBookRequestOptions struct {
 	PathParams *ExportRecordBookPath
@@ -6772,6 +7297,59 @@ func (o *ExportRecordBookRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *ExportRecordBookRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SuggestColumnsRequestOptions is the options needed to make a request to SuggestColumns.
+type SuggestColumnsRequestOptions struct {
+	PathParams *SuggestColumnsPath
+	Body       *SuggestColumnsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SuggestColumnsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SuggestColumnsRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *SuggestColumnsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SuggestColumnsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SuggestColumnsRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -6992,6 +7570,138 @@ func (o *PreviewLimitRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *PreviewLimitRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// ImportPaperRequestOptions is the options needed to make a request to ImportPaper.
+type ImportPaperRequestOptions struct {
+	Body *ImportPaperBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ImportPaperRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ImportPaperRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *ImportPaperRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ImportPaperRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *ImportPaperRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewPaperRequestOptions is the options needed to make a request to PreviewPaper.
+type PreviewPaperRequestOptions struct {
+	Body *PreviewPaperBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewPaperRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewPaperRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewPaperRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewPaperRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewPaperRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// ReadPaperRequestOptions is the options needed to make a request to ReadPaper.
+type ReadPaperRequestOptions struct {
+	Body *ReadPaperBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ReadPaperRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ReadPaperRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *ReadPaperRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ReadPaperRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *ReadPaperRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -10059,6 +10769,68 @@ func (c *Client) GetRecordBookWithResponse(ctx context.Context, options *GetReco
 	}
 }
 
+// CompareCopy Compare a booklet with an uploaded copy of its official PDF
+func (c *Client) CompareCopyWithResponse(ctx context.Context, options *CompareCopyRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CompareCopyResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/books/{book}/compare",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}/compare")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CompareCopyResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(CompareCopyResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CompareCopyResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CompareCopyErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CompareCopyErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // ExportRecordBook Download a filled-in record book as PDF
 func (c *Client) ExportRecordBookWithResponse(ctx context.Context, options *ExportRecordBookRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ExportRecordBookResp, error) {
 	var err error
@@ -10104,6 +10876,68 @@ func (c *Client) ExportRecordBookWithResponse(ctx context.Context, options *Expo
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "ExportRecordBookErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SuggestColumns Ask the local model to read a copy's columns (manager password)
+func (c *Client) SuggestColumnsWithResponse(ctx context.Context, options *SuggestColumnsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SuggestColumnsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/books/{book}/suggest",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}/suggest")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SuggestColumnsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SuggestColumnsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SuggestColumnsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SuggestColumnsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SuggestColumnsErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -10166,6 +11000,126 @@ func (c *Client) CheckRecordWithResponse(ctx context.Context, options *CheckReco
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "CheckRecordErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// EditionTargets List the official PDFs that checking for new editions would download
+func (c *Client) EditionTargetsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*EditionTargetsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/editions",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/editions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &EditionTargetsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(EditionTargetsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "EditionTargetsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(EditionTargetsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "EditionTargetsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// CheckEditions Download the official PDFs and compare their editions (manager password)
+func (c *Client) CheckEditionsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*CheckEditionsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/editions/check",
+		Method:     "POST",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/editions/check")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CheckEditionsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(CheckEditionsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CheckEditionsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CheckEditionsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CheckEditionsErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -10511,6 +11465,192 @@ func (c *Client) PreviewLimitWithResponse(ctx context.Context, options *PreviewL
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "PreviewLimitErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ImportPaper Save rows transcribed from a photo of a paper page, all or none
+func (c *Client) ImportPaperWithResponse(ctx context.Context, options *ImportPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ImportPaperResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/paper",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/paper")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ImportPaperResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 201:
+		out.JSON201 = new(ImportPaperResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON201); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ImportPaperResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ImportPaperErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ImportPaperErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewPaper Check rows transcribed from a photo of a paper page, without saving
+func (c *Client) PreviewPaperWithResponse(ctx context.Context, options *PreviewPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewPaperResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/paper/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/paper/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewPaperResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewPaperResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewPaperResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewPaperErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewPaperErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ReadPaper Ask the local model to read a photo of a paper page into draft rows
+func (c *Client) ReadPaperWithResponse(ctx context.Context, options *ReadPaperRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReadPaperResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/paper/read",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/paper/read")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ReadPaperResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ReadPaperResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReadPaperResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ReadPaperErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReadPaperErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -15299,6 +16439,15 @@ func (g GetRecordBookPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(g))
 }
 
+type CompareCopyPath struct {
+	// Book Record book ID or code, such as SC2
+	Book string `json:"book" validate:"required"`
+}
+
+func (c CompareCopyPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
 type ExportRecordBookPath struct {
 	// Book Record book ID or code, such as SC2
 	Book string `json:"book" validate:"required"`
@@ -15306,6 +16455,15 @@ type ExportRecordBookPath struct {
 
 func (e ExportRecordBookPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(e))
+}
+
+type SuggestColumnsPath struct {
+	// Book Record book ID or code, such as SC2
+	Book string `json:"book" validate:"required"`
+}
+
+func (s SuggestColumnsPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
 type GetRecordPath struct {
@@ -15544,11 +16702,21 @@ type ConnectSquareBody = ConnectInput
 
 type UploadFileBody = runtime.File
 
+type CompareCopyBody = FileBody
+
+type SuggestColumnsBody = FileBody
+
 type CheckRecordBody = NewRecord
 
 type CreateLimitBody = NewLimit
 
 type PreviewLimitBody = NewLimit
+
+type ImportPaperBody = PaperImport
+
+type PreviewPaperBody = PaperImport
+
+type ReadPaperBody = FileBody
 
 type LogRecordBody = NewRecord
 
@@ -15798,13 +16966,29 @@ type GetRecordBookResponse = Book
 
 type GetRecordBookErrorResponse = ErrorModel
 
+type CompareCopyResponse = CopyComparison
+
+type CompareCopyErrorResponse = ErrorModel
+
 type ExportRecordBookResponse = []byte
 
 type ExportRecordBookErrorResponse = ErrorModel
 
+type SuggestColumnsResponse = Suggestion
+
+type SuggestColumnsErrorResponse = ErrorModel
+
 type CheckRecordResponse = Check
 
 type CheckRecordErrorResponse = ErrorModel
+
+type EditionTargetsResponse = EditionTargetsBody
+
+type EditionTargetsErrorResponse = ErrorModel
+
+type CheckEditionsResponse = EditionResultsBody
+
+type CheckEditionsErrorResponse = ErrorModel
 
 type ExportRecordsResponse = []byte
 
@@ -15829,6 +17013,18 @@ type ExportLimitsErrorResponse = ErrorModel
 type PreviewLimitResponse = LimitPreview
 
 type PreviewLimitErrorResponse = ErrorModel
+
+type ImportPaperResponse = PaperSavedBody
+
+type ImportPaperErrorResponse = ErrorModel
+
+type PreviewPaperResponse = PaperChecksBody
+
+type PreviewPaperErrorResponse = ErrorModel
+
+type ReadPaperResponse = PaperDraft
+
+type ReadPaperErrorResponse = ErrorModel
 
 type ListRecordsResponse = RecordsOutBody
 
@@ -16229,6 +17425,14 @@ type GetRecordBookResp struct {
 	ApplicationProblemPlusJSONDefault *GetRecordBookErrorResponse
 }
 
+type CompareCopyResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *CompareCopyResponse
+	ApplicationProblemPlusJSONDefault *CompareCopyErrorResponse
+}
+
 type ExportRecordBookResp200Headers struct {
 	ContentDisposition string `header:"Content-Disposition"`
 	ContentType        string `header:"Content-Type"`
@@ -16245,12 +17449,36 @@ type ExportRecordBookResp struct {
 	ApplicationProblemPlusJSONDefault *ExportRecordBookErrorResponse
 }
 
+type SuggestColumnsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SuggestColumnsResponse
+	ApplicationProblemPlusJSONDefault *SuggestColumnsErrorResponse
+}
+
 type CheckRecordResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
 	JSON200                           *CheckRecordResponse
 	ApplicationProblemPlusJSONDefault *CheckRecordErrorResponse
+}
+
+type EditionTargetsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *EditionTargetsResponse
+	ApplicationProblemPlusJSONDefault *EditionTargetsErrorResponse
+}
+
+type CheckEditionsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *CheckEditionsResponse
+	ApplicationProblemPlusJSONDefault *CheckEditionsErrorResponse
 }
 
 type ExportRecordsResp200Headers struct {
@@ -16323,6 +17551,30 @@ type PreviewLimitResp struct {
 	StatusCode                        int
 	JSON200                           *PreviewLimitResponse
 	ApplicationProblemPlusJSONDefault *PreviewLimitErrorResponse
+}
+
+type ImportPaperResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON201                           *ImportPaperResponse
+	ApplicationProblemPlusJSONDefault *ImportPaperErrorResponse
+}
+
+type PreviewPaperResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewPaperResponse
+	ApplicationProblemPlusJSONDefault *PreviewPaperErrorResponse
+}
+
+type ReadPaperResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ReadPaperResponse
+	ApplicationProblemPlusJSONDefault *ReadPaperErrorResponse
 }
 
 type ListRecordsResp struct {
@@ -17081,6 +18333,7 @@ type Book struct {
 	Changed         []string  `json:"changed" validate:"required"`
 	Corrected       int64     `json:"corrected"`
 	FirstSeq        *int64    `json:"first_seq,omitempty"`
+	FromPaper       int64     `json:"from_paper"`
 	Gaps            []Gap     `json:"gaps" validate:"required"`
 	Issuer          string    `json:"issuer" validate:"required"`
 	LastSeq         *int64    `json:"last_seq,omitempty"`
@@ -17619,6 +18872,80 @@ func (c CopyCheck) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(c))
 }
 
+type CopyComparison struct {
+	Ai      bool       `json:"ai"`
+	Booklet string     `json:"booklet" validate:"required"`
+	Edition *CopyCheck `json:"edition,omitempty"`
+	File    string     `json:"file" validate:"required"`
+	Report  CopyReport `json:"report"`
+}
+
+func (c CopyComparison) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Booklet, "required"); err != nil {
+		errors = errors.Append("Booklet", err)
+	}
+	if c.Edition != nil {
+		if v, ok := any(c.Edition).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Edition", err)
+			}
+		}
+	}
+	if err := typesValidator.Var(c.File, "required"); err != nil {
+		errors = errors.Append("File", err)
+	}
+	if v, ok := any(c.Report).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Report", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type CopyReport struct {
+	Columns   []LabelCheck `json:"columns" validate:"required"`
+	Excerpt   string       `json:"excerpt" validate:"required"`
+	Found     int64        `json:"found"`
+	Pages     int64        `json:"pages"`
+	Questions []LabelCheck `json:"questions" validate:"required"`
+	Total     int64        `json:"total"`
+}
+
+func (c CopyReport) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Columns, "required"); err != nil {
+		errors = errors.Append("Columns", err)
+	}
+	for i, item := range c.Columns {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Columns[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(c.Excerpt, "required"); err != nil {
+		errors = errors.Append("Excerpt", err)
+	}
+	if err := typesValidator.Var(c.Questions, "required"); err != nil {
+		errors = errors.Append("Questions", err)
+	}
+	for i, item := range c.Questions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Questions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type Course struct {
 	Course    string     `json:"course" validate:"required"`
 	FiredAt   *time.Time `json:"fired_at,omitempty"`
@@ -17738,6 +19065,77 @@ func (d DishInput) Validate() error {
 	}
 	if err := typesValidator.Var(d.StationID, "required"); err != nil {
 		errors = errors.Append("StationID", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type EditionResult struct {
+	Booklet   string  `json:"booklet" validate:"required"`
+	Code      string  `json:"code" validate:"required"`
+	ErrorData *string `json:"error,omitempty"`
+	File      *string `json:"file,omitempty"`
+	Published string  `json:"published" validate:"required"`
+	Status    string  `json:"status" validate:"required"`
+	Title     string  `json:"title" validate:"required"`
+	URL       string  `json:"url" validate:"required"`
+}
+
+func (e EditionResult) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(e))
+}
+
+type EditionResultsBody struct {
+	Results []EditionResult `json:"results" validate:"required"`
+}
+
+func (e EditionResultsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(e.Results, "required"); err != nil {
+		errors = errors.Append("Results", err)
+	}
+	for i, item := range e.Results {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Results[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type EditionTarget struct {
+	Booklet   string `json:"booklet" validate:"required"`
+	Code      string `json:"code" validate:"required"`
+	Published string `json:"published" validate:"required"`
+	Title     string `json:"title" validate:"required"`
+	URL       string `json:"url" validate:"required"`
+}
+
+func (e EditionTarget) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(e))
+}
+
+type EditionTargetsBody struct {
+	Targets []EditionTarget `json:"targets" validate:"required"`
+}
+
+func (e EditionTargetsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(e.Targets, "required"); err != nil {
+		errors = errors.Append("Targets", err)
+	}
+	for i, item := range e.Targets {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Targets[%d]", i), err)
+			}
+		}
 	}
 	if len(errors) == 0 {
 		return nil
@@ -17875,6 +19273,14 @@ type Field struct {
 }
 
 func (f Field) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(f))
+}
+
+type FileBody struct {
+	File string `json:"file" validate:"required,max=64,min=64"`
+}
+
+func (f FileBody) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(f))
 }
 
@@ -18359,6 +19765,15 @@ func (k KitchenView) Validate() error {
 		return nil
 	}
 	return errors
+}
+
+type LabelCheck struct {
+	Found bool   `json:"found"`
+	Label string `json:"label" validate:"required"`
+}
+
+func (l LabelCheck) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(l))
 }
 
 type LimitPreview struct {
@@ -19062,6 +20477,123 @@ func (p Page) Validate() error {
 	return errors
 }
 
+type PaperCheck struct {
+	Check   *Check  `json:"check,omitempty"`
+	Problem *string `json:"problem,omitempty"`
+	Row     int64   `json:"row"`
+}
+
+func (p PaperCheck) Validate() error {
+	var errors runtime.ValidationErrors
+	if p.Check != nil {
+		if v, ok := any(p.Check).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Check", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type PaperChecksBody struct {
+	Rows []PaperCheck `json:"rows" validate:"required"`
+}
+
+func (p PaperChecksBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.Rows, "required"); err != nil {
+		errors = errors.Append("Rows", err)
+	}
+	for i, item := range p.Rows {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Rows[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type PaperDraft struct {
+	Problems []string    `json:"problems" validate:"required"`
+	Rows     []NewRecord `json:"rows" validate:"required"`
+}
+
+func (p PaperDraft) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.Problems, "required"); err != nil {
+		errors = errors.Append("Problems", err)
+	}
+	if err := typesValidator.Var(p.Rows, "required"); err != nil {
+		errors = errors.Append("Rows", err)
+	}
+	for i, item := range p.Rows {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Rows[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type PaperImport struct {
+	File string      `json:"file" validate:"required"`
+	Rows []NewRecord `json:"rows" validate:"required"`
+}
+
+func (p PaperImport) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.File, "required"); err != nil {
+		errors = errors.Append("File", err)
+	}
+	if err := typesValidator.Var(p.Rows, "required"); err != nil {
+		errors = errors.Append("Rows", err)
+	}
+	for i, item := range p.Rows {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Rows[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type PaperSavedBody struct {
+	Records []Record `json:"records" validate:"required"`
+}
+
+func (p PaperSavedBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.Records, "required"); err != nil {
+		errors = errors.Append("Records", err)
+	}
+	for i, item := range p.Records {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Records[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type Plan struct {
 	At              time.Time      `json:"at" validate:"required"`
 	Courses         []CourseStatus `json:"courses" validate:"required"`
@@ -19155,6 +20687,7 @@ type Reading struct {
 	Notes         *string    `json:"notes,omitempty"`
 	OnDate        *string    `json:"on_date,omitempty"`
 	PackagingOk   *bool      `json:"packaging_ok,omitempty"`
+	PaperFile     *string    `json:"paper_file,omitempty"`
 	PeriodFrom    *string    `json:"period_from,omitempty"`
 	PeriodTo      *string    `json:"period_to,omitempty"`
 	Product       *string    `json:"product,omitempty"`
@@ -19163,8 +20696,10 @@ type Reading struct {
 	Review        *Review    `json:"review,omitempty"`
 	Separated     *bool      `json:"separated,omitempty"`
 	ShelfLifeDays *int64     `json:"shelf_life_days,omitempty"`
+	SignedBy      *string    `json:"signed_by,omitempty"`
 	Staff         *string    `json:"staff,omitempty"`
 	Supplier      *string    `json:"supplier,omitempty"`
+	TakenAt       *time.Time `json:"taken_at,omitempty"`
 	Task          *string    `json:"task,omitempty"`
 	TempAtCutoffC *float64   `json:"temp_at_cutoff_c,omitempty"`
 	TempC         *float64   `json:"temp_c,omitempty"`
@@ -19303,6 +20838,7 @@ func (r RecordBookSettings) Validate() error {
 }
 
 type RecordBooks struct {
+	Ai              bool      `json:"ai"`
 	Booklets        []Booklet `json:"booklets" validate:"required"`
 	Builders        []Builder `json:"builders" validate:"required"`
 	Bundle          Bundle    `json:"bundle"`
@@ -20245,6 +21781,44 @@ func (s StationPlan) Validate() error {
 	}
 	if err := typesValidator.Var(s.StationID, "required"); err != nil {
 		errors = errors.Append("StationID", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Suggestion struct {
+	Booklet   string             `json:"booklet" validate:"required"`
+	Checklist []ChecklistSection `json:"checklist,omitempty"`
+	Columns   []Column           `json:"columns" validate:"required"`
+	Notes     []string           `json:"notes" validate:"required"`
+}
+
+func (s Suggestion) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Booklet, "required"); err != nil {
+		errors = errors.Append("Booklet", err)
+	}
+	for i, item := range s.Checklist {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Checklist[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Columns, "required"); err != nil {
+		errors = errors.Append("Columns", err)
+	}
+	for i, item := range s.Columns {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Columns[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
 	}
 	if len(errors) == 0 {
 		return nil

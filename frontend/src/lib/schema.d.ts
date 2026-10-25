@@ -211,6 +211,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/haccp/books/{book}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare a booklet with an uploaded copy of its official PDF
+         * @description Reads the copy's text on this machine and says which of the booklet's columns and questions it has, and whether it is the edition the booklet was made from. Nothing is sent anywhere.
+         */
+        post: operations["compare-copy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/haccp/books/{book}/pdf": {
         parameters: {
             query?: never;
@@ -231,6 +251,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/haccp/books/{book}/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the local model to read a copy's columns (manager password)
+         * @description Needs [ai] url in kishtin.toml: a model server on this machine or the local network. The result is a draft to review and save in Setup › HACCP records; nothing is saved.
+         */
+        post: operations["suggest-columns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/haccp/check": {
         parameters: {
             query?: never;
@@ -245,6 +285,46 @@ export interface paths {
          * @description Returns the pass, borderline or fail result and the limit it was checked against, so it can be shown before saving.
          */
         post: operations["check-record"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/editions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the official PDFs that checking for new editions would download
+         * @description Nothing is fetched. Show this list before asking to check.
+         */
+        get: operations["edition-targets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/editions/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Download the official PDFs and compare their editions (manager password)
+         * @description Downloads each PDF listed by GET /haccp/editions from its publisher. Only public files are downloaded and nothing about the restaurant is sent. A changed PDF is kept so it can be compared with its booklet.
+         */
+        post: operations["check-editions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -343,6 +423,63 @@ export interface paths {
          * @description Shows how recent records would have scored under the new limit, whether it is below FSAI guidance, and anything that stops it being saved. Saved records are never re-graded.
          */
         post: operations["preview-limit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/paper": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save rows transcribed from a photo of a paper page, all or none
+         * @description Each record keeps when the check was done (reading.taken_at), the name on the paper (reading.signed_by) and the photo. Results are checked against the limits in force now.
+         */
+        post: operations["import-paper"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/paper/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check rows transcribed from a photo of a paper page, without saving */
+        post: operations["preview-paper"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/paper/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the local model to read a photo of a paper page into draft rows
+         * @description Needs [ai] url in kishtin.toml. Nothing is saved: check each row against the photo, then save with POST /haccp/paper.
+         */
+        post: operations["read-paper"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1649,6 +1786,8 @@ export interface components {
             corrected: number;
             /** Format: int64 */
             first_seq?: number;
+            /** Format: int64 */
+            from_paper: number;
             gaps: components["schemas"]["Gap"][];
             issuer: string;
             /** Format: int64 */
@@ -1803,6 +1942,24 @@ export interface components {
             known: boolean;
             matches: boolean;
         };
+        CopyComparison: {
+            ai: boolean;
+            booklet: string;
+            edition?: components["schemas"]["CopyCheck"];
+            file: string;
+            report: components["schemas"]["CopyReport"];
+        };
+        CopyReport: {
+            columns: components["schemas"]["LabelCheck"][];
+            excerpt: string;
+            /** Format: int64 */
+            found: number;
+            /** Format: int64 */
+            pages: number;
+            questions: components["schemas"]["LabelCheck"][];
+            /** Format: int64 */
+            total: number;
+        };
         Course: {
             course: string;
             /** Format: date-time */
@@ -1873,6 +2030,29 @@ export interface components {
             /** Format: int64 */
             rest_seconds?: number;
             station_id: string;
+        };
+        EditionResult: {
+            booklet: string;
+            code: string;
+            error?: string;
+            file?: string;
+            published: string;
+            status: string;
+            title: string;
+            url: string;
+        };
+        EditionResultsBody: {
+            results: components["schemas"]["EditionResult"][];
+        };
+        EditionTarget: {
+            booklet: string;
+            code: string;
+            published: string;
+            title: string;
+            url: string;
+        };
+        EditionTargetsBody: {
+            targets: components["schemas"]["EditionTarget"][];
         };
         Equipment: {
             active: boolean;
@@ -1954,6 +2134,9 @@ export interface components {
         Field: {
             key: string;
             label: string;
+        };
+        FileBody: {
+            file: string;
         };
         FileMeta: {
             mime: string;
@@ -2093,6 +2276,10 @@ export interface components {
             /** Format: int64 */
             replan_seconds: number;
             stations: components["schemas"]["Station"][];
+        };
+        LabelCheck: {
+            found: boolean;
+            label: string;
         };
         LimitPreview: {
             below_fsai?: string[];
@@ -2304,6 +2491,26 @@ export interface components {
             sheet_label?: string;
             title?: string;
         };
+        PaperCheck: {
+            check?: components["schemas"]["Check"];
+            problem?: string;
+            /** Format: int64 */
+            row: number;
+        };
+        PaperChecksBody: {
+            rows: components["schemas"]["PaperCheck"][];
+        };
+        PaperDraft: {
+            problems: string[];
+            rows: components["schemas"]["NewRecord"][];
+        };
+        PaperImport: {
+            file: string;
+            rows: components["schemas"]["NewRecord"][];
+        };
+        PaperSavedBody: {
+            records: components["schemas"]["Record"][];
+        };
         Plan: {
             /** Format: date-time */
             at: string;
@@ -2349,6 +2556,7 @@ export interface components {
             notes?: string;
             on_date?: string;
             packaging_ok?: boolean;
+            paper_file?: string;
             period_from?: string;
             period_to?: string;
             product?: string;
@@ -2358,8 +2566,11 @@ export interface components {
             separated?: boolean;
             /** Format: int64 */
             shelf_life_days?: number;
+            signed_by?: string;
             staff?: string;
             supplier?: string;
+            /** Format: date-time */
+            taken_at?: string;
             task?: string;
             /** Format: double */
             temp_at_cutoff_c?: number;
@@ -2399,6 +2610,7 @@ export interface components {
             custom: components["schemas"]["Template"][];
         };
         RecordBooks: {
+            ai: boolean;
             booklets: components["schemas"]["Booklet"][];
             builders: components["schemas"]["Builder"][];
             bundle: components["schemas"]["Bundle"];
@@ -2671,6 +2883,12 @@ export interface components {
             in_progress: components["schemas"]["Progress"][];
             name: string;
             station_id: string;
+        };
+        Suggestion: {
+            booklet: string;
+            checklist?: components["schemas"]["ChecklistSection"][];
+            columns: components["schemas"]["Column"][];
+            notes: string[];
         };
         SyncResult: {
             /** Format: int64 */
@@ -3290,6 +3508,42 @@ export interface operations {
             };
         };
     };
+    "compare-copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Record book ID or code, such as SC2 */
+                book: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyComparison"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "export-record-book": {
         parameters: {
             query?: {
@@ -3330,6 +3584,42 @@ export interface operations {
             };
         };
     };
+    "suggest-columns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Record book ID or code, such as SC2 */
+                book: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Suggestion"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "check-record": {
         parameters: {
             query?: never;
@@ -3350,6 +3640,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Check"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "edition-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditionTargetsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "check-editions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditionResultsBody"];
                 };
             };
             /** @description Error */
@@ -3565,6 +3913,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LimitPreview"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "import-paper": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaperImport"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperSavedBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-paper": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaperImport"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperChecksBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "read-paper": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperDraft"];
                 };
             };
             /** @description Error */

@@ -2,6 +2,8 @@
 package config
 
 import (
+	"github.com/cathalbyrnegit/kishtin/internal/ai"
+
 	"errors"
 	"fmt"
 	"net"
@@ -28,6 +30,7 @@ type Config struct {
 	Files   Files  `toml:"files"`
 	Speech  Speech `toml:"speech"`
 	Square  Square `toml:"square"`
+	AI      AI     `toml:"ai"`
 	// RestaurantName is the starting restaurant name for the screens.
 	RestaurantName string `toml:"restaurant_name"`
 }
@@ -72,6 +75,18 @@ type Speech struct {
 	Timeout Duration `toml:"timeout"`
 	// WakeWords start a hands-free command. Default: kishtin.
 	WakeWords []string `toml:"wake_words"`
+}
+
+// AI points at an optional local model server with an OpenAI-compatible
+// chat API (llama.cpp's llama-server, Ollama). It reads copies of record
+// books and photos of paper pages, and only ever suggests: a person
+// reviews everything. It must be on this machine or the local network.
+type AI struct {
+	// URL is the server, such as http://127.0.0.1:8081.
+	URL string `toml:"url"`
+	// Model is the model name the server expects, if it needs one.
+	Model   string   `toml:"model"`
+	Timeout Duration `toml:"timeout"`
 }
 
 // Square connects to Square for importing orders. Whether import is on,
@@ -129,6 +144,7 @@ func Default() Config {
 		Files:   Files{MaxSizeMB: 15},
 		Speech:  Speech{Timeout: Duration{20 * time.Second}},
 		Square:  Square{Environment: "production", Timeout: Duration{15 * time.Second}},
+		AI:      AI{Timeout: Duration{2 * time.Minute}},
 	}
 }
 
@@ -166,6 +182,9 @@ func Load(path string, mustExist bool) (Config, error) {
 	if v := os.Getenv("KISHTIN_TTS_URL"); v != "" {
 		cfg.Speech.TTSURL = v
 	}
+	if v := os.Getenv("KISHTIN_AI_URL"); v != "" {
+		cfg.AI.URL = v
+	}
 	cfg.fill()
 	return cfg, cfg.Validate()
 }
@@ -202,6 +221,12 @@ func (c Config) SpeechClient() (*speech.Client, error) {
 		return nil, errors.New("speech.timeout must be positive, such as \"20s\"")
 	}
 	return speech.New(c.Speech.STTURL, c.Speech.TTSURL, c.Speech.Timeout.Duration)
+}
+
+// AIClient returns the client for the local model server, or nil when none
+// is set up.
+func (c Config) AIClient() (*ai.Client, error) {
+	return ai.New(c.AI.URL, c.AI.Model, c.AI.Timeout.Duration)
 }
 
 // SquareClient returns the Square client, or nil when no token is set.

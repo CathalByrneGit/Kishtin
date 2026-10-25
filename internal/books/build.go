@@ -85,6 +85,9 @@ type Book struct {
 	Records int `json:"records"`
 	// Corrected is how many of them are corrections of an earlier record.
 	Corrected int `json:"corrected"`
+	// FromPaper is how many of them were transcribed from photos of paper
+	// pages.
+	FromPaper int `json:"from_paper"`
 	// SignOffs are the manager sign-offs whose period overlaps the month.
 	SignOffs []SignOff `json:"sign_offs"`
 	// Unsigned are the days of the month, up to yesterday, that no
@@ -202,6 +205,9 @@ func (b *builder) use(e haccp.Effective) {
 	if e.Corrects != "" {
 		b.book.Corrected++
 	}
+	if e.Reading.PaperFile != "" {
+		b.book.FromPaper++
+	}
 	if b.book.FirstSeq == 0 || e.Seq < b.book.FirstSeq {
 		b.book.FirstSeq = e.Seq
 	}
@@ -226,6 +232,15 @@ func flag(o haccp.Outcome) string {
 		return FlagBorderline
 	}
 	return ""
+}
+
+// signer is who signed for a record: the name written on the paper for a
+// record transcribed from paper, or who logged it.
+func signer(e haccp.Effective) string {
+	if e.Reading.SignedBy != "" {
+		return e.Reading.SignedBy
+	}
+	return e.LoggedByName
 }
 
 // firstName is how a booklet's "Signed" box shows who logged a record.
@@ -389,7 +404,7 @@ func (b *builder) gridPage(units []gridUnit) Page {
 			if n := note(u.unit.Name+" "+u.checks[k.slot].Label+" "+temp(e.Reading.TempC), e); n != "" {
 				comments[k.day] = append(comments[k.day], n)
 			}
-			signed[k.day] = addUnique(signed[k.day], firstName(e.LoggedByName))
+			signed[k.day] = addUnique(signed[k.day], firstName(signer(e)))
 		}
 	}
 
@@ -479,7 +494,7 @@ func (b *builder) add(r *logRow, e haccp.Effective, prefix string) {
 	if n := note(prefix, e); n != "" {
 		r.notes = append(r.notes, n)
 	}
-	r.signed = addUnique(r.signed, firstName(e.LoggedByName))
+	r.signed = addUnique(r.signed, firstName(signer(e)))
 }
 
 func (b *builder) emit(rows []*logRow) {
@@ -531,7 +546,7 @@ func (b *builder) cooking() {
 		r := b.newRow(e.At, e.Reading.Food)
 		r.values["cook_finished"] = Cell{Text: b.clock(e.At)}
 		r.values["core_temp"] = Cell{Text: coreTemp(e.Reading), Flag: flag(e.Outcome)}
-		r.values["cook_signed"] = Cell{Text: firstName(e.LoggedByName)}
+		r.values["cook_signed"] = Cell{Text: firstName(signer(e))}
 		b.add(r, e, "")
 		rows = append(rows, r)
 		cooks = append(cooks, r)
@@ -570,7 +585,7 @@ func (b *builder) cooking() {
 			into.Text += temp(e.Reading.TempAtCutoffC) + " at 2.5 h"
 		}
 		match.values["into_fridge"] = into
-		match.values["cool_signed"] = Cell{Text: firstName(e.LoggedByName)}
+		match.values["cool_signed"] = Cell{Text: firstName(signer(e))}
 		b.add(match, e, "Cooling")
 	}
 	for _, e := range b.recs {
@@ -579,7 +594,7 @@ func (b *builder) cooking() {
 		}
 		r := b.newRow(e.At, e.Reading.Food)
 		r.values["reheat_temp"] = Cell{Text: coreTemp(e.Reading), Flag: flag(e.Outcome)}
-		r.values["reheat_signed"] = Cell{Text: firstName(e.LoggedByName)}
+		r.values["reheat_signed"] = Cell{Text: firstName(signer(e))}
 		b.add(r, e, "")
 		rows = append(rows, r)
 	}
@@ -685,6 +700,7 @@ func (b *builder) daily() error {
 		}
 		b.book.Records += sub.Records
 		b.book.Corrected += sub.Corrected
+		b.book.FromPaper += sub.FromPaper
 		if sub.FirstSeq != 0 && (b.book.FirstSeq == 0 || sub.FirstSeq < b.book.FirstSeq) {
 			b.book.FirstSeq = sub.FirstSeq
 		}

@@ -99,8 +99,18 @@ type TodayInput struct {
 // record it corrects.
 type Effective struct {
 	Record
-	// At is when the original record was logged.
+	// At is when the original record's check was done: when it was logged,
+	// or, for a record transcribed from paper, when it was taken.
 	At time.Time
+}
+
+// TakenAt is when a record's check was done: when it was logged, or when
+// it was taken for a record transcribed from paper.
+func (r Record) TakenAt() time.Time {
+	if r.Reading.TakenAt != nil {
+		return *r.Reading.TakenAt
+	}
+	return r.LoggedAt
 }
 
 // ApplyCorrections replaces each corrected record with its latest
@@ -115,7 +125,7 @@ func ApplyCorrections(recs []Record) []Effective {
 	for _, r := range sorted {
 		if r.Corrects == "" {
 			byID[r.ID] = len(out)
-			out = append(out, Effective{Record: r, At: r.LoggedAt})
+			out = append(out, Effective{Record: r, At: r.TakenAt()})
 			continue
 		}
 		i, ok := byID[r.Corrects]

@@ -183,6 +183,9 @@ internal/store/storetest/ conformance suite run against every backend
 internal/web/          HTTP handlers, API routes, embedded frontend assets
 internal/voice/        command grammar, parsing, confirmations (no audio I/O)
 internal/speech/       client for the local speech-to-text / text-to-speech sidecar
+internal/ai/           client for an optional local model server (drafts only)
+internal/pdftext/      PDF text extraction without CGO (go-pdfium on wazero)
+internal/books/        record book bundles, templates and page builders
 internal/integrations/ POS adapters, starting with Square (later)
 frontend/              Svelte 5 app (kit-ui), built with Vite into frontend/dist/
 ```
@@ -249,6 +252,8 @@ Official record books (for example Ireland's FSAI Safe Catering booklets) are fi
 - These settings change only how records print. They never change a record or its result.
 - A manager's sign-off of a period is a `sign_off` HACCP record in the hash chain, saved only through the sign-off action (manager password), never through ordinary logging. It stores what the period held when signed. A period with missed checks or readings without an action needs a note.
 - Never fill in a missed check. Never invent a bundle or edition: a bundle copies a real published booklet and records its source.
+- Old paper pages come in through paper import: each record keeps the photo (`paper_file`), when the check was done (`taken_at`) and the name on the paper (`signed_by`), and is graded against the limits in force at import. Saved all or none.
+- An optional local model (`internal/ai`, `[ai]` in `kishtin.toml`, local addresses only) may suggest booklet columns from a copy's text (`internal/pdftext`) or read a photo of a paper page. Its output is always a draft a person reviews, checked by the same rules as typed input.
 
 ### Menu and stations (`internal/menu`)
 

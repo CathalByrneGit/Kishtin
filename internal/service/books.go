@@ -99,6 +99,8 @@ type RecordBooks struct {
 	Bundles []books.Bundle `json:"bundles"`
 	// Builders are the kinds of booklet, with the fields each can show.
 	Builders []books.Builder `json:"builders"`
+	// AI says whether a local model is set up to read copies and photos.
+	AI bool `json:"ai"`
 }
 
 func (s *Service) recordBooks(ctx context.Context) (RecordBooks, error) {
@@ -116,7 +118,7 @@ func (s *Service) recordBooks(ctx context.Context) (RecordBooks, error) {
 	}
 	return RecordBooks{
 		Bundle: bundle, Booklets: booklets, SettingsVersion: set.Version.ID,
-		Bundles: bundles, Builders: books.Builders,
+		Bundles: bundles, Builders: books.Builders, AI: s.ai.Enabled(),
 	}, nil
 }
 

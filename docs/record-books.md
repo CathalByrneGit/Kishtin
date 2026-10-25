@@ -27,12 +27,58 @@ Bundles for more countries are added to Kishtin as kitchens ask for them. A bund
   - Fridges and freezers per sheet.
   - Whether a manager check line prints.
   - The questions of an inspection checklist, or the topics of a training record: one per line, with lines starting `#` as section headings.
-- **Upload your copy**: upload the official PDF you use. Kishtin keeps it with your records and says whether it is the edition the bundle was made from (it compares the file's SHA-256). If it is not, compare its columns with the booklet and change them here.
+- **Upload your copy**: upload the official PDF you use. Kishtin keeps it with your records, says whether it is the edition the bundle was made from (it compares the file's SHA-256), and compares its headings with the booklet. See [Checking your copy and new editions](#checking-your-copy-and-new-editions).
 - **Add a booklet**: for a booklet your country uses that is not in the bundle. Choose what it records (a fridge and freezer grid, a cooking log or a hot holding log), start from another booklet's columns, then change them.
 
 Every change is shown before it is saved, needs a reason, and is saved as a new settings version, like limits. Each filled-in booklet names the settings version and what was changed. Changes only affect how records print; saved records never change. The same settings are available with `kishtin settings show record_books` and `kishtin settings set record_books`, and over the API at `/api/settings/record_books`.
 
 ![HACCP records setup](screenshots/haccp-records-setup.png)
+
+## Checking your copy and new editions
+
+Publishers bring out new editions of their booklets now and then, with renamed or moved columns. Kishtin helps you spot that and change the booklet to match.
+
+- **Compare** (Setup › HACCP records, shown once you have uploaded your copy, and opened straight after an upload): Kishtin reads the text of your PDF on this machine and checks that every column heading and checklist question of the booklet is in it. A heading counts as found when all its words are in the copy, so a heading split over two lines still counts. It lists any that are missing, and can show the text it read. Blank and "Kishtin ref" columns are not checked, because they are not on the official page. Nothing is sent anywhere.
+- **Suggest columns** (needs a local model, below): the model reads the copy's text and suggests the booklet's columns, its notes, and for a checklist its questions. Kishtin checks the suggestion with the same rules as a change made by hand, shows it, and **Use these columns** puts it in your unsaved changes. Nothing is saved until you review and save it with a reason, as usual. A heading the model cannot match to something Kishtin records becomes a blank column.
+- **Check for new editions** (manager password): lists the official PDF of each booklet and where it comes from, then, once you agree, downloads each one from its publisher (for the FSAI bundle, www.fsai.ie) and compares it with the edition the booklet was made from. Only those public files are downloaded; nothing about your restaurant is sent. A booklet whose file has changed is marked **Changed**, and the new PDF is kept so you can compare it and change the booklet. A publisher that cannot be reached is marked **Unreachable**; nothing else happens.
+
+Kishtin never changes a booklet by itself. A new edition is a change a manager reviews and saves, like any other.
+
+![Comparing a copy of SC2](screenshots/compare-copy.png)
+
+## Bringing in paper records
+
+**HACCP › Paper import** (head chef or manager) brings pages of old paper record books into Kishtin, so the history is in one place.
+
+1. Take a clear photo of the page (or upload a PDF scan). It is stored under its SHA-256 like a docket photo.
+2. Type each row next to the photo: date, time, kind (fridge, freezer, cooking, reheating or hot holding), the fridge or food, the temperature, the name or initials written on the paper, and the action written for a reading out of limit. With a local model, **Read the photo** fills the rows in as a draft; check every row against the photo, because it can misread handwriting.
+3. **Check rows** shows each row's result, and any row that cannot be saved and why. A reading out of limit needs the action copied from the paper.
+4. **Save** adds all the rows or none. Each record keeps the photo, when the check was done, the name on the paper, and who brought it in.
+
+![Paper import](screenshots/paper-import.png)
+
+How imported records differ:
+
+- They are new records in the hash chain, added in the order they were saved. Like any record, they cannot be edited or deleted.
+- They are graded against the limits and rules in force when they are imported, not those of the day on the paper. The record stores which limit version it was checked against.
+- The time the check was done (from the paper) places the record on the right day in Records and record books. The time it was saved is kept too.
+- **Signed** on the record books shows the name written on the paper. The record books say how many entries came from photos of paper pages.
+- Kishtin never fills a missed check. A gap on the paper stays a gap.
+
+The command line also takes delivery and transport rows (`kishtin haccp paper`, below); the screen takes temperature readings.
+
+## A local model (optional)
+
+Suggesting columns and reading photos of paper pages use a small model running on this machine or the restaurant's network, through the OpenAI-compatible chat API that llama.cpp's `llama-server`, Ollama and similar servers provide. Set it in `kishtin.toml`:
+
+```toml
+[ai]
+url = "http://127.0.0.1:8081"
+model = "lfm2-vl"     # the name your model server uses
+timeout = "2m"
+```
+
+or with `KISHTIN_AI_URL`. Kishtin refuses an address outside this machine and the local network, so record books and photos never leave the building. Reading photos needs a model that takes images. Everything the model returns is a draft that a person checks; the same rules apply to it as to anything typed. Without a model, compare, edition checks and paper import still work: you type the rows and change columns by hand.
 
 ## Kinds of booklet
 
@@ -115,14 +161,24 @@ kishtin haccp books                              # the bundle in use, its bookle
 kishtin haccp book SC2 --month 2026-10           # missed checks and blank columns
 kishtin haccp book SC2 --month 2026-10 -o sc2.pdf
 kishtin haccp book SC4 --json                    # the filled-in pages as JSON
+kishtin haccp book SC2 --compare sc2.pdf         # compare a copy's headings with the booklet
+kishtin haccp book SC2 --compare sc2.pdf --suggest   # and ask the local model for columns
+kishtin haccp editions                           # where each booklet's official PDF comes from
+kishtin haccp editions --check --yes             # download them and compare editions
+kishtin haccp paper --photo page.jpg --read > rows.json   # local model reads the photo
+kishtin haccp paper --photo page.jpg --rows rows.json     # check the rows
+kishtin haccp paper --photo page.jpg --rows rows.json --yes   # save them, all or none
 ```
 
-API: `GET /api/haccp/books`, `GET /api/haccp/books/{book}?month=YYYY-MM`, `GET /api/haccp/books/{book}/pdf?month=YYYY-MM`.
+API: `GET /api/haccp/books`, `GET /api/haccp/books/{book}?month=YYYY-MM`, `GET /api/haccp/books/{book}/pdf?month=YYYY-MM`, `POST /api/haccp/books/{book}/compare`, `POST /api/haccp/books/{book}/suggest`, `GET /api/haccp/editions`, `POST /api/haccp/editions/check`, `POST /api/haccp/paper/preview`, `POST /api/haccp/paper`, `POST /api/haccp/paper/read`.
 
 ## What Kishtin does not do yet
 
 - Hot food deliveries (SC1's "Hot food: at or above 63°C") are not a delivery kind yet: deliveries are chilled, frozen or ambient.
 - Bundles ship with Kishtin. A restaurant can change booklets and add its own, but cannot load a new bundle file from the screens.
-- Kishtin does not read the uploaded PDF. It only compares the file with the edition the booklet was made from, and does not check the FSAI site for new editions.
+- Compare reads text only. A scanned PDF with no text layer shows nothing found; compare it by eye.
+- Edition checks run when a manager asks, not on a schedule.
+- Paper import on the screen takes temperature readings only. Deliveries and deliveries to customers can be imported from the command line; cooling, inspections, training and other records cannot be imported from paper.
+- How well a local model reads handwriting depends on the model and the photo. Kishtin has not been measured against real kitchen pages yet.
 - It does not print onto the official PDF pages. It draws its own pages in the same layout.
 - Ask your environmental health officer whether they accept printed or on-screen records in place of the paper booklets.

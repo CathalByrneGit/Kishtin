@@ -335,6 +335,9 @@ func WriteBook(p Book, out io.Writer) error {
 	if len(b.Unfilled) > 0 {
 		about = append(about, "Kishtin does not record: "+strings.Join(b.Unfilled, ", ")+". These boxes are left blank.")
 	}
+	if b.FromPaper > 0 {
+		about = append(about, fmt.Sprintf("%d entries were transcribed from photos of paper pages; the photo is kept with each record, and Signed shows the name written on the paper.", b.FromPaper))
+	}
 	if b.Corrected > 0 {
 		about = append(about, fmt.Sprintf("%d entries show a correction in place of the original record; the comments say why. Both records are kept.", b.Corrected))
 	}

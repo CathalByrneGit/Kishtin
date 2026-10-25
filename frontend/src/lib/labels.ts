@@ -2,7 +2,7 @@
 
 import type { ChipTone } from "@kenn-io/kit-ui";
 import type { HaccpRecord, Reading } from "./api";
-import { dublinTime, longDate, temp } from "./format";
+import { dublinDate, dublinTime, longDate, temp } from "./format";
 
 export const TYPE_LABELS: Record<string, string> = {
   fridge: "Fridge",
@@ -125,6 +125,8 @@ export function readingRows(r: { type: string; reading: Reading }): [string, str
     if (v !== undefined && v !== null && v !== "") rows.push([label, v]);
   };
   const yes = (b: boolean | undefined | null) => (b === undefined || b === null ? undefined : b ? "Yes" : "No");
+  if (rd.taken_at) add("Check done", `${longDate(dublinDate(new Date(rd.taken_at)))} ${dublinTime(rd.taken_at)} (transcribed from paper)`);
+  add("Signed on paper", rd.signed_by);
   if (rd.period_from && rd.period_to) add("Period", `${longDate(rd.period_from)} to ${longDate(rd.period_to)}`);
   if (rd.review) add("When signed", reviewText(rd.review));
   add("Unit", rd.unit);

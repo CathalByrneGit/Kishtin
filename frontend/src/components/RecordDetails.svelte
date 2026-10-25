@@ -18,7 +18,7 @@
   let docketError = $state("");
 
   $effect(() => {
-    const sha = record.reading.docket_file;
+    const sha = record.reading.docket_file ?? record.reading.paper_file;
     docket = null;
     docketError = "";
     if (!sha) return;
@@ -92,9 +92,9 @@
       {/if}
     </dl>
 
-    {#if record.reading.docket_file}
+    {#if record.reading.docket_file || record.reading.paper_file}
       <section>
-        <h3>Docket</h3>
+        <h3>{record.reading.paper_file ? "Paper page this was transcribed from" : "Docket"}</h3>
         {#if docketError}
           <Notice tone="error" message={docketError} />
         {:else if docket?.type.startsWith("image/")}

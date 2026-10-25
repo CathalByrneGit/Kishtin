@@ -71,7 +71,8 @@ func (c *cli) booksCmd() *cobra.Command {
 }
 
 func (c *cli) bookCmd() *cobra.Command {
-	var month, outPath string
+	var month, outPath, compare string
+	var suggest bool
 	cmd := &cobra.Command{
 		Use:   "book CODE",
 		Short: "Fill in a record book for a month, such as SC2",
@@ -81,6 +82,9 @@ func (c *cli) bookCmd() *cobra.Command {
 		Example: "  kishtin haccp book SC2 --month 2026-10\n  kishtin haccp book SC2 --month 2026-10 -o sc2-october.pdf",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if compare != "" {
+				return c.compareCopy(cmd, args[0], compare, suggest)
+			}
 			var q *client.GetRecordBookQuery
 			if month != "" {
 				if _, err := time.Parse("2006-01", month); err != nil {
@@ -146,5 +150,7 @@ func (c *cli) bookCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&month, "month", "", "month as YYYY-MM (default this month)")
 	cmd.Flags().StringVarP(&outPath, "output", "o", "", "write the filled-in booklet as a PDF to this file")
+	cmd.Flags().StringVar(&compare, "compare", "", "compare the booklet with your copy of its official PDF")
+	cmd.Flags().BoolVar(&suggest, "suggest", false, "with --compare: ask the local model to suggest columns from the copy")
 	return cmd
 }

@@ -1,8 +1,10 @@
 <script lang="ts">
   import { Button, Card, Chip, Modal, Notice, SelectDropdown, Spinner, TextInput, Toggle, showFlash } from "@kenn-io/kit-ui";
-  import { ExternalLink, Pencil, Plus, Trash2, Upload } from "@lucide/svelte";
+  import { ExternalLink, FileSearch, Pencil, Plus, Trash2, Upload } from "@lucide/svelte";
   import { onMount } from "svelte";
   import BookletEditor from "../../components/BookletEditor.svelte";
+  import CompareCopyModal from "../../components/CompareCopyModal.svelte";
+  import EditionsModal from "../../components/EditionsModal.svelte";
   import ManagerGate from "../../components/ManagerGate.svelte";
   import ReviewChanges, { type Preview } from "../../components/ReviewChanges.svelte";
   import { api, message, type Schemas } from "../../lib/api";
@@ -31,6 +33,8 @@
   let uploading = $state<string | null>(null);
   let fileInput = $state<HTMLInputElement | undefined>();
   let review = $state<{ preview: Preview; value: Settings } | null>(null);
+  let comparing = $state<{ book: string; code: string; file: string } | null>(null);
+  let editions = $state(false);
   let saving = $state(false);
   const canEdit = $derived(isManagerPassword());
 
@@ -92,8 +96,11 @@
         return;
       }
       set(withSetting(draft, { ...(b.setting ?? { template: b.base.id }), copy_file: m.sha256 }));
-      const st = copyStatus(b.base, m.sha256);
-      showFlash(st?.text ?? "Copy uploaded", { tone: st?.tone === "warning" ? "warning" : "success", durationMs: 8000 });
+      if (b.template.builder) comparing = { book: b.base.id, code: b.template.code, file: m.sha256 };
+      else {
+        const st = copyStatus(b.base, m.sha256);
+        showFlash(st?.text ?? "Copy uploaded", { tone: st?.tone === "warning" ? "warning" : "success", durationMs: 8000 });
+      }
     } catch (err) {
       showFlash(message(err), { tone: "danger", durationMs: 6000 });
     } finally {
@@ -133,6 +140,35 @@
     set({ ...draft, custom: [...(draft.custom ?? []), t] });
     adding = null;
     editing = draftBooklets(bundle, { ...draft }).find((b) => b.base.id === t.id) ?? null;
+  }
+
+  function compare(b: DraftBooklet) {
+    if (b.setting?.copy_file) comparing = { book: b.base.id, code: b.template.code, file: b.setting.copy_file };
+  }
+
+  // useSuggestion puts a local model's suggested columns into the draft, to
+  // review and save like any other change.
+  function useSuggestion(sug: Schemas["Suggestion"]) {
+    if (!draft || !comparing) return;
+    const b = booklets.find((x) => x.base.id === comparing!.book);
+    if (!b) return;
+    const checklist = sug.checklist?.length ? sug.checklist : undefined;
+    if (b.custom) {
+      set({ ...draft, custom: (draft.custom ?? []).map((c) => (c.id === b.base.id ? { ...c, columns: sug.columns, checklist: checklist ?? c.checklist } : c)) });
+    } else {
+      set(withSetting(draft, { ...(b.setting ?? { template: b.base.id }), columns: sug.columns, checklist }));
+    }
+    comparing = null;
+    showFlash("The suggested columns are in your changes. Check them, then review and save.", { tone: "info", durationMs: 8000 });
+  }
+
+  function useEdition(booklet: string, file: string) {
+    if (!draft) return;
+    const b = booklets.find((x) => x.base.id === booklet);
+    if (!b) return;
+    set(withSetting(draft, { ...(b.setting ?? { template: booklet }), copy_file: file }));
+    editions = false;
+    comparing = { book: booklet, code: b.template.code, file };
   }
 
   async function reviewChanges() {
@@ -188,6 +224,10 @@
               {#if bundle.url}<a href={bundle.url} target="_blank" rel="noreferrer">Official booklets <ExternalLink size={12} /></a>{/if}
             </p>
           {/if}
+          <div class="row">
+            <Button size="sm" label="Check for new editions" onclick={() => (editions = true)} />
+            <span class="muted small">Downloads the official PDFs, after showing you which, and compares their editions.</span>
+          </div>
           <p class="muted small">
             No bundle for your country yet? Choose "Any country", then change titles and columns to match your own booklets, or add a booklet. Bundles for more countries are added to Kishtin as kitchens ask for them.
           </p>
@@ -228,6 +268,9 @@
                   <Button size="sm" label={uploading === b.base.id ? "Uploading…" : b.setting?.copy_file ? "Replace your copy" : "Upload your copy"} disabled={!canEdit || uploading !== null} onclick={() => pickCopy(b)}>
                     <Upload size={14} />
                   </Button>
+                {/if}
+                {#if b.setting?.copy_file}
+                  <Button size="sm" label="Compare" onclick={() => compare(b)}><FileSearch size={14} /></Button>
                 {/if}
                 {#if b.custom}
                   <Button size="sm" tone="danger" label="Remove" disabled={!canEdit} onclick={() => removeCustom(b)}><Trash2 size={14} /></Button>
@@ -302,6 +345,22 @@
       </div>
     {/snippet}
   </Modal>
+{/if}
+
+{#if comparing && info}
+  <CompareCopyModal
+    book={comparing.book}
+    code={comparing.code}
+    file={comparing.file}
+    ai={info.ai}
+    canSuggest={canEdit}
+    onuse={useSuggestion}
+    onclose={() => (comparing = null)}
+  />
+{/if}
+
+{#if editions}
+  <EditionsModal canCheck={canEdit} onuse={useEdition} onclose={() => (editions = false)} />
 {/if}
 
 {#if review}

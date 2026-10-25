@@ -159,6 +159,12 @@ type Reading struct {
 	Customer  string `json:"customer,omitempty"`
 	Separated *bool  `json:"separated,omitempty"`
 
+	// Transcribed from paper: when the check was actually done, the photo
+	// of the paper page (its SHA-256), and the name written on the paper.
+	TakenAt   *time.Time `json:"taken_at,omitempty"`
+	PaperFile string     `json:"paper_file,omitempty"`
+	SignedBy  string     `json:"signed_by,omitempty"`
+
 	// Sign-off: the dates covered (inclusive) and what the manager saw.
 	PeriodFrom string  `json:"period_from,omitempty"`
 	PeriodTo   string  `json:"period_to,omitempty"`
@@ -204,13 +210,14 @@ func (r Reading) Normalize() Reading {
 	r.TempC = roundPtr(r.TempC)
 	r.TempAtCutoffC = roundPtr(r.TempAtCutoffC)
 	r.CookedAt = timePtr(r.CookedAt)
+	r.TakenAt = timePtr(r.TakenAt)
 	r.IntoFridgeAt = timePtr(r.IntoFridgeAt)
 	for _, s := range []*string{
 		&r.Unit, &r.Food, &r.Dish, &r.FoodCategory, &r.Supplier, &r.Product,
 		&r.DeliveryKind, &r.DocketFile, &r.MadeOn, &r.UseBy, &r.Quantity,
 		&r.Task, &r.Area, &r.Notes, &r.PeriodFrom, &r.PeriodTo, &r.BatchCode,
 		&r.Checklist, &r.Staff, &r.TrainingKind, &r.Trainer, &r.Provider, &r.OnDate,
-		&r.FitnessReason, &r.Customer,
+		&r.FitnessReason, &r.Customer, &r.PaperFile, &r.SignedBy,
 	} {
 		*s = strings.TrimSpace(*s)
 	}
@@ -233,6 +240,7 @@ func (r Reading) Normalize() Reading {
 	}
 	r.DeliveryKind = strings.ToLower(r.DeliveryKind)
 	r.DocketFile = strings.ToLower(r.DocketFile)
+	r.PaperFile = strings.ToLower(r.PaperFile)
 	if r.UseBy == "" && r.ShelfLifeDays != nil {
 		if made, err := time.Parse(DateLayout, r.MadeOn); err == nil {
 			r.UseBy = made.AddDate(0, 0, *r.ShelfLifeDays).Format(DateLayout)
@@ -246,6 +254,29 @@ func NormalizeTime(t time.Time) time.Time { return t.UTC().Truncate(time.Microse
 
 // Validate checks that the reading has the fields a record type needs.
 func (r Reading) Validate(t RecordType) error {
+	if err := r.validatePaper(); err != nil {
+		return err
+	}
+	return r.validateType(t)
+}
+
+// validatePaper checks a record transcribed from paper: it needs the photo
+// of the page and when the check was done.
+func (r Reading) validatePaper() error {
+	switch {
+	case r.TakenAt == nil && r.PaperFile == "" && r.SignedBy == "":
+		return nil
+	case r.TakenAt == nil:
+		return errors.New("a record from paper needs taken_at: when the check was done")
+	case len(r.PaperFile) != 64 || strings.Trim(r.PaperFile, "0123456789abcdef") != "":
+		return errors.New("a record from paper needs paper_file: the SHA-256 of the uploaded photo of the page")
+	case len([]rune(r.SignedBy)) > 80:
+		return errors.New("signed_by is at most 80 characters")
+	}
+	return nil
+}
+
+func (r Reading) validateType(t RecordType) error {
 	need := func(name, v string) error {
 		if v == "" {
 			return fmt.Errorf("%s is required for a %s record", name, t)

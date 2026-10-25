@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cathalbyrnegit/kishtin/internal/ai"
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
 	"github.com/cathalbyrnegit/kishtin/internal/events"
@@ -87,6 +88,8 @@ type Service struct {
 	posSource string
 	creds     *integrations.CredentialStore
 	newSquare func(environment, token string) (integrations.POSAdapter, error)
+	ai        *ai.Client
+	fetch     func(ctx context.Context, url string) ([]byte, error)
 }
 
 // Options configures a Service.
@@ -113,6 +116,12 @@ type Options struct {
 	Credentials *integrations.CredentialStore
 	// NewSquare makes a Square client for a saved token.
 	NewSquare func(environment, token string) (integrations.POSAdapter, error)
+	// AI is an optional local model that reads copies of record books and
+	// photos of paper pages. Nil leaves those suggestions off.
+	AI *ai.Client
+	// Fetch downloads a public URL, for checking record book editions.
+	// Nil uses a plain HTTP client.
+	Fetch func(ctx context.Context, url string) ([]byte, error)
 }
 
 // DefaultSystem returns the system settings used when none are configured.
@@ -135,7 +144,7 @@ func New(o Options) *Service {
 		wake = voice.DefaultWakeWords
 	}
 	return &Service{wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech, pos: o.POS,
-		posSource: o.POSSource, creds: o.Credentials, newSquare: o.NewSquare}
+		posSource: o.POSSource, creds: o.Credentials, newSquare: o.NewSquare, ai: o.AI, fetch: o.Fetch}
 }
 
 // Events returns the hub that change notices are published to.

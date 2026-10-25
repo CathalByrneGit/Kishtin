@@ -114,6 +114,10 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 	if err != nil {
 		return fail(err)
 	}
+	model, err := cfg.AIClient()
+	if err != nil {
+		return fail(err)
+	}
 	svc := service.New(service.Options{
 		POS:         pos,
 		POSSource:   cfg.Square.TokenFrom,
@@ -121,6 +125,7 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 		NewSquare:   cfg.NewSquare,
 		Speech:      sp,
 		WakeWords:   cfg.Speech.WakeWords,
+		AI:          model,
 		Store:       st,
 		Files:       fs,
 		System:      cfg.SystemSettings(),

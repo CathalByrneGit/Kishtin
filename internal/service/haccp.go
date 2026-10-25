@@ -160,77 +160,88 @@ func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord
 	if err := allowType(p, nr.Type); err != nil {
 		return haccp.Record{}, err
 	}
+	if nr.Reading.TakenAt != nil || nr.Reading.PaperFile != "" {
+		return haccp.Record{}, newErr(KindInvalid, "a record from paper is saved with paper import, with the photo of the page")
+	}
 	var saved haccp.Record
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
-		c, err := s.prepare(ctx, tx, &nr)
-		if err != nil {
-			return err
-		}
-		if c.NeedsCorrectiveAction && nr.CorrectiveAction == "" {
-			return newErr(KindInvalid, "%s %s Add a corrective action to save it.", outcomeLabel(c.Result.Outcome), c.Result.Reason)
-		}
-		if nr.Type == haccp.RecordFitness && nr.Reading.Fit != nil && !*nr.Reading.Fit && nr.CorrectiveAction == "" {
-			return newErr(KindInvalid, "say what action was taken, for example sent home and referred to their doctor")
-		}
-		if nr.Corrects != "" {
-			orig, err := tx.HACCP().GetRecord(ctx, nr.Corrects)
-			if err != nil {
-				return mapStoreErr(err, "the record being corrected")
-			}
-			if orig.Type != nr.Type {
-				return newErr(KindInvalid, "a correction must be the same type as the record it corrects (%s)", orig.Type)
-			}
-			if nr.CorrectionReason == "" {
-				return newErr(KindInvalid, "say why the original record was wrong")
-			}
-		} else if nr.CorrectionReason != "" {
-			return newErr(KindInvalid, "correction_reason is only for a record that corrects another")
-		}
-		if nr.Type == haccp.RecordCleaning && nr.Corrects == "" && nr.Reading.Done != nil && *nr.Reading.Done {
-			from, to := s.dayBounds()
-			todays, err := tx.HACCP().ListRecords(ctx, store.RecordFilter{From: from, To: to, Types: []haccp.RecordType{haccp.RecordCleaning}})
-			if err != nil {
-				return err
-			}
-			if done := haccp.DoneToday(todays, nr.Reading.Task); done != nil {
-				return newErr(KindConflict, "%s was already done today at %s by %s", done.Reading.Task,
-					done.LoggedAt.In(clock.Dublin).Format("15:04"), done.LoggedByName)
-			}
-		}
-
-		rec := haccp.Record{
-			ID:               newID(),
-			Type:             nr.Type,
-			LoggedBy:         p.User.ID,
-			LoggedByName:     p.User.Name,
-			LoggedAt:         haccp.NormalizeTime(s.clk.Now()),
-			Reading:          nr.Reading,
-			Outcome:          c.Result.Outcome,
-			OutcomeReason:    c.Result.Reason,
-			RulesVersionID:   c.RulesVersionID,
-			CorrectiveAction: nr.CorrectiveAction,
-			Corrects:         nr.Corrects,
-			CorrectionReason: nr.CorrectionReason,
-		}
-		if c.Limit != nil {
-			rec.LimitVersionID = c.Limit.ID
-			sc := c.Limit.Scope
-			rec.LimitScope = &sc
-		}
-		prev, err := tx.HACCP().LastRecord(ctx)
-		if err != nil {
-			return err
-		}
-		saved = haccp.Seal(rec, prev)
-		if err := tx.HACCP().AppendRecord(ctx, saved); err != nil {
-			return fmt.Errorf("save record: %w", err)
-		}
-		return nil
+		var err error
+		saved, err = s.appendRecord(ctx, tx, p, nr)
+		return err
 	})
 	if err == nil {
 		s.publish(events.KindRecord, saved.ID)
 	}
 	return saved, err
+}
+
+// appendRecord checks a new record and appends it to the chain, inside a
+// transaction.
+func (s *Service) appendRecord(ctx context.Context, tx store.Store, p *auth.Principal, nr NewRecord) (haccp.Record, error) {
+	c, err := s.prepare(ctx, tx, &nr)
+	if err != nil {
+		return haccp.Record{}, err
+	}
+	if c.NeedsCorrectiveAction && nr.CorrectiveAction == "" {
+		return haccp.Record{}, newErr(KindInvalid, "%s %s Add a corrective action to save it.", outcomeLabel(c.Result.Outcome), c.Result.Reason)
+	}
+	if nr.Type == haccp.RecordFitness && nr.Reading.Fit != nil && !*nr.Reading.Fit && nr.CorrectiveAction == "" {
+		return haccp.Record{}, newErr(KindInvalid, "say what action was taken, for example sent home and referred to their doctor")
+	}
+	if nr.Corrects != "" {
+		orig, err := tx.HACCP().GetRecord(ctx, nr.Corrects)
+		if err != nil {
+			return haccp.Record{}, mapStoreErr(err, "the record being corrected")
+		}
+		if orig.Type != nr.Type {
+			return haccp.Record{}, newErr(KindInvalid, "a correction must be the same type as the record it corrects (%s)", orig.Type)
+		}
+		if nr.CorrectionReason == "" {
+			return haccp.Record{}, newErr(KindInvalid, "say why the original record was wrong")
+		}
+	} else if nr.CorrectionReason != "" {
+		return haccp.Record{}, newErr(KindInvalid, "correction_reason is only for a record that corrects another")
+	}
+	if nr.Type == haccp.RecordCleaning && nr.Corrects == "" && nr.Reading.Done != nil && *nr.Reading.Done {
+		from, to := s.dayBounds()
+		todays, err := tx.HACCP().ListRecords(ctx, store.RecordFilter{From: from, To: to, Types: []haccp.RecordType{haccp.RecordCleaning}})
+		if err != nil {
+			return haccp.Record{}, err
+		}
+		if done := haccp.DoneToday(todays, nr.Reading.Task); done != nil {
+			return haccp.Record{}, newErr(KindConflict, "%s was already done today at %s by %s", done.Reading.Task,
+				done.LoggedAt.In(clock.Dublin).Format("15:04"), done.LoggedByName)
+		}
+	}
+
+	rec := haccp.Record{
+		ID:               newID(),
+		Type:             nr.Type,
+		LoggedBy:         p.User.ID,
+		LoggedByName:     p.User.Name,
+		LoggedAt:         haccp.NormalizeTime(s.clk.Now()),
+		Reading:          nr.Reading,
+		Outcome:          c.Result.Outcome,
+		OutcomeReason:    c.Result.Reason,
+		RulesVersionID:   c.RulesVersionID,
+		CorrectiveAction: nr.CorrectiveAction,
+		Corrects:         nr.Corrects,
+		CorrectionReason: nr.CorrectionReason,
+	}
+	if c.Limit != nil {
+		rec.LimitVersionID = c.Limit.ID
+		sc := c.Limit.Scope
+		rec.LimitScope = &sc
+	}
+	prev, err := tx.HACCP().LastRecord(ctx)
+	if err != nil {
+		return haccp.Record{}, err
+	}
+	saved := haccp.Seal(rec, prev)
+	if err := tx.HACCP().AppendRecord(ctx, saved); err != nil {
+		return haccp.Record{}, fmt.Errorf("save record: %w", err)
+	}
+	return saved, nil
 }
 
 // dayBounds returns the start and end of today in Dublin, as UTC.

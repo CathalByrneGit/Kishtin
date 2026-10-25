@@ -24,6 +24,7 @@
     CookingPot,
     BookMarked,
     ClipboardCheck,
+    ScanText,
     BookOpen,
     Download,
     House,
@@ -57,6 +58,7 @@
   import Exports from "./views/Exports.svelte";
   import Books from "./views/Books.svelte";
   import Inspection from "./views/Inspection.svelte";
+  import Paper from "./views/Paper.svelte";
   import OrdersView from "./views/Orders.svelte";
   import Pass from "./views/Pass.svelte";
   import Stations from "./views/Stations.svelte";
@@ -95,6 +97,7 @@
     { path: "/records", label: "Records", section: "records", view: null, group: "HACCP" },
     { path: "/books", label: "Record books", section: "books", view: null, group: "HACCP" },
     { path: "/inspection", label: "Inspection", section: "inspection", view: null, group: "HACCP" },
+    { path: "/paper", label: "Paper import", section: "paper", view: null, group: "HACCP" },
     { path: "/exports", label: "Exports", section: "exports", view: null, group: "HACCP" },
     { path: "/verify", label: "Verify", section: "verify", view: null, group: "HACCP" },
     { path: "/setup/menu", label: "Menu", section: "setup", view: "menu", group: "Setup" },
@@ -139,6 +142,7 @@
         { id: "records", label: "Records", href: "/records", icon: List, viewRuns: [] },
         { id: "books", label: "Record books", href: "/books", icon: BookOpen, viewRuns: [] },
         { id: "inspection", label: "Inspection", href: "/inspection", icon: ClipboardCheck, viewRuns: [] },
+        { id: "paper", label: "Paper import", href: "/paper", icon: ScanText, viewRuns: [] },
         { id: "exports", label: "Exports", href: "/exports", icon: Download, viewRuns: [] },
         { id: "verify", label: "Verify", href: "/verify", icon: ShieldCheck, viewRuns: [] },
       ],
@@ -377,6 +381,8 @@
           <Today />
         {:else if route.path === "/records"}
           <Records />
+        {:else if route.path === "/paper"}
+          <Paper />
         {:else if route.path === "/inspection"}
           <Inspection />
         {:else if route.path === "/books"}

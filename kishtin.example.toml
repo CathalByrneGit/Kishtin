@@ -49,6 +49,17 @@ max_size_mb = 15
 # device until someone turns it on). 4 letters or more.
 # wake_words = ["kishtin"]
 
+[ai]
+# An optional small local model, for suggesting record book columns from
+# a copy of a booklet and reading photos of paper record book pages. Any
+# server with the OpenAI-compatible chat API (llama.cpp's llama-server,
+# Ollama). It must be on this machine or the kitchen network: Kishtin
+# refuses any other address. Reading photos needs a model that takes
+# images. Or set KISHTIN_AI_URL. See docs/record-books.md.
+# url = "http://127.0.0.1:8081"
+# model = "lfm2-vl"
+# timeout = "2m"
+
 [square]
 # Orders from the Square till. A manager can connect Square on the screens
 # (Setup, Connections), which keeps the token in <data_dir>/connectors/,

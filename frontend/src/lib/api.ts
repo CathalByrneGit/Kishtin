@@ -149,6 +149,15 @@ export const api = {
   recordBooks: () => json<Schemas["RecordBooks"]>("GET", "/haccp/books"),
   previewSignOff: (from?: string, to?: string) => json<Schemas["SignOffPreview"]>("GET", "/haccp/sign-offs/preview", { query: { from, to } }),
   signOff: (body: Schemas["SignOffInput"]) => json<HaccpRecord>("POST", "/haccp/sign-offs", { body }),
+  compareCopy: (book: string, file: string) =>
+    json<Schemas["CopyComparison"]>("POST", `/haccp/books/${encodeURIComponent(book)}/compare`, { body: { file } }),
+  suggestColumns: (book: string, file: string) =>
+    json<Schemas["Suggestion"]>("POST", `/haccp/books/${encodeURIComponent(book)}/suggest`, { body: { file } }),
+  editionTargets: () => json<Schemas["EditionTargetsBody"]>("GET", "/haccp/editions"),
+  checkEditions: () => json<Schemas["EditionResultsBody"]>("POST", "/haccp/editions/check"),
+  previewPaper: (body: Schemas["PaperImport"]) => json<Schemas["PaperChecksBody"]>("POST", "/haccp/paper/preview", { body }),
+  importPaper: (body: Schemas["PaperImport"]) => json<Schemas["PaperSavedBody"]>("POST", "/haccp/paper", { body }),
+  readPaper: (file: string) => json<Schemas["PaperDraft"]>("POST", "/haccp/paper/read", { body: { file } }),
   recordBookSettings: () => json<Schemas["VersionedRecordBookSettings"]>("GET", "/settings/record_books"),
   previewRecordBookSettings: (body: Schemas["SettingsChangeRecordBookSettings"]) =>
     json<Schemas["SettingsPreviewRecordBookSettings"]>("POST", "/settings/record_books/preview", { body }),

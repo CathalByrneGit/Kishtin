@@ -125,6 +125,10 @@ Select a record to open its details panel:
 
 Head chefs and managers only. Choose a month, check each booklet's missed checks and preview, then download the PDF. See [record-books.md](record-books.md).
 
+## Paper import
+
+Head chefs and managers only. Add a photo of a paper record book page, type its rows (or let a local model read them), check them, then save them all at once. See [record-books.md](record-books.md#bringing-in-paper-records).
+
 ## Exports
 
 Head chefs and managers only.

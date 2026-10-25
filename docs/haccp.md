@@ -34,6 +34,8 @@ Temperatures are compared to 0.1°C. A reading exactly on the limit passes. Frid
 
 A **fail** always needs a corrective action before it can be saved. A **borderline** record needs one too, unless the food-safety rules say otherwise (see [settings.md](settings.md#food-safety-rules)). Each record stores the rules version that applied. Check a reading first, without saving, with `kishtin haccp log … --dry-run` or `POST /api/haccp/check`.
 
+Records brought in from paper keep the photo of the page, when the check was done and the name written on the paper. See [record-books.md](record-books.md#bringing-in-paper-records).
+
 ## Records cannot be changed
 
 There is no way to edit or delete a record, in the screens, the API, the CLI or the store. To fix a mistake, save a new record of the same type with `--corrects <id>` and `--reason`, or use **Correct this record** in Records. The original stays as it was.

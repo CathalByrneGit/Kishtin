@@ -22,7 +22,7 @@ var recordTypes = []string{"fridge", "freezer", "delivery", "cook", "reheat", "c
 
 func (c *cli) haccpCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "haccp", Short: "Log, list, verify and export HACCP records"}
-	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd(), c.booksCmd(), c.bookCmd(), c.signOffCmd())
+	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd(), c.booksCmd(), c.bookCmd(), c.signOffCmd(), c.editionsCmd(), c.paperCmd())
 	return cmd
 }
 
