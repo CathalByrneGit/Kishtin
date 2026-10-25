@@ -31,7 +31,7 @@
   import { title as recordTitle, typeLabel } from "../lib/labels";
   import { addDays, coolingTimes, dublinDate, dublinTime, isClock, longDate, normaliseClock, parseTemp } from "../lib/format";
   import { live, onChange } from "../lib/live.svelte";
-  import { session } from "../lib/session.svelte";
+  import { isManagerPassword, session } from "../lib/session.svelte";
 
   interface Props {
     preset: LogPreset | null;
@@ -39,16 +39,26 @@
   }
   let { preset, onsaved }: Props = $props();
 
-  type Kind = "temp" | "delivery" | "cook" | "cooling" | "hot_hold" | "batch_label" | "cleaning";
-  const kinds: { id: Kind; label: string }[] = [
-    { id: "temp", label: "Fridge / freezer" },
-    { id: "delivery", label: "Delivery" },
-    { id: "cook", label: "Cook / reheat" },
-    { id: "cooling", label: "Cooling" },
-    { id: "hot_hold", label: "Hot holding" },
-    { id: "batch_label", label: "Batch label" },
-    { id: "cleaning", label: "Cleaning" },
-  ];
+  type Kind = "temp" | "delivery" | "cook" | "cooling" | "hot_hold" | "batch_label" | "cleaning" | "transport" | "training" | "fitness";
+  const canInspect = $derived(session.user?.role === "manager" || session.user?.role === "head_chef");
+  // Training is for the head chef and managers; fitness to work, which is
+  // health information, for a manager with a password.
+  const kinds = $derived(
+    (
+      [
+        { id: "temp", label: "Fridge / freezer" },
+        { id: "delivery", label: "Delivery" },
+        { id: "cook", label: "Cook / reheat" },
+        { id: "cooling", label: "Cooling" },
+        { id: "hot_hold", label: "Hot holding" },
+        { id: "batch_label", label: "Batch label" },
+        { id: "cleaning", label: "Cleaning" },
+        { id: "transport", label: "To a customer" },
+        { id: "training", label: "Training", show: canInspect },
+        { id: "fitness", label: "Fitness to work", show: isManagerPassword() },
+      ] as { id: Kind; label: string; show?: boolean }[]
+    ).filter((k) => k.show !== false),
+  );
 
   let lists = $state<Lists | null>(null);
   let kind = $state<Kind>("temp");
@@ -79,6 +89,20 @@
   let action = $state("");
   let notes = $state("");
   let correctionReason = $state("");
+  // Transport, training and fitness.
+  let customer = $state("");
+  let separated = $state<"" | "yes" | "no">("");
+  let staffName = $state("");
+  let trainingKind = $state("in_house");
+  let topics = $state<string[]>([]);
+  let course = $state("");
+  let trainer = $state(session.user?.name ?? "");
+  let provider = $state("");
+  let onDate = $state(dublinDate(new Date()));
+  let fitnessReason = $state("existing");
+  let fit = $state<"" | "yes" | "no">("");
+  /** topicList is the training topics of the booklet in use, in sections. */
+  let topicList = $state<{ title?: string; items: string[] }[]>([]);
 
   let verdict = $state<Check | null>(null);
   let verdictError = $state("");
@@ -95,8 +119,20 @@
     }
   }
 
+  async function loadTopics() {
+    if (!canInspect) return;
+    try {
+      const rb = await api.recordBooks();
+      const t = rb.booklets.find((b) => !b.off && b.template.builder === "training")?.template;
+      topicList = t?.checklist ?? [];
+    } catch {
+      topicList = [];
+    }
+  }
+
   onMount(() => {
     void loadLists();
+    void loadTopics();
     return onChange((k) => {
       if (k === "settings") void loadLists();
     });
@@ -107,6 +143,17 @@
     const rd = r.reading;
     const t = (c: number | undefined | null) => (c === undefined || c === null ? "" : String(c));
     kind = r.type === "fridge" || r.type === "freezer" ? "temp" : r.type === "reheat" ? "cook" : (r.type as Kind);
+    customer = rd.customer ?? "";
+    separated = rd.separated === true ? "yes" : rd.separated === false ? "no" : "";
+    staffName = rd.staff ?? "";
+    if (rd.training_kind) trainingKind = rd.training_kind;
+    topics = rd.training_kind === "in_house" ? [...(rd.topics ?? [])] : [];
+    course = rd.training_kind === "further" ? (rd.topics ?? []).join(", ") : "";
+    trainer = rd.trainer ?? trainer;
+    provider = rd.provider ?? "";
+    if (rd.on_date) onDate = rd.on_date;
+    if (rd.fitness_reason) fitnessReason = rd.fitness_reason;
+    fit = rd.fit === true ? "yes" : rd.fit === false ? "no" : "";
     if (r.type === "cook" || r.type === "reheat") stage = r.type;
     unit = rd.unit ?? unit;
     tempText = t(rd.temp_c);
@@ -207,6 +254,38 @@
       case "cleaning":
         if (!task) return { missing: "Choose a task." };
         return { record: { type: "cleaning", reading: { task, done: true } } };
+      case "transport": {
+        if (!product.trim() || !customer.trim()) return { missing: "Enter the food and the customer." };
+        if (!separated) return { missing: "Say whether raw and ready-to-eat food were kept apart." };
+        const reading: NewRecord["reading"] = { product, customer, delivery_kind: deliveryKind, separated: separated === "yes" };
+        if (batchCode.trim()) reading.batch_code = batchCode.trim();
+        if (deliveryUseBy) reading.use_by = deliveryUseBy;
+        if (deliveryKind !== "ambient") {
+          const m = needTemp("temperature on arrival");
+          if (m) return m;
+          reading.temp_c = t!;
+        }
+        return { record: { type: "transport", reading } };
+      }
+      case "training": {
+        if (!staffName.trim()) return { missing: "Enter who was trained." };
+        const reading: NewRecord["reading"] = { staff: staffName, training_kind: trainingKind, on_date: onDate };
+        if (trainingKind === "in_house") {
+          if (topics.length === 0) return { missing: "Tick the topics covered." };
+          if (!trainer.trim()) return { missing: "Enter the trainer." };
+          reading.topics = topics;
+          reading.trainer = trainer;
+        } else {
+          if (!course.trim() || !provider.trim()) return { missing: "Enter the course and its provider." };
+          reading.topics = [course];
+          reading.provider = provider;
+        }
+        return { record: { type: "training", reading } };
+      }
+      case "fitness":
+        if (!staffName.trim()) return { missing: "Enter who was assessed." };
+        if (!fit) return { missing: "Say whether they are fit to work." };
+        return { record: { type: "fitness", reading: { staff: staffName, fitness_reason: fitnessReason, fit: fit === "yes", on_date: onDate } } };
     }
   });
 
@@ -223,7 +302,7 @@
   $effect(() => {
     const d = draft;
     if ("record" in d) {
-      runCheck({ ...d.record, reading: { ...d.record.reading, notes: notes || undefined } });
+      runCheck({ ...d.record, reading: { ...d.record.reading, notes: kind === "fitness" ? undefined : notes || undefined } });
     } else {
       runCheck.cancel();
       verdict = null;
@@ -233,7 +312,7 @@
 
   const recordType = $derived("record" in draft ? draft.record.type : "");
   const presets = $derived((lists?.corrective_actions ?? []).filter((a) => a.type === recordType));
-  const needsAction = $derived(Boolean(verdict?.needs_corrective_action));
+  const needsAction = $derived(Boolean(verdict?.needs_corrective_action) || (kind === "fitness" && fit === "no"));
   const canSave = $derived(
     Boolean(verdict) &&
       "record" in draft &&
@@ -261,7 +340,7 @@
     if (!("record" in draft)) return;
     saving = true;
     try {
-      const body: NewRecord = { ...draft.record, reading: { ...draft.record.reading, notes: notes || undefined } };
+      const body: NewRecord = { ...draft.record, reading: { ...draft.record.reading, notes: kind === "fitness" ? undefined : notes || undefined } };
       if (needsAction) body.corrective_action = action.trim();
       if (correcting) {
         body.corrects = correcting.id;
@@ -287,6 +366,13 @@
         batchCode = "";
         deliveryUseBy = null;
         vehicle = "";
+        customer = "";
+        separated = "";
+        staffName = "";
+        topics = [];
+        course = "";
+        provider = "";
+        fit = "";
       }
       onsaved();
     } catch (err) {
@@ -443,7 +529,7 @@
         </label>
         <TempInput bind:value={shelfLife} label="Shelf life (days)" placeholder="5" mode="numeric" />
         {#if useBy}<strong>Use by {longDate(useBy)}</strong>{/if}
-      {:else}
+      {:else if kind === "cleaning"}
         <label class="field">
           <span>Task</span>
           <SelectDropdown
@@ -455,7 +541,78 @@
         </label>
       {/if}
 
-      <label class="field"><span>Notes (optional)</span><TextInput bind:value={notes} block /></label>
+      {#if kind === "transport"}
+        <label class="field"><span>Food</span><TextInput bind:value={product} block /></label>
+        <label class="field"><span>Customer</span><TextInput bind:value={customer} block placeholder="Name or order reference" /></label>
+        <SegmentedControl
+          block
+          ariaLabel="Food kind"
+          value={deliveryKind}
+          onchange={(v) => (deliveryKind = v)}
+          options={[
+            { value: "chilled", label: "Chilled" },
+            { value: "frozen", label: "Frozen" },
+            { value: "hot", label: "Hot" },
+            { value: "ambient", label: "Ambient" },
+          ]}
+        />
+        {#if deliveryKind !== "ambient"}
+          <TempInput bind:value={tempText} label="Temperature on arrival (°C)" />
+        {/if}
+        <div class="field">
+          <span>Raw and ready-to-eat food kept apart?</span>
+          <SegmentedControl block ariaLabel="Raw and ready-to-eat food kept apart" value={separated} onchange={(v) => (separated = v as typeof separated)} options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]} />
+        </div>
+        <label class="field"><span>Batch code (optional)</span><TextInput bind:value={batchCode} block /></label>
+        <div class="field">
+          <span>Use-by date (optional)</span>
+          <div class="row">
+            <DatePicker value={deliveryUseBy} onchange={(d) => (deliveryUseBy = d)} ariaLabel="Use-by date" block />
+            {#if deliveryUseBy}<Button label="Clear" onclick={() => (deliveryUseBy = null)} />{/if}
+          </div>
+        </div>
+      {:else if kind === "training"}
+        <label class="field"><span>Who was trained</span><TextInput bind:value={staffName} block /></label>
+        <SegmentedControl block ariaLabel="Kind of training" value={trainingKind} onchange={(v) => (trainingKind = v)} options={[{ value: "in_house", label: "In-house" }, { value: "further", label: "Course or further training" }]} />
+        <label class="field"><span>Date</span><DatePicker value={onDate} onchange={(d) => (onDate = d)} ariaLabel="Date" block /></label>
+        {#if trainingKind === "in_house"}
+          <div class="field">
+            <span>Topics covered</span>
+            {#if topicList.length === 0}<span class="muted">The record books in use have no training topics.</span>{/if}
+            {#each topicList as sec, si (si)}
+              {#if sec.title}<strong class="small">{sec.title}</strong>{/if}
+              {#each sec.items as it (it)}
+                <Checkbox
+                  checked={topics.includes(it)}
+                  label={it}
+                  onchange={(on) => (topics = on ? [...topics, it] : topics.filter((x) => x !== it))}
+                />
+              {/each}
+            {/each}
+          </div>
+          <label class="field"><span>Trainer</span><TextInput bind:value={trainer} block /></label>
+        {:else}
+          <label class="field"><span>Course or training</span><TextInput bind:value={course} block placeholder="For example: food safety level 2" /></label>
+          <label class="field"><span>Course provider</span><TextInput bind:value={provider} block /></label>
+        {/if}
+      {:else if kind === "fitness"}
+        <label class="field"><span>Employee</span><TextInput bind:value={staffName} block /></label>
+        <label class="field"><span>Date of assessment</span><DatePicker value={onDate} onchange={(d) => (onDate = d)} ariaLabel="Date of assessment" block /></label>
+        <div class="field">
+          <span>Reason for assessment</span>
+          <SegmentedControl block ariaLabel="Reason for assessment" value={fitnessReason} onchange={(v) => (fitnessReason = v)} options={[{ value: "existing", label: "Existing" }, { value: "pre_employment", label: "Pre-employment" }, { value: "return_after_illness", label: "Return after illness" }]} />
+        </div>
+        <div class="field">
+          <span>Outcome</span>
+          <SegmentedControl block ariaLabel="Fit to work" value={fit} onchange={(v) => (fit = v as typeof fit)} options={[{ value: "yes", label: "Fit to work" }, { value: "no", label: "Not fit to work" }]} />
+        </div>
+      {/if}
+
+      {#if kind === "fitness"}
+        <p class="muted">Kishtin keeps only the outcome: who, when, why, fit or not, and the action taken. Keep the signed questionnaire on paper. Only managers can see these records.</p>
+      {:else}
+        <label class="field"><span>Notes (optional)</span><TextInput bind:value={notes} block /></label>
+      {/if}
       {#if correcting}
         <label class="field">
           <span>Why the original was wrong (required)</span>
@@ -474,7 +631,7 @@
 
   {#if needsAction}
     <div class="field">
-      <span>Corrective action (required)</span>
+      <span>{kind === "fitness" ? "Action taken (required)" : "Corrective action (required)"}</span>
       {#if presets.length > 0}
         <div class="row">
           {#each presets as p (p.text)}

@@ -15,10 +15,20 @@ export const TYPE_LABELS: Record<string, string> = {
   batch_label: "Batch label",
   cleaning: "Cleaning",
   sign_off: "Sign-off",
+  inspection: "Inspection",
+  training: "Training",
+  fitness: "Fitness to work",
+  transport: "To a customer",
 };
 
 /** LOGGABLE_TYPES are the record types staff log as readings (a sign-off is saved by signing off). */
 export const LOGGABLE_TYPES = Object.keys(TYPE_LABELS).filter((t) => t !== "sign_off");
+
+const FITNESS_REASONS: Record<string, string> = {
+  existing: "existing food handler",
+  pre_employment: "pre-employment",
+  return_after_illness: "return to work after illness",
+};
 
 export function typeLabel(t: string): string {
   return TYPE_LABELS[t] ?? t;
@@ -47,6 +57,9 @@ export function outcomeStyle(o: string): OutcomeStyle {
 export function title(r: HaccpRecord): string {
   const rd = r.reading;
   if (r.type === "sign_off" && rd.period_from && rd.period_to) return `${longDate(rd.period_from)} to ${longDate(rd.period_to)}`;
+  if (r.type === "inspection") return "Hygiene inspection";
+  if (r.type === "training" || r.type === "fitness") return rd.staff || typeLabel(r.type);
+  if (r.type === "transport") return `${rd.product ?? ""} to ${rd.customer ?? ""}`;
   const what = rd.unit || rd.food || rd.product || rd.task || typeLabel(r.type);
   return rd.supplier ? `${rd.supplier}: ${what}` : what;
 }
@@ -73,6 +86,17 @@ export function details(r: { type: string; reading: Reading }): string {
   if (rd.done === false) parts.push("not done");
   if (rd.area) parts.push(rd.area);
   if (rd.review) parts.push(reviewText(rd.review));
+  if (rd.answers?.length) {
+    const no = rd.answers.filter((a) => a.ok === false).length;
+    const yes = rd.answers.filter((a) => a.ok === true).length;
+    parts.push(`${yes} satisfactory, ${no} not`);
+  }
+  if (rd.topics?.length) parts.push(rd.topics.join(", "));
+  if (rd.trainer) parts.push(`by ${rd.trainer}`);
+  if (rd.provider) parts.push(rd.provider);
+  if (rd.fitness_reason) parts.push(FITNESS_REASONS[rd.fitness_reason] ?? rd.fitness_reason);
+  if (rd.fit !== undefined && rd.fit !== null) parts.push(rd.fit ? "fit to work" : "not fit to work");
+  if (rd.separated === false) parts.push("raw and ready-to-eat not kept apart");
   return parts.join(" · ");
 }
 

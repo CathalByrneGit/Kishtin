@@ -23,12 +23,23 @@ const (
 	// RecordSignOff is a manager's sign-off of the records for a period:
 	// the "Manager/Supervisor check" of a paper record book.
 	RecordSignOff RecordType = "sign_off"
+	// RecordInspection is a hygiene inspection checklist: the manager's or
+	// supervisor's check of the premises and practices.
+	RecordInspection RecordType = "inspection"
+	// RecordTraining is hygiene training given to a member of staff.
+	RecordTraining RecordType = "training"
+	// RecordFitness is a fitness to work assessment. It keeps only the
+	// outcome, never symptoms or answers, and only managers see it.
+	RecordFitness RecordType = "fitness"
+	// RecordTransport is food delivered to a customer.
+	RecordTransport RecordType = "transport"
 )
 
 // RecordTypes lists every record type, in display order.
 var RecordTypes = []RecordType{
 	RecordFridge, RecordFreezer, RecordDelivery, RecordCook, RecordReheat,
 	RecordCooling, RecordHotHold, RecordBatchLabel, RecordCleaning, RecordSignOff,
+	RecordInspection, RecordTraining, RecordFitness, RecordTransport,
 }
 
 // Valid reports whether t is a known record type.
@@ -46,7 +57,32 @@ const (
 	DeliveryChilled = "chilled"
 	DeliveryFrozen  = "frozen"
 	DeliveryAmbient = "ambient"
+	// DeliveryHot is hot food delivered to a customer (transport only).
+	DeliveryHot = "hot"
 )
+
+// Fitness assessment reasons.
+const (
+	FitnessExisting      = "existing"
+	FitnessPreEmployment = "pre_employment"
+	FitnessReturn        = "return_after_illness"
+)
+
+// Training kinds.
+const (
+	TrainingInHouse = "in_house"
+	TrainingFurther = "further"
+)
+
+// Answer is one item of an inspection checklist.
+type Answer struct {
+	Section string `json:"section,omitempty"`
+	Item    string `json:"item"`
+	// OK is the answer: satisfactory or not. Nil means not checked.
+	OK *bool `json:"ok,omitempty"`
+	// Action is the details of action taken, needed when OK is false.
+	Action string `json:"action,omitempty"`
+}
 
 // DateLayout is the layout for calendar dates such as use-by dates.
 const DateLayout = "2006-01-02"
@@ -100,6 +136,29 @@ type Reading struct {
 	Area string `json:"area,omitempty"`
 	Done *bool  `json:"done,omitempty"`
 
+	// Inspection: the booklet whose checklist was used, and the answers.
+	Checklist string   `json:"checklist,omitempty"`
+	Answers   []Answer `json:"answers,omitempty"`
+
+	// Training and fitness: the member of staff, by name.
+	Staff string `json:"staff,omitempty"`
+	// Training.
+	TrainingKind string   `json:"training_kind,omitempty"`
+	Topics       []string `json:"topics,omitempty"`
+	Trainer      string   `json:"trainer,omitempty"`
+	Provider     string   `json:"provider,omitempty"`
+	// OnDate is when the training or assessment took place, if not the
+	// day it was logged.
+	OnDate string `json:"on_date,omitempty"`
+	// Fitness: why the assessment was done, and the outcome.
+	FitnessReason string `json:"fitness_reason,omitempty"`
+	Fit           *bool  `json:"fit,omitempty"`
+
+	// Transport: who the food went to, and whether raw and ready-to-eat
+	// food were kept apart.
+	Customer  string `json:"customer,omitempty"`
+	Separated *bool  `json:"separated,omitempty"`
+
 	// Sign-off: the dates covered (inclusive) and what the manager saw.
 	PeriodFrom string  `json:"period_from,omitempty"`
 	PeriodTo   string  `json:"period_to,omitempty"`
@@ -150,8 +209,27 @@ func (r Reading) Normalize() Reading {
 		&r.Unit, &r.Food, &r.Dish, &r.FoodCategory, &r.Supplier, &r.Product,
 		&r.DeliveryKind, &r.DocketFile, &r.MadeOn, &r.UseBy, &r.Quantity,
 		&r.Task, &r.Area, &r.Notes, &r.PeriodFrom, &r.PeriodTo, &r.BatchCode,
+		&r.Checklist, &r.Staff, &r.TrainingKind, &r.Trainer, &r.Provider, &r.OnDate,
+		&r.FitnessReason, &r.Customer,
 	} {
 		*s = strings.TrimSpace(*s)
+	}
+	if r.Answers != nil {
+		answers := make([]Answer, 0, len(r.Answers))
+		for _, a := range r.Answers {
+			a.Section, a.Item, a.Action = strings.TrimSpace(a.Section), strings.TrimSpace(a.Item), strings.TrimSpace(a.Action)
+			answers = append(answers, a)
+		}
+		r.Answers = answers
+	}
+	if r.Topics != nil {
+		var topics []string
+		for _, t := range r.Topics {
+			if t = strings.TrimSpace(t); t != "" {
+				topics = append(topics, t)
+			}
+		}
+		r.Topics = topics
 	}
 	r.DeliveryKind = strings.ToLower(r.DeliveryKind)
 	r.DocketFile = strings.ToLower(r.DocketFile)
@@ -253,6 +331,84 @@ func (r Reading) Validate(t RecordType) error {
 			return errors.New("done is required for a cleaning record")
 		}
 		return need("task", r.Task)
+	case RecordInspection:
+		if len(r.Answers) == 0 {
+			return errors.New("an inspection needs its checklist answers")
+		}
+		answered := 0
+		for _, a := range r.Answers {
+			if a.Item == "" {
+				return errors.New("every inspection answer needs its item")
+			}
+			if a.OK != nil {
+				answered++
+			}
+			if a.OK != nil && !*a.OK && a.Action == "" {
+				return fmt.Errorf("%q is not satisfactory: add the action taken", a.Item)
+			}
+		}
+		if answered == 0 {
+			return errors.New("answer at least one checklist item")
+		}
+		return nil
+	case RecordTraining:
+		if err := need("staff", r.Staff); err != nil {
+			return err
+		}
+		if err := validDate("on_date", r.OnDate); err != nil {
+			return err
+		}
+		switch r.TrainingKind {
+		case TrainingInHouse:
+			if len(r.Topics) == 0 {
+				return errors.New("choose the topics covered")
+			}
+			return need("trainer", r.Trainer)
+		case TrainingFurther:
+			if len(r.Topics) == 0 {
+				return errors.New("describe the training (topics), for example an external course")
+			}
+			return need("provider", r.Provider)
+		default:
+			return fmt.Errorf("training_kind must be %s or %s", TrainingInHouse, TrainingFurther)
+		}
+	case RecordFitness:
+		if err := need("staff", r.Staff); err != nil {
+			return err
+		}
+		if err := validDate("on_date", r.OnDate); err != nil {
+			return err
+		}
+		switch r.FitnessReason {
+		case FitnessExisting, FitnessPreEmployment, FitnessReturn:
+		default:
+			return fmt.Errorf("fitness_reason must be %s, %s or %s", FitnessExisting, FitnessPreEmployment, FitnessReturn)
+		}
+		if r.Fit == nil {
+			return errors.New("say whether they are fit to work (fit)")
+		}
+		if r.TempC != nil || len(r.Answers) > 0 || r.Notes != "" {
+			return errors.New("a fitness to work record keeps only the outcome: no readings, answers or notes")
+		}
+		return nil
+	case RecordTransport:
+		if err := errors.Join(need("product", r.Product), need("customer", r.Customer)); err != nil {
+			return err
+		}
+		if r.Separated == nil {
+			return errors.New("say whether raw and ready-to-eat food were kept apart (separated)")
+		}
+		if err := validDate("use_by", r.UseBy); err != nil {
+			return err
+		}
+		switch r.DeliveryKind {
+		case DeliveryChilled, DeliveryFrozen, DeliveryHot:
+			return needTemp()
+		case DeliveryAmbient:
+			return nil
+		default:
+			return fmt.Errorf("delivery_kind must be %s, %s, %s or %s", DeliveryChilled, DeliveryFrozen, DeliveryHot, DeliveryAmbient)
+		}
 	case RecordSignOff:
 		from, err := time.Parse(DateLayout, r.PeriodFrom)
 		if err != nil {
@@ -296,15 +452,30 @@ func CheckFor(t RecordType, r Reading) (CheckType, bool) {
 		return CheckHotHold, true
 	case RecordCooling:
 		return CheckCooling, true
-	case RecordDelivery:
+	case RecordDelivery, RecordTransport:
 		switch r.DeliveryKind {
 		case DeliveryChilled:
 			return CheckChilledDelivery, true
 		case DeliveryFrozen:
 			return CheckFrozenDelivery, true
+		case DeliveryHot:
+			if t == RecordTransport {
+				return CheckHotHold, true
+			}
 		}
 	}
 	return "", false
+}
+
+// validDate checks an optional date field.
+func validDate(name, v string) error {
+	if v == "" {
+		return nil
+	}
+	if _, err := time.Parse(DateLayout, v); err != nil {
+		return fmt.Errorf("%s must be a date like 2026-10-31", name)
+	}
+	return nil
 }
 
 // Scopes returns the limit scopes a reading can match, most specific first.

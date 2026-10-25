@@ -32,6 +32,7 @@ export function applySetting(t: Template, b: BookSetting | undefined): Template 
     title: b.title || t.title,
     columns: b.columns?.length ? b.columns : t.columns,
     notes: b.notes?.length ? [...(t.notes ?? []), ...b.notes] : t.notes,
+    checklist: b.checklist?.length ? b.checklist : t.checklist,
     units_per_page: b.units_per_page || t.units_per_page,
     manager_check: b.manager_check ?? t.manager_check,
   };
@@ -44,6 +45,7 @@ export function changedParts(b: BookSetting | undefined): string[] {
   if (b.title) out.push("title");
   if (b.columns?.length) out.push("columns");
   if (b.notes?.length) out.push("notes");
+  if (b.checklist?.length) out.push("questions");
   if (b.units_per_page) out.push("sheet layout");
   if (b.manager_check !== undefined && b.manager_check !== null) out.push("manager check");
   return out;
@@ -62,7 +64,7 @@ export function draftBooklets(bundle: Bundle | undefined, s: Settings): DraftBoo
 
 /** isEmpty reports whether a booklet setting changes nothing, so it can be dropped. */
 export function isEmpty(b: BookSetting): boolean {
-  return !b.off && !b.title && !b.columns?.length && !b.notes?.length && !b.units_per_page && (b.manager_check === undefined || b.manager_check === null) && !b.copy_file;
+  return !b.off && !b.title && !b.columns?.length && !b.notes?.length && !b.checklist?.length && !b.units_per_page && (b.manager_check === undefined || b.manager_check === null) && !b.copy_file;
 }
 
 /** withSetting returns the settings with one booklet's changes replaced (and dropped when empty). */
@@ -123,4 +125,34 @@ export function moved<T>(list: T[], i: number, delta: number): T[] {
   const out = [...list];
   [out[i], out[j]] = [out[j]!, out[i]!];
   return out;
+}
+
+export type ChecklistSection = Schemas["ChecklistSection"];
+
+/** checklistText writes questions or topics for editing: "# Section" lines start a section, other lines are items. */
+export function checklistText(secs: ChecklistSection[] | null | undefined): string {
+  return (secs ?? [])
+    .map((sec) => [...(sec.title ? [`# ${sec.title}`] : []), ...sec.items].join("\n"))
+    .join("\n\n");
+}
+
+/** parseChecklist reads checklistText back. Blank lines are ignored. */
+export function parseChecklist(text: string): ChecklistSection[] {
+  const out: ChecklistSection[] = [];
+  let cur: ChecklistSection | null = null;
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith("#")) {
+      cur = { title: line.replace(/^#+/, "").trim(), items: [] };
+      out.push(cur);
+      continue;
+    }
+    if (!cur) {
+      cur = { items: [] };
+      out.push(cur);
+    }
+    cur.items.push(line);
+  }
+  return out.filter((sec) => sec.items.length > 0);
 }

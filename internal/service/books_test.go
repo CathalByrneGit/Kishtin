@@ -58,7 +58,7 @@ func TestRecordBook(t *testing.T) {
 	_, err = f.svc.RecordBook(ctx, f.manager, "SC2", "May")
 	assert.Equal(t, KindInvalid, KindOf(err))
 	_, err = f.svc.RecordBook(ctx, f.manager, "SC7", "")
-	assert.Equal(t, KindInvalid, KindOf(err), "not supported yet")
+	require.NoError(t, err, "every FSAI booklet can be filled")
 	_, err = f.svc.RecordBook(ctx, f.manager, "SC99", "")
 	assert.Equal(t, KindNotFound, KindOf(err))
 
@@ -67,6 +67,9 @@ func TestRecordBook(t *testing.T) {
 	assert.Equal(t, "Ireland", rb.Bundle.Country)
 	assert.Len(t, rb.Booklets, 9)
 	assert.Len(t, rb.Bundles, 2)
+	for _, b := range rb.Booklets {
+		assert.True(t, b.Template.Supported(), b.Template.Code)
+	}
 	assert.Equal(t, books.BuiltinSettingsID, rb.SettingsVersion)
 
 	for _, code := range []string{"SC2", "SC3", "SC4"} {
@@ -98,7 +101,7 @@ func TestRecordBookSettings(t *testing.T) {
 		{Template: "fsai-sc9", Off: true},
 	}
 	next.Custom = []books.Template{{
-		ID: "custom-t9", Code: "T9", Title: "Second hot hold log", Builder: books.BuilderHotHold,
+		ID: "custom-r9", Code: "R9", Title: "Second hot hold log", Builder: books.BuilderHotHold,
 		Columns: []books.Column{{Label: "Food", Field: "food", Width: 1}, {Label: "Temp", Field: "check_1", Width: 1}},
 	}}
 	ch := SettingsChange[books.RecordBookSettings]{Value: next, Reason: "Match our HACCP plan"}
@@ -111,7 +114,7 @@ func TestRecordBookSettings(t *testing.T) {
 	assert.Empty(t, pv.Problem)
 	assert.Empty(t, pv.LessStrict, "printing changes never make food safety less strict")
 	assert.Equal(t, []string{
-		"T9 Second hot hold log added",
+		"R9 Second hot hold log added",
 		"SC4: title changed, columns changed",
 		"SC9: turned off",
 	}, pv.Changes, "the change in words, not field by field")
@@ -142,7 +145,7 @@ func TestRecordBookSettings(t *testing.T) {
 	require.Len(t, b.Pages[0].Rows, 1)
 	assert.Len(t, b.Pages[0].Rows[0].Cells, 3)
 
-	t9, err := f.svc.RecordBook(ctx, f.manager, "t9", "")
+	t9, err := f.svc.RecordBook(ctx, f.manager, "r9", "")
 	require.NoError(t, err)
 	assert.Equal(t, "Soup", t9.Pages[0].Rows[0].Cells[0].Text)
 

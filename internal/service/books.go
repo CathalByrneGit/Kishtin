@@ -159,10 +159,29 @@ func (s *Service) RecordBook(ctx context.Context, p *auth.Principal, ref, month 
 		}
 		start = m
 	}
-	// Corrections can be logged after the month ends, so read on to now.
-	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: start})
+	if tpl.Builder == books.BuilderFitness {
+		if err := allow(p, auth.ActFitness); err != nil {
+			return books.Book{}, err
+		}
+	}
+	// Corrections can be logged after the month ends, so read on to now. A
+	// training record shows everything before the month's end.
+	from := start
+	if tpl.Cumulative() {
+		from = time.Time{}
+	}
+	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: from})
 	if err != nil {
 		return books.Book{}, err
+	}
+	recs = visible(p, recs)
+	users, err := s.st.Users().ListUsers(ctx)
+	if err != nil {
+		return books.Book{}, err
+	}
+	roles := map[string]string{}
+	for _, u := range users {
+		roles[u.Name] = strings.ReplaceAll(string(u.Role), "_", " ")
 	}
 	first, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{Limit: 1})
 	if err != nil {
@@ -186,7 +205,7 @@ func (s *Service) RecordBook(ctx context.Context, p *auth.Principal, ref, month 
 	}
 	b, err := books.Build(books.Input{
 		Template: tpl, Bundle: rb.Bundle, Year: start.Year(), Month: start.Month(), Loc: clock.Dublin,
-		Now: now, Since: since, Records: recs, Units: lists.Value.Units, Sections: sections,
+		Now: now, Since: since, Records: recs, Units: lists.Value.Units, Sections: sections, Roles: roles,
 	})
 	if err != nil {
 		return books.Book{}, fmt.Errorf("fill %s: %w", tpl.Code, err)

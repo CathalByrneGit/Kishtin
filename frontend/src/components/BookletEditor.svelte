@@ -2,7 +2,7 @@
   import { Button, IconButton, Modal, Notice, SelectDropdown, TextInput, Toggle } from "@kenn-io/kit-ui";
   import { ArrowDown, ArrowUp, Plus, Trash2 } from "@lucide/svelte";
   import { untrack } from "svelte";
-  import { moved, type BookSetting, type Builder, type Column, type Template } from "../lib/recordbooks";
+  import { checklistText, moved, parseChecklist, type BookSetting, type Builder, type Column, type Template } from "../lib/recordbooks";
 
   interface Props {
     /** the bundle's booklet, or the added booklet as saved in the draft */
@@ -43,6 +43,7 @@
       units: String(setting?.units_per_page || base.units_per_page || 6),
       managerCheck: setting?.manager_check ?? base.manager_check ?? false,
       notes: (custom ? base.notes : setting?.notes)?.join("\n") ?? "",
+      checklist: checklistText(setting?.checklist?.length ? setting.checklist : base.checklist),
       rows: cols.map(toRow),
     };
   });
@@ -51,6 +52,7 @@
   let unitsText = $state(init.units);
   let managerCheck = $state(init.managerCheck);
   let notesText = $state(init.notes);
+  let checklistTextValue = $state(init.checklist);
   let rows = $state<Row[]>(init.rows);
 
   const fieldOptions = $derived([
@@ -60,11 +62,14 @@
   const grid = $derived(base.builder === "unit_grid");
   // A daily record is made of other booklets: it has no columns of its own.
   const daily = $derived(base.builder === "daily");
+  // An inspection checklist has questions; a training record has topics.
+  const listed = $derived(base.builder === "checklist" || base.builder === "training");
 
   const problem = $derived.by((): string => {
     if (custom && !code.trim()) return "Give the booklet a code, such as T4.";
     if (!title.trim()) return "Give the booklet a title.";
     if (daily) return "";
+    if (base.builder === "checklist" && parseChecklist(checklistTextValue).length === 0) return "An inspection checklist needs at least one question.";
     if (rows.length === 0) return "A booklet needs at least one column.";
     if (rows.some((r) => !r.col.label.trim())) return "Every column needs a heading.";
     if (rows.some((r) => !(Number(r.widthText) > 0))) return "Every width must be a number above 0.";
@@ -82,7 +87,10 @@
     if (problem) return;
     const units = grid ? Number(unitsText) : undefined;
     if (custom) {
-      ontemplate?.({ ...base, code: code.trim(), title: title.trim(), columns: columns(), notes: notes(), units_per_page: units, manager_check: managerCheck });
+      ontemplate?.({
+        ...base, code: code.trim(), title: title.trim(), columns: columns(), notes: notes(), units_per_page: units, manager_check: managerCheck,
+        checklist: listed ? parseChecklist(checklistTextValue) : undefined,
+      });
       return;
     }
     const cols = columns();
@@ -95,6 +103,7 @@
       notes: notes().length ? notes() : undefined,
       units_per_page: grid && units !== base.units_per_page ? units : undefined,
       manager_check: managerCheck !== Boolean(base.manager_check) ? managerCheck : undefined,
+      checklist: listed && checklistTextValue.trim() !== checklistText(base.checklist).trim() ? parseChecklist(checklistTextValue) : undefined,
     });
   }
 
@@ -158,6 +167,16 @@
       </div>
     {/if}
 
+    {#if listed}
+      <label class="field">
+        <span>{base.builder === "checklist" ? "Questions" : "Topics"}, one per line. Start a line with # for a section heading.</span>
+        <textarea class="text-area tall" bind:value={checklistTextValue} aria-label={base.builder === "checklist" ? "Questions" : "Topics"}></textarea>
+      </label>
+      {#if !custom}
+        <div class="row"><Button size="sm" label={base.builder === "checklist" ? "Use the bundle's questions" : "Use the bundle's topics"} onclick={() => (checklistTextValue = checklistText(base.checklist))} /></div>
+      {/if}
+    {/if}
+
     <label class="field">
       <span>{custom ? "Notes printed under the table, one per line" : "Your notes, one per line. They print under the booklet's own notes."}</span>
       <textarea class="text-area" bind:value={notesText} aria-label="Notes" placeholder="For example: see our HACCP plan, section 4"></textarea>
@@ -218,6 +237,9 @@
   }
   .small {
     font-size: var(--font-size-sm);
+  }
+  .tall {
+    min-height: 220px;
   }
   .muted {
     color: var(--text-secondary);

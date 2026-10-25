@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { applySetting, copyStatus, draftBooklets, moved, newCustom, slug, switchBundle, withSetting, type Bundle, type Settings, type Template } from "./recordbooks";
+import { applySetting, checklistText, parseChecklist, copyStatus, draftBooklets, moved, newCustom, slug, switchBundle, withSetting, type Bundle, type Settings, type Template } from "./recordbooks";
 
 const sc2: Template = {
   id: "fsai-sc2",
@@ -62,4 +62,12 @@ test("helpers", () => {
   expect(slug("Relevés T2")).toBe("releves-t2");
   expect(moved([1, 2, 3], 0, 1)).toEqual([2, 1, 3]);
   expect(moved([1, 2, 3], 0, -1)).toEqual([1, 2, 3]);
+});
+
+test("checklist text", () => {
+  const secs = [{ items: ["Basic hygiene rules"] }, { title: "Pest Control", items: ["Any pests?", "Flyscreens fitted?"] }];
+  const text = checklistText(secs);
+  expect(text).toBe("Basic hygiene rules\n\n# Pest Control\nAny pests?\nFlyscreens fitted?");
+  expect(parseChecklist(text)).toEqual(secs);
+  expect(parseChecklist("# Empty\n\n#Bar\n  Ice machine clean? \n")).toEqual([{ title: "Bar", items: ["Ice machine clean?"] }]);
 });

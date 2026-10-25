@@ -40,16 +40,19 @@ type BookSetting struct {
 	// Columns replace the booklet's columns when set.
 	Columns []Column `json:"columns,omitempty"`
 	// Notes are printed under the booklet's own notes.
-	Notes        []string `json:"notes,omitempty"`
-	UnitsPerPage int      `json:"units_per_page,omitempty"`
-	ManagerCheck *bool    `json:"manager_check,omitempty"`
+	Notes []string `json:"notes,omitempty"`
+	// Checklist replaces an inspection checklist's questions or a training
+	// record's topics when set.
+	Checklist    []ChecklistSection `json:"checklist,omitempty"`
+	UnitsPerPage int                `json:"units_per_page,omitempty"`
+	ManagerCheck *bool              `json:"manager_check,omitempty"`
 	// CopyFile is the SHA-256 of the restaurant's copy of the official
 	// booklet, uploaded so its edition can be checked.
 	CopyFile string `json:"copy_file,omitempty"`
 }
 
 func (b BookSetting) empty() bool {
-	return !b.Off && b.Title == "" && len(b.Columns) == 0 && len(b.Notes) == 0 &&
+	return !b.Off && b.Title == "" && len(b.Columns) == 0 && len(b.Notes) == 0 && len(b.Checklist) == 0 &&
 		b.UnitsPerPage == 0 && b.ManagerCheck == nil && b.CopyFile == ""
 }
 
@@ -79,6 +82,24 @@ func trimNotes(notes []string) []string {
 	return out
 }
 
+func trimChecklist(secs []ChecklistSection) []ChecklistSection {
+	var out []ChecklistSection
+	for _, sec := range secs {
+		sec.Title = strings.TrimSpace(sec.Title)
+		var items []string
+		for _, it := range sec.Items {
+			if it = strings.TrimSpace(it); it != "" {
+				items = append(items, it)
+			}
+		}
+		if len(items) > 0 {
+			sec.Items = items
+			out = append(out, sec)
+		}
+	}
+	return out
+}
+
 // Normalize trims text and drops booklet entries that change nothing.
 func (s RecordBookSettings) Normalize() RecordBookSettings {
 	s.Bundle = strings.TrimSpace(s.Bundle)
@@ -88,6 +109,7 @@ func (s RecordBookSettings) Normalize() RecordBookSettings {
 		b.Title = strings.TrimSpace(b.Title)
 		b.CopyFile = strings.ToLower(strings.TrimSpace(b.CopyFile))
 		b.Notes = trimNotes(b.Notes)
+		b.Checklist = trimChecklist(b.Checklist)
 		if len(b.Columns) > 0 {
 			b.Columns = trimColumns(b.Columns)
 		}
@@ -103,6 +125,7 @@ func (s RecordBookSettings) Normalize() RecordBookSettings {
 		t.Title = strings.TrimSpace(t.Title)
 		t.Columns = trimColumns(t.Columns)
 		t.Notes = trimNotes(t.Notes)
+		t.Checklist = trimChecklist(t.Checklist)
 		t.Source, t.Missing = nil, ""
 		custom = append(custom, t)
 	}
@@ -166,7 +189,7 @@ func (s RecordBookSettings) Validate(bundles []Bundle) error {
 		if b.CopyFile != "" && len(b.CopyFile) != 64 {
 			errs = append(errs, fmt.Errorf("%s: the uploaded copy must be named by its SHA-256", base.Code))
 		}
-		if !base.Supported() && (b.Title != "" || len(b.Columns) > 0 || len(b.Notes) > 0 || b.UnitsPerPage != 0 || b.ManagerCheck != nil) {
+		if !base.Supported() && (b.Title != "" || len(b.Columns) > 0 || len(b.Notes) > 0 || len(b.Checklist) > 0 || b.UnitsPerPage != 0 || b.ManagerCheck != nil) {
 			errs = append(errs, fmt.Errorf("%s cannot be filled in yet, so only turning it off or uploading a copy can be changed", base.Code))
 			continue
 		}
@@ -187,6 +210,9 @@ func apply(t Template, b BookSetting) (Template, error) {
 	}
 	if len(b.Notes) > 0 {
 		t.Notes = append(slices.Clone(t.Notes), b.Notes...)
+	}
+	if len(b.Checklist) > 0 {
+		t.Checklist = slices.Clone(b.Checklist)
 	}
 	if b.UnitsPerPage != 0 {
 		t.UnitsPerPage = b.UnitsPerPage
@@ -269,6 +295,7 @@ func Resolve(bundles []Bundle, s RecordBookSettings) (Bundle, []Booklet, error) 
 			{"title", ch.Title != ""},
 			{"columns", len(ch.Columns) > 0},
 			{"notes", len(ch.Notes) > 0},
+			{"questions", len(ch.Checklist) > 0},
 			{"sheet layout", ch.UnitsPerPage != 0},
 			{"manager check", ch.ManagerCheck != nil},
 		} {
@@ -390,6 +417,7 @@ func Summarize(bundles []Bundle, cur, next RecordBookSettings) []string {
 		changed("title", a.Title == b.Title)
 		changed("columns", sameJSON(a.Columns, b.Columns))
 		changed("notes", slices.Equal(a.Notes, b.Notes))
+		changed("questions", sameJSON(a.Checklist, b.Checklist))
 		changed("sheet layout", a.UnitsPerPage == b.UnitsPerPage)
 		changed("manager check", sameJSON(a.ManagerCheck, b.ManagerCheck))
 		switch {

@@ -255,3 +255,74 @@ func TestDeliveryFieldsValidate(t *testing.T) {
 	r.UseBy, r.BatchCode = "", strings.Repeat("x", 61)
 	assert.ErrorContains(t, r.Validate(RecordDelivery), "batch_code")
 }
+
+func TestTransport(t *testing.T) {
+	limits := FSAIDefaults()
+	find := func(c CheckType) *LimitVersion {
+		for i := range limits {
+			if limits[i].Check == c {
+				return &limits[i]
+			}
+		}
+		t.Fatalf("no %s limit", c)
+		return nil
+	}
+	tr := func(kind string, temp float64, sep bool) Reading {
+		return Reading{Product: "Chicken curry", Customer: "Synthetic Takeaway", DeliveryKind: kind, TempC: &temp, Separated: &sep}
+	}
+	tests := []struct {
+		name  string
+		r     Reading
+		check CheckType
+		want  Outcome
+	}{
+		{"chilled on limit", tr(DeliveryChilled, 5, true), CheckChilledDelivery, OutcomePass},
+		{"chilled above", tr(DeliveryChilled, 5.1, true), CheckChilledDelivery, OutcomeBorderline},
+		{"hot on limit", tr(DeliveryHot, 63, true), CheckHotHold, OutcomePass},
+		{"hot below", tr(DeliveryHot, 62.9, true), CheckHotHold, OutcomeFail},
+		{"not separated", tr(DeliveryChilled, 3, false), CheckChilledDelivery, OutcomeFail},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, tt.r.Validate(RecordTransport))
+			res, err := Evaluate(RecordTransport, tt.r, find(tt.check))
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, res.Outcome, res.Reason)
+		})
+	}
+	amb := Reading{Product: "Bread", Customer: "Synthetic Cafe", DeliveryKind: DeliveryAmbient, Separated: b(true)}
+	res, err := Evaluate(RecordTransport, amb, nil)
+	require.NoError(t, err)
+	assert.Equal(t, OutcomePass, res.Outcome)
+	hot := tr(DeliveryHot, 70, true)
+	_, err = Evaluate(RecordDelivery, Reading{Supplier: "x", Product: "y", DeliveryKind: DeliveryHot}, nil)
+	assert.NoError(t, err, "hot is not a delivery kind for incoming deliveries: no limit")
+	assert.Error(t, hot.Validate(RecordDelivery))
+}
+
+func TestInspectionTrainingFitness(t *testing.T) {
+	yes, no := b(true), b(false)
+	insp := Reading{Checklist: "fsai-sc5", Answers: []Answer{{Section: "Pest control", Item: "Free from signs of pests?", OK: yes}, {Item: "Flyscreens fitted?", OK: no}}}
+	assert.ErrorContains(t, insp.Validate(RecordInspection), "add the action taken")
+	insp.Answers[1].Action = "Ordered flyscreens"
+	require.NoError(t, insp.Validate(RecordInspection))
+	res, err := Evaluate(RecordInspection, insp, nil)
+	require.NoError(t, err)
+	assert.Equal(t, OutcomeFail, res.Outcome)
+	assert.Equal(t, "1 item is not satisfactory: Flyscreens fitted?.", res.Reason)
+	assert.ErrorContains(t, Reading{Answers: []Answer{{Item: "x"}}}.Validate(RecordInspection), "at least one")
+
+	tr := Reading{Staff: "Liam Cook", TrainingKind: TrainingInHouse, Topics: []string{"Cooking", " "}, Trainer: "Aoife Chef", OnDate: "2026-10-20"}.Normalize()
+	assert.Equal(t, []string{"Cooking"}, tr.Topics)
+	require.NoError(t, tr.Validate(RecordTraining))
+	tr.TrainingKind = TrainingFurther
+	assert.ErrorContains(t, tr.Validate(RecordTraining), "provider")
+
+	fit := Reading{Staff: "Liam Cook", FitnessReason: FitnessReturn, Fit: no}
+	require.NoError(t, fit.Validate(RecordFitness))
+	res, err = Evaluate(RecordFitness, fit, nil)
+	require.NoError(t, err)
+	assert.Equal(t, OutcomeRecorded, res.Outcome, "not a fail: it never shows on Today")
+	fit.Notes = "vomiting since Tuesday"
+	assert.ErrorContains(t, fit.Validate(RecordFitness), "keeps only the outcome")
+}

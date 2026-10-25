@@ -41,7 +41,9 @@ func custom(code string) Template {
 }
 
 func TestSettingsValidate(t *testing.T) {
-	all := bundles(t)
+	all := append(bundles(t), Bundle{ID: "test", Name: "Test", Country: "Test", Templates: []Template{
+		{ID: "test-x", Code: "X1", Title: "Not built", Missing: "Kishtin does not record this yet."},
+	}})
 	assert.NoError(t, DefaultSettings().Validate(all))
 	tests := []struct {
 		name string
@@ -51,7 +53,7 @@ func TestSettingsValidate(t *testing.T) {
 		{"unknown bundle", RecordBookSettings{Bundle: "fr-ddpp"}, `no record book bundle "fr-ddpp"`},
 		{"booklet from another bundle", RecordBookSettings{Bundle: "general", Books: []BookSetting{{Template: "fsai-sc2", Off: true}}}, `no booklet "fsai-sc2"`},
 		{"two entries", RecordBookSettings{Bundle: DefaultBundle, Books: []BookSetting{{Template: "fsai-sc2", Off: true}, {Template: "fsai-sc2", Title: "X"}}}, "two sets of changes"},
-		{"unsupported booklet", RecordBookSettings{Bundle: DefaultBundle, Books: []BookSetting{{Template: "fsai-sc7", Title: "Fitness"}}}, "cannot be filled in yet"},
+		{"unsupported booklet", RecordBookSettings{Bundle: "test", Books: []BookSetting{{Template: "test-x", Title: "Renamed"}}}, "cannot be filled in yet"},
 		{"bad field", RecordBookSettings{Bundle: DefaultBundle, Books: []BookSetting{{Template: "fsai-sc4", Columns: []Column{{Label: "Probe", Field: "probe", Width: 1}}}}}, `field "probe"`},
 		{"grid layout", RecordBookSettings{Bundle: DefaultBundle, Books: []BookSetting{{Template: "fsai-sc2", UnitsPerPage: 20}}}, "1 to 12"},
 		{"bad copy", RecordBookSettings{Bundle: DefaultBundle, Books: []BookSetting{{Template: "fsai-sc2", CopyFile: "abc"}}}, "SHA-256"},
@@ -65,7 +67,9 @@ func TestSettingsValidate(t *testing.T) {
 		})
 	}
 	ok := RecordBookSettings{Bundle: DefaultBundle, Books: []BookSetting{{Template: "fsai-sc7", Off: true}, {Template: custom("R1").ID, Off: true}}, Custom: []Template{custom("R1")}}
-	assert.NoError(t, ok.Normalize().Validate(all), "unsupported booklets can be turned off; added booklets can be changed")
+	assert.NoError(t, ok.Normalize().Validate(all), "booklets can be turned off; added booklets can be changed")
+	off := RecordBookSettings{Bundle: "test", Books: []BookSetting{{Template: "test-x", Off: true}}}
+	assert.NoError(t, off.Normalize().Validate(all), "a booklet Kishtin cannot fill can still be turned off")
 }
 
 func TestResolve(t *testing.T) {
@@ -133,7 +137,7 @@ func TestResolve(t *testing.T) {
 	gen, gb, err := Resolve(all, RecordBookSettings{Bundle: "general"})
 	require.NoError(t, err)
 	assert.Equal(t, "Any country", gen.Country)
-	assert.Len(t, gb, 5)
+	assert.Len(t, gb, 9)
 	assert.Nil(t, gb[0].Copy)
 }
 

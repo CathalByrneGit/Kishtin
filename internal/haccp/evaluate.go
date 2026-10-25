@@ -17,6 +17,9 @@ type Result struct {
 // nil for record types that have no limit. The limit must match the
 // reading's check type; Evaluate never looks a limit up itself.
 func Evaluate(t RecordType, r Reading, limit *LimitVersion) (Result, error) {
+	if t == RecordTransport {
+		return evaluateTransport(r, limit)
+	}
 	check, hasLimit := CheckFor(t, r)
 	if !hasLimit {
 		return evaluateNoLimit(t, r), nil
@@ -48,6 +51,26 @@ func Evaluate(t RecordType, r Reading, limit *LimitVersion) (Result, error) {
 
 func evaluateNoLimit(t RecordType, r Reading) Result {
 	switch t {
+	case RecordInspection:
+		var bad []string
+		for _, a := range r.Answers {
+			if a.OK != nil && !*a.OK {
+				bad = append(bad, a.Item)
+			}
+		}
+		if len(bad) == 0 {
+			return Result{Outcome: OutcomePass, Reason: "Every item checked is satisfactory."}
+		}
+		item := "item is"
+		if len(bad) > 1 {
+			item = "items are"
+		}
+		return Result{Outcome: OutcomeFail, Reason: fmt.Sprintf("%d %s not satisfactory: %s.", len(bad), item, strings.Join(bad, "; "))}
+	case RecordFitness:
+		if r.Fit != nil && !*r.Fit {
+			return Result{Outcome: OutcomeRecorded, Reason: "Not fit to work."}
+		}
+		return Result{Outcome: OutcomeRecorded, Reason: "Fit to work."}
 	case RecordCleaning:
 		if r.Done != nil && *r.Done {
 			return Result{Outcome: OutcomePass, Reason: "Task done."}
@@ -58,6 +81,31 @@ func evaluateNoLimit(t RecordType, r Reading) Result {
 	default:
 		return Result{Outcome: OutcomeRecorded, Reason: "Recorded. No limit applies."}
 	}
+}
+
+// evaluateTransport checks food delivered to a customer: its temperature
+// against the chilled, frozen or hot holding limit, and that raw and
+// ready-to-eat food were kept apart.
+func evaluateTransport(r Reading, limit *LimitVersion) (Result, error) {
+	res := Result{Outcome: OutcomePass, Reason: "Ambient food: no temperature limit."}
+	if check, ok := CheckFor(RecordTransport, r); ok {
+		if limit == nil || limit.Check != check {
+			return Result{}, fmt.Errorf("a transport record needs a %s limit", check)
+		}
+		if check == CheckHotHold {
+			res = evaluateMin(*r.TempC, limit)
+		} else {
+			res = evaluateMax(*r.TempC, limit)
+		}
+	}
+	if r.Separated != nil && !*r.Separated {
+		reason := "Raw and ready-to-eat food were not kept apart."
+		if res.Outcome != OutcomePass {
+			reason += " " + res.Reason
+		}
+		res = Result{Outcome: OutcomeFail, Reason: reason}
+	}
+	return res, nil
 }
 
 // evaluateDelivery adds the packaging, date and vehicle checks to a delivery's

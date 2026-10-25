@@ -83,7 +83,7 @@ func TestBuiltinBundles(t *testing.T) {
 			assert.NotEmpty(t, tpl.Missing, tpl.Code)
 		}
 	}
-	assert.Equal(t, []string{"SC1", "SC2", "SC3", "SC4", "SC8"}, supported)
+	assert.Equal(t, []string{"SC1", "SC2", "SC3", "SC4", "SC5", "SC6", "SC7", "SC8", "SC9"}, supported, "every FSAI booklet")
 
 	gen, ok := FindBundle(bundles, "general")
 	require.True(t, ok)
@@ -259,9 +259,9 @@ func TestHotHold(t *testing.T) {
 }
 
 func TestUnsupported(t *testing.T) {
-	tpl, bundle := book(t, "SC7")
-	_, err := Build(Input{Template: tpl, Bundle: bundle, Year: 2026, Month: time.October})
-	assert.ErrorContains(t, err, "cannot fill SC7")
+	tpl := Template{ID: "x-sc0", Code: "SC0", Title: "Not built", Missing: "Kishtin does not record this yet."}
+	_, err := Build(Input{Template: tpl, Year: 2026, Month: time.October})
+	assert.ErrorContains(t, err, "cannot fill SC0")
 }
 
 func TestOrdinal(t *testing.T) {

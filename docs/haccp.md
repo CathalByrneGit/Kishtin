@@ -15,6 +15,10 @@ What Kishtin's HACCP log does today, and what it does not.
 | `hot_hold` | food, temperature | ≥ 63°C |
 | `batch_label` | product, made on, use by (or shelf life in days), quantity | no limit; use-by cannot be before made-on |
 | `cleaning` | task, area, done or not | not done is a fail; a task can be done once a day |
+| `inspection` | the checklist used, each question answered yes, no or not checked, the action taken for each no | any no is a fail; the actions are the corrective action. Head chef or manager. |
+| `training` | staff member, in-house topics and trainer or a course and provider, date | no limit. Head chef or manager. |
+| `fitness` | staff member, date, reason, fit or not, action taken | no limit; only the outcome is kept. Manager with a password, and only they see these records. |
+| `transport` | food, customer, chilled/frozen/hot/ambient, temperature on arrival, raw and ready-to-eat kept apart, optional batch code and use-by | chilled and frozen as deliveries, hot ≥ 63°C (the hot holding limit); not kept apart fails |
 | `sign_off` | a manager's sign-off of a period, with what it held when signed | no limit; saved by signing off, not logged as a reading. See [record-books.md](record-books.md#manager-sign-off) |
 
 Delivery results also say what to do: a borderline delivery is accepted only if used or stored straight away; a failed one is rejected.

@@ -271,7 +271,121 @@
         "published": "2012-10",
         "sha256": "378c70cb1dd02698a0aa78546a5631172640ce40e2b68170f5f0ad846738cfe2"
       },
-      "missing": "Kishtin has no hygiene inspection checklist yet."
+      "builder": "checklist",
+      "checklist": [
+        {
+          "title": "Hygiene Of Food Rooms & Equipment",
+          "items": [
+            "Are food rooms and equipment in good condition and well maintained?",
+            "Are food rooms clean and tidy and do staff clean as they go including difficult areas?",
+            "Is equipment easy to clean and kept in a clean condition?",
+            "Are all food and hand contact surfaces e.g. work surfaces, delivery area, slicers, fridge handles, food probe, in good condition and cleaned/ disinfected regularly?",
+            "Are suitable cleaning chemicals available and stored correctly and are proper cleaning methods used?",
+            "Are cleaning cloths suitable for use and regularly cleaned and disinfected and used properly?"
+          ]
+        },
+        {
+          "title": "Food Storage",
+          "items": [
+            "Are deliveries appropriately stored immediately?",
+            "Is ready-to-eat food stored above/separate from raw food in the fridges and freezers?",
+            "Is food in fridges/freezers covered?",
+            "Are high risk foods date coded, codes checked daily and stock rotated?",
+            "Are dried goods stored correctly e.g. in suitable room, off the floor, in covered containers?",
+            "Are freezers working properly?",
+            "Are fridges and freezers defrosted regularly?"
+          ]
+        },
+        {
+          "title": "Food Handling Practices",
+          "items": [
+            "Are raw and ready-to-eat foods prepared in separate areas or are the work surfaces cleaned and disinfected between uses?",
+            "Separate complex equipment (e.g. vacuum packing machines, food mixers, etc) are used for raw and ready-to-eat foods?",
+            "Are staff handling food as little as possible? (e.g. using tongs)",
+            "If colour coded equipment is provided (e.g. chopping boards), is it correctly used?",
+            "Are high risk foods prepared in small batches and returned to the fridge immediately after handling/preparation?",
+            "Is food cooled as quickly as possible away from raw food and other sources of contamination?",
+            "Are ready to eat fruit/salads/vegetables trimmed and washed thoroughly?",
+            "Is food on display screened from customers?",
+            "Are adequate clean utensils available for self service?",
+            "Are frozen foods defrosted safely?",
+            "Are controls in place to prevent contamination by chemicals/ foreign bodies e.g. glass, packaging materials, bolts, rust, cleaning chemicals?",
+            "Are staff aware of food allergy hazards?",
+            "Are probe thermometers correctly used and cleaned/ disinfected before and after use?"
+          ]
+        },
+        {
+          "title": "Personal Hygiene",
+          "items": [
+            "Are staff fit to work, wearing clean, suitable protective clothing and following personal hygiene rules particularly hand washing?",
+            "Are wash hand basins clean with warm water, soap and hygienic hand drying facilities?",
+            "Are wash hand basins used for hand washing only and used regularly by staff?",
+            "Are staff handling food as little as possible?",
+            "Are staff toilets and changing facilities clean and tidy?"
+          ]
+        },
+        {
+          "title": "Pest Control",
+          "items": [
+            "Are premises pest proofed and free from any signs of pests?",
+            "Where necessary are external doors/ windows fitted with suitable flyscreens?",
+            "Are insectocutors (if provided) properly maintained?",
+            "Is food properly protected from risk of contamination by pests?"
+          ]
+        },
+        {
+          "title": "Waste Control",
+          "items": [
+            "Is waste in food rooms stored correctly?",
+            "Is food waste stored correctly outside and is the refuse area kept clean?",
+            "Is unfit food clearly labelled and stored separately from other foods?"
+          ]
+        },
+        {
+          "title": "Checks And Record Keeping",
+          "items": [
+            "Are all checks properly taken and recorded?",
+            "Has appropriate corrective action been taken where necessary?",
+            "Are record forms up-to-date, checked and verified?",
+            "Are equipment time/temperature combinations specified and regularly cross-checked?"
+          ]
+        },
+        {
+          "title": "Review (4 Weekly)",
+          "items": [
+            "Any new suppliers and approved list updated?",
+            "Any new menu items and steps in safe catering updated?",
+            "Any new food handling methods or equipment and steps in safe catering updated?"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "label": "Question",
+          "field": "item",
+          "width": 130
+        },
+        {
+          "label": "Yes",
+          "group": "Satisfactory",
+          "field": "yes",
+          "width": 16
+        },
+        {
+          "label": "No",
+          "group": "Satisfactory",
+          "field": "no",
+          "width": 16
+        },
+        {
+          "label": "Details Of Action Taken",
+          "field": "action",
+          "width": 111
+        }
+      ],
+      "notes": [
+        "Simple checks of the premises which should be carried out by the Manager or Supervisor regularly."
+      ]
     },
     {
       "id": "fsai-sc6",
@@ -282,7 +396,90 @@
         "published": "2012-10",
         "sha256": "2925c6bfeb525b74d9f6a9938ab1568f02795dc9236d7e3ad0de454ce0ded7d7"
       },
-      "missing": "Kishtin does not keep training records yet."
+      "builder": "training",
+      "checklist": [
+        {
+          "items": [
+            "Instruction on Basic Hygiene Rules (Section 4 pg 24)"
+          ]
+        },
+        {
+          "title": "Training on steps used in your business (Section 3)",
+          "items": [
+            "Purchase, Delivery/Receipt, Collection",
+            "Storage",
+            "Preparation and Handling",
+            "Cold Serve/Display",
+            "Defrosting",
+            "Cooking",
+            "Cooling/Freezing",
+            "Reheating",
+            "Hot Hold/Display",
+            "Physical/Chemical Contamination",
+            "Other Step(s)"
+          ]
+        },
+        {
+          "title": "Training on general hygiene requirements (Section 4)",
+          "items": [
+            "Cleaning",
+            "Pest Control",
+            "Waste",
+            "Maintenance",
+            "Personal Hygiene",
+            "Training/Supervision",
+            "Advice on using a Thermometer",
+            "Food Allergies"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "label": "Nature Of Training",
+          "field": "topic",
+          "width": 120
+        },
+        {
+          "label": "Dates",
+          "field": "dates",
+          "width": 50
+        },
+        {
+          "label": "Trainer",
+          "field": "trainer",
+          "width": 53
+        },
+        {
+          "label": "Employee Signature",
+          "field": "signature",
+          "width": 50
+        }
+      ],
+      "further_columns": [
+        {
+          "label": "Nature of Training e.g. External course, In-house, Refresher etc.",
+          "field": "nature",
+          "width": 110
+        },
+        {
+          "label": "Course Provider",
+          "field": "provider",
+          "width": 70
+        },
+        {
+          "label": "Date Completed",
+          "field": "completed",
+          "width": 43
+        },
+        {
+          "label": "Employee Signature",
+          "field": "signature",
+          "width": 50
+        }
+      ],
+      "notes": [
+        "Copies of any Certificates should be kept with this Form."
+      ]
     },
     {
       "id": "fsai-sc7",
@@ -293,7 +490,48 @@
         "published": "2012-10",
         "sha256": "6b84783af694aed20946adf17546e53807554b1f712b50ced4c802270ab66f8b"
       },
-      "missing": "Kishtin does not keep fitness to work assessments. They hold health information, so keep them on paper for now."
+      "builder": "fitness",
+      "columns": [
+        {
+          "label": "Date of Assessment",
+          "field": "date",
+          "width": 24
+        },
+        {
+          "label": "Name of Employee",
+          "field": "staff",
+          "width": 50
+        },
+        {
+          "label": "Reason For Assessment",
+          "field": "reason",
+          "width": 50
+        },
+        {
+          "label": "Fit to work",
+          "field": "fit",
+          "width": 22
+        },
+        {
+          "label": "Action Taken",
+          "field": "action",
+          "width": 75
+        },
+        {
+          "label": "Owner/Manager",
+          "field": "manager",
+          "width": 38
+        },
+        {
+          "label": "Kishtin ref",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "notes": [
+        "If the answer to any question is 'yes', the individual should not be permitted to handle food or enter food handling areas if there is any likelihood of direct or indirect contamination. Further advice should be sought e.g. from your Environmental Health Officer and/or Doctor.",
+        "Kishtin keeps only the outcome of each assessment. Keep the signed questionnaire, with the employee's declaration, on paper."
+      ]
     },
     {
       "id": "fsai-sc8",
@@ -322,7 +560,59 @@
         "published": "2012-10",
         "sha256": "d3feff861cdd016608d64f7b56d3d315876a86284091e47552c44c91fb07a58e"
       },
-      "missing": "Kishtin does not record deliveries to customers yet."
+      "builder": "transport",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Food Item",
+          "field": "food",
+          "width": 46
+        },
+        {
+          "label": "Batch Code/'Use-by' Date",
+          "field": "batch_use_by",
+          "width": 32
+        },
+        {
+          "label": "Customer Details",
+          "field": "customer",
+          "width": 44
+        },
+        {
+          "label": "Adequate Separation of Raw and Ready-to-Eat Foods Yes/No",
+          "field": "separated",
+          "width": 28
+        },
+        {
+          "label": "Delivery Temperature following Transport °C",
+          "field": "temp",
+          "width": 26
+        },
+        {
+          "label": "Comments/Action",
+          "field": "comments",
+          "width": 43
+        },
+        {
+          "label": "Sign",
+          "field": "signed",
+          "width": 22
+        },
+        {
+          "label": "Kishtin ref",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "notes": [
+        "For large deliveries, monitor one or two food products from that delivery.",
+        "Chilled food: 0°C to 5°C; Frozen food: less than or equal to -18°C; Hot food: greater than or equal to 63°C."
+      ],
+      "manager_check": true
     }
   ]
 }

@@ -65,6 +65,7 @@ func (s *Service) ExportRecordsCSV(ctx context.Context, p *auth.Principal, q Rec
 	if err != nil {
 		return sum, err
 	}
+	recs = visible(p, recs)
 	rep, err := s.verifyStore(ctx, s.st, false)
 	if err != nil {
 		return sum, err

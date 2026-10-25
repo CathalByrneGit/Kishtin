@@ -37,6 +37,17 @@ const (
 	// BuilderDaily is a sheet per day made of other booklets of the same
 	// bundle, one section each (SC8). It has sections instead of columns.
 	BuilderDaily = "daily"
+	// BuilderChecklist is a sheet per hygiene inspection, with its
+	// questions and answers (SC5). The questions come from the template.
+	BuilderChecklist = "checklist"
+	// BuilderTraining is a sheet per member of staff with the training
+	// they have had, up to the end of the month (SC6). The topics come
+	// from the template.
+	BuilderTraining = "training"
+	// BuilderFitness is a row per fitness to work assessment (SC7).
+	BuilderFitness = "fitness"
+	// BuilderTransport is a row per delivery to a customer (SC9).
+	BuilderTransport = "transport"
 )
 
 // Field is a record field a builder can put in a column.
@@ -84,6 +95,41 @@ var Builders = []Builder{
 		{"delivery_kind", "Chilled, frozen or ambient"},
 		{"comments", "Comments and actions"},
 		{"signed", "Who logged"},
+		{"ref", "Kishtin record number"},
+	}},
+	{ID: BuilderTransport, Label: "Deliveries to customers: a row per delivery", Fields: []Field{
+		{"date", "Date"},
+		{"food", "Food item"},
+		{"batch_use_by", "Batch code and use-by date"},
+		{"customer", "Customer"},
+		{"separated", "Raw and ready-to-eat food kept apart"},
+		{"temp", "Temperature (or ambient)"},
+		{"comments", "Comments and actions"},
+		{"signed", "Who logged"},
+		{"ref", "Kishtin record number"},
+	}},
+	{ID: BuilderChecklist, Label: "Inspection checklist: a sheet per inspection, with your questions", Fields: []Field{
+		{"item", "Question"},
+		{"yes", "Satisfactory: yes"},
+		{"no", "Satisfactory: no"},
+		{"action", "Details of action taken"},
+	}},
+	{ID: BuilderTraining, Label: "Training record: a sheet per member of staff, with your topics", Fields: []Field{
+		{"topic", "Topic"},
+		{"dates", "Dates trained"},
+		{"trainer", "Trainer"},
+		{"nature", "Further training: what it was"},
+		{"provider", "Further training: course provider"},
+		{"completed", "Further training: date completed"},
+		{"signature", "Employee signature (blank, to sign by hand)"},
+	}},
+	{ID: BuilderFitness, Label: "Fitness to work: a row per assessment, outcome only", Fields: []Field{
+		{"date", "Date of assessment"},
+		{"staff", "Employee"},
+		{"reason", "Reason for assessment"},
+		{"fit", "Fit to work"},
+		{"action", "Action taken"},
+		{"manager", "Owner or manager"},
 		{"ref", "Kishtin record number"},
 	}},
 	{ID: BuilderHotHold, Label: "Hot holding: a row per food per day, up to three checks", Fields: []Field{
@@ -176,6 +222,18 @@ type Template struct {
 	// Sections are the IDs of the booklets a daily record is made of, in
 	// order. Only for the daily builder.
 	Sections []string `json:"sections,omitempty"`
+	// Checklist is the questions of an inspection checklist, or the
+	// topics of a training record, in sections.
+	Checklist []ChecklistSection `json:"checklist,omitempty"`
+	// FurtherColumns are a training record's second table, for further
+	// training such as external courses.
+	FurtherColumns []Column `json:"further_columns,omitempty"`
+}
+
+// ChecklistSection is a heading and its questions or topics.
+type ChecklistSection struct {
+	Title string   `json:"title,omitempty"`
+	Items []string `json:"items"`
 }
 
 // Supported reports whether Kishtin can fill this booklet.
@@ -252,6 +310,30 @@ func (t Template) Validate() error {
 		if c.Field == "unit_checks" {
 			grid++
 		}
+	}
+	for _, c := range t.FurtherColumns {
+		if strings.TrimSpace(c.Label) == "" || c.Width <= 0 {
+			return fmt.Errorf("%s: every further training column needs a label and a width", t.Code)
+		}
+		if c.Field != "" && !known(c.Field) {
+			return fmt.Errorf("%s: further training column %q uses field %q, which this kind of booklet does not have", t.Code, c.Label, c.Field)
+		}
+	}
+	if t.Builder == BuilderChecklist || t.Builder == BuilderTraining {
+		n := 0
+		for _, sec := range t.Checklist {
+			for _, it := range sec.Items {
+				if strings.TrimSpace(it) == "" {
+					return fmt.Errorf("%s: a question or topic is empty", t.Code)
+				}
+				n++
+			}
+		}
+		if n == 0 && t.Builder == BuilderChecklist {
+			return fmt.Errorf("%s: an inspection checklist needs its questions", t.Code)
+		}
+	} else if len(t.Checklist) > 0 {
+		return fmt.Errorf("%s: only an inspection checklist or training record has a checklist", t.Code)
 	}
 	if t.Builder == BuilderUnitGrid {
 		if t.UnitsPerPage < 1 || t.UnitsPerPage > 12 {
@@ -341,3 +423,7 @@ func findTemplate(list []Template, id string) (Template, bool) {
 	}
 	return Template{}, false
 }
+
+// Cumulative reports whether a booklet shows everything up to the end of
+// the month, not only the month's records (a training record).
+func (t Template) Cumulative() bool { return t.Builder == BuilderTraining }

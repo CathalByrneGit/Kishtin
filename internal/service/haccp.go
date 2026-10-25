@@ -87,13 +87,67 @@ func (s *Service) prepare(ctx context.Context, tx store.Store, nr *NewRecord) (C
 	}
 	c.Result = res
 	c.NeedsCorrectiveAction = rules.Value.NeedsAction(res.Outcome)
+	// An inspection's actions are given per item: they are its corrective
+	// action.
+	if nr.Type == haccp.RecordInspection && nr.CorrectiveAction == "" {
+		var actions []string
+		for _, a := range nr.Reading.Answers {
+			if a.OK != nil && !*a.OK {
+				actions = append(actions, a.Item+" "+a.Action)
+			}
+		}
+		nr.CorrectiveAction = strings.Join(actions, "; ")
+	}
 	return c, nil
+}
+
+// typeAction is the extra permission a record type needs, beyond logging.
+func typeAction(t haccp.RecordType) auth.Action {
+	switch t {
+	case haccp.RecordInspection, haccp.RecordTraining:
+		return auth.ActInspect
+	case haccp.RecordFitness:
+		return auth.ActFitness
+	}
+	return ""
+}
+
+// allowType checks a principal may log a record type.
+func allowType(p *auth.Principal, t haccp.RecordType) error {
+	if err := allow(p, auth.ActLogHACCP); err != nil {
+		return err
+	}
+	if a := typeAction(t); a != "" {
+		return allow(p, a)
+	}
+	return nil
+}
+
+// canSee reports whether a principal may see a record. Fitness to work
+// assessments are health information: only managers with a password see
+// them.
+func canSee(p *auth.Principal, r haccp.Record) bool {
+	if r.Type != haccp.RecordFitness {
+		return true
+	}
+	return p != nil && auth.Can(*p, auth.ActFitness).Allowed
+}
+
+// visible keeps the records a principal may see.
+func visible(p *auth.Principal, recs []haccp.Record) []haccp.Record {
+	out := recs[:0:0]
+	for _, r := range recs {
+		if canSee(p, r) {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // CheckRecord checks a reading without saving it, so a screen can show the
 // result before the record is saved.
 func (s *Service) CheckRecord(ctx context.Context, p *auth.Principal, nr NewRecord) (Check, error) {
-	if err := allow(p, auth.ActLogHACCP); err != nil {
+	if err := allowType(p, nr.Type); err != nil {
 		return Check{}, err
 	}
 	return s.prepare(ctx, s.st, &nr)
@@ -103,7 +157,7 @@ func (s *Service) CheckRecord(ctx context.Context, p *auth.Principal, nr NewReco
 // borderline one if the rules say so, is only saved with a corrective
 // action.
 func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord) (haccp.Record, error) {
-	if err := allow(p, auth.ActLogHACCP); err != nil {
+	if err := allowType(p, nr.Type); err != nil {
 		return haccp.Record{}, err
 	}
 	var saved haccp.Record
@@ -114,6 +168,9 @@ func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord
 		}
 		if c.NeedsCorrectiveAction && nr.CorrectiveAction == "" {
 			return newErr(KindInvalid, "%s %s Add a corrective action to save it.", outcomeLabel(c.Result.Outcome), c.Result.Reason)
+		}
+		if nr.Type == haccp.RecordFitness && nr.Reading.Fit != nil && !*nr.Reading.Fit && nr.CorrectiveAction == "" {
+			return newErr(KindInvalid, "say what action was taken, for example sent home and referred to their doctor")
 		}
 		if nr.Corrects != "" {
 			orig, err := tx.HACCP().GetRecord(ctx, nr.Corrects)
@@ -202,6 +259,9 @@ func (s *Service) GetRecord(ctx context.Context, p *auth.Principal, id string) (
 	if err != nil {
 		return haccp.Record{}, mapStoreErr(err, "record")
 	}
+	if !canSee(p, r) {
+		return haccp.Record{}, newErr(KindNotFound, "record not found")
+	}
 	return r, nil
 }
 
@@ -238,7 +298,11 @@ func (s *Service) ListRecords(ctx context.Context, p *auth.Principal, q RecordQu
 	if q.Limit <= 0 || q.Limit > MaxListLimit {
 		q.Limit = MaxListLimit
 	}
-	return s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: q.From, To: q.To, Types: q.Types, Outcomes: q.Outcomes, Limit: q.Limit, Newest: q.Newest})
+	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: q.From, To: q.To, Types: q.Types, Outcomes: q.Outcomes, Limit: q.Limit, Newest: q.Newest})
+	if err != nil {
+		return nil, err
+	}
+	return visible(p, recs), nil
 }
 
 // FileProblem is an attached file that failed its check.

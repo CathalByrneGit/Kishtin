@@ -23,6 +23,7 @@ func (s *Service) ExportPackPDF(ctx context.Context, p *auth.Principal, q Record
 	if err != nil {
 		return sum, err
 	}
+	recs = visible(p, recs)
 	rep, err := s.verifyStore(ctx, s.st, true)
 	if err != nil {
 		return sum, err

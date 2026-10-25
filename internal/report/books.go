@@ -208,16 +208,21 @@ func WriteBook(p Book, out io.Writer) error {
 		pdf.CellFormat(0, 5, w.text(name+" · Month: "+month), "", 1, "L", false, 0, "")
 		w.para("No records this month.")
 	}
+	// Pages with the same Sheet print on one sheet; a page with none is a
+	// sheet of its own.
+	same := func(i, j int) bool {
+		return b.Pages[i].Sheet != "" && b.Pages[i].Sheet == b.Pages[j].Sheet
+	}
 	sheets := 0
-	for i, page := range b.Pages {
-		if i == 0 || page.Day == "" || page.Day != b.Pages[i-1].Day {
+	for i := range b.Pages {
+		if i == 0 || !same(i, i-1) {
 			sheets++
 		}
 	}
 	sheet := 0
 	for i, page := range b.Pages {
-		newSheet := i == 0 || page.Day == "" || page.Day != b.Pages[i-1].Day
-		lastOfSheet := i == len(b.Pages)-1 || page.Day == "" || b.Pages[i+1].Day != page.Day
+		newSheet := i == 0 || !same(i, i-1)
+		lastOfSheet := i == len(b.Pages)-1 || !same(i, i+1)
 		if newSheet {
 			sheet++
 			pdf.AddPage()
@@ -226,8 +231,8 @@ func WriteBook(p Book, out io.Writer) error {
 			pdf.CellFormat(0, 6.5, w.text(tpl.Code+" - "+tpl.Title), "", 1, "L", false, 0, "")
 			pdf.SetFont("Helvetica", "", 10)
 			head := name + " · Month: " + month
-			if page.Day != "" {
-				head = name + " · Date: " + shortDate(page.Day)
+			if page.SheetLabel != "" {
+				head = name + " · " + page.SheetLabel
 			}
 			if sheets > 1 {
 				head += fmt.Sprintf(" · sheet %d of %d", sheet, sheets)
@@ -275,6 +280,14 @@ func WriteBook(p Book, out io.Writer) error {
 		}
 		header()
 		for _, row := range page.Rows {
+			if row.Heading {
+				text := ""
+				if len(row.Cells) > 0 {
+					text = row.Cells[0].Text
+				}
+				w.gridRow([]float64{books.PageWidth}, []string{text}, []*[3]int{&band}, true, 7.5, header)
+				continue
+			}
 			cells := make([]string, len(row.Cells))
 			fills := make([]*[3]int, len(row.Cells))
 			for k, c := range row.Cells {
@@ -291,8 +304,11 @@ func WriteBook(p Book, out io.Writer) error {
 		}
 
 		notes := tpl.Notes
-		if page.Day != "" {
+		if page.Sheet != "" {
 			notes = page.Notes
+			if lastOfSheet && tpl.Builder != books.BuilderDaily {
+				notes = append(slices.Clone(page.Notes), tpl.Notes...)
+			}
 		}
 		pdf.Ln(1.5)
 		pdf.SetFont("Helvetica", "", 7.5)
@@ -301,7 +317,7 @@ func WriteBook(p Book, out io.Writer) error {
 			pdf.MultiCell(0, 3.6, w.text(n), "", "L", false)
 		}
 		if tpl.ManagerCheck && lastOfSheet {
-			if page.Day != "" {
+			if page.Day != "" && tpl.Builder == books.BuilderDaily {
 				managerCheck(forDay(page.Day))
 			} else {
 				managerCheck(b.SignOffs, b.Unsigned)

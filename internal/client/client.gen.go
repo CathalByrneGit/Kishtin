@@ -16999,6 +16999,17 @@ func (a AddItemsBody) Validate() error {
 	return errors
 }
 
+type Answer struct {
+	Action  *string `json:"action,omitempty"`
+	Item    string  `json:"item" validate:"required"`
+	Ok      *bool   `json:"ok,omitempty"`
+	Section *string `json:"section,omitempty"`
+}
+
+func (a Answer) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
 type AvailabilityBody struct {
 	Available bool `json:"available"`
 }
@@ -17152,18 +17163,26 @@ func (b Book) Validate() error {
 }
 
 type BookSetting struct {
-	Columns      []Column `json:"columns,omitempty"`
-	CopyFile     *string  `json:"copy_file,omitempty"`
-	ManagerCheck *bool    `json:"manager_check,omitempty"`
-	Notes        []string `json:"notes,omitempty"`
-	Off          *bool    `json:"off,omitempty"`
-	Template     string   `json:"template" validate:"required"`
-	Title        *string  `json:"title,omitempty"`
-	UnitsPerPage *int64   `json:"units_per_page,omitempty"`
+	Checklist    []ChecklistSection `json:"checklist,omitempty"`
+	Columns      []Column           `json:"columns,omitempty"`
+	CopyFile     *string            `json:"copy_file,omitempty"`
+	ManagerCheck *bool              `json:"manager_check,omitempty"`
+	Notes        []string           `json:"notes,omitempty"`
+	Off          *bool              `json:"off,omitempty"`
+	Template     string             `json:"template" validate:"required"`
+	Title        *string            `json:"title,omitempty"`
+	UnitsPerPage *int64             `json:"units_per_page,omitempty"`
 }
 
 func (b BookSetting) Validate() error {
 	var errors runtime.ValidationErrors
+	for i, item := range b.Checklist {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Checklist[%d]", i), err)
+			}
+		}
+	}
 	for i, item := range b.Columns {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -17437,6 +17456,15 @@ type CheckTime struct {
 }
 
 func (c CheckTime) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type ChecklistSection struct {
+	Items []string `json:"items" validate:"required"`
+	Title *string  `json:"title,omitempty"`
+}
+
+func (c ChecklistSection) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(c))
 }
 
@@ -18997,11 +19025,13 @@ func (p POSSettings) Validate() error {
 }
 
 type Page struct {
-	Columns []Column `json:"columns" validate:"required"`
-	Day     *string  `json:"day,omitempty"`
-	Notes   []string `json:"notes,omitempty"`
-	Rows    []Row    `json:"rows" validate:"required"`
-	Title   *string  `json:"title,omitempty"`
+	Columns    []Column `json:"columns" validate:"required"`
+	Day        *string  `json:"day,omitempty"`
+	Notes      []string `json:"notes,omitempty"`
+	Rows       []Row    `json:"rows" validate:"required"`
+	Sheet      *string  `json:"sheet,omitempty"`
+	SheetLabel *string  `json:"sheet_label,omitempty"`
+	Title      *string  `json:"title,omitempty"`
 }
 
 func (p Page) Validate() error {
@@ -19104,13 +19134,18 @@ func (p Progress) Validate() error {
 }
 
 type Reading struct {
+	Answers       []Answer   `json:"answers,omitempty"`
 	Area          *string    `json:"area,omitempty"`
 	BatchCode     *string    `json:"batch_code,omitempty"`
+	Checklist     *string    `json:"checklist,omitempty"`
 	CookedAt      *time.Time `json:"cooked_at,omitempty"`
+	Customer      *string    `json:"customer,omitempty"`
 	DeliveryKind  *string    `json:"delivery_kind,omitempty"`
 	Dish          *string    `json:"dish,omitempty"`
 	DocketFile    *string    `json:"docket_file,omitempty"`
 	Done          *bool      `json:"done,omitempty"`
+	Fit           *bool      `json:"fit,omitempty"`
+	FitnessReason *string    `json:"fitness_reason,omitempty"`
 	Food          *string    `json:"food,omitempty"`
 	FoodCategory  *string    `json:"food_category,omitempty"`
 	HoldSeconds   *int64     `json:"hold_seconds,omitempty"`
@@ -19118,17 +19153,24 @@ type Reading struct {
 	IntoFridgeAt  *time.Time `json:"into_fridge_at,omitempty"`
 	MadeOn        *string    `json:"made_on,omitempty"`
 	Notes         *string    `json:"notes,omitempty"`
+	OnDate        *string    `json:"on_date,omitempty"`
 	PackagingOk   *bool      `json:"packaging_ok,omitempty"`
 	PeriodFrom    *string    `json:"period_from,omitempty"`
 	PeriodTo      *string    `json:"period_to,omitempty"`
 	Product       *string    `json:"product,omitempty"`
+	Provider      *string    `json:"provider,omitempty"`
 	Quantity      *string    `json:"quantity,omitempty"`
 	Review        *Review    `json:"review,omitempty"`
+	Separated     *bool      `json:"separated,omitempty"`
 	ShelfLifeDays *int64     `json:"shelf_life_days,omitempty"`
+	Staff         *string    `json:"staff,omitempty"`
 	Supplier      *string    `json:"supplier,omitempty"`
 	Task          *string    `json:"task,omitempty"`
 	TempAtCutoffC *float64   `json:"temp_at_cutoff_c,omitempty"`
 	TempC         *float64   `json:"temp_c,omitempty"`
+	Topics        []string   `json:"topics,omitempty"`
+	Trainer       *string    `json:"trainer,omitempty"`
+	TrainingKind  *string    `json:"training_kind,omitempty"`
 	Unit          *string    `json:"unit,omitempty"`
 	UseBy         *string    `json:"use_by,omitempty"`
 	VehicleOk     *bool      `json:"vehicle_ok,omitempty"`
@@ -19136,6 +19178,13 @@ type Reading struct {
 
 func (r Reading) Validate() error {
 	var errors runtime.ValidationErrors
+	for i, item := range r.Answers {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Answers[%d]", i), err)
+			}
+		}
+	}
 	if r.Review != nil {
 		if v, ok := any(r.Review).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -19360,8 +19409,9 @@ type Review struct {
 }
 
 type Row struct {
-	Cells []Cell  `json:"cells" validate:"required"`
-	Date  *string `json:"date,omitempty"`
+	Cells   []Cell  `json:"cells" validate:"required"`
+	Date    *string `json:"date,omitempty"`
+	Heading *bool   `json:"heading,omitempty"`
 }
 
 func (r Row) Validate() error {
@@ -20243,21 +20293,30 @@ func (t TargetBody) Validate() error {
 }
 
 type Template struct {
-	Builder      *string  `json:"builder,omitempty"`
-	Code         string   `json:"code" validate:"required"`
-	Columns      []Column `json:"columns,omitempty"`
-	ID           string   `json:"id" validate:"required"`
-	ManagerCheck *bool    `json:"manager_check,omitempty"`
-	Missing      *string  `json:"missing,omitempty"`
-	Notes        []string `json:"notes,omitempty"`
-	Sections     []string `json:"sections,omitempty"`
-	Source       *Source  `json:"source,omitempty"`
-	Title        string   `json:"title" validate:"required"`
-	UnitsPerPage *int64   `json:"units_per_page,omitempty"`
+	Builder        *string            `json:"builder,omitempty"`
+	Checklist      []ChecklistSection `json:"checklist,omitempty"`
+	Code           string             `json:"code" validate:"required"`
+	Columns        []Column           `json:"columns,omitempty"`
+	FurtherColumns []Column           `json:"further_columns,omitempty"`
+	ID             string             `json:"id" validate:"required"`
+	ManagerCheck   *bool              `json:"manager_check,omitempty"`
+	Missing        *string            `json:"missing,omitempty"`
+	Notes          []string           `json:"notes,omitempty"`
+	Sections       []string           `json:"sections,omitempty"`
+	Source         *Source            `json:"source,omitempty"`
+	Title          string             `json:"title" validate:"required"`
+	UnitsPerPage   *int64             `json:"units_per_page,omitempty"`
 }
 
 func (t Template) Validate() error {
 	var errors runtime.ValidationErrors
+	for i, item := range t.Checklist {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Checklist[%d]", i), err)
+			}
+		}
+	}
 	if err := typesValidator.Var(t.Code, "required"); err != nil {
 		errors = errors.Append("Code", err)
 	}
@@ -20265,6 +20324,13 @@ func (t Template) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("Columns[%d]", i), err)
+			}
+		}
+	}
+	for i, item := range t.FurtherColumns {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("FurtherColumns[%d]", i), err)
 			}
 		}
 	}

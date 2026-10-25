@@ -226,6 +226,244 @@
         "general-hot-hold"
       ],
       "manager_check": true
+    },
+    {
+      "id": "general-inspection",
+      "code": "T6",
+      "title": "Hygiene inspection",
+      "builder": "checklist",
+      "checklist": [
+        {
+          "title": "Premises and equipment",
+          "items": [
+            "Rooms and equipment clean and in good repair?",
+            "Food-contact surfaces clean and disinfected?",
+            "Cleaning chemicals and cloths suitable and stored correctly?"
+          ]
+        },
+        {
+          "title": "Storage",
+          "items": [
+            "Ready-to-eat food stored above or apart from raw food?",
+            "Food covered, labelled and in date?",
+            "Fridges and freezers working?"
+          ]
+        },
+        {
+          "title": "Handling",
+          "items": [
+            "Raw and ready-to-eat food prepared apart, or surfaces disinfected between?",
+            "Probe thermometers used and cleaned correctly?",
+            "Staff aware of allergens?"
+          ]
+        },
+        {
+          "title": "Staff",
+          "items": [
+            "Staff fit to work, in clean protective clothing?",
+            "Hand-wash basins stocked and used only for hand washing?"
+          ]
+        },
+        {
+          "title": "Pests and waste",
+          "items": [
+            "No signs of pests?",
+            "Waste stored correctly and bins clean?"
+          ]
+        },
+        {
+          "title": "Records",
+          "items": [
+            "All checks recorded, with corrective actions?"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "label": "Check",
+          "field": "item",
+          "width": 130
+        },
+        {
+          "label": "Yes",
+          "field": "yes",
+          "width": 16
+        },
+        {
+          "label": "No",
+          "field": "no",
+          "width": 16
+        },
+        {
+          "label": "Action taken",
+          "field": "action",
+          "width": 111
+        }
+      ]
+    },
+    {
+      "id": "general-training",
+      "code": "T7",
+      "title": "Staff training",
+      "builder": "training",
+      "checklist": [
+        {
+          "items": [
+            "Basic hygiene rules",
+            "Personal hygiene and hand washing",
+            "Allergens",
+            "Cleaning",
+            "Temperature control and using a probe",
+            "Cooking, cooling and reheating",
+            "Storage and stock rotation",
+            "Pest control and waste"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "label": "Topic",
+          "field": "topic",
+          "width": 120
+        },
+        {
+          "label": "Dates",
+          "field": "dates",
+          "width": 50
+        },
+        {
+          "label": "Trainer",
+          "field": "trainer",
+          "width": 53
+        },
+        {
+          "label": "Employee signature",
+          "field": "signature",
+          "width": 50
+        }
+      ],
+      "further_columns": [
+        {
+          "label": "Course or training",
+          "field": "nature",
+          "width": 110
+        },
+        {
+          "label": "Provider",
+          "field": "provider",
+          "width": 70
+        },
+        {
+          "label": "Completed",
+          "field": "completed",
+          "width": 43
+        },
+        {
+          "label": "Employee signature",
+          "field": "signature",
+          "width": 50
+        }
+      ]
+    },
+    {
+      "id": "general-fitness",
+      "code": "T8",
+      "title": "Fitness to work",
+      "builder": "fitness",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 24
+        },
+        {
+          "label": "Employee",
+          "field": "staff",
+          "width": 50
+        },
+        {
+          "label": "Reason",
+          "field": "reason",
+          "width": 50
+        },
+        {
+          "label": "Fit to work",
+          "field": "fit",
+          "width": 22
+        },
+        {
+          "label": "Action taken",
+          "field": "action",
+          "width": 75
+        },
+        {
+          "label": "Manager",
+          "field": "manager",
+          "width": 38
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "notes": [
+        "Kishtin keeps only the outcome of each assessment. Keep any signed questionnaire on paper."
+      ]
+    },
+    {
+      "id": "general-transport",
+      "code": "T9",
+      "title": "Deliveries to customers",
+      "builder": "transport",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Food",
+          "field": "food",
+          "width": 46
+        },
+        {
+          "label": "Batch / use by",
+          "field": "batch_use_by",
+          "width": 32
+        },
+        {
+          "label": "Customer",
+          "field": "customer",
+          "width": 44
+        },
+        {
+          "label": "Raw and ready-to-eat apart",
+          "field": "separated",
+          "width": 28
+        },
+        {
+          "label": "Temperature",
+          "field": "temp",
+          "width": 26
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 43
+        },
+        {
+          "label": "By",
+          "field": "signed",
+          "width": 22
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "manager_check": true
     }
   ]
 }

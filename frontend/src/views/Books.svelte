@@ -63,7 +63,7 @@
     let gone = false;
     for (const bk of list) {
       const t = bk.template;
-      if (!t.builder) continue;
+      if (!t.builder || locked(t)) continue;
       api
         .book(t.id, m)
         .then((b) => {
@@ -101,6 +101,11 @@
     } finally {
       busy = null;
     }
+  }
+
+  /** locked is a booklet this login may not open: fitness to work is for a manager with a password. */
+  function locked(t: Template): boolean {
+    return t.builder === "fitness" && !isManagerPassword();
   }
 
   const shown = $derived((info?.booklets ?? []).filter((b) => !b.off));
@@ -169,6 +174,8 @@
                 </span>
                 {#if !t.builder}
                   <span class="small">{t.missing}</span>
+                {:else if locked(t)}
+                  <span class="small">Fitness to work records are health information: only a manager logged in with a password can open them.</span>
                 {:else if typeof b === "string"}
                   <span class="small error">{b}</span>
                 {/if}
@@ -176,6 +183,8 @@
               <div class="status">
                 {#if !t.builder}
                   <Chip uppercase={false} tone="neutral">Not yet</Chip>
+                {:else if locked(t)}
+                  <Chip uppercase={false} tone="neutral">Managers only</Chip>
                 {:else if b === undefined}
                   <Spinner />
                 {:else if typeof b === "object"}
@@ -187,7 +196,7 @@
                   <span class="small muted">{b.records} {b.records === 1 ? "record" : "records"}</span>
                 {/if}
               </div>
-              {#if t.builder}
+              {#if t.builder && !locked(t)}
                 <div class="actions">
                   <Button label={selected === t.id ? "Hide preview" : "Preview"} onclick={() => open(t)}><Eye size={16} /></Button>
                   <Button tone="info" surface="solid" label={busy === t.id ? "Making the PDF…" : "Download PDF"} disabled={busy !== null || typeof b !== "object"} onclick={() => downloadPDF(t)}>
@@ -217,8 +226,8 @@
         {/if}
 
         {#each book.pages as page, pi (pi)}
-          {#if page.day && (pi === 0 || book.pages[pi - 1]?.day !== page.day)}
-            <h3 class="day">{longDate(page.day)}</h3>
+          {#if page.sheet && (pi === 0 || book.pages[pi - 1]?.sheet !== page.sheet)}
+            <h3 class="day">{page.day && book.template.builder === "daily" ? longDate(page.day) : page.sheet_label}</h3>
           {/if}
           {#if page.title}<h4>{page.title}</h4>{/if}
           <div class="sheet" role="region" aria-label={`Sheet ${pi + 1}`}>
@@ -236,13 +245,17 @@
               </thead>
               <tbody>
                 {#each page.rows as row, ri (ri)}
-                  <tr>
-                    {#each row.cells as cell, ci (ci)}
-                      <td class={cell.flag ?? ""}>{cellText(cell)}</td>
-                    {/each}
-                  </tr>
+                  {#if row.heading}
+                    <tr><th class="rowhead" colspan={page.columns.length}>{row.cells[0]?.text ?? ""}</th></tr>
+                  {:else}
+                    <tr>
+                      {#each row.cells as cell, ci (ci)}
+                        <td class={cell.flag ?? ""}>{cellText(cell)}</td>
+                      {/each}
+                    </tr>
+                  {/if}
                 {:else}
-                  <tr><td colspan={page.columns.length} class="muted">{page.day ? "None." : "No records this month."}</td></tr>
+                  <tr><td colspan={page.columns.length} class="muted">{page.sheet ? "None." : "No records this month."}</td></tr>
                 {/each}
               </tbody>
             </Table>
@@ -360,6 +373,9 @@
   }
   .end {
     align-items: flex-end;
+  }
+  .rowhead {
+    background: var(--bg-inset);
   }
   .day {
     margin: var(--space-6) 0 0;

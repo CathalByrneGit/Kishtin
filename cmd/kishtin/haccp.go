@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -16,7 +17,8 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
 )
 
-var recordTypes = []string{"fridge", "freezer", "delivery", "cook", "reheat", "cooling", "hot_hold", "batch_label", "cleaning"}
+var recordTypes = []string{"fridge", "freezer", "delivery", "cook", "reheat", "cooling", "hot_hold", "batch_label", "cleaning",
+	"transport", "inspection", "training", "fitness"}
 
 func (c *cli) haccpCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "haccp", Short: "Log, list, verify and export HACCP records"}
@@ -37,6 +39,12 @@ type readingFlags struct {
 	shelfLife                                  int
 	action, corrects, reason                   string
 	dryRun                                     bool
+	// Inspection, training, fitness and transport.
+	answersFile, staff, trainer, provider string
+	onDate, trainingKind, fitnessReason   string
+	customer                              string
+	topics                                []string
+	fit, notFit, separated                bool
 }
 
 func (f *readingFlags) register(cmd *cobra.Command) {
@@ -71,6 +79,18 @@ func (f *readingFlags) register(cmd *cobra.Command) {
 	fl.StringVar(&f.corrects, "corrects", "", "ID of an earlier record this one corrects")
 	fl.StringVar(&f.reason, "reason", "", "why the earlier record was wrong (with --corrects)")
 	fl.BoolVar(&f.dryRun, "dry-run", false, "check the reading and show the result without saving")
+	fl.StringVar(&f.answersFile, "answers", "", "inspection: JSON file of answers [{\"section\",\"item\",\"ok\",\"action\"}]")
+	fl.StringVar(&f.staff, "staff", "", "training or fitness: the member of staff")
+	fl.StringVar(&f.trainingKind, "training-kind", "in_house", "training: in_house or further")
+	fl.StringSliceVar(&f.topics, "topic", nil, "training: a topic covered (repeat for more), or the course for further training")
+	fl.StringVar(&f.trainer, "trainer", "", "training: who gave in-house training")
+	fl.StringVar(&f.provider, "provider", "", "training: course provider for further training")
+	fl.StringVar(&f.onDate, "on-date", "", "training or fitness: the date it took place, if not today (2026-10-20)")
+	fl.StringVar(&f.fitnessReason, "fitness-reason", "", "fitness: existing, pre_employment or return_after_illness")
+	fl.BoolVar(&f.fit, "fit", false, "fitness: fit to work")
+	fl.BoolVar(&f.notFit, "not-fit", false, "fitness: not fit to work (needs --action)")
+	fl.StringVar(&f.customer, "customer", "", "transport: the customer")
+	fl.BoolVar(&f.separated, "separated", false, "transport: raw and ready-to-eat food kept apart (--separated or --separated=false)")
 }
 
 func str(cmd *cobra.Command, name, v string) *string {
@@ -143,6 +163,31 @@ func (f *readingFlags) build(cmd *cobra.Command, c *cli, typ string) (*client.Ne
 		r.Done = runtime.Ptr(true)
 	case f.notDone:
 		r.Done = runtime.Ptr(false)
+	}
+	switch {
+	case f.fit && f.notFit:
+		return nil, fmt.Errorf("use --fit or --not-fit, not both")
+	case f.fit:
+		r.Fit = runtime.Ptr(true)
+	case f.notFit:
+		r.Fit = runtime.Ptr(false)
+	}
+	if cmd.Flags().Changed("separated") {
+		r.Separated = runtime.Ptr(f.separated)
+	}
+	r.Staff, r.Trainer, r.Provider = str(cmd, "staff", f.staff), str(cmd, "trainer", f.trainer), str(cmd, "provider", f.provider)
+	r.OnDate, r.FitnessReason, r.Customer = str(cmd, "on-date", f.onDate), str(cmd, "fitness-reason", f.fitnessReason), str(cmd, "customer", f.customer)
+	if typ == "training" {
+		r.TrainingKind, r.Topics = &f.trainingKind, f.topics
+	}
+	if f.answersFile != "" {
+		b, err := os.ReadFile(f.answersFile)
+		if err != nil {
+			return nil, fmt.Errorf("read answers: %w", err)
+		}
+		if err := json.Unmarshal(b, &r.Answers); err != nil {
+			return nil, fmt.Errorf("read answers: %w", err)
+		}
 	}
 	if f.docket != "" && !f.dryRun {
 		sha, err := c.upload(cmd, f.docket)
@@ -266,7 +311,11 @@ func (c *cli) logCmd() *cobra.Command {
 			"      --packaging-ok --in-date --vehicle-ok --batch-code RB-1024 --use-by 2026-05-07 --docket docket.jpg\n" +
 			"  kishtin haccp log cooling --food \"Beef stew\" --cooked-at 14:00 --into-fridge-at 15:30\n" +
 			"  kishtin haccp log batch_label --product \"Grape soda syrup\" --made-on 2026-05-01 --shelf-life 5\n" +
-			"  kishtin haccp log cleaning --task \"Floors swept & mopped\" --done",
+			"  kishtin haccp log cleaning --task \"Floors swept & mopped\" --done\n" +
+			"  kishtin haccp log transport --product \"Chicken curry\" --customer \"Synthetic Takeaway\" --kind hot --temp 70 --separated\n" +
+			"  kishtin haccp log training --staff \"Liam Cook\" --topic Cooking --topic Storage --trainer \"Aoife Chef\"\n" +
+			"  kishtin haccp log inspection --answers answers.json        (head chef or manager)\n" +
+			"  kishtin haccp log fitness --staff \"Liam Cook\" --fitness-reason return_after_illness --fit   (manager)",
 		Args:      cobra.ExactArgs(1),
 		ValidArgs: recordTypes,
 		RunE: func(cmd *cobra.Command, args []string) error {

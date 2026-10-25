@@ -29,8 +29,11 @@ type Cell struct {
 // Row is one line of a booklet page.
 type Row struct {
 	// Date is the day the row is about, as YYYY-MM-DD.
-	Date  string `json:"date,omitempty"`
-	Cells []Cell `json:"cells"`
+	Date string `json:"date,omitempty"`
+	// Heading marks a section heading across the table, such as "Pest
+	// Control". Its text is the first cell.
+	Heading bool   `json:"heading,omitempty"`
+	Cells   []Cell `json:"cells"`
 }
 
 // Page is one page of a booklet: its columns and rows. Long pages run on
@@ -39,8 +42,14 @@ type Page struct {
 	// Day is set on a daily record: the day the page belongs to. Pages
 	// of the same day print on one sheet.
 	Day string `json:"day,omitempty"`
-	// Title is a section heading on a daily record, such as "Food
-	// Delivery Records".
+	// Sheet groups pages that print on one sheet (a day, an inspection, a
+	// member of staff). Empty means the page is a sheet of its own.
+	Sheet string `json:"sheet,omitempty"`
+	// SheetLabel is the line under the booklet's title on that sheet, such
+	// as "Date: 25/10/26" or "Name: Liam Cook".
+	SheetLabel string `json:"sheet_label,omitempty"`
+	// Title is a section heading, such as "Food Delivery Records" on a
+	// daily record.
 	Title   string   `json:"title,omitempty"`
 	Columns []Column `json:"columns"`
 	Rows    []Row    `json:"rows"`
@@ -105,6 +114,9 @@ type Input struct {
 	// Sections are the booklets a daily record is made of, as the
 	// restaurant uses them, in the template's order.
 	Sections []Template
+	// Roles are staff members' roles by name, for a training record's
+	// "Position".
+	Roles map[string]string
 }
 
 // Build fills in a record book for a month.
@@ -132,7 +144,11 @@ func Build(in Input) (Book, error) {
 	recs := slices.Clone(in.Records)
 	slices.SortFunc(recs, func(a, b haccp.Record) int { return int(a.Seq - b.Seq) })
 	for _, e := range haccp.ApplyCorrections(recs) {
-		if !e.At.Before(b.from) && e.At.Before(b.to) {
+		if !e.At.Before(b.to) {
+			continue
+		}
+		b.upTo = append(b.upTo, e)
+		if !e.At.Before(b.from) {
 			b.recs = append(b.recs, e)
 		}
 	}
@@ -145,6 +161,14 @@ func Build(in Input) (Book, error) {
 		b.hotHold()
 	case BuilderDelivery:
 		b.deliveries()
+	case BuilderTransport:
+		b.transport()
+	case BuilderFitness:
+		b.fitness()
+	case BuilderChecklist:
+		b.checklist()
+	case BuilderTraining:
+		b.training()
 	case BuilderDaily:
 		if err := b.daily(); err != nil {
 			return Book{}, err
@@ -158,8 +182,11 @@ type builder struct {
 	in       Input
 	from, to time.Time
 	recs     []haccp.Effective
-	book     Book
-	seen     map[string]bool
+	// upTo are every record before the end of the month, for cumulative
+	// booklets.
+	upTo []haccp.Effective
+	book Book
+	seen map[string]bool
 }
 
 // use counts a record as shown in the book.
@@ -686,7 +713,7 @@ func (b *builder) daily() error {
 						cols = append(cols, c)
 					}
 				}
-				out := Page{Day: day, Title: s.tpl.Title, Columns: cols, Rows: []Row{}, Notes: s.tpl.Notes}
+				out := Page{Day: day, Sheet: day, SheetLabel: "Date: " + shortDay(day), Title: s.tpl.Title, Columns: cols, Rows: []Row{}, Notes: s.tpl.Notes}
 				for _, r := range pg.Rows {
 					if r.Date != day {
 						continue
@@ -702,4 +729,225 @@ func (b *builder) daily() error {
 		}
 	}
 	return nil
+}
+
+// onDate is the day a training or fitness record is about: its on_date, or
+// the day it was logged.
+func (b *builder) onDate(e haccp.Effective) string {
+	if e.Reading.OnDate != "" {
+		return e.Reading.OnDate
+	}
+	return e.At.In(b.in.Loc).Format(haccp.DateLayout)
+}
+
+func yesNo(p *bool) Cell {
+	switch {
+	case p == nil:
+		return Cell{}
+	case *p:
+		return Cell{Text: "Yes"}
+	}
+	return Cell{Text: "No", Flag: FlagFail}
+}
+
+func (b *builder) transport() {
+	var rows []*logRow
+	for _, e := range b.recs {
+		if e.Type != haccp.RecordTransport {
+			continue
+		}
+		rd := e.Reading
+		r := b.newRow(e.At, rd.Product)
+		bu := rd.BatchCode
+		if rd.UseBy != "" {
+			if bu != "" {
+				bu += " / "
+			}
+			bu += shortDay(rd.UseBy)
+		}
+		r.values["batch_use_by"] = Cell{Text: bu}
+		r.values["customer"] = Cell{Text: rd.Customer}
+		r.values["separated"] = yesNo(rd.Separated)
+		t := Cell{Text: temp(rd.TempC)}
+		if rd.TempC == nil {
+			t.Text = "ambient"
+		}
+		if f := flag(e.Outcome); f != "" && strings.Contains(e.OutcomeReason, "°C is") {
+			t.Flag = f
+		}
+		r.values["temp"] = t
+		b.add(r, e, "")
+		rows = append(rows, r)
+	}
+	b.emit(rows)
+}
+
+var fitnessReasons = map[string]string{
+	haccp.FitnessExisting:      "Existing food handler",
+	haccp.FitnessPreEmployment: "Pre-employment",
+	haccp.FitnessReturn:        "Return to work after illness",
+}
+
+func (b *builder) fitness() {
+	var rows []*logRow
+	for _, e := range b.recs {
+		if e.Type != haccp.RecordFitness {
+			continue
+		}
+		rd := e.Reading
+		day := b.onDate(e)
+		r := b.newRow(e.At, "")
+		r.values["date"] = Cell{Text: shortDay(day)}
+		r.values["staff"] = Cell{Text: rd.Staff}
+		r.values["reason"] = Cell{Text: fitnessReasons[rd.FitnessReason]}
+		fit := Cell{Text: "Fit"}
+		if rd.Fit != nil && !*rd.Fit {
+			fit = Cell{Text: "Not fit", Flag: FlagFail}
+		}
+		r.values["fit"] = fit
+		r.values["action"] = Cell{Text: e.CorrectiveAction}
+		r.values["manager"] = Cell{Text: e.LoggedByName}
+		b.add(r, e, "")
+		rows = append(rows, r)
+	}
+	b.emit(rows)
+}
+
+// checklist prints each inspection as it was answered: the questions are
+// stored in the record, so changing the checklist later does not change
+// past inspections.
+func (b *builder) checklist() {
+	t := b.in.Template
+	for _, e := range b.recs {
+		if e.Type != haccp.RecordInspection {
+			continue
+		}
+		b.use(e)
+		day := e.At.In(b.in.Loc).Format(haccp.DateLayout)
+		page := Page{
+			Day: day, Sheet: e.ID,
+			SheetLabel: fmt.Sprintf("Date: %s · checked by %s · Kishtin ref #%d", shortDay(day), e.LoggedByName, e.Seq),
+			Columns:    t.Columns, Rows: []Row{},
+		}
+		section := ""
+		for _, a := range e.Reading.Answers {
+			if a.Section != "" && a.Section != section {
+				section = a.Section
+				page.Rows = append(page.Rows, Row{Date: day, Heading: true, Cells: []Cell{{Text: section}}})
+			}
+			values := map[string]Cell{"item": {Text: a.Item}, "action": {Text: a.Action}}
+			if a.OK != nil && *a.OK {
+				values["yes"] = Cell{Text: "Yes"}
+			}
+			if a.OK != nil && !*a.OK {
+				values["no"] = Cell{Text: "No", Flag: FlagFail}
+			}
+			row := Row{Date: day}
+			for _, c := range t.Columns {
+				row.Cells = append(row.Cells, values[c.Field])
+			}
+			page.Rows = append(page.Rows, row)
+		}
+		if e.Reading.Notes != "" {
+			page.Notes = []string{e.Reading.Notes}
+		}
+		b.book.Pages = append(b.book.Pages, page)
+	}
+}
+
+// training prints a sheet per member of staff with every training record
+// up to the end of the month: the template's topics with the dates and
+// trainers, then further training.
+func (b *builder) training() {
+	t := b.in.Template
+	type person struct {
+		name    string
+		inHouse map[string][]haccp.Effective
+		other   []string
+		further []haccp.Effective
+	}
+	var people []*person
+	byName := map[string]*person{}
+	listed := map[string]bool{}
+	for _, sec := range t.Checklist {
+		for _, it := range sec.Items {
+			listed[strings.ToLower(it)] = true
+		}
+	}
+	for _, e := range b.upTo {
+		if e.Type != haccp.RecordTraining {
+			continue
+		}
+		key := strings.ToLower(e.Reading.Staff)
+		p := byName[key]
+		if p == nil {
+			p = &person{name: e.Reading.Staff, inHouse: map[string][]haccp.Effective{}}
+			byName[key] = p
+			people = append(people, p)
+		}
+		b.use(e)
+		if e.Reading.TrainingKind == haccp.TrainingFurther {
+			p.further = append(p.further, e)
+			continue
+		}
+		for _, topic := range e.Reading.Topics {
+			k := strings.ToLower(topic)
+			if !listed[k] && len(p.inHouse[k]) == 0 {
+				p.other = append(p.other, topic)
+			}
+			p.inHouse[k] = append(p.inHouse[k], e)
+		}
+	}
+	slices.SortFunc(people, func(x, y *person) int { return strings.Compare(strings.ToLower(x.name), strings.ToLower(y.name)) })
+	for _, p := range people {
+		label := "Name: " + p.name
+		if role := b.in.Roles[p.name]; role != "" {
+			label += " · Position: " + role
+		}
+		topicRow := func(topic string) Row {
+			var dates, trainers []string
+			for _, e := range p.inHouse[strings.ToLower(topic)] {
+				dates = addUnique(dates, shortDay(b.onDate(e)))
+				trainers = addUnique(trainers, e.Reading.Trainer)
+			}
+			values := map[string]Cell{"topic": {Text: topic}, "dates": {Text: strings.Join(dates, ", ")}, "trainer": {Text: strings.Join(trainers, ", ")}}
+			row := Row{}
+			for _, c := range t.Columns {
+				row.Cells = append(row.Cells, values[c.Field])
+			}
+			return row
+		}
+		page := Page{Sheet: "staff:" + strings.ToLower(p.name), SheetLabel: label, Title: "In-house training", Columns: t.Columns, Rows: []Row{}}
+		for _, sec := range t.Checklist {
+			if sec.Title != "" {
+				page.Rows = append(page.Rows, Row{Heading: true, Cells: []Cell{{Text: sec.Title}}})
+			}
+			for _, it := range sec.Items {
+				page.Rows = append(page.Rows, topicRow(it))
+			}
+		}
+		if len(p.other) > 0 {
+			page.Rows = append(page.Rows, Row{Heading: true, Cells: []Cell{{Text: "Other"}}})
+			for _, it := range p.other {
+				page.Rows = append(page.Rows, topicRow(it))
+			}
+		}
+		b.book.Pages = append(b.book.Pages, page)
+		if len(t.FurtherColumns) == 0 {
+			continue
+		}
+		further := Page{Sheet: page.Sheet, SheetLabel: label, Title: "Further training", Columns: t.FurtherColumns, Rows: []Row{}}
+		for _, e := range p.further {
+			values := map[string]Cell{
+				"nature": {Text: strings.Join(e.Reading.Topics, ", ")}, "provider": {Text: e.Reading.Provider},
+				"completed": {Text: shortDay(b.onDate(e))},
+			}
+			row := Row{Date: b.onDate(e)}
+			for _, c := range t.FurtherColumns {
+				row.Cells = append(row.Cells, values[c.Field])
+			}
+			further.Rows = append(further.Rows, row)
+		}
+		b.book.Pages = append(b.book.Pages, further)
+	}
 }

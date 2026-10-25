@@ -10,8 +10,8 @@ A bundle is one country's set of record books. Kishtin ships two:
 
 | Bundle | For | Booklets |
 |---|---|---|
-| FSAI Safe Catering record books | Ireland (the default) | SC1 to SC9. Kishtin can fill in SC1, SC2, SC3, SC4 and SC8. |
-| Kishtin general record books | Any country | T1 fridges and freezers, T2 cooking, cooling and reheating, T3 hot holding, T4 deliveries and T5 a daily record of all four, in plain English. Use these where no bundle for your country exists, and change titles and columns to match your own booklets. |
+| FSAI Safe Catering record books | Ireland (the default) | SC1 to SC9. Kishtin can fill in all nine. |
+| Kishtin general record books | Any country | T1 fridges and freezers, T2 cooking, cooling and reheating, T3 hot holding, T4 deliveries, T5 a daily record of those four, T6 hygiene inspection, T7 staff training, T8 fitness to work and T9 deliveries to customers, in plain English. Use these where no bundle for your country exists, and change titles and columns to match your own booklets. |
 
 Bundles for more countries are added to Kishtin as kitchens ask for them. A bundle is a data file in `internal/books/bundles/`, so adding one or updating it for a new edition needs no code, as long as its booklets use the kinds of row Kishtin already has (below).
 
@@ -26,6 +26,7 @@ Bundles for more countries are added to Kishtin as kitchens ask for them. A bund
   - Your own notes, printed under the booklet's notes.
   - Fridges and freezers per sheet.
   - Whether a manager check line prints.
+  - The questions of an inspection checklist, or the topics of a training record: one per line, with lines starting `#` as section headings.
 - **Upload your copy**: upload the official PDF you use. Kishtin keeps it with your records and says whether it is the edition the bundle was made from (it compares the file's SHA-256). If it is not, compare its columns with the booklet and change them here.
 - **Add a booklet**: for a booklet your country uses that is not in the bundle. Choose what it records (a fridge and freezer grid, a cooking log or a hot holding log), start from another booklet's columns, then change them.
 
@@ -41,6 +42,10 @@ Every change is shown before it is saved, needs a reason, and is saved as a new 
 | Cooking, cooling and reheating | A row per cooking (with its cooling) and per reheat | date, food, time cooking finished, core temperature, time into the fridge, reheat temperature, who logged each, comments, record number |
 | Hot holding | A row per food per day, up to three checks | date, food, 1st/2nd/3rd check, comments, who logged, record number |
 | Deliveries | A row per delivery | date, food item, batch code, supplier, use-by date, temperature (or "ambient"), delivery vehicle check, chilled/frozen/ambient, comments, who logged, record number |
+| Deliveries to customers | A row per delivery | date, food item, batch code and use-by, customer, raw and ready-to-eat kept apart, temperature (or "ambient"), comments, who logged, record number |
+| Inspection checklist | A sheet per inspection, with the booklet's questions in sections | question, yes, no, details of action taken |
+| Training record | A sheet per member of staff, with the booklet's topics in sections, and a further training table | topic, dates, trainer, signature (blank); further training: what, provider, date completed, signature (blank) |
+| Fitness to work | A row per assessment | date, employee, reason, fit to work, action taken, manager, record number |
 | Daily record | A sheet per day, with a section for each of several other booklets in the bundle | none of its own: each section prints with that booklet's columns, as the restaurant set them, without the date column |
 
 A booklet that needs another kind of row, such as a checklist or a training record, needs new code.
@@ -54,7 +59,10 @@ A booklet that needs another kind of row, such as a checklist or a training reco
 | SC4 Hot Hold/Display Records | Yes | A row per food per day, with up to three checks. A fourth check starts a new row. |
 | SC1 Food Delivery Records | Yes | A row per delivery. The batch code, use-by date and vehicle check come from the delivery record; any not recorded print blank. |
 | SC8 All-in-One Daily Record | Yes | A sheet per day, from the first day records were kept up to today, with SC1, SC2, SC3 and SC4 sections for that day. The manager check line shows the sign-offs that cover that day. |
-| SC5, SC6, SC7, SC9 | No | Kishtin does not record what they ask for yet. The screen says what is missing for each. |
+| SC5 Hygiene Inspection Checklist | Yes | A sheet per inspection, with each question answered Yes, No or not checked, and the action taken for each No. The questions are the FSAI checklist; change them in Setup › HACCP records. Past inspections print as they were answered. |
+| SC6 Hygiene Training Record | Yes | A sheet per member of staff with every training record up to the end of the month: the FSAI topics with dates and trainers, then further training (courses). The employee signature column is left blank to sign by hand. |
+| SC7 Fitness to Work Assessment | Yes, outcome only | A row per assessment: date, employee, reason, fit or not, action taken, manager. Kishtin does not record the health questions or the employee's declaration: keep the signed form on paper. Only a manager logged in with a password can log, see or print these. |
+| SC9 Transport and Delivery Records | Yes | A row per delivery to a customer: food, batch code and use-by date, customer, whether raw and ready-to-eat food were kept apart, and the temperature on arrival. |
 
 Columns Kishtin does not record print blank, and the booklet says which ones they are:
 
@@ -69,6 +77,15 @@ Columns Kishtin does not record print blank, and the booklet says which ones the
 - **missed** marks an SC2 check that was due and has no reading. Kishtin never fills a gap in. A check counts as missed once the next check has started (or the day has ended), and only for fridges and freezers on the managed list, from the first record ever logged. Kishtin does not know which days you were closed, so days you were closed show as missed.
 - **Kishtin ref** (SC3, SC4) is the record number. The footer gives the record numbers used, the hash chain result and the chain head. Run `kishtin haccp verify` to check the records.
 - The **Manager/Supervisor check** line lists the sign-offs that cover the month, and the days not signed off yet. With no sign-offs, it is left blank to sign by hand.
+
+## Logging the new records
+
+- **Inspection** (HACCP › Inspection, head chef or manager): walk the kitchen and answer each question Yes, No or leave it not checked. A No needs the action taken. An inspection with any No is a fail, and its actions are its corrective action.
+- **Training** (Log a check › Training, head chef or manager): who, in-house topics and trainer, or a course and its provider, and the date.
+- **Fitness to work** (Log a check › Fitness to work, manager with a password): who, the date, the reason, fit or not, and the action taken if not. Nothing else is kept: no symptoms, answers or notes. These records are hidden from everyone except managers with a password, including in lists, exports and record books.
+- **To a customer** (Log a check › To a customer, anyone): food, customer, chilled, frozen, hot or ambient, the temperature on arrival, whether raw and ready-to-eat food were kept apart, and optionally batch code and use-by date. Chilled and frozen use the delivery limits; hot uses the hot holding limit. Not kept apart is a fail.
+
+From the command line: `kishtin haccp log inspection --answers answers.json`, `kishtin haccp log training`, `kishtin haccp log fitness`, `kishtin haccp log transport`. See `kishtin haccp log --help`.
 
 ## Manager sign-off
 

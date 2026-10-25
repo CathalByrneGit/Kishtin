@@ -1612,6 +1612,12 @@ export interface components {
         AddItemsBody: {
             items: components["schemas"]["NewItem"][];
         };
+        Answer: {
+            action?: string;
+            item: string;
+            ok?: boolean;
+            section?: string;
+        };
         AvailabilityBody: {
             available: boolean;
         };
@@ -1658,6 +1664,7 @@ export interface components {
             unsigned: components["schemas"]["Span"][];
         };
         BookSetting: {
+            checklist?: components["schemas"]["ChecklistSection"][];
             columns?: components["schemas"]["Column"][];
             copy_file?: string;
             manager_check?: boolean;
@@ -1734,6 +1741,10 @@ export interface components {
         CheckTime: {
             from: string;
             label: string;
+        };
+        ChecklistSection: {
+            items: string[];
+            title?: string;
         };
         CleaningTask: {
             area?: string;
@@ -2289,6 +2300,8 @@ export interface components {
             day?: string;
             notes?: string[];
             rows: components["schemas"]["Row"][];
+            sheet?: string;
+            sheet_label?: string;
             title?: string;
         };
         Plan: {
@@ -2312,14 +2325,19 @@ export interface components {
             state: string;
         };
         Reading: {
+            answers?: components["schemas"]["Answer"][];
             area?: string;
             batch_code?: string;
+            checklist?: string;
             /** Format: date-time */
             cooked_at?: string;
+            customer?: string;
             delivery_kind?: string;
             dish?: string;
             docket_file?: string;
             done?: boolean;
+            fit?: boolean;
+            fitness_reason?: string;
             food?: string;
             food_category?: string;
             /** Format: int64 */
@@ -2329,20 +2347,27 @@ export interface components {
             into_fridge_at?: string;
             made_on?: string;
             notes?: string;
+            on_date?: string;
             packaging_ok?: boolean;
             period_from?: string;
             period_to?: string;
             product?: string;
+            provider?: string;
             quantity?: string;
             review?: components["schemas"]["Review"];
+            separated?: boolean;
             /** Format: int64 */
             shelf_life_days?: number;
+            staff?: string;
             supplier?: string;
             task?: string;
             /** Format: double */
             temp_at_cutoff_c?: number;
             /** Format: double */
             temp_c?: number;
+            topics?: string[];
+            trainer?: string;
+            training_kind?: string;
             unit?: string;
             use_by?: string;
             vehicle_ok?: boolean;
@@ -2410,6 +2435,7 @@ export interface components {
         Row: {
             cells: components["schemas"]["Cell"][];
             date?: string;
+            heading?: boolean;
         };
         Rules: {
             borderline_needs_action: boolean;
@@ -2684,8 +2710,10 @@ export interface components {
         };
         Template: {
             builder?: string;
+            checklist?: components["schemas"]["ChecklistSection"][];
             code: string;
             columns?: components["schemas"]["Column"][];
+            further_columns?: components["schemas"]["Column"][];
             id: string;
             manager_check?: boolean;
             missing?: string;

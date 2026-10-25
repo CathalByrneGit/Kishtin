@@ -22,6 +22,12 @@ const (
 	// ActSignOff signs off the HACCP records for a period: the manager or
 	// supervisor check of a paper record book.
 	ActSignOff Action = "haccp.sign_off"
+	// ActInspect logs hygiene inspections and staff training: the manager's
+	// or supervisor's records.
+	ActInspect Action = "haccp.inspect"
+	// ActFitness logs and sees fitness to work assessments, which are
+	// health information.
+	ActFitness Action = "haccp.fitness"
 
 	// ActViewKitchen sees the menu, orders, the pass and station queues.
 	ActViewKitchen Action = "kitchen.view"
@@ -57,6 +63,8 @@ var policy = map[Action]rule{
 	ActBackup:         {roles: []Role{RoleManager}, password: true},
 	ActManageSettings: {roles: []Role{RoleManager}, password: true},
 	ActSignOff:        {roles: []Role{RoleManager}, password: true},
+	ActInspect:        {roles: []Role{RoleHeadChef, RoleManager}},
+	ActFitness:        {roles: []Role{RoleManager}, password: true},
 
 	ActViewKitchen:     {roles: everyone},
 	ActManageMenu:      {roles: []Role{RoleManager}, password: true},

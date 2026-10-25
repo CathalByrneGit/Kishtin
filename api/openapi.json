@@ -147,6 +147,27 @@
         ],
         "type": "object"
       },
+      "Answer": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "item": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "section": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item"
+        ],
+        "type": "object"
+      },
       "AvailabilityBody": {
         "additionalProperties": false,
         "properties": {
@@ -327,6 +348,12 @@
       "BookSetting": {
         "additionalProperties": false,
         "properties": {
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistSection"
+            },
+            "type": "array"
+          },
           "columns": {
             "items": {
               "$ref": "#/components/schemas/Column"
@@ -619,6 +646,24 @@
         "required": [
           "label",
           "from"
+        ],
+        "type": "object"
+      },
+      "ChecklistSection": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
         ],
         "type": "object"
       },
@@ -2564,6 +2609,12 @@
             },
             "type": "array"
           },
+          "sheet": {
+            "type": "string"
+          },
+          "sheet_label": {
+            "type": "string"
+          },
           "title": {
             "type": "string"
           }
@@ -2661,14 +2712,26 @@
       "Reading": {
         "additionalProperties": false,
         "properties": {
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/Answer"
+            },
+            "type": "array"
+          },
           "area": {
             "type": "string"
           },
           "batch_code": {
             "type": "string"
           },
+          "checklist": {
+            "type": "string"
+          },
           "cooked_at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "customer": {
             "type": "string"
           },
           "delivery_kind": {
@@ -2682,6 +2745,12 @@
           },
           "done": {
             "type": "boolean"
+          },
+          "fit": {
+            "type": "boolean"
+          },
+          "fitness_reason": {
+            "type": "string"
           },
           "food": {
             "type": "string"
@@ -2706,6 +2775,9 @@
           "notes": {
             "type": "string"
           },
+          "on_date": {
+            "type": "string"
+          },
           "packaging_ok": {
             "type": "boolean"
           },
@@ -2718,15 +2790,24 @@
           "product": {
             "type": "string"
           },
+          "provider": {
+            "type": "string"
+          },
           "quantity": {
             "type": "string"
           },
           "review": {
             "$ref": "#/components/schemas/Review"
           },
+          "separated": {
+            "type": "boolean"
+          },
           "shelf_life_days": {
             "format": "int64",
             "type": "integer"
+          },
+          "staff": {
+            "type": "string"
           },
           "supplier": {
             "type": "string"
@@ -2741,6 +2822,18 @@
           "temp_c": {
             "format": "double",
             "type": "number"
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "trainer": {
+            "type": "string"
+          },
+          "training_kind": {
+            "type": "string"
           },
           "unit": {
             "type": "string"
@@ -2996,6 +3089,9 @@
           },
           "date": {
             "type": "string"
+          },
+          "heading": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -4074,10 +4170,22 @@
           "builder": {
             "type": "string"
           },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistSection"
+            },
+            "type": "array"
+          },
           "code": {
             "type": "string"
           },
           "columns": {
+            "items": {
+              "$ref": "#/components/schemas/Column"
+            },
+            "type": "array"
+          },
+          "further_columns": {
             "items": {
               "$ref": "#/components/schemas/Column"
             },

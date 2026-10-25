@@ -193,7 +193,7 @@ Dependencies point inward. `scheduler` and the rules in `haccp` must not import 
 
 ### HACCP (`internal/haccp`)
 
-Record types: fridge/freezer temperature, delivery, cook/reheat, cooling, hot holding, batch label, cleaning task. Each record stores who logged it, when, the reading, the pass/fail result, and a corrective action when it failed.
+Record types: fridge/freezer temperature, delivery, cook/reheat, cooling, hot holding, batch label, cleaning task, hygiene inspection, staff training, fitness to work, delivery to a customer, and a manager's sign-off. Each record stores who logged it, when, the reading, the pass/fail result, and a corrective action when it failed.
 
 Default critical limits, from FSAI Safe Catering guidance. Keep these defaults as named constants in one file, each with a comment citing its source. They are the starting point; the restaurant can customise them (see Customisable limits below):
 
@@ -418,7 +418,7 @@ make test-duckdb # DuckDB backend tests (CGO build)
 - Never handle raw card data.
 - Never send audio, transcripts or kitchen data to a cloud service. Speech and AI run locally.
 - Any new action must work by touch as well as by voice.
-- Keep personal data to a minimum (staff names and PINs only) to stay within GDPR obligations.
+- Keep personal data to a minimum (staff names and PINs only) to stay within GDPR obligations. Fitness to work records keep only the outcome (who, when, why, fit or not, action), never symptoms or answers, and only managers with a password can log or see them.
 - Prefer the standard library, then the libraries in the Go libraries table. Ask before adding anything else, and explain what it replaces.
 - Write a migration for every schema change, for every supported backend in the same change. Never edit a migration that has already shipped.
 - The CLI is a client of the server's HTTP API; it never opens the database directly while the server is running. The API always requires a key, binds to loopback by default, and needs a key plus TLS or a trusted network to listen more widely. (Pattern taken from docbank.)
