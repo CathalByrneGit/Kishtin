@@ -25,7 +25,7 @@ Choose what a device shows in **Settings → This device → This device shows**
 
 - The choice is kept in that device's browser only. A device with a phone-sized screen starts on the phone layout; anything else starts on the desktop.
 - Kitchen screens have no sidebar: a top bar with what the screen is, the restaurant, a large clock (pass and station), the connection, who is logged in, and the menu. The menu switches staff, changes the screen, and sets the theme and high contrast.
-- Under the top bar, **Hold to talk** runs voice commands, and the keyboard button opens a field to type one. The reply shows below with what was heard, and a question shows its answers and **Confirm** or **Cancel** as buttons. Holding the space bar works like holding the button. See [voice.md](voice.md).
+- Under the top bar, **Hold to talk** runs voice commands, and the keyboard button opens a field to type one. The reply shows below with what was heard, and a question shows its answers and **Confirm** or **Cancel** as buttons. Holding the space bar works like holding the button. **Hands-free: listen for "Kishtin"** turns on hands-free listening on that screen, with a "Listening for Kishtin" chip while it is on. See [voice.md](voice.md).
 - Every button, field and tab on a kitchen screen is at least 56 px tall, and type is larger, so they work with wet or gloved hands and read at arm's length.
 - The station screen's columns wrap on a portrait tablet: Start now and In progress side by side, Coming up below.
 - Kitchen screens keep the screen awake where the browser allows it, show the last known state with a "Not connected" notice if the server drops, and update after every change on any device.

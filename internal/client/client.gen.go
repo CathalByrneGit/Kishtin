@@ -5252,11 +5252,16 @@ func (c *Client) VoiceStatus(ctx context.Context, reqEditors ...runtime.RequestE
 // VoiceAudio Run a spoken command
 func (c *Client) VoiceAudio(ctx context.Context, options *VoiceAudioRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceAudioResponse, error) {
 	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"hands_free": {Style: "form", Explode: &[]bool{false}[0]},
+	}
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL:  c.apiClient.GetBaseURL() + "/voice/audio",
-		Method:      "POST",
-		Options:     options,
-		ContentType: "audio/webm",
+		RequestURL:    c.apiClient.GetBaseURL() + "/voice/audio",
+		Method:        "POST",
+		Options:       options,
+		ContentType:   "audio/webm",
+		QueryEncoding: queryEncoding,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -7812,6 +7817,7 @@ func (o *UpdateUserRequestOptions) GetHeader() (map[string]string, error) {
 
 // VoiceAudioRequestOptions is the options needed to make a request to VoiceAudio.
 type VoiceAudioRequestOptions struct {
+	Query  *VoiceAudioQuery
 	Body   *VoiceAudioBody
 	Header *VoiceAudioHeaders
 }
@@ -7820,6 +7826,14 @@ type VoiceAudioRequestOptions struct {
 // Use it if fields validation was not run.
 func (o *VoiceAudioRequestOptions) Validate() error {
 	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
 
 	if o.Body != nil {
 		if v, ok := any(o.Body).(runtime.Validator); ok {
@@ -7850,7 +7864,7 @@ func (o *VoiceAudioRequestOptions) GetPathParams() (map[string]any, error) {
 
 // GetQuery returns the query params as a map.
 func (o *VoiceAudioRequestOptions) GetQuery() (map[string]any, error) {
-	return nil, nil
+	return runtime.AsMap[any](o.Query)
 }
 
 // GetBody returns the payload in any type that can be marshalled to JSON by the client.
@@ -13482,6 +13496,11 @@ type ListOrdersQuery struct {
 	Date *string `json:"date,omitempty"`
 }
 
+type VoiceAudioQuery struct {
+	// HandsFree Hands-free: the phrase must start with a wake word, or it is ignored and not logged.
+	HandsFree *bool `json:"hands_free,omitempty"`
+}
+
 type VoiceLogQuery struct {
 	// Limit How many, newest first (default 100).
 	Limit *int64 `json:"limit,omitempty" validate:"omitempty,gte=0,lte=500"`
@@ -17524,9 +17543,14 @@ func (v VoiceReply) Validate() error {
 }
 
 type VoiceStatus struct {
-	Listen  bool    `json:"listen"`
-	Speak   bool    `json:"speak"`
-	Waiting *string `json:"waiting,omitempty"`
+	Listen    bool     `json:"listen"`
+	Speak     bool     `json:"speak"`
+	Waiting   *string  `json:"waiting,omitempty"`
+	WakeWords []string `json:"wake_words" validate:"required"`
+}
+
+func (v VoiceStatus) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(v))
 }
 
 var typesValidator *validator.Validate

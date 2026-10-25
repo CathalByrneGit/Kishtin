@@ -17,6 +17,7 @@ type voiceCommandBody struct {
 
 type voiceAudioIn struct {
 	ContentType string `header:"Content-Type" doc:"The recording's type, such as audio/webm or audio/wav."`
+	HandsFree   bool   `query:"hands_free" doc:"Hands-free: the phrase must start with a wake word, or it is ignored and not logged."`
 	RawBody     []byte `contentType:"audio/webm"`
 }
 
@@ -54,7 +55,7 @@ func (s *Server) voiceRoutes() {
 		Description:  "Send push-to-talk audio as the request body. The server transcribes it with the local speech-to-text sidecar (no audio leaves the building), then runs it like a typed command. The audio is not stored; the transcript is logged.",
 		MaxBodyBytes: 4 << 20,
 	}, wrap(s, func(ctx context.Context, in *voiceAudioIn) (*out[service.VoiceReply], error) {
-		return reply(s.svc.VoiceAudio(ctx, principal(ctx), in.RawBody, in.ContentType))
+		return reply(s.svc.VoiceAudio(ctx, principal(ctx), in.RawBody, in.ContentType, in.HandsFree))
 	}))
 	huma.Register(s.api, huma.Operation{
 		OperationID: "voice-speak", Method: http.MethodPost, Path: "/voice/speak", Tags: tags,

@@ -53,6 +53,8 @@ type VoiceStatus struct {
 	Speak bool `json:"speak"`
 	// Waiting is the question waiting for this person's answer, if any.
 	Waiting string `json:"waiting,omitempty"`
+	// WakeWords start a hands-free command, such as "kishtin".
+	WakeWords []string `json:"wake_words"`
 }
 
 type pendingKind int
@@ -81,6 +83,32 @@ type pending struct {
 type voiceState struct {
 	mu      sync.Mutex
 	pending map[string]pending
+	// awake is until when a hands-free command needs no wake word, after
+	// the wake word was said on its own.
+	awake map[string]time.Time
+}
+
+// wakeWindow is how long after a bare wake word the next phrase is taken
+// as the command.
+const wakeWindow = 8 * time.Second
+
+// setAwake opens the follow-up window after a bare wake word.
+func (v *voiceState) setAwake(user string, until time.Time) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.awake == nil {
+		v.awake = map[string]time.Time{}
+	}
+	v.awake[user] = until
+}
+
+// takeAwake reports whether the follow-up window is open, and closes it.
+func (v *voiceState) takeAwake(user string, now time.Time) bool {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	until, ok := v.awake[user]
+	delete(v.awake, user)
+	return ok && now.Before(until)
 }
 
 func (v *voiceState) take(user string, now time.Time) (pending, bool) {
@@ -113,7 +141,7 @@ func (s *Service) VoiceStatus(_ context.Context, p *auth.Principal) (VoiceStatus
 	if err := allow(p, auth.ActViewKitchen); err != nil {
 		return VoiceStatus{}, err
 	}
-	st := VoiceStatus{Listen: s.speech.CanListen(), Speak: s.speech.CanSpeak()}
+	st := VoiceStatus{Listen: s.speech.CanListen(), Speak: s.speech.CanSpeak(), WakeWords: s.wakeWords}
 	if pd, ok := s.voice.peek(p.User.ID, s.clk.Now()); ok {
 		st.Waiting = pd.ask
 	}
@@ -122,7 +150,13 @@ func (s *Service) VoiceStatus(_ context.Context, p *auth.Principal) (VoiceStatus
 
 // VoiceAudio transcribes push-to-talk audio with the local speech-to-text
 // sidecar, then runs the command. The audio is not stored.
-func (s *Service) VoiceAudio(ctx context.Context, p *auth.Principal, audio []byte, contentType string) (VoiceReply, error) {
+//
+// In hands-free mode the phrase must start with a wake word ("Kishtin,
+// fire table 4"). Anything else is ignored: not acted on, not logged and
+// not sent back. The wake word on its own opens a short window for the
+// command. Answers to questions need the wake word too, so a "confirm"
+// said across the kitchen does nothing.
+func (s *Service) VoiceAudio(ctx context.Context, p *auth.Principal, audio []byte, contentType string, handsFree bool) (VoiceReply, error) {
 	if err := allow(p, auth.ActViewKitchen); err != nil {
 		return VoiceReply{}, err
 	}
@@ -132,6 +166,9 @@ func (s *Service) VoiceAudio(ctx context.Context, p *auth.Principal, audio []byt
 	if len(audio) == 0 {
 		return VoiceReply{}, newErr(KindInvalid, "No audio was recorded. Hold the button while you speak.")
 	}
+	if handsFree && len(s.wakeWords) == 0 {
+		return VoiceReply{}, newErr(KindConflict, "Hands-free listening has no wake word set. Set speech.wake_words in kishtin.toml.")
+	}
 	if len(audio) > maxAudioBytes {
 		return VoiceReply{}, newErr(KindInvalid, "The recording is too long. Keep commands short, under a minute.")
 	}
@@ -139,9 +176,27 @@ func (s *Service) VoiceAudio(ctx context.Context, p *auth.Principal, audio []byt
 	if err != nil {
 		return VoiceReply{}, err
 	}
-	text, err := s.speech.Transcribe(ctx, audio, contentType, prompt(v))
+	bias := prompt(v)
+	if handsFree {
+		bias = "Wake word: " + strings.Join(s.wakeWords, ", ") + ". " + bias
+	}
+	text, err := s.speech.Transcribe(ctx, audio, contentType, bias)
 	if err != nil {
 		return VoiceReply{}, newErr(KindConflict, "Could not reach speech-to-text: %s. Type the command instead.", err)
+	}
+	if handsFree {
+		now := s.clk.Now()
+		rest, woke := voice.StripWake(text, s.wakeWords)
+		switch {
+		case woke && strings.TrimSpace(rest) == "":
+			s.voice.setAwake(p.User.ID, now.Add(wakeWindow))
+			return VoiceReply{Heard: text, Say: "Yes?", Outcome: voice.OutcomeAsked}, nil
+		case woke:
+			text = rest
+		case s.voice.takeAwake(p.User.ID, now):
+		default:
+			return VoiceReply{Outcome: voice.OutcomeIgnored}, nil
+		}
 	}
 	return s.voiceCommand(ctx, p, text, voice.SourceSpoken, v)
 }

@@ -1,16 +1,19 @@
 <script lang="ts">
-  import { Button, Chip, IconButton, TextInput } from "@kenn-io/kit-ui";
+  import { Button, Chip, IconButton, TextInput, Toggle } from "@kenn-io/kit-ui";
   import { Keyboard, Mic, Send, X } from "@lucide/svelte";
   import { onMount } from "svelte";
   import {
     TAP_MS,
     cancelRecording,
+    handsFree,
     heldFor,
     loadVoiceStatus,
     micProblem,
     releaseMicrophone,
     sendText,
+    startHandsFree,
     startRecording,
+    stopHandsFree,
     stopRecording,
     voice,
   } from "../lib/voice.svelte";
@@ -24,8 +27,10 @@
     typing?: boolean;
     /** hold Space anywhere on the page to talk (one bar per page) */
     keys?: boolean;
+    /** offer hands-free listening for the wake word */
+    wake?: boolean;
   }
-  let { big = false, touch = false, typing = false, keys = false }: Props = $props();
+  let { big = false, touch = false, typing = false, keys = false, wake = false }: Props = $props();
 
   let typed = $state("");
   let showTyping = $state(false);
@@ -36,11 +41,17 @@
   const problem = micProblem();
   const canTalk = $derived(!problem && voice.status?.listen !== false);
   const typeOpen = $derived(typing || showTyping || !canTalk);
+  const wakeWord = $derived.by(() => {
+    const w = voice.status?.wake_words?.[0] ?? "kishtin";
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  });
 
   onMount(() => {
     void loadVoiceStatus();
     const hidden = () => {
-      if (document.hidden) releaseMicrophone();
+      if (!document.hidden) return;
+      releaseMicrophone();
+      stopHandsFree();
     };
     document.addEventListener("visibilitychange", hidden);
     const editable = (t: EventTarget | null) =>
@@ -63,6 +74,7 @@
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
       releaseMicrophone();
+      stopHandsFree();
     };
   });
 
@@ -156,6 +168,31 @@
     {/if}
   </div>
 
+  {#if wake && canTalk}
+    <div class="handsfree">
+      {#if touch}
+        <Button
+          label={handsFree.on ? "Turn hands-free off" : `Hands-free: listen for “${wakeWord}”`}
+          tone={handsFree.on ? "info" : "neutral"}
+          surface={handsFree.on ? "solid" : "outline"}
+          onclick={() => (handsFree.on ? stopHandsFree() : void startHandsFree())}
+        />
+      {:else}
+        <Toggle
+          checked={handsFree.on}
+          label={`Hands-free: listen for “${wakeWord}”`}
+          onchange={(on) => (on ? void startHandsFree() : stopHandsFree())}
+        />
+      {/if}
+      {#if handsFree.on}
+        <Chip uppercase={false} dot tone={handsFree.hearing || handsFree.sending ? "warning" : "info"}>
+          {handsFree.sending ? "Working…" : handsFree.hearing ? "Hearing…" : `Listening for “${wakeWord}”`}
+        </Chip>
+      {/if}
+    </div>
+    {#if handsFree.error}<p class="problem" role="alert">{handsFree.error}</p>{/if}
+  {/if}
+
   {#if voice.error}
     <p class="problem" role="alert">{voice.error}</p>
   {:else if problem && !typing}
@@ -241,6 +278,12 @@
     min-width: min(100%, 280px);
     display: flex;
     gap: var(--space-2);
+  }
+  .handsfree {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
   }
   .problem {
     color: var(--accent-red);

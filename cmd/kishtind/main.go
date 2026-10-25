@@ -114,12 +114,13 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 		return fail(err)
 	}
 	svc := service.New(service.Options{
-		POS:    pos,
-		Speech: sp,
-		Store:  st,
-		Files:  fs,
-		System: cfg.SystemSettings(),
-		Events: events.NewHub(),
+		POS:       pos,
+		Speech:    sp,
+		WakeWords: cfg.Speech.WakeWords,
+		Store:     st,
+		Files:     fs,
+		System:    cfg.SystemSettings(),
+		Events:    events.NewHub(),
 		Backups: service.BackupConfig{
 			Dir:  cfg.Backup.Dir,
 			Open: func(ctx context.Context, path string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, path) },

@@ -1,10 +1,19 @@
 package main
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cathalbyrnegit/kishtin/internal/service"
+	"github.com/cathalbyrnegit/kishtin/internal/speech"
 )
 
 func TestVoiceCLI(t *testing.T) {
@@ -37,4 +46,33 @@ func TestVoiceCLI(t *testing.T) {
 	assert.ErrorContains(t, err, "say what")
 	out = cli("--json", "haccp", "list")
 	assert.Contains(t, out, `"corrective_action": "Binned the milk and called the engineer"`)
+}
+
+func TestSayHandsFreeCLI(t *testing.T) {
+	heard := "can you pass the tongs"
+	stt := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]string{"text": heard})
+	}))
+	t.Cleanup(stt.Close)
+	sp, err := speech.New(stt.URL, "", time.Second)
+	require.NoError(t, err)
+	url, key := serverWith(t, func(o *service.Options) { o.Speech = sp })
+	f := filepath.Join(t.TempDir(), "phrase.wav")
+	require.NoError(t, os.WriteFile(f, []byte("RIFF synthetic"), 0o600))
+
+	out, _, err := run(t, url, key, "", "say", "--audio", f, "--hands-free")
+	require.NoError(t, err)
+	assert.Contains(t, out, "No wake word heard: ignored, and not logged.")
+
+	heard = "Kishtin, walk-in fridge 3 degrees"
+	out, _, err = run(t, url, key, "", "say", "--audio", f, "--hands-free")
+	require.NoError(t, err)
+	assert.Contains(t, out, "Walk-in fridge 3 degrees. Pass. Saved.")
+
+	out, _, err = run(t, url, key, "", "voice", "log")
+	require.NoError(t, err)
+	assert.NotContains(t, out, "tongs", "ignored speech is not logged")
+	out, _, err = run(t, url, key, "", "voice", "status")
+	require.NoError(t, err)
+	assert.Contains(t, out, "Speech-to-text: set up")
 }

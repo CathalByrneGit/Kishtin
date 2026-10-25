@@ -106,7 +106,7 @@
   {/if}
 
   <div class="voicebar">
-    <VoiceBar big={screen.kind !== "phone"} touch keys />
+    <VoiceBar big={screen.kind !== "phone"} touch keys wake />
   </div>
 
   <main>

@@ -4,6 +4,7 @@
 
 import { api, message, type VoiceReply, type VoiceStatus } from "./api";
 import { load, save } from "./storage";
+import { SpeechDetector, downsample, encodeWav, rms } from "./wake";
 
 export type VoicePhase = "idle" | "recording" | "sending";
 
@@ -18,6 +19,21 @@ export const voice = $state({
   error: "",
   /** speak replies aloud on this device */
   speak: load(SPEAK_KEY) !== "off",
+  /** a reply is being spoken */
+  speaking: false,
+});
+
+/**
+ * Hands-free listening. Off until someone turns it on, on this device,
+ * for this page load: a reload or switching away turns it off.
+ */
+export const handsFree = $state({
+  on: false,
+  /** a phrase is being heard */
+  hearing: false,
+  /** a phrase is with the server */
+  sending: false,
+  error: "",
 });
 
 /** micProblem says why push-to-talk cannot work in this browser, if so. */
@@ -169,10 +185,15 @@ async function speakReply(text: string): Promise<void> {
       playing?.pause();
       const url = URL.createObjectURL(blob);
       playing = new Audio(url);
-      playing.onended = () => URL.revokeObjectURL(url);
+      voice.speaking = true;
+      playing.onended = playing.onerror = () => {
+        URL.revokeObjectURL(url);
+        voice.speaking = false;
+      };
       await playing.play();
       return;
     } catch {
+      voice.speaking = false;
       // Fall back to an on-device voice below.
     }
   }
@@ -181,6 +202,110 @@ async function speakReply(text: string): Promise<void> {
   if (!local) return;
   const u = new SpeechSynthesisUtterance(text);
   u.voice = local;
+  voice.speaking = true;
+  u.onend = u.onerror = () => (voice.speaking = false);
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
+}
+
+// --- hands-free ---
+
+let hf: { stream: MediaStream; ctx: AudioContext; proc: ScriptProcessorNode } | null = null;
+
+/** startHandsFree starts listening for the wake word. */
+export async function startHandsFree(): Promise<void> {
+  if (hf) return;
+  const problem = micProblem();
+  if (problem) {
+    handsFree.error = problem;
+    return;
+  }
+  handsFree.error = "";
+  let stream: MediaStream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  } catch {
+    handsFree.error = "The microphone is blocked. Allow it for this site in the browser settings.";
+    return;
+  }
+  const ctx = new AudioContext();
+  const source = ctx.createMediaStreamSource(stream);
+  // ScriptProcessorNode is old but works in every kitchen browser, and
+  // needs no extra script file.
+  const proc = ctx.createScriptProcessor(2048, 1, 1);
+  const mute = ctx.createGain();
+  mute.gain.value = 0;
+  source.connect(proc);
+  proc.connect(mute);
+  mute.connect(ctx.destination);
+
+  const detector = new SpeechDetector();
+  const prerollBlocks = Math.ceil((0.4 * ctx.sampleRate) / 2048);
+  const preroll: Float32Array[] = [];
+  let phrase: Float32Array[] | null = null;
+
+  proc.onaudioprocess = (e) => {
+    const block = new Float32Array(e.inputBuffer.getChannelData(0));
+    // Not while push-to-talk is in use, a phrase is with the server, or a
+    // reply is playing (it would hear itself).
+    if (voice.phase !== "idle" || handsFree.sending || voice.speaking) {
+      phrase = null;
+      handsFree.hearing = false;
+      preroll.length = 0;
+      return;
+    }
+    const ev = detector.push(rms(block), ctx.currentTime * 1000);
+    if (ev === "start") {
+      phrase = [...preroll, block];
+      handsFree.hearing = true;
+    } else if (phrase) {
+      phrase.push(block);
+    }
+    if ((ev === "end" || ev === "drop") && phrase) {
+      const blocks = phrase;
+      phrase = null;
+      handsFree.hearing = false;
+      if (ev === "end") void sendPhrase(blocks, ctx.sampleRate);
+    }
+    preroll.push(block);
+    if (preroll.length > prerollBlocks) preroll.shift();
+  };
+  hf = { stream, ctx, proc };
+  handsFree.on = true;
+}
+
+/** stopHandsFree stops listening and releases the microphone. */
+export function stopHandsFree(): void {
+  handsFree.on = false;
+  handsFree.hearing = false;
+  if (!hf) return;
+  hf.proc.onaudioprocess = null;
+  hf.stream.getTracks().forEach((t) => t.stop());
+  void hf.ctx.close();
+  hf = null;
+}
+
+async function sendPhrase(blocks: Float32Array[], rate: number): Promise<void> {
+  const total = blocks.reduce((n, b) => n + b.length, 0);
+  const all = new Float32Array(total);
+  let at = 0;
+  for (const b of blocks) {
+    all.set(b, at);
+    at += b.length;
+  }
+  const wav = encodeWav(downsample(all, rate, 16000), Math.min(rate, 16000));
+  handsFree.sending = true;
+  try {
+    const reply = await api.voiceAudio(new Blob([wav], { type: "audio/wav" }), true);
+    // Kitchen talk without the wake word: nothing to show.
+    if (reply.outcome === "ignored") return;
+    voice.reply = reply;
+    voice.error = "";
+    void speakReply(reply.say);
+    void loadVoiceStatus();
+  } catch (err) {
+    handsFree.error = message(err);
+  } finally {
+    handsFree.sending = false;
+  }
 }

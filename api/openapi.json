@@ -3777,11 +3777,18 @@
           },
           "waiting": {
             "type": "string"
+          },
+          "wake_words": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
           "listen",
-          "speak"
+          "speak",
+          "wake_words"
         ],
         "type": "object"
       }
@@ -7150,6 +7157,16 @@
             "schema": {
               "description": "The recording's type, such as audio/webm or audio/wav.",
               "type": "string"
+            }
+          },
+          {
+            "description": "Hands-free: the phrase must start with a wake word, or it is ignored and not logged.",
+            "explode": false,
+            "in": "query",
+            "name": "hands_free",
+            "schema": {
+              "description": "Hands-free: the phrase must start with a wake word, or it is ignored and not logged.",
+              "type": "boolean"
             }
           }
         ],

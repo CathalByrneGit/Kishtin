@@ -221,7 +221,8 @@ export const api = {
 
   voiceStatus: () => json<VoiceStatus>("GET", "/voice"),
   voiceCommand: (text: string) => json<VoiceReply>("POST", "/voice/command", { body: { text } }),
-  voiceAudio: (audio: Blob) => json<VoiceReply>("POST", "/voice/audio", { raw: audio, rawType: audio.type || "audio/webm" }),
+  voiceAudio: (audio: Blob, handsFree = false) =>
+    json<VoiceReply>("POST", "/voice/audio", { raw: audio, rawType: audio.type || "audio/webm", query: { hands_free: handsFree || undefined } }),
   /** voiceSpeak returns the reply as WAV audio from the server's local text-to-speech. */
   voiceSpeak: async (text: string): Promise<Blob> => (await send("POST", "/voice/speak", { body: { text } })).blob(),
   voiceLog: (limit = 100) => json<Schemas["VoiceLogBody"]>("GET", "/voice/log", { query: { limit } }),

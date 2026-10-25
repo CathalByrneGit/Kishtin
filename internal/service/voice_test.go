@@ -198,7 +198,7 @@ func TestVoiceTemperatures(t *testing.T) {
 func TestVoiceAudio(t *testing.T) {
 	k := setupKitchen(t)
 	ctx := context.Background()
-	_, err := k.svc.VoiceAudio(ctx, k.cook, []byte("synthetic"), "audio/webm")
+	_, err := k.svc.VoiceAudio(ctx, k.cook, []byte("synthetic"), "audio/webm", false)
 	assert.Equal(t, KindConflict, KindOf(err))
 	assert.ErrorContains(t, err, "Speech-to-text is not set up")
 
@@ -211,7 +211,7 @@ func TestVoiceAudio(t *testing.T) {
 	k.svc.speech, err = speech.New(srv.URL, "", time.Second)
 	require.NoError(t, err)
 
-	r, err := k.svc.VoiceAudio(ctx, k.cook, []byte("synthetic"), "audio/webm")
+	r, err := k.svc.VoiceAudio(ctx, k.cook, []byte("synthetic"), "audio/webm", false)
 	require.NoError(t, err)
 	assert.Equal(t, "Walk-in fridge 2 degrees.", r.Heard)
 	assert.Equal(t, "Walk-in fridge 2 degrees. Pass. Saved.", r.Say)
@@ -221,8 +221,72 @@ func TestVoiceAudio(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, voice.SourceSpoken, log[0].Source)
 
-	_, err = k.svc.VoiceAudio(ctx, k.cook, nil, "audio/webm")
+	_, err = k.svc.VoiceAudio(ctx, k.cook, nil, "audio/webm", false)
 	assert.ErrorContains(t, err, "No audio was recorded")
 	_, err = k.svc.VoiceSpeak(ctx, k.cook, "hello")
 	assert.ErrorContains(t, err, "Text-to-speech is not set up")
+}
+
+func TestVoiceHandsFree(t *testing.T) {
+	k := setupKitchen(t)
+	ctx := context.Background()
+	heard := ""
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]string{"text": heard})
+	}))
+	defer srv.Close()
+	var err error
+	k.svc.speech, err = speech.New(srv.URL, "", time.Second)
+	require.NoError(t, err)
+	hear := func(text string) VoiceReply {
+		t.Helper()
+		heard = text
+		r, err := k.svc.VoiceAudio(ctx, k.cook, []byte("synthetic"), "audio/wav", true)
+		require.NoError(t, err)
+		return r
+	}
+	logged := func() int {
+		t.Helper()
+		l, err := k.svc.VoiceLog(ctx, k.cook, 0)
+		require.NoError(t, err)
+		return len(l)
+	}
+
+	// Kitchen talk without the wake word is ignored and not kept.
+	r := hear("walk in fridge 3 degrees, can you check it")
+	assert.Equal(t, voice.OutcomeIgnored, r.Outcome)
+	assert.Empty(t, r.Heard, "what was said is not sent back")
+	assert.Zero(t, logged())
+
+	r = hear("Kishtin, walk-in fridge 3 degrees")
+	assert.Equal(t, "Walk-in fridge 3 degrees. Pass. Saved.", r.Say)
+	assert.Equal(t, 1, logged())
+
+	// The wake word alone opens a short window for the command.
+	r = hear("Kishtin.")
+	assert.Equal(t, "Yes?", r.Say)
+	r = hear("prep fridge 4")
+	assert.Equal(t, "Prep fridge 4 degrees. Pass. Saved.", r.Say)
+	r = hear("prep fridge 4")
+	assert.Equal(t, voice.OutcomeIgnored, r.Outcome, "the window is used once")
+	hear("Kishtin")
+	k.clk.Advance(10 * time.Second)
+	r = hear("prep fridge 4")
+	assert.Equal(t, voice.OutcomeIgnored, r.Outcome, "the window closes")
+
+	// Answers need the wake word too.
+	r = hear("Kishtin, walk-in fridge 9 degrees")
+	assert.True(t, r.Waiting)
+	r = hear("moved the stock")
+	assert.Equal(t, voice.OutcomeIgnored, r.Outcome)
+	r = hear("Kishtin, moved the stock")
+	assert.Contains(t, r.Say, "Say confirm to save")
+	r = hear("confirm")
+	assert.Equal(t, voice.OutcomeIgnored, r.Outcome, "a stray confirm does nothing")
+	r = hear("Kishtin confirm")
+	assert.Equal(t, voice.OutcomeDone, r.Outcome)
+
+	st, err := k.svc.VoiceStatus(ctx, k.cook)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"kishtin"}, st.WakeWords)
 }

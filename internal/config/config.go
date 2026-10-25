@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -69,6 +70,8 @@ type Speech struct {
 	// TTSURL is a Piper HTTP server, such as http://127.0.0.1:5000.
 	TTSURL  string   `toml:"tts_url"`
 	Timeout Duration `toml:"timeout"`
+	// WakeWords start a hands-free command. Default: kishtin.
+	WakeWords []string `toml:"wake_words"`
 }
 
 // Square connects to Square for importing orders. Whether import is on,
@@ -183,6 +186,11 @@ func (c Config) SystemSettings() settings.System {
 
 // SpeechClient returns the client for the speech sidecars.
 func (c Config) SpeechClient() (*speech.Client, error) {
+	for _, w := range c.Speech.WakeWords {
+		if len([]rune(strings.TrimSpace(w))) < 4 {
+			return nil, fmt.Errorf("speech.wake_words: %q is too short: use a word of 4 letters or more that is not said in normal kitchen talk", w)
+		}
+	}
 	if c.Speech.Timeout.Duration <= 0 {
 		return nil, errors.New("speech.timeout must be positive, such as \"20s\"")
 	}

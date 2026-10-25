@@ -79,21 +79,41 @@ Kitchen noise is the main accuracy problem. Use close-talk headsets or a directi
 
 On a kitchen screen, holding the **space bar** works like holding the button, so a USB foot pedal or a headset button that can be set to send the space key works hands-free. A short tap on the button starts listening and a second tap sends, for when holding is awkward. Recordings stop after 20 seconds.
 
+## Hands-free: the wake word
+
+For when even a button is too much, a kitchen screen can listen for the wake word, **"Kishtin"**: "Kishtin, fire table 4 mains", "Kishtin, walk-in fridge 3 degrees".
+
+- It is **off** until someone turns it on (**Hands-free: listen for "Kishtin"** under Hold to talk), on that device only. Reloading the page, switching to another app or locking the tablet turns it off again.
+- While it is on, the screen shows **Listening for "Kishtin"**, then **Hearing…** while someone speaks and **Working…** while the server checks.
+- The browser picks out phrases by loudness alone. It learns the room's background noise (fans, fryers) and waits for sound clearly above it. Each phrase goes to the Kishtin server's own speech-to-text, never anywhere else.
+- If a phrase does not start with the wake word, it is thrown away: nothing is done, nothing is logged, and what was said is not sent back to the screen.
+- "Kishtin" on its own replies "Yes?"; the next phrase within 8 seconds is the command.
+- Answers need the wake word too: "Kishtin, fourteen", "Kishtin, confirm void". A "confirm" said across the kitchen does nothing.
+- It does not listen while push-to-talk is in use or while a reply is being spoken, so it does not hear itself.
+
+Things to know before relying on it:
+
+- Every phrase anyone says near the tablet is turned into text on the server, so the server works harder than with push-to-talk. Watch it during a busy service.
+- In a loud kitchen it can miss the wake word, or hear it where it was not said. Test it during a real service, with the microphone where it will be used, before relying on it. Push-to-talk stays the dependable way.
+- Each phrase is cut off after 8 seconds, and 8 seconds of unbroken sound is treated as background noise.
+- The wake word can be changed with `speech.wake_words` in kishtin.toml. Choose a word of 4 letters or more that is not said in normal kitchen talk ("chef" or "service" would trigger all night).
+
 ## Commands
 
 ```sh
 kishtin say fire table 4 mains          # a typed command, same grammar
 kishtin say --audio command.wav         # transcribed by the server's sidecar
+kishtin say --audio phrase.wav --hands-free   # as hands-free: ignored without the wake word
 kishtin say confirm                     # answers a waiting question
 kishtin voice status                    # what is set up, and any waiting question
 kishtin voice log                       # recent commands: heard, outcome, reply
 ```
 
-API: `GET /api/voice`, `POST /api/voice/command`, `POST /api/voice/audio`, `POST /api/voice/speak` and `GET /api/voice/log`.
+API: `GET /api/voice`, `POST /api/voice/command`, `POST /api/voice/audio` (with `?hands_free=true` for hands-free phrases), `POST /api/voice/speak` and `GET /api/voice/log`.
 
 ## What voice does not do
 
-- No always-on listening and no wake word. It only listens while the button or key is held.
+- Hands-free listening is not a proper wake-word model: it sends every phrase to speech-to-text and checks the words. It has not been tested in a real kitchen.
 - No replacing an item (Change on the screen), and nothing that deletes.
 - No docket photo for a delivery: add it on the screen.
 - It understands a fixed set of commands, not free conversation. "Get table 4's mains going" is not understood; "fire table 4 mains" is.

@@ -27,6 +27,7 @@ func printReply(w io.Writer, r client.VoiceReply) {
 
 func (c *cli) sayCmd() *cobra.Command {
 	var audio string
+	var handsFree bool
 	cmd := &cobra.Command{
 		Use:   "say [COMMAND...]",
 		Short: "Run a voice command, typed or from an audio file",
@@ -52,7 +53,11 @@ Audio is transcribed by the server's local speech-to-text sidecar.`,
 				var f runtime.File
 				f.InitFromBytes(data, filepath.Base(audio))
 				ct := mimetype.Detect(data).String()
-				res, err = c.api.VoiceAudio(ctx, &client.VoiceAudioRequestOptions{Body: &f, Header: &client.VoiceAudioHeaders{ContentType: &ct}})
+				opts := &client.VoiceAudioRequestOptions{Body: &f, Header: &client.VoiceAudioHeaders{ContentType: &ct}}
+				if handsFree {
+					opts.Query = &client.VoiceAudioQuery{HandsFree: &handsFree}
+				}
+				res, err = c.api.VoiceAudio(ctx, opts)
 				if err != nil {
 					return apiErr(err)
 				}
@@ -65,10 +70,17 @@ Audio is transcribed by the server's local speech-to-text sidecar.`,
 			default:
 				return fmt.Errorf("say what: kishtin say fire table 4 mains")
 			}
-			return c.emit(res, func(w io.Writer) { printReply(w, *res) })
+			return c.emit(res, func(w io.Writer) {
+				if res.Outcome == "ignored" {
+					fmt.Fprintln(w, "No wake word heard: ignored, and not logged.")
+					return
+				}
+				printReply(w, *res)
+			})
 		},
 	}
 	cmd.Flags().StringVar(&audio, "audio", "", "an audio file to transcribe (WAV, WebM, Ogg)")
+	cmd.Flags().BoolVar(&handsFree, "hands-free", false, "with --audio: the recording must start with the wake word, as in hands-free listening")
 	return cmd
 }
 

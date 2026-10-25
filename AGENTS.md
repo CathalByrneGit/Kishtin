@@ -310,7 +310,7 @@ Voice is a core feature, not an extra. A chef holding a pan must be able to run 
 
 **How it works:**
 
-- **Capture:** push-to-talk on a large on-screen button, a foot pedal or a Bluetooth headset button. Hands-free wake word is a later option. No always-on listening in v1; it causes false triggers in a loud kitchen and raises privacy concerns.
+- **Capture:** push-to-talk on a large on-screen button, a foot pedal or a Bluetooth headset button. Hands-free listening for a wake word ("Kishtin") is opt-in per device and off by default, because it causes false triggers in a loud kitchen and raises privacy concerns: it shows a clear indicator while on, stops when the screen is hidden or reloaded, and the server ignores and never logs speech that does not start with the wake word. Answers and confirmations in hands-free mode need the wake word too.
 - **Microphones:** close-talk headsets or directional mics. Kitchen noise (extractors, fryers, tickets, music) is the main accuracy problem, so test with recordings from the real kitchen.
 - **Recognition:** the browser records audio and sends it over the local network to the server. The Go server passes it to a local speech-to-text sidecar process (for example whisper.cpp or a similar small model) over HTTP or stdin. Running it as a sidecar keeps the Go binary free of CGO. No audio leaves the building.
 - **Understanding:** v1 matches the transcript against a fixed command grammar with fuzzy matching on menu item names, table numbers and staff vocabulary. Bias recognition toward the current menu and open tables.

@@ -2388,6 +2388,7 @@ export interface components {
             listen: boolean;
             speak: boolean;
             waiting?: string;
+            wake_words: string[];
         };
     };
     responses: never;
@@ -4898,7 +4899,10 @@ export interface operations {
     };
     "voice-audio": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Hands-free: the phrase must start with a wake word, or it is ignored and not logged. */
+                hands_free?: boolean;
+            };
             header?: {
                 /** @description The recording's type, such as audio/webm or audio/wav. */
                 "Content-Type"?: string;

@@ -19,6 +19,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/speech"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
+	"github.com/cathalbyrnegit/kishtin/internal/voice"
 )
 
 // Kind classifies a service error, so callers can map it to an HTTP status
@@ -72,6 +73,8 @@ type Service struct {
 	// speech is the local speech sidecar client; nil turns voice audio off.
 	speech *speech.Client
 	voice  voiceState
+	// wakeWords start a hands-free voice command.
+	wakeWords []string
 	// pos is the Square adapter; nil when no access token is set.
 	pos integrations.POSAdapter
 }
@@ -89,6 +92,8 @@ type Options struct {
 	// Speech is the local speech-to-text and text-to-speech client. Nil
 	// leaves typed voice commands working and spoken ones off.
 	Speech *speech.Client
+	// WakeWords start a hands-free voice command. Empty uses "kishtin".
+	WakeWords []string
 	// POS reads orders from Square. Nil when no access token is set.
 	POS integrations.POSAdapter
 }
@@ -108,7 +113,11 @@ func New(o Options) *Service {
 	if sys == (settings.System{}) {
 		sys = DefaultSystem()
 	}
-	return &Service{st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech, pos: o.POS}
+	wake := o.WakeWords
+	if len(wake) == 0 {
+		wake = voice.DefaultWakeWords
+	}
+	return &Service{wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech, pos: o.POS}
 }
 
 // Events returns the hub that change notices are published to.

@@ -74,7 +74,7 @@
   </header>
 
   <Card padding="md" title="Try a command">
-    <VoiceBar typing keys />
+    <VoiceBar typing keys wake />
   </Card>
 
   <div class="grid">
