@@ -332,6 +332,186 @@ func (s *Service) FireCourse(ctx context.Context, p *auth.Principal, orderID str
 	})
 }
 
+// HoldCourse holds a fired course again, as if it had never been fired:
+// its items leave the station queues and its target time is cleared. It
+// refuses once any item has started, since that food is already cooking;
+// void or replace those items instead. Logged with the reason.
+func (s *Service) HoldCourse(ctx context.Context, p *auth.Principal, orderID string, course menu.Course, reason string) (orders.Order, error) {
+	if err := allow(p, auth.ActRunPass); err != nil {
+		return orders.Order{}, err
+	}
+	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
+		c, err := courseNamed(o, course)
+		if err != nil {
+			return err
+		}
+		if c.State != orders.CourseFired {
+			return newErr(KindConflict, "only a fired course can be held again; %s %s is %s", o.Label(), course, c.State)
+		}
+		var started []string
+		for _, it := range o.ItemsIn(course) {
+			if it.State.Started() {
+				started = append(started, fmt.Sprintf("%s (%s)", it.DishName, it.State))
+			}
+		}
+		if len(started) > 0 {
+			return newErr(KindConflict, "%s %s cannot be held again: already started: %s. Void or replace those items instead.",
+				o.Label(), course, strings.Join(started, ", "))
+		}
+		now := s.clk.Now()
+		for i, it := range o.Items {
+			if it.Course != course || it.State != orders.StateFired {
+				continue
+			}
+			held := orders.Move(it, orders.StateHeld, now)
+			if err := tx.Orders().UpdateItem(ctx, held); err != nil {
+				return err
+			}
+			o.Items[i] = held
+		}
+		from := c.TargetAt
+		c.State, c.FiredAt, c.TargetAt, c.TargetSet = orders.CourseHeld, nil, nil, false
+		if err := tx.Orders().SaveCourse(ctx, c); err != nil {
+			return err
+		}
+		ev := s.event(p, *o, orders.EventHeld)
+		ev.Course = course
+		if from != nil {
+			ev.From = from.Format(time.RFC3339)
+		}
+		ev.Detail = "held again"
+		if r := strings.TrimSpace(reason); r != "" {
+			ev.Detail += ": " + r
+		}
+		return tx.Orders().AppendEvent(ctx, ev)
+	})
+}
+
+// ItemReplace swaps an ordered item for the right one, such as a burger
+// that should have been well done.
+type ItemReplace struct {
+	// Item is what to add instead. Its course defaults to the old item's
+	// course; the quantity defaults to 1.
+	Item NewItem `json:"item"`
+	// Reason is logged with the void. Empty logs "replaced".
+	Reason string `json:"reason,omitempty"`
+}
+
+// ReplaceItem voids an item and adds the right one in its place, in one
+// step: both happen or neither does. The new item joins the same course;
+// if that course is fired, it goes straight to its station. Front of house
+// can replace items in a held course; once a course is fired it is the
+// pass's call, as for any void.
+func (s *Service) ReplaceItem(ctx context.Context, p *auth.Principal, itemID string, in ItemReplace) (orders.Order, error) {
+	if err := allow(p, auth.ActTakeOrders); err != nil {
+		return orders.Order{}, err
+	}
+	o, err := s.orderOfItem(ctx, itemID)
+	if err != nil {
+		return orders.Order{}, err
+	}
+	return s.changeOrder(ctx, o.ID, func(tx store.Store, o *orders.Order) error {
+		old, ok := o.Item(itemID)
+		if !ok {
+			return newErr(KindNotFound, "item not found")
+		}
+		if old.State.Done() {
+			return newErr(KindConflict, "%s for %s is already %s", old.DishName, o.Label(), old.State)
+		}
+		if old.State != orders.StateHeld {
+			if err := allow(p, auth.ActRunPass); err != nil {
+				return newErr(KindForbidden, "%s %s is fired: only the head chef or a manager can change it now", o.Label(), old.Course)
+			}
+		}
+		ni := in.Item
+		if ni.Course == "" {
+			ni.Course = old.Course
+		}
+		setup, err := menuSetup(ctx, tx)
+		if err != nil {
+			return err
+		}
+		now := s.clk.Now()
+		items, err := s.buildItems(setup, o, []NewItem{ni}, now)
+		if err != nil {
+			return err
+		}
+		reason := strings.TrimSpace(in.Reason)
+		if len([]rune(reason)) > 200 {
+			return newErr(KindInvalid, "the reason is at most 200 characters")
+		}
+		if reason == "" {
+			reason = "replaced"
+		}
+		voided := orders.Move(old, orders.StateVoided, now)
+		voided.VoidReason = fmt.Sprintf("%s by %s", reason, itemWords(items[0]))
+		if err := tx.Orders().UpdateItem(ctx, voided); err != nil {
+			return err
+		}
+		for i := range o.Items {
+			if o.Items[i].ID == old.ID {
+				o.Items[i] = voided
+			}
+		}
+		ev := s.event(p, *o, orders.EventItemState)
+		ev.ItemID, ev.Course, ev.From, ev.To = old.ID, old.Course, string(old.State), string(orders.StateVoided)
+		ev.Detail = old.DishName + ": " + voided.VoidReason
+		if err := tx.Orders().AppendEvent(ctx, ev); err != nil {
+			return err
+		}
+		for _, it := range items {
+			c, ok := o.Course(it.Course)
+			if !ok {
+				c = orders.Course{OrderID: o.ID, Course: it.Course, State: orders.CourseHeld}
+				if err := tx.Orders().SaveCourse(ctx, c); err != nil {
+					return err
+				}
+				o.Courses = append(o.Courses, c)
+			}
+			if c.State == orders.CourseServed {
+				return newErr(KindConflict, "%s has already been served", it.Course)
+			}
+			if c.State == orders.CourseFired {
+				it = orders.Move(it, orders.StateFired, now)
+			}
+			if err := tx.Orders().AddItem(ctx, it); err != nil {
+				return err
+			}
+			o.Items = append(o.Items, it)
+			ev := s.event(p, *o, orders.EventItemAdded)
+			ev.ItemID, ev.Course, ev.To = it.ID, it.Course, string(it.State)
+			ev.Detail = itemWords(it) + ", replaces " + itemWords(old)
+			if err := tx.Orders().AppendEvent(ctx, ev); err != nil {
+				return err
+			}
+		}
+		// Voiding the last unserved item can finish a course.
+		return s.settleCourse(ctx, tx, p, o, old.Course)
+	})
+}
+
+// itemWords names an item with its modifiers: "Burger (Well done)".
+func itemWords(it orders.Item) string {
+	if len(it.Modifiers) == 0 {
+		return it.DishName
+	}
+	return it.DishName + " (" + strings.Join(it.Modifiers, ", ") + ")"
+}
+
+// orderOfItem finds the open order an item is on.
+func (s *Service) orderOfItem(ctx context.Context, itemID string) (orders.Order, error) {
+	open, err := s.st.Orders().ListOrders(ctx, store.OrderFilter{OpenOnly: true})
+	if err != nil {
+		return orders.Order{}, err
+	}
+	for _, o := range open {
+		if _, ok := o.Item(itemID); ok {
+			return o, nil
+		}
+	}
+	return orders.Order{}, newErr(KindNotFound, "item %s is not on an open order", itemID)
+}
+
 // SetTarget changes when a fired course should reach the pass. It is an
 // expo override: logged with its reason, and the scheduler re-plans around
 // it.

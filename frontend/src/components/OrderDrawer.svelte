@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Button, Chip, DetailDrawer, Notice, Spinner, Table, TableHeaderCell, showFlash } from "@kenn-io/kit-ui";
+  import { Button, Chip, DetailDrawer, Notice, Spinner, Table, TableHeaderCell, TextInput, showFlash } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
   import DishPicker, { toItems, type Line } from "./DishPicker.svelte";
-  import { api, message, type Order, type Schemas, type Setup } from "../lib/api";
+  import { api, message, type Course, type Order, type OrderItem, type Schemas, type Setup } from "../lib/api";
   import { dublinTime } from "../lib/format";
   import { courseLabel, itemName, itemState, orderLabel } from "../lib/kitchen";
   import { canRunPass, canTakeOrders } from "../lib/kitchenfeed.svelte";
@@ -22,6 +22,8 @@
   let adding = $state(false);
   let lines = $state<Line[]>([]);
   let busy = $state(false);
+  // changing is the item being replaced, with the replacement as one line.
+  let changing = $state<{ item: OrderItem; lines: Line[]; reason: string } | null>(null);
 
   async function load() {
     try {
@@ -41,15 +43,63 @@
     });
   });
 
+  async function loadMenu() {
+    if (menu) return;
+    try {
+      menu = await api.menu();
+    } catch (err) {
+      error = message(err);
+    }
+  }
+
   async function startAdding() {
     adding = true;
-    if (!menu) {
-      try {
-        menu = await api.menu();
-      } catch (err) {
-        error = message(err);
-      }
+    await loadMenu();
+  }
+
+  async function startChange(it: OrderItem) {
+    await loadMenu();
+    changing = {
+      item: it,
+      reason: "",
+      lines: [{ key: 0, dishId: it.dish_id, course: it.course as Course, quantity: 1, modifiers: [...(it.modifiers ?? [])], notes: it.notes ?? "" }],
+    };
+  }
+
+  async function saveChange() {
+    const item = changing ? toItems(changing.lines)[0] : undefined;
+    if (!changing || changing.lines.length !== 1 || !item) return;
+    busy = true;
+    try {
+      order = await api.replaceItem(changing.item.id, { item, reason: changing.reason.trim() || undefined });
+      showFlash(`${changing.item.dish_name} replaced`, { tone: "success" });
+      changing = null;
+      await load();
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 8000 });
+    } finally {
+      busy = false;
     }
+  }
+
+  async function hold(c: Course) {
+    busy = true;
+    try {
+      order = await api.hold(orderId, c);
+      showFlash(`${courseLabel(c)} held again`, { tone: "success" });
+      await load();
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 8000 });
+    } finally {
+      busy = false;
+    }
+  }
+
+  // canChange: front of house can change items in a held course; once
+  // fired, only the pass.
+  function canChange(it: OrderItem): boolean {
+    if (!order || order.status !== "open" || it.state === "served" || it.state === "voided") return false;
+    return it.state === "held" ? canTakeOrders(session.user?.role) : canRunPass(session.user?.role);
   }
 
   async function addItems() {
@@ -85,6 +135,7 @@
     item_added: "Item added",
     item_state: "Item moved",
     fired: "Course fired",
+    held: "Course held again",
     target: "Target changed",
     urgent: "Urgent flag",
     served: "Course served",
@@ -114,6 +165,7 @@
       {#if order.notes}<Notice tone="warning" title="Notes" message={order.notes} />{/if}
 
       {#each order.courses as c (c.course)}
+        {@const courseItems = order.items.filter((it) => it.course === c.course)}
         <section>
           <h3>
             {courseLabel(c.course)}
@@ -122,16 +174,37 @@
               {c.urgent ? " · urgent" : ""}
             </span>
           </h3>
+          {#if c.state === "fired" && order.status === "open" && canRunPass(session.user?.role) && courseItems.every((it) => it.state === "fired" || it.state === "held" || it.state === "voided")}
+            <div><Button size="sm" label="Hold again" disabled={busy} onclick={() => hold(c.course as Course)} /></div>
+          {/if}
           <ul class="items">
-            {#each order.items.filter((it) => it.course === c.course) as it (it.id)}
+            {#each courseItems as it (it.id)}
               {@const st = itemState(it.state)}
               <li>
                 <span>{itemName(it)}{#if it.notes}<span class="muted">: {it.notes}</span>{/if}</span>
                 <span class="row">
                   {#if it.void_reason}<span class="muted small">{it.void_reason}</span>{/if}
                   <Chip size="sm" uppercase={false} tone={st.tone}>{st.label}</Chip>
+                  {#if canChange(it)}<Button size="sm" label="Change" disabled={busy || changing !== null} onclick={() => startChange(it)} />{/if}
                 </span>
               </li>
+              {#if changing?.item.id === it.id && menu}
+                <li class="change">
+                  <p class="muted small">
+                    Change {itemName(it)}: the old item is voided and the new one added in its place{it.state === "held" ? "" : ", straight to its station"}. Edit the line below, or remove it and tap the right dish.
+                  </p>
+                  <DishPicker {menu} bind:lines={changing.lines} />
+                  <label class="field">
+                    <span>Reason (optional, for the log)</span>
+                    <TextInput bind:value={changing.reason} placeholder="For example: asked for well done" block size="sm" />
+                  </label>
+                  {#if changing.lines.length !== 1}<Notice tone="info" message="Keep exactly one line: the item to put in its place." />{/if}
+                  <div class="row">
+                    <Button label="Cancel" onclick={() => (changing = null)} />
+                    <Button tone="success" surface="solid" label={busy ? "Saving…" : "Replace item"} disabled={busy || changing.lines.length !== 1} onclick={saveChange} />
+                  </div>
+                </li>
+              {/if}
             {/each}
           </ul>
         </section>
@@ -211,6 +284,13 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
+  }
+  .items li.change {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-4);
+    border: var(--border-width) solid var(--border-default);
+    border-radius: var(--radius-md);
   }
   .small {
     font-size: var(--font-size-sm);

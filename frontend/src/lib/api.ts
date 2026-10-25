@@ -194,6 +194,10 @@ export const api = {
   addItems: (id: string, items: Schemas["NewItem"][]) =>
     json<Order>("POST", `/orders/${encodeURIComponent(id)}/items`, { body: { items } }),
   fire: (id: string, course: Course) => json<Order>("POST", `/orders/${encodeURIComponent(id)}/courses/${course}/fire`),
+  hold: (id: string, course: Course, reason?: string) =>
+    json<Order>("POST", `/orders/${encodeURIComponent(id)}/courses/${course}/hold`, { body: { reason } }),
+  replaceItem: (id: string, body: Schemas["ItemReplace"]) =>
+    json<Order>("POST", `/kitchen/items/${encodeURIComponent(id)}/replace`, { body }),
   serve: (id: string, course: Course) => json<Order>("POST", `/orders/${encodeURIComponent(id)}/courses/${course}/serve`),
   setTarget: (id: string, course: Course, target_at: string, reason: string) =>
     json<Order>("PUT", `/orders/${encodeURIComponent(id)}/courses/${course}/target`, { body: { target_at, reason } }),

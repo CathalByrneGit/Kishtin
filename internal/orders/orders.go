@@ -343,10 +343,12 @@ const (
 	EventItemAdded EventKind = "item_added"
 	EventItemState EventKind = "item_state"
 	EventFired     EventKind = "fired"
-	EventTarget    EventKind = "target"
-	EventUrgent    EventKind = "urgent"
-	EventServed    EventKind = "served"
-	EventClosed    EventKind = "closed"
+	// EventHeld records a fired course held again before anything started.
+	EventHeld   EventKind = "held"
+	EventTarget EventKind = "target"
+	EventUrgent EventKind = "urgent"
+	EventServed EventKind = "served"
+	EventClosed EventKind = "closed"
 )
 
 // Event records something that happened to an order. Events are

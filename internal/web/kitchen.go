@@ -56,6 +56,16 @@ type targetBody struct {
 	Reason   string    `json:"reason,omitempty"`
 }
 
+type holdBody struct {
+	Reason string `json:"reason,omitempty"`
+}
+
+type holdIn struct {
+	ID     string      `path:"id"`
+	Course menu.Course `path:"course" enum:"starter,main,dessert"`
+	Body   holdBody    `required:"false"`
+}
+
 type urgentBody struct {
 	Urgent bool `json:"urgent"`
 }
@@ -169,6 +179,13 @@ func (s *Server) kitchenRoutes() {
 		return reply(s.svc.FireCourse(ctx, principal(ctx), in.ID, in.Course))
 	}))
 	huma.Register(s.api, huma.Operation{
+		OperationID: "hold-course", Method: http.MethodPost, Path: "/orders/{id}/courses/{course}/hold", Tags: orderTags,
+		Summary:     "Hold a fired course again (un-fire it)",
+		Description: "Only while nothing in the course has started. Its items leave the station queues and its target time is cleared. Logged with the reason.",
+	}, wrap(s, func(ctx context.Context, in *holdIn) (*out[orders.Order], error) {
+		return reply(s.svc.HoldCourse(ctx, principal(ctx), in.ID, in.Course, in.Body.Reason))
+	}))
+	huma.Register(s.api, huma.Operation{
 		OperationID: "serve-course", Method: http.MethodPost, Path: "/orders/{id}/courses/{course}/serve", Tags: orderTags,
 		Summary: "Serve a course once every item is ready",
 	}, wrap(s, func(ctx context.Context, in *courseOnly) (*out[orders.Order], error) {
@@ -211,6 +228,14 @@ func (s *Server) kitchenRoutes() {
 	}, wrap(s, func(ctx context.Context, in *out[service.ItemMove]) (*out[ordersBody], error) {
 		list, err := s.svc.MoveItems(ctx, principal(ctx), in.Body)
 		return reply(ordersBody{Orders: list}, err)
+	}))
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "replace-item", Method: http.MethodPost, Path: "/kitchen/items/{id}/replace", Tags: kitchenTags,
+		Summary:     "Replace an item with the right one: void it and add the new one in one step",
+		Description: "The new item joins the same course and goes straight to its station if the course is fired. Front of house can replace items in a held course; once fired, the head chef or a manager.",
+	}, wrap(s, func(ctx context.Context, in *idIn[service.ItemReplace]) (*out[orders.Order], error) {
+		return reply(s.svc.ReplaceItem(ctx, principal(ctx), in.ID, in.Body))
 	}))
 
 	registerGroup(s, settings.KindScheduler, "scheduler settings",

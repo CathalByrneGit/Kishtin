@@ -407,6 +407,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kitchen/items/{id}/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace an item with the right one: void it and add the new one in one step
+         * @description The new item joins the same course and goes straight to its station if the course is fired. Front of house can replace items in a held course; once fired, the head chef or a manager.
+         */
+        post: operations["replace-item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/menu": {
         parameters: {
             query?: never;
@@ -615,6 +635,26 @@ export interface paths {
         put?: never;
         /** Fire a course: its target time is now plus its longest item */
         post: operations["fire-course"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/courses/{course}/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hold a fired course again (un-fire it)
+         * @description Only while nothing in the course has started. Its items leave the station queues and its target time is cleared. Logged with the reason.
+         */
+        post: operations["hold-course"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1349,6 +1389,9 @@ export interface components {
         HistoryOutSystemBody: {
             versions: components["schemas"]["VersionedSystem"][];
         };
+        HoldBody: {
+            reason?: string;
+        };
         Item: {
             /** Format: int64 */
             batch_capacity?: number;
@@ -1393,6 +1436,10 @@ export interface components {
             ready_at: string;
             /** Format: date-time */
             start_at: string;
+        };
+        ItemReplace: {
+            item: components["schemas"]["NewItem"];
+            reason?: string;
         };
         KeysOutBody: {
             keys: components["schemas"]["APIKey"][];
@@ -2733,6 +2780,41 @@ export interface operations {
             };
         };
     };
+    "replace-item": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemReplace"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-menu": {
         parameters: {
             query?: never;
@@ -3139,6 +3221,42 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "hold-course": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                course: "starter" | "main" | "dessert";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldBody"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

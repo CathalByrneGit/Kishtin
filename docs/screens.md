@@ -19,7 +19,7 @@ Choose what a device shows in **Settings → This device → This device shows**
 | Layout | For | Shows |
 |---|---|---|
 | Desktop, with the sidebar | the office computer | the full app, described below |
-| Pass screen | a wall-mounted tablet or TV at the pass | every open order in large type, with Fire, Serve, Change time and Urgent for the head chef or a manager |
+| Pass screen | a wall-mounted tablet or TV at the pass | every open order in large type, with Fire, Serve, Change time, Hold again and Urgent for the head chef or a manager |
 | Station screen | a tablet at one station | that station's Start now, In progress and Coming up, with Start and Done buttons |
 | Phone | a phone | four tabs: Today (fridge and cleaning checks), Log check, New order (for staff who take orders), and the Pass |
 
@@ -56,8 +56,8 @@ Every open order as a card, for the head chef or expo:
 - **Figures**: open orders, and how many fired courses are on track, at risk, late, or ready to serve, and how many courses are held.
 - **Show**: all orders, only those that need action (at risk, late or ready), or those with held courses.
 - Each card shows the table or takeaway, ticket number, time entered, covers, notes, and an **Allergy** chip and red edge when flagged. Each course shows its state and the scheduler's status (on track, at risk, late, ready) with the reason, the target time with a countdown, and its items grouped as "2× Burger (Well done)" with their state.
-- Head chefs and managers get the buttons: **Fire** a held course; **Serve** a course once every item is ready; **Change time** (a new target, with a reason for the log); **Urgent**; and **Close order** once everything is served or voided. Other staff see the same cards without buttons.
-- The history icon opens the order: its courses and items, its full history (who did what, when), and **Add items**.
+- Head chefs and managers get the buttons: **Fire** a held course; **Serve** a course once every item is ready; **Change time** (a new target, with a reason for the log); **Hold again** on a fired course while nothing in it has started; **Urgent**; and **Close order** once everything is served or voided. Other staff see the same cards without buttons.
+- The history icon opens the order: its courses and items, its full history (who did what, when), **Add items**, **Hold again**, and **Change** on each item. Change shows the item as an editable line (dish, modifiers, notes) and an optional reason; **Replace item** voids the old one and adds the new one in its place.
 
 ### Stations
 
@@ -74,7 +74,7 @@ Each button sends the state the cook saw. If someone else has already moved thos
 ### Orders
 
 - **New order** (front of house, head chefs and managers): table or takeaway, table number or customer name, covers, an allergy tick and notes. Tap dishes to add them, grouped by course; dishes that are 86 cannot be added. Each line has a quantity, its course, modifier chips and notes. Head chefs and managers can tick courses to **fire straight away**. **Send order** shows the ticket number.
-- **Today's orders**: open orders, or every order today, sortable. Select one to open it, with its history and **Add items**.
+- **Today's orders**: open orders, or every order today, sortable. Select one to open it, with its history, **Add items** and **Change**.
 
 ## Today
 

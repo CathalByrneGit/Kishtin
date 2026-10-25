@@ -545,7 +545,11 @@ func printOrder(w io.Writer, o client.Order) {
 			if n := deref(it.Notes); n != "" {
 				name += ": " + n
 			}
-			rows = append(rows, []string{"  " + name, it.State, it.ID})
+			state := it.State
+			if r := deref(it.VoidReason); r != "" {
+				state += " (" + r + ")"
+			}
+			rows = append(rows, []string{"  " + name, state, it.ID})
 		}
 		table(w, "  ITEM\tSTATE\tID", rows)
 	}
@@ -747,6 +751,30 @@ func (c *cli) orderCmd() *cobra.Command {
 	}
 	target.Flags().StringVar(&reason, "reason", "", "why, for the log")
 
+	var holdReason string
+	hold := &cobra.Command{
+		Use: "hold ORDER COURSE", Short: "Hold a fired course again (un-fire it), while nothing in it has started", Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			o, err := c.findOrder(ctx, args[0])
+			if err != nil {
+				return err
+			}
+			body := client.HoldBody{}
+			if holdReason != "" {
+				body.Reason = &holdReason
+			}
+			res, err := c.api.HoldCourse(ctx, &client.HoldCourseRequestOptions{
+				PathParams: &client.HoldCoursePath{ID: o.ID, Course: client.HoldCoursePathCourse(args[1])}, Body: &body,
+			})
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) { printOrder(w, *res) })
+		},
+	}
+	hold.Flags().StringVar(&holdReason, "reason", "", "why, for the log")
+
 	var off bool
 	urgent := &cobra.Command{
 		Use: "urgent ORDER COURSE", Short: "Flag a course urgent so it goes first (--off to clear)", Args: cobra.ExactArgs(2),
@@ -782,7 +810,7 @@ func (c *cli) orderCmd() *cobra.Command {
 			return c.emit(res, func(w io.Writer) { fmt.Fprintf(w, "Closed %s\n", orderLabel(*res)) })
 		},
 	}
-	cmd.AddCommand(newCmd, addCmd, list, show, fireCmd, serveCmd, target, urgent, closeCmd)
+	cmd.AddCommand(newCmd, addCmd, list, show, fireCmd, hold, serveCmd, target, urgent, closeCmd)
 	return cmd
 }
 
@@ -942,6 +970,35 @@ func (c *cli) itemsCmd() *cobra.Command {
 	for _, sub := range []*cobra.Command{next, set} {
 		sub.Flags().StringVar(&from, "from", "", "the state you saw the items in; nothing moves if any has already changed")
 	}
-	cmd.AddCommand(next, set)
+	var with, why string
+	replace := &cobra.Command{
+		Use: "replace ITEM --with \"Burger: well done\"", Short: "Replace an item with the right one (void it and add the new one in one step)", Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			if with == "" {
+				return fmt.Errorf("say what to replace it with: --with \"Burger: well done\"")
+			}
+			m, err := c.menu(ctx)
+			if err != nil {
+				return err
+			}
+			ni, err := parseItem(m, with)
+			if err != nil {
+				return err
+			}
+			body := client.ItemReplace{Item: ni}
+			if why != "" {
+				body.Reason = &why
+			}
+			res, err := c.api.ReplaceItem(ctx, &client.ReplaceItemRequestOptions{PathParams: &client.ReplaceItemPath{ID: args[0]}, Body: &body})
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) { printOrder(w, *res) })
+		},
+	}
+	replace.Flags().StringVar(&with, "with", "", "the right item, such as \"Burger: well done\"")
+	replace.Flags().StringVar(&why, "reason", "", "why, for the log")
+	cmd.AddCommand(next, set, replace)
 	return cmd
 }

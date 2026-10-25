@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button, Chip, EmptyState, IconButton, MetricCard, Modal, Notice, SegmentedControl, Spinner, TextInput, showFlash } from "@kenn-io/kit-ui";
-  import { Flame, History, TimerReset } from "@lucide/svelte";
+  import { Flame, History, Pause, TimerReset } from "@lucide/svelte";
   import OrderDrawer from "../components/OrderDrawer.svelte";
   import { api, message, type Course, type Order, type OrderItem, type Schemas } from "../lib/api";
   import { dublinTime, dublinToDate, dublinDate, isClock, normaliseClock } from "../lib/format";
@@ -156,6 +156,7 @@
             {@const items = o.items.filter((it) => it.course === c.course)}
             {@const st = statusOf.get(`${o.id}|${c.course}`)}
             {@const allReady = items.every((it) => it.state === "ready" || it.state === "served" || it.state === "voided")}
+            {@const canHold = items.every((it) => it.state === "fired" || it.state === "held" || it.state === "voided")}
             <section class="course" class:served={c.state === "served"}>
               <div class="course-head">
                 <strong>{courseLabel(c.course)}</strong>
@@ -196,6 +197,9 @@
                   {:else if c.state === "fired"}
                     <Button tone="success" surface="solid" label={`Serve ${courseLabel(c.course).toLowerCase()}`} disabled={busy !== null || !allReady} onclick={() => act(`${o.id}|${c.course}`, () => api.serve(o.id, c.course as Course), `${orderLabel(o)} ${courseLabel(c.course).toLowerCase()} served`)} />
                     <Button label="Change time" disabled={busy !== null} onclick={() => openTarget(o, c)}><TimerReset size={16} /></Button>
+                    {#if canHold}
+                      <Button label="Hold again" disabled={busy !== null} onclick={() => act(`${o.id}|${c.course}`, () => api.hold(o.id, c.course as Course), `${orderLabel(o)} ${courseLabel(c.course).toLowerCase()} held again`)}><Pause size={16} /></Button>
+                    {/if}
                     <Button label={c.urgent ? "Not urgent" : "Urgent"} tone={c.urgent ? "neutral" : "danger"} disabled={busy !== null} onclick={() => act(`${o.id}|${c.course}`, () => api.setUrgent(o.id, c.course as Course, !c.urgent), c.urgent ? "Urgent flag cleared" : "Flagged urgent")} />
                   {/if}
                 </div>

@@ -362,3 +362,85 @@ func TestSchedulerSettings(t *testing.T) {
 	assert.Equal(t, scheduler.StrategyFIFO, view.Plan.Strategy)
 	assert.Equal(t, saved.Version.ID, view.Plan.SettingsVersion, "every plan says which settings produced it")
 }
+
+func TestHoldCourseAgain(t *testing.T) {
+	k := setupKitchen(t)
+	ctx := context.Background()
+	o, err := k.svc.CreateOrder(ctx, k.foh, NewOrder{Kind: orders.KindTable, Table: "9", Items: []NewItem{{DishID: k.burger.ID, Quantity: 2}}})
+	require.NoError(t, err)
+
+	_, err = k.svc.HoldCourse(ctx, k.chef, o.ID, menu.CourseMain, "")
+	assert.ErrorContains(t, err, "only a fired course")
+
+	o, err = k.svc.FireCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	require.NoError(t, err)
+	_, err = k.svc.HoldCourse(ctx, k.foh, o.ID, menu.CourseMain, "")
+	assert.Equal(t, KindForbidden, KindOf(err))
+
+	o, err = k.svc.HoldCourse(ctx, k.chef, o.ID, menu.CourseMain, "table not back yet")
+	require.NoError(t, err)
+	c, _ := o.Course(menu.CourseMain)
+	assert.Equal(t, orders.CourseHeld, c.State)
+	assert.Nil(t, c.TargetAt)
+	assert.Nil(t, c.FiredAt)
+	for _, it := range o.Items {
+		assert.Equal(t, orders.StateHeld, it.State)
+	}
+	evs, err := k.svc.OrderEvents(ctx, k.chef, o.ID)
+	require.NoError(t, err)
+	last := evs[len(evs)-1]
+	assert.Equal(t, orders.EventHeld, last.Kind)
+	assert.Equal(t, "held again: table not back yet", last.Detail)
+
+	// Fire again, start one burger: now it cannot be held.
+	o, err = k.svc.FireCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	require.NoError(t, err)
+	_, err = k.svc.MoveItems(ctx, k.cook, ItemMove{ItemIDs: []string{o.Items[0].ID}, From: orders.StateFired})
+	require.NoError(t, err)
+	_, err = k.svc.HoldCourse(ctx, k.chef, o.ID, menu.CourseMain, "")
+	assert.ErrorContains(t, err, "already started: Synthetic burger (cooking)")
+}
+
+func TestReplaceItem(t *testing.T) {
+	k := setupKitchen(t)
+	ctx := context.Background()
+	o, err := k.svc.CreateOrder(ctx, k.foh, NewOrder{Kind: orders.KindTable, Table: "5", Items: []NewItem{{DishID: k.burger.ID}, {DishID: k.salad.ID}}})
+	require.NoError(t, err)
+	burger := o.Items[0]
+
+	// Front of house fixes a held item.
+	o, err = k.svc.ReplaceItem(ctx, k.foh, burger.ID, ItemReplace{Item: NewItem{DishID: k.burger.ID, Modifiers: []string{"Well done"}}, Reason: "asked for well done"})
+	require.NoError(t, err)
+	require.Len(t, o.Items, 3)
+	old, _ := o.Item(burger.ID)
+	assert.Equal(t, orders.StateVoided, old.State)
+	assert.Equal(t, "asked for well done by Synthetic burger (Well done)", old.VoidReason)
+	added := o.Items[2]
+	assert.Equal(t, orders.StateHeld, added.State)
+	assert.Equal(t, menu.CourseMain, added.Course)
+	assert.Equal(t, []string{"Well done"}, added.Modifiers)
+
+	// Once fired, only the pass can change it, and the new item goes straight to the station.
+	o, err = k.svc.FireCourse(ctx, k.chef, o.ID, menu.CourseMain)
+	require.NoError(t, err)
+	_, err = k.svc.ReplaceItem(ctx, k.foh, added.ID, ItemReplace{Item: NewItem{DishID: k.burger.ID}})
+	assert.Equal(t, KindForbidden, KindOf(err))
+	o, err = k.svc.ReplaceItem(ctx, k.chef, added.ID, ItemReplace{Item: NewItem{DishID: k.burger.ID}})
+	require.NoError(t, err)
+	assert.Equal(t, orders.StateFired, o.Items[3].State)
+	gone, _ := o.Item(added.ID)
+	assert.Equal(t, "replaced by Synthetic burger", gone.VoidReason)
+
+	// Nothing changes when the new dish is sold out.
+	_, err = k.svc.SetAvailability(ctx, k.chef, k.salad.ID, false)
+	require.NoError(t, err)
+	_, err = k.svc.ReplaceItem(ctx, k.chef, o.Items[3].ID, ItemReplace{Item: NewItem{DishID: k.salad.ID, Course: menu.CourseMain}})
+	assert.ErrorContains(t, err, "sold out")
+	o, err = k.svc.GetOrder(ctx, k.chef, o.ID)
+	require.NoError(t, err)
+	assert.Equal(t, orders.StateFired, o.Items[3].State)
+	assert.Len(t, o.Items, 4)
+
+	_, err = k.svc.ReplaceItem(ctx, k.chef, gone.ID, ItemReplace{Item: NewItem{DishID: k.burger.ID}})
+	assert.ErrorContains(t, err, "already voided")
+}

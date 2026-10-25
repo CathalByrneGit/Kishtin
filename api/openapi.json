@@ -975,6 +975,15 @@
         ],
         "type": "object"
       },
+      "HoldBody": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "Item": {
         "additionalProperties": false,
         "properties": {
@@ -1119,6 +1128,21 @@
           "latest_start",
           "start_at",
           "ready_at"
+        ],
+        "type": "object"
+      },
+      "ItemReplace": {
+        "additionalProperties": false,
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/NewItem"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item"
         ],
         "type": "object"
       },
@@ -4255,6 +4279,58 @@
         ]
       }
     },
+    "/kitchen/items/{id}/replace": {
+      "post": {
+        "description": "The new item joins the same course and goes straight to its station if the course is fired. Front of house can replace items in a held course; once fired, the head chef or a manager.",
+        "operationId": "replace-item",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemReplace"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Replace an item with the right one: void it and add the new one in one step",
+        "tags": [
+          "Kitchen"
+        ]
+      }
+    },
     "/menu": {
       "get": {
         "operationId": "get-menu",
@@ -4829,6 +4905,71 @@
           }
         },
         "summary": "Fire a course: its target time is now plus its longest item",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/courses/{course}/hold": {
+      "post": {
+        "description": "Only while nothing in the course has started. Its items leave the station queues and its target time is cleared. Logged with the reason.",
+        "operationId": "hold-course",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "course",
+            "required": true,
+            "schema": {
+              "enum": [
+                "starter",
+                "main",
+                "dessert"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HoldBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Hold a fired course again (un-fire it)",
         "tags": [
           "Orders"
         ]

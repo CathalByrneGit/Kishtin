@@ -51,6 +51,7 @@ When two people tap at once, or one taps on a screen that is out of date, only t
 
 - **Serve** serves a whole course, and only once every item in it is ready, so a course leaves the pass together.
 - **Close** an order once every item is served or voided.
+- **Change** an item that was ordered wrong (a burger that should be well done, the wrong dish): the old item is voided and the right one added in its place, in one step, so it can never end up half done. The void reason says what replaced it ("asked for well done by Burger (Well done)"). The new item joins the same course, and goes straight to its station if the course is fired. Front of house can change items in a held course; once the course is fired, only the head chef or a manager can, as with any void.
 - Every change goes in the order's **history**: who, when, and what. The history cannot be edited or deleted. Item state changes in it are the actual cook times that learned cook times will use later.
 
 ### Expo overrides
@@ -58,6 +59,7 @@ When two people tap at once, or one taps on a screen that is out of date, only t
 On a fired course the expo can:
 
 - **Change time**: set a new target time, with a reason. It is logged, and the scheduler re-plans around it.
+- **Hold again**: un-fire the course, for example when the table has stepped outside. Its items leave the station queues and its target time is cleared; firing it again sets a fresh target. This only works while nothing in the course has started. Once a cook has started an item the food is already cooking, so void or change those items instead.
 - **Urgent**: flag the course so the scheduler puts it first. Also logged.
 
 An override always beats the scheduler's settings.
@@ -124,6 +126,7 @@ kishtin order new --table 4 --covers 2 --item "Salad" --item "2x Burger: well do
 kishtin order new --takeaway --name "Aoife" --item "Burger" --item "Fries" --fire main
 kishtin order fire "table 4" main                # orders by ID, #ticket or table
 kishtin order target 4 main 19:30 --reason "Table not ready"
+kishtin order hold 4 main --reason "Table outside"  # un-fire, while nothing has started
 kishtin order urgent "#3" main
 kishtin order serve 4 main
 kishtin order show 4 --history
@@ -134,6 +137,7 @@ kishtin station grill                            # what to start now and next, a
 kishtin items next ID...                         # one step forward
 kishtin items next --from fired ID...            # only if they are still waiting to start
 kishtin items move --to voided --reason "Dropped" ID
+kishtin items replace ID --with "Burger: well done" --reason "Asked for well done"
 
 kishtin settings show scheduler
 ```

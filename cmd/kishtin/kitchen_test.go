@@ -44,6 +44,10 @@ func TestKitchenCLI(t *testing.T) {
 
 	out = cli("order", "fire", "table 4", "main")
 	assert.Contains(t, out, "main: fired, due")
+	out = cli("order", "hold", "table 4", "main", "--reason", "table went for a smoke")
+	assert.Contains(t, out, "main: held")
+	out = cli("order", "fire", "table 4", "main")
+	assert.Contains(t, out, "main: fired, due")
 
 	out = cli("pass", "--why")
 	assert.Contains(t, out, "Table 4")
@@ -64,6 +68,12 @@ func TestKitchenCLI(t *testing.T) {
 	assert.Contains(t, err.Error(), "is already cooking (Máire Manager")
 	out = cli("station", "grill")
 	assert.Contains(t, out, "In progress:")
+	_, _, err = run(t, url, key, "", "order", "hold", "4", "main")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already started")
+
+	out = cli("items", "replace", ids[2], "--with", "Synthetic burger", "--reason", "dropped")
+	assert.Contains(t, out, "dropped by Synthetic burger")
 
 	out = cli("order", "urgent", "#1", "main")
 	assert.Contains(t, out, "urgent")

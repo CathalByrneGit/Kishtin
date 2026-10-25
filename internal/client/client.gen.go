@@ -134,6 +134,10 @@ type ClientInterface interface {
 	MoveItems(ctx context.Context, options *MoveItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*MoveItemsResponse, error)
 	MoveItemsWithResponse(ctx context.Context, options *MoveItemsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*MoveItemsResp, error)
 
+	// ReplaceItem Replace an item with the right one: void it and add the new one in one step
+	ReplaceItem(ctx context.Context, options *ReplaceItemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReplaceItemResponse, error)
+	ReplaceItemWithResponse(ctx context.Context, options *ReplaceItemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReplaceItemResp, error)
+
 	// GetMenu Show stations, equipment and dishes
 	GetMenu(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResponse, error)
 	GetMenuWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResp, error)
@@ -185,6 +189,10 @@ type ClientInterface interface {
 	// FireCourse Fire a course: its target time is now plus its longest item
 	FireCourse(ctx context.Context, options *FireCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*FireCourseResponse, error)
 	FireCourseWithResponse(ctx context.Context, options *FireCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*FireCourseResp, error)
+
+	// HoldCourse Hold a fired course again (un-fire it)
+	HoldCourse(ctx context.Context, options *HoldCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*HoldCourseResponse, error)
+	HoldCourseWithResponse(ctx context.Context, options *HoldCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*HoldCourseResp, error)
 
 	// ServeCourse Serve a course once every item is ready
 	ServeCourse(ctx context.Context, options *ServeCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ServeCourseResponse, error)
@@ -1831,6 +1839,70 @@ func (c *Client) MoveItems(ctx context.Context, options *MoveItemsRequestOptions
 	return responseParser(ctx, resp)
 }
 
+// ReplaceItem Replace an item with the right one: void it and add the new one in one step
+func (c *Client) ReplaceItem(ctx context.Context, options *ReplaceItemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReplaceItemResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/kitchen/items/{id}/replace",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ReplaceItemResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ReplaceItemErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ReplaceItemErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ReplaceItemResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ReplaceItemResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen/items/{id}/replace")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // GetMenu Show stations, equipment and dishes
 func (c *Client) GetMenu(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResponse, error) {
 	var err error
@@ -2656,6 +2728,70 @@ func (c *Client) FireCourse(ctx context.Context, options *FireCourseRequestOptio
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/fire")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// HoldCourse Hold a fired course again (un-fire it)
+func (c *Client) HoldCourse(ctx context.Context, options *HoldCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*HoldCourseResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/hold",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*HoldCourseResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(HoldCourseErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "HoldCourseErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(HoldCourseResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "HoldCourseResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/hold")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -5101,6 +5237,59 @@ func (o *MoveItemsRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// ReplaceItemRequestOptions is the options needed to make a request to ReplaceItem.
+type ReplaceItemRequestOptions struct {
+	PathParams *ReplaceItemPath
+	Body       *ReplaceItemBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ReplaceItemRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ReplaceItemRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *ReplaceItemRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ReplaceItemRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *ReplaceItemRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // CreateDishRequestOptions is the options needed to make a request to CreateDish.
 type CreateDishRequestOptions struct {
 	Body *CreateDishBody
@@ -5662,6 +5851,59 @@ func (o *FireCourseRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *FireCourseRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// HoldCourseRequestOptions is the options needed to make a request to HoldCourse.
+type HoldCourseRequestOptions struct {
+	PathParams *HoldCoursePath
+	Body       *HoldCourseBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *HoldCourseRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *HoldCourseRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *HoldCourseRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *HoldCourseRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *HoldCourseRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -7909,6 +8151,68 @@ func (c *Client) MoveItemsWithResponse(ctx context.Context, options *MoveItemsRe
 	}
 }
 
+// ReplaceItem Replace an item with the right one: void it and add the new one in one step
+func (c *Client) ReplaceItemWithResponse(ctx context.Context, options *ReplaceItemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReplaceItemResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/kitchen/items/{id}/replace",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen/items/{id}/replace")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ReplaceItemResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ReplaceItemResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReplaceItemResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ReplaceItemErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReplaceItemErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetMenu Show stations, equipment and dishes
 func (c *Client) GetMenuWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResp, error) {
 	var err error
@@ -8700,6 +9004,68 @@ func (c *Client) FireCourseWithResponse(ctx context.Context, options *FireCourse
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "FireCourseErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// HoldCourse Hold a fired course again (un-fire it)
+func (c *Client) HoldCourseWithResponse(ctx context.Context, options *HoldCourseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*HoldCourseResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/orders/{id}/courses/{course}/hold",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/courses/{course}/hold")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &HoldCourseResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(HoldCourseResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "HoldCourseResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(HoldCourseErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "HoldCourseErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -10473,6 +10839,24 @@ func (f FireCoursePathCourse) Validate() error {
 	}
 }
 
+type HoldCoursePathCourse string
+
+const (
+	HoldCoursePathCourseDessert HoldCoursePathCourse = "dessert"
+	HoldCoursePathCourseMain    HoldCoursePathCourse = "main"
+	HoldCoursePathCourseStarter HoldCoursePathCourse = "starter"
+)
+
+// Validate checks if the HoldCoursePathCourse value is valid
+func (h HoldCoursePathCourse) Validate() error {
+	switch h {
+	case HoldCoursePathCourseDessert, HoldCoursePathCourseMain, HoldCoursePathCourseStarter:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid HoldCoursePathCourse value, got: %v", h))
+	}
+}
+
 type ServeCoursePathCourse string
 
 const (
@@ -10555,6 +10939,14 @@ func (r RevokeKeyPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(r))
 }
 
+type ReplaceItemPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (r ReplaceItemPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(r))
+}
+
 type UpdateDishPath struct {
 	ID string `json:"id" validate:"required"`
 }
@@ -10614,6 +11006,27 @@ func (f FireCoursePath) Validate() error {
 		errors = errors.Append("ID", err)
 	}
 	if v, ok := any(f.Course).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Course", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type HoldCoursePath struct {
+	ID     string               `json:"id" validate:"required"`
+	Course HoldCoursePathCourse `json:"course" validate:"required"`
+}
+
+func (h HoldCoursePath) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if v, ok := any(h.Course).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
 			errors = errors.Append("Course", err)
 		}
@@ -10727,6 +11140,8 @@ type CreateKeyBody = NewKeyInBody
 
 type MoveItemsBody = ItemMove
 
+type ReplaceItemBody = ItemReplace
+
 type CreateDishBody = DishInput
 
 type UpdateDishBody = DishInput
@@ -10742,6 +11157,8 @@ type CreateStationBody = StationInput
 type UpdateStationBody = StationInput
 
 type CreateOrderBody = NewOrder
+
+type HoldCourseBody = HoldBody
 
 type SetCourseTargetBody = TargetBody
 
@@ -10927,6 +11344,10 @@ type MoveItemsResponse = OrdersBody
 
 type MoveItemsErrorResponse = ErrorModel
 
+type ReplaceItemResponse = Order
+
+type ReplaceItemErrorResponse = ErrorModel
+
 type GetMenuResponse = Setup
 
 type GetMenuErrorResponse = ErrorModel
@@ -10978,6 +11399,10 @@ type CloseOrderErrorResponse = ErrorModel
 type FireCourseResponse = Order
 
 type FireCourseErrorResponse = ErrorModel
+
+type HoldCourseResponse = Order
+
+type HoldCourseErrorResponse = ErrorModel
 
 type ServeCourseResponse = Order
 
@@ -11312,6 +11737,14 @@ type MoveItemsResp struct {
 	ApplicationProblemPlusJSONDefault *MoveItemsErrorResponse
 }
 
+type ReplaceItemResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ReplaceItemResponse
+	ApplicationProblemPlusJSONDefault *ReplaceItemErrorResponse
+}
+
 type GetMenuResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -11414,6 +11847,14 @@ type FireCourseResp struct {
 	StatusCode                        int
 	JSON200                           *FireCourseResponse
 	ApplicationProblemPlusJSONDefault *FireCourseErrorResponse
+}
+
+type HoldCourseResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *HoldCourseResponse
+	ApplicationProblemPlusJSONDefault *HoldCourseErrorResponse
 }
 
 type ServeCourseResp struct {
@@ -12333,6 +12774,10 @@ func (h HistoryOutSystemBody) Validate() error {
 	return errors
 }
 
+type HoldBody struct {
+	Reason *string `json:"reason,omitempty"`
+}
+
 type Item struct {
 	BatchCapacity *int64     `json:"batch_capacity,omitempty"`
 	Batchable     bool       `json:"batchable"`
@@ -12427,6 +12872,24 @@ type ItemPlan struct {
 
 func (i ItemPlan) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(i))
+}
+
+type ItemReplace struct {
+	Item   NewItem `json:"item"`
+	Reason *string `json:"reason,omitempty"`
+}
+
+func (i ItemReplace) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(i.Item).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Item", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type KeysOutBody struct {
