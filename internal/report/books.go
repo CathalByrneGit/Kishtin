@@ -201,9 +201,34 @@ func WriteBook(p Book, out io.Writer) error {
 		}
 		if tpl.ManagerCheck {
 			pdf.Ln(1)
-			pdf.SetFont("Helvetica", "", 9)
 			w.color(ink)
-			pdf.CellFormat(0, 5.5, w.text("Manager/Supervisor check on ____ / ____ / ________      Signed ______________________"), "", 1, "L", false, 0, "")
+			if len(b.SignOffs) > 0 {
+				var parts []string
+				for _, so := range b.SignOffs {
+					parts = append(parts, fmt.Sprintf("%s by %s (covers %s to %s, record #%d)", shortDate(so.Date), so.By, shortDate(so.From), shortDate(so.To), so.Seq))
+				}
+				pdf.SetFont("Helvetica", "B", 8.5)
+				label := w.text("Manager/Supervisor check:")
+				pdf.CellFormat(pdf.GetStringWidth(label)+2, 4.5, label, "", 0, "L", false, 0, "")
+				pdf.SetFont("Helvetica", "", 8.5)
+				pdf.MultiCell(0, 4.5, w.text(strings.Join(parts, "; ")), "", "L", false)
+			}
+			if len(b.Unsigned) > 0 {
+				var spans []string
+				for _, sp := range b.Unsigned {
+					if sp.From == sp.To {
+						spans = append(spans, shortDate(sp.From))
+					} else {
+						spans = append(spans, shortDate(sp.From)+" to "+shortDate(sp.To))
+					}
+				}
+				pdf.SetFont("Helvetica", "", 8.5)
+				pdf.MultiCell(0, 4.5, w.text("Not signed off: "+strings.Join(spans, ", ")+"."), "", "L", false)
+			}
+			if len(b.SignOffs) == 0 || len(b.Unsigned) > 0 {
+				pdf.SetFont("Helvetica", "", 9)
+				pdf.CellFormat(0, 5.5, w.text("Manager/Supervisor check on ____ / ____ / ________      Signed ______________________"), "", 1, "L", false, 0, "")
+			}
 		}
 	}
 
@@ -244,4 +269,13 @@ func WriteBook(p Book, out io.Writer) error {
 		return fmt.Errorf("write %s: %w", tpl.Code, err)
 	}
 	return nil
+}
+
+// shortDate turns 2026-10-08 into 08/10/26, as the booklets write dates.
+func shortDate(d string) string {
+	t, err := time.Parse("2006-01-02", d)
+	if err != nil {
+		return d
+	}
+	return t.Format("02/01/06")
 }

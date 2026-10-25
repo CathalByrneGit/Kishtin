@@ -25,7 +25,7 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 - **Today**: every fridge and freezer check (done, due or missed, with check times per unit), the cleaning checklist, checks done out of due, out-of-limit readings and their actions, and batches in use.
 - **Live sync**: every open screen shows new records straight away.
 - **Exports**: CSV of records and the limit history, and a PDF inspection pack, each with record IDs and hashes.
-- **Record books**: official HACCP booklets filled in from the records for a month, with missed checks marked. Bundles per country (Ireland's FSAI Safe Catering booklets SC2, SC3 and SC4, and a general set for any country), which a manager can change in Setup › HACCP records. See [docs/record-books.md](docs/record-books.md).
+- **Record books**: official HACCP booklets filled in from the records for a month, with missed checks marked. Bundles per country (Ireland's FSAI Safe Catering booklets SC2, SC3 and SC4, and a general set for any country), which a manager can change in Setup › HACCP records. A manager signs off each period, which fills the booklets' manager check line. See [docs/record-books.md](docs/record-books.md).
 - **Backups** on a schedule. Each copy is verified and gets a `.sha256` file.
 - **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts.
 - **HTTP API** (OpenAPI spec in [api/openapi.json](api/openapi.json)) and the **`kishtin` CLI**, which uses the API.

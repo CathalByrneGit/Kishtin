@@ -251,6 +251,9 @@ func (s *Service) CreateLimit(ctx context.Context, p *auth.Principal, nl NewLimi
 // subject is a short label for what a record is about.
 func subject(r haccp.Record) string {
 	rd := r.Reading
+	if r.Type == haccp.RecordSignOff {
+		return rd.PeriodFrom + " to " + rd.PeriodTo
+	}
 	for _, s := range []string{rd.Unit, rd.Food, rd.Product, rd.Task} {
 		if s != "" {
 			if rd.Supplier != "" {

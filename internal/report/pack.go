@@ -167,6 +167,9 @@ func (w *writer) reading(r haccp.Record) string {
 
 func subject(r haccp.Record) string {
 	rd := r.Reading
+	if r.Type == haccp.RecordSignOff {
+		return "Period " + rd.PeriodFrom + " to " + rd.PeriodTo
+	}
 	for _, s := range []string{rd.Unit, rd.Food, rd.Product, rd.Task} {
 		if s != "" {
 			if rd.Supplier != "" {

@@ -247,6 +247,7 @@ Official record books (for example Ireland's FSAI Safe Catering booklets) are fi
 - Each booklet is a template: its columns, the record field in each, its notes, and the edition and SHA-256 of the official PDF it copies. Rows come from a small set of pure builders (fridge grid, cooking log, hot holding log). Only a booklet that needs a new kind of row needs code.
 - The restaurant picks its bundle and changes what is relevant (booklets in use, titles, columns, notes, sheet layout, manager check, its own added booklets, its uploaded copy) through the versioned `record_books` settings. The same rules as limits apply: preview, reason, manager password, history.
 - These settings change only how records print. They never change a record or its result.
+- A manager's sign-off of a period is a `sign_off` HACCP record in the hash chain, saved only through the sign-off action (manager password), never through ordinary logging. It stores what the period held when signed. A period with missed checks or readings without an action needs a note.
 - Never fill in a missed check. Never invent a bundle or edition: a bundle copies a real published booklet and records its source.
 
 ### Menu and stations (`internal/menu`)

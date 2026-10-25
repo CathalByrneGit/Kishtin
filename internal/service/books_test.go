@@ -161,3 +161,83 @@ func TestRecordBookSettings(t *testing.T) {
 	_, err = f.svc.RecordBook(ctx, f.manager, "SC4", "")
 	require.NoError(t, err, "not saved yet")
 }
+
+func TestSignOff(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	// 1 May, 10:00 Dublin.
+	_, err := f.svc.LogRecord(ctx, f.cook, fridge(3.4))
+	require.NoError(t, err)
+	_, err = f.svc.LogRecord(ctx, f.cook, NewRecord{Type: haccp.RecordHotHold, Reading: haccp.Reading{Food: "Soup", TempC: fp(60)}, CorrectiveAction: "Reheated to 75°C"})
+	require.NoError(t, err)
+	// 8 May, 11:00.
+	f.clk.Set(start.Add(7*24*time.Hour + 2*time.Hour))
+
+	_, err = f.svc.LogRecord(ctx, f.manager, NewRecord{Type: haccp.RecordSignOff, Reading: haccp.Reading{PeriodFrom: "2026-05-01", PeriodTo: "2026-05-07"}})
+	assert.Equal(t, KindInvalid, KindOf(err), "a sign-off is not logged as a reading")
+
+	td, err := f.svc.Today(ctx, f.cook)
+	require.NoError(t, err)
+	assert.Equal(t, SignOffStatus{UnsignedFrom: "2026-05-01", UnsignedDays: 7}, td.SignOff)
+
+	pv, err := f.svc.PreviewSignOff(ctx, f.manager, SignOffInput{})
+	require.NoError(t, err)
+	assert.Equal(t, "2026-05-01", pv.From, "from the first record")
+	assert.Equal(t, "2026-05-07", pv.To, "to yesterday")
+	assert.Equal(t, haccp.Review{Records: 2, OutOfLimit: 1, WithoutAction: 0, Missed: 41}, pv.Review)
+	assert.True(t, pv.NoteRequired)
+	assert.Nil(t, pv.Last)
+
+	_, err = f.svc.SignOff(ctx, f.cook, SignOffInput{Note: "x"})
+	assert.Equal(t, KindForbidden, KindOf(err), "only a manager signs off")
+	_, err = f.svc.SignOff(ctx, f.manager, SignOffInput{})
+	assert.Equal(t, KindInvalid, KindOf(err))
+	assert.ErrorContains(t, err, "add a note")
+	_, err = f.svc.SignOff(ctx, f.manager, SignOffInput{From: "2026-05-01", To: "2026-05-09", Note: "x"})
+	assert.ErrorContains(t, err, "not happened yet")
+
+	rec, err := f.svc.SignOff(ctx, f.manager, SignOffInput{Note: "Prep fridge and freezer are not checked yet: added to the opening list."})
+	require.NoError(t, err)
+	assert.Equal(t, haccp.RecordSignOff, rec.Type)
+	assert.Equal(t, "2026-05-01", rec.Reading.PeriodFrom)
+	require.NotNil(t, rec.Reading.Review)
+	assert.Equal(t, 41, rec.Reading.Review.Missed)
+	assert.Contains(t, rec.OutcomeReason, "Signed off 2026-05-01 to 2026-05-07")
+	rep, err := f.svc.Verify(ctx, f.manager)
+	require.NoError(t, err)
+	assert.True(t, rep.OK, "the sign-off is in the hash chain")
+
+	td, err = f.svc.Today(ctx, f.cook)
+	require.NoError(t, err)
+	assert.Equal(t, SignOffStatus{SignedTo: "2026-05-07"}, td.SignOff)
+
+	// The next period starts after the last sign-off.
+	f.clk.Set(start.Add(10 * 24 * time.Hour))
+	pv, err = f.svc.PreviewSignOff(ctx, f.manager, SignOffInput{})
+	require.NoError(t, err)
+	assert.Equal(t, "2026-05-08", pv.From)
+	assert.Equal(t, rec.ID, pv.Last.ID)
+	pv, err = f.svc.PreviewSignOff(ctx, f.manager, SignOffInput{From: "2026-05-05", To: "2026-05-09"})
+	require.NoError(t, err)
+	require.Len(t, pv.Overlaps, 1)
+
+	// Every booklet shows it.
+	b, err := f.svc.RecordBook(ctx, f.manager, "SC4", "2026-05")
+	require.NoError(t, err)
+	require.Len(t, b.SignOffs, 1)
+	assert.Equal(t, "Máire Manager", b.SignOffs[0].By)
+	assert.Equal(t, []books.Span{{From: "2026-05-08", To: "2026-05-10"}}, b.Unsigned)
+	var buf bytes.Buffer
+	_, _, err = f.svc.RecordBookPDF(ctx, f.manager, "SC2", "2026-05", &buf)
+	require.NoError(t, err)
+
+	// Signed off through today: nothing left to sign by default.
+	_, err = f.svc.SignOff(ctx, f.manager, SignOffInput{From: "2026-05-08", To: "2026-05-11", Note: "Prep fridge and freezer still not on the opening list."})
+	require.NoError(t, err)
+	pv, err = f.svc.PreviewSignOff(ctx, f.manager, SignOffInput{})
+	require.NoError(t, err)
+	assert.True(t, pv.UpToDate)
+	assert.Equal(t, "2026-05-11", pv.Last.Reading.PeriodTo)
+	_, err = f.svc.SignOff(ctx, f.manager, SignOffInput{})
+	assert.Equal(t, KindConflict, KindOf(err))
+}

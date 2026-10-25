@@ -14,7 +14,11 @@ export const TYPE_LABELS: Record<string, string> = {
   hot_hold: "Hot holding",
   batch_label: "Batch label",
   cleaning: "Cleaning",
+  sign_off: "Sign-off",
 };
+
+/** LOGGABLE_TYPES are the record types staff log as readings (a sign-off is saved by signing off). */
+export const LOGGABLE_TYPES = Object.keys(TYPE_LABELS).filter((t) => t !== "sign_off");
 
 export function typeLabel(t: string): string {
   return TYPE_LABELS[t] ?? t;
@@ -42,6 +46,7 @@ export function outcomeStyle(o: string): OutcomeStyle {
 /** title is what a record is about: the fridge, food, product or task. */
 export function title(r: HaccpRecord): string {
   const rd = r.reading;
+  if (r.type === "sign_off" && rd.period_from && rd.period_to) return `${longDate(rd.period_from)} to ${longDate(rd.period_to)}`;
   const what = rd.unit || rd.food || rd.product || rd.task || typeLabel(r.type);
   return rd.supplier ? `${rd.supplier}: ${what}` : what;
 }
@@ -65,7 +70,19 @@ export function details(r: { type: string; reading: Reading }): string {
   if (rd.use_by) parts.push(`use by ${longDate(rd.use_by)}`);
   if (rd.done === false) parts.push("not done");
   if (rd.area) parts.push(rd.area);
+  if (rd.review) parts.push(reviewText(rd.review));
   return parts.join(" · ");
+}
+
+/** reviewText sums up what a sign-off covered. */
+export function reviewText(v: { records: number; out_of_limit: number; without_action: number; missed: number }): string {
+  const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
+  return [
+    n(v.records, "record", "records"),
+    `${v.out_of_limit} out of limit`,
+    `${v.without_action} without an action`,
+    n(v.missed, "missed check", "missed checks"),
+  ].join(" · ");
 }
 
 /** limitText describes a fridge or freezer limit, such as "5.0°C or below". */
@@ -82,6 +99,8 @@ export function readingRows(r: { type: string; reading: Reading }): [string, str
     if (v !== undefined && v !== null && v !== "") rows.push([label, v]);
   };
   const yes = (b: boolean | undefined | null) => (b === undefined || b === null ? undefined : b ? "Yes" : "No");
+  if (rd.period_from && rd.period_to) add("Period", `${longDate(rd.period_from)} to ${longDate(rd.period_to)}`);
+  if (rd.review) add("When signed", reviewText(rd.review));
   add("Unit", rd.unit);
   add("Supplier", rd.supplier);
   add("Product", rd.product);

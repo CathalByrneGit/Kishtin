@@ -24,6 +24,7 @@ func (s *Server) routes() {
 	s.haccpRoutes()
 	s.packRoute()
 	s.bookRoutes()
+	s.signOffRoutes()
 	s.limitRoutes()
 	s.fileRoutes()
 	s.settingsRoutes()

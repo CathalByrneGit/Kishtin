@@ -20,7 +20,7 @@ var recordTypes = []string{"fridge", "freezer", "delivery", "cook", "reheat", "c
 
 func (c *cli) haccpCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "haccp", Short: "Log, list, verify and export HACCP records"}
-	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd(), c.booksCmd(), c.bookCmd())
+	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd(), c.booksCmd(), c.bookCmd(), c.signOffCmd())
 	return cmd
 }
 
@@ -300,6 +300,9 @@ func (c *cli) logCmd() *cobra.Command {
 
 func subjectOf(r client.Record) string {
 	rd := r.Reading
+	if r.Type == "sign_off" && rd.PeriodFrom != nil && rd.PeriodTo != nil {
+		return *rd.PeriodFrom + " to " + *rd.PeriodTo
+	}
 	for _, s := range []*string{rd.Unit, rd.Food, rd.Product, rd.Task} {
 		if s != nil && *s != "" {
 			if rd.Supplier != nil && *rd.Supplier != "" {

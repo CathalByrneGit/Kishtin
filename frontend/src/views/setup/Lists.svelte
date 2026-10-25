@@ -18,7 +18,7 @@
   import ManagerGate from "../../components/ManagerGate.svelte";
   import ReviewChanges, { type Preview } from "../../components/ReviewChanges.svelte";
   import { api, message, type Lists, type Schemas } from "../../lib/api";
-  import { TYPE_LABELS, typeLabel } from "../../lib/labels";
+  import { LOGGABLE_TYPES, TYPE_LABELS, typeLabel } from "../../lib/labels";
   import { onChange } from "../../lib/live.svelte";
   import { isManagerPassword } from "../../lib/session.svelte";
 
@@ -138,7 +138,7 @@
     }
   }
 
-  const typeOptions = Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label }));
+  const typeOptions = LOGGABLE_TYPES.map((value) => ({ value, label: TYPE_LABELS[value] ?? value }));
 </script>
 
 <div class="page">

@@ -66,6 +66,11 @@ type Book struct {
 	Records int `json:"records"`
 	// Corrected is how many of them are corrections of an earlier record.
 	Corrected int `json:"corrected"`
+	// SignOffs are the manager sign-offs whose period overlaps the month.
+	SignOffs []SignOff `json:"sign_offs"`
+	// Unsigned are the days of the month, up to yesterday, that no
+	// sign-off covers.
+	Unsigned []Span `json:"unsigned"`
 	// FirstSeq and LastSeq are the lowest and highest record numbers shown.
 	FirstSeq int64 `json:"first_seq,omitempty"`
 	LastSeq  int64 `json:"last_seq,omitempty"`
@@ -106,6 +111,7 @@ func Build(in Input) (Book, error) {
 	b.book = Book{
 		Template: t, BundleName: in.Bundle.Name, Issuer: in.Bundle.Issuer, Changed: []string{},
 		Month: b.from.Format("2006-01"), Pages: []Page{}, Gaps: []Gap{}, Unfilled: t.Unfilled(),
+		SignOffs: []SignOff{}, Unsigned: []Span{},
 	}
 	if b.book.Unfilled == nil {
 		b.book.Unfilled = []string{}
@@ -125,6 +131,7 @@ func Build(in Input) (Book, error) {
 	case BuilderHotHold:
 		b.hotHold()
 	}
+	b.signOffs()
 	return b.book, nil
 }
 

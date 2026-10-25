@@ -147,6 +147,8 @@ export const api = {
   },
 
   recordBooks: () => json<Schemas["RecordBooks"]>("GET", "/haccp/books"),
+  previewSignOff: (from?: string, to?: string) => json<Schemas["SignOffPreview"]>("GET", "/haccp/sign-offs/preview", { query: { from, to } }),
+  signOff: (body: Schemas["SignOffInput"]) => json<HaccpRecord>("POST", "/haccp/sign-offs", { body }),
   recordBookSettings: () => json<Schemas["VersionedRecordBookSettings"]>("GET", "/settings/record_books"),
   previewRecordBookSettings: (body: Schemas["SettingsChangeRecordBookSettings"]) =>
     json<Schemas["SettingsPreviewRecordBookSettings"]>("POST", "/settings/record_books/preview", { body }),

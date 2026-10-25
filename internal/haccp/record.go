@@ -20,12 +20,15 @@ const (
 	RecordHotHold    RecordType = "hot_hold"
 	RecordBatchLabel RecordType = "batch_label"
 	RecordCleaning   RecordType = "cleaning"
+	// RecordSignOff is a manager's sign-off of the records for a period:
+	// the "Manager/Supervisor check" of a paper record book.
+	RecordSignOff RecordType = "sign_off"
 )
 
 // RecordTypes lists every record type, in display order.
 var RecordTypes = []RecordType{
 	RecordFridge, RecordFreezer, RecordDelivery, RecordCook, RecordReheat,
-	RecordCooling, RecordHotHold, RecordBatchLabel, RecordCleaning,
+	RecordCooling, RecordHotHold, RecordBatchLabel, RecordCleaning, RecordSignOff,
 }
 
 // Valid reports whether t is a known record type.
@@ -91,8 +94,29 @@ type Reading struct {
 	Area string `json:"area,omitempty"`
 	Done *bool  `json:"done,omitempty"`
 
+	// Sign-off: the dates covered (inclusive) and what the manager saw.
+	PeriodFrom string  `json:"period_from,omitempty"`
+	PeriodTo   string  `json:"period_to,omitempty"`
+	Review     *Review `json:"review,omitempty"`
+
 	Notes string `json:"notes,omitempty"`
 }
+
+// Review is what a sign-off covered, counted when it was saved.
+type Review struct {
+	// Records is how many records the period has, after corrections.
+	Records int `json:"records"`
+	// OutOfLimit counts failed and borderline readings.
+	OutOfLimit int `json:"out_of_limit"`
+	// WithoutAction counts out-of-limit readings with no corrective action.
+	WithoutAction int `json:"without_action"`
+	// Missed counts fridge and freezer checks that were due and have no
+	// reading.
+	Missed int `json:"missed"`
+}
+
+// MaxSignOffDays is the longest period one sign-off can cover.
+const MaxSignOffDays = 92
 
 // Normalize rounds temperatures to 0.1°C, trims text and stores times in
 // UTC at microsecond precision, so a reading hashes the same after a round
@@ -119,7 +143,7 @@ func (r Reading) Normalize() Reading {
 	for _, s := range []*string{
 		&r.Unit, &r.Food, &r.Dish, &r.FoodCategory, &r.Supplier, &r.Product,
 		&r.DeliveryKind, &r.DocketFile, &r.MadeOn, &r.UseBy, &r.Quantity,
-		&r.Task, &r.Area, &r.Notes,
+		&r.Task, &r.Area, &r.Notes, &r.PeriodFrom, &r.PeriodTo,
 	} {
 		*s = strings.TrimSpace(*s)
 	}
@@ -215,6 +239,28 @@ func (r Reading) Validate(t RecordType) error {
 			return errors.New("done is required for a cleaning record")
 		}
 		return need("task", r.Task)
+	case RecordSignOff:
+		from, err := time.Parse(DateLayout, r.PeriodFrom)
+		if err != nil {
+			return errors.New("period_from must be a date like 2026-10-01")
+		}
+		to, err := time.Parse(DateLayout, r.PeriodTo)
+		if err != nil {
+			return errors.New("period_to must be a date like 2026-10-07")
+		}
+		if to.Before(from) {
+			return errors.New("the sign-off period ends before it starts")
+		}
+		if to.Sub(from) >= MaxSignOffDays*24*time.Hour {
+			return fmt.Errorf("a sign-off covers at most %d days", MaxSignOffDays)
+		}
+		if r.Review == nil {
+			return errors.New("a sign-off needs the review of its period")
+		}
+		if (r.Review.WithoutAction > 0 || r.Review.Missed > 0) && r.Notes == "" {
+			return errors.New("there are missed checks or readings without a corrective action in this period: add a note saying what was done about them")
+		}
+		return nil
 	default:
 		return fmt.Errorf("unknown record type %q", t)
 	}

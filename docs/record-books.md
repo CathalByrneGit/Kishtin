@@ -64,7 +64,22 @@ Columns Kishtin does not record print blank, and the booklet says which ones the
 - **Corrections** show in place of the record they correct, with "Corrected" and the reason in the comments. Both records stay in the log.
 - **missed** marks an SC2 check that was due and has no reading. Kishtin never fills a gap in. A check counts as missed once the next check has started (or the day has ended), and only for fridges and freezers on the managed list, from the first record ever logged. Kishtin does not know which days you were closed, so days you were closed show as missed.
 - **Kishtin ref** (SC3, SC4) is the record number. The footer gives the record numbers used, the hash chain result and the chain head. Run `kishtin haccp verify` to check the records.
-- The **Manager/Supervisor check** line is left blank to sign by hand.
+- The **Manager/Supervisor check** line lists the sign-offs that cover the month, and the days not signed off yet. With no sign-offs, it is left blank to sign by hand.
+
+## Manager sign-off
+
+A manager signs off the records for a period, for example each week. This is the "Manager/Supervisor check" of the paper booklets.
+
+1. On **Record books**, the **Manager sign-off** card shows the last sign-off and the next period to sign: from the day after the last sign-off up to yesterday.
+2. **Sign off records** (manager password) shows what the period holds: records, readings out of limit, readings without a corrective action and missed checks, with each one listed. Change the dates if needed.
+3. If there are missed checks or readings without an action, a note is required saying what was done about them.
+4. **Sign off** saves a `sign_off` record in the hash chain. It holds the period, the note and the counts as they were at that moment. Like every record, it cannot be edited or deleted. Signing a period again adds a second sign-off; both are kept.
+
+Every record book prints the sign-offs that cover its month on the check line, with who signed, when, the period and the record number, and lists the days up to yesterday that no sign-off covers. The Today screen tells the head chef and manager when nothing has been signed off for 7 days or more.
+
+From the command line: `kishtin haccp sign-off` shows the preview, and `kishtin haccp sign-off --from 2026-10-01 --to 2026-10-07 --note "..." --yes` signs. API: `GET /api/haccp/sign-offs/preview`, `POST /api/haccp/sign-offs`.
+
+Only a manager logged in with a password (or a manager's API key) can sign off. A head chef can see the preview but not sign.
 
 ## On the screen
 

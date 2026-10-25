@@ -387,6 +387,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/haccp/sign-offs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign off the HACCP records for a period (manager password)
+         * @description Saves a sign-off record in the hash chain with what the period held when it was signed. It fills the manager or supervisor check line of every record book. A period with missed checks or readings without a corrective action needs a note.
+         */
+        post: operations["sign-off"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/sign-offs/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show what signing off a period would cover
+         * @description Counts the period's records, out-of-limit readings, readings without a corrective action and missed checks, and lists them. Nothing is saved.
+         */
+        get: operations["preview-sign-off"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/haccp/today": {
         parameters: {
             query?: never;
@@ -1612,8 +1652,10 @@ export interface components {
             /** Format: int64 */
             records: number;
             settings_version?: string;
+            sign_offs: components["schemas"]["SignOff"][];
             template: components["schemas"]["Template"];
             unfilled: string[];
+            unsigned: components["schemas"]["Span"][];
         };
         BookSetting: {
             columns?: components["schemas"]["Column"][];
@@ -2284,8 +2326,11 @@ export interface components {
             made_on?: string;
             notes?: string;
             packaging_ok?: boolean;
+            period_from?: string;
+            period_to?: string;
             product?: string;
             quantity?: string;
+            review?: components["schemas"]["Review"];
             /** Format: int64 */
             shelf_life_days?: number;
             supplier?: string;
@@ -2346,6 +2391,16 @@ export interface components {
         Result: {
             outcome: string;
             reason: string;
+        };
+        Review: {
+            /** Format: int64 */
+            missed: number;
+            /** Format: int64 */
+            out_of_limit: number;
+            /** Format: int64 */
+            records: number;
+            /** Format: int64 */
+            without_action: number;
         };
         Row: {
             cells: components["schemas"]["Cell"][];
@@ -2489,6 +2544,38 @@ export interface components {
             equipment: components["schemas"]["Equipment"][];
             stations: components["schemas"]["Station"][];
         };
+        SignOff: {
+            by: string;
+            date: string;
+            from: string;
+            note?: string;
+            /** Format: int64 */
+            seq: number;
+            to: string;
+        };
+        SignOffInput: {
+            from?: string;
+            note?: string;
+            to?: string;
+        };
+        SignOffPreview: {
+            from: string;
+            last?: components["schemas"]["Record"];
+            missed: components["schemas"]["Gap"][];
+            note_required: boolean;
+            out_of_limit: components["schemas"]["Record"][];
+            overlaps: components["schemas"]["Record"][];
+            review: components["schemas"]["Review"];
+            to: string;
+            up_to_date: boolean;
+            without_action: components["schemas"]["Record"][];
+        };
+        SignOffStatus: {
+            signed_to?: string;
+            /** Format: int64 */
+            unsigned_days: number;
+            unsigned_from?: string;
+        };
         SlotToday: {
             from: string;
             label: string;
@@ -2500,6 +2587,10 @@ export interface components {
             published: string;
             sha256: string;
             url: string;
+        };
+        Span: {
+            from: string;
+            to: string;
         };
         SpeakBody: {
             text: string;
@@ -2651,6 +2742,7 @@ export interface components {
             percent: number;
             restaurant_name: string;
             ring: string;
+            sign_off: components["schemas"]["SignOffStatus"];
             /** Format: int64 */
             total: number;
             units: components["schemas"]["UnitToday"][];
@@ -3544,6 +3636,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Record"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "sign-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignOffInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Record"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-sign-off": {
+        parameters: {
+            query?: {
+                /** @description First day, Dublin time. Leave out to start the day after the last sign-off. */
+                from?: string;
+                /** @description Last day, inclusive. Leave out for yesterday. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignOffPreview"];
                 };
             };
             /** @description Error */

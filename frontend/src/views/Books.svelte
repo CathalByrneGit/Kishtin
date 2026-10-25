@@ -1,6 +1,10 @@
 <script lang="ts">
-  import { Button, Card, Chip, MetricCard, Notice, SelectDropdown, Spinner, Table, showFlash } from "@kenn-io/kit-ui";
-  import { Eye, FileText } from "@lucide/svelte";
+  import { Button, Card, Chip, MetricCard, Modal, Notice, SelectDropdown, Spinner, Table, showFlash } from "@kenn-io/kit-ui";
+  import { Eye, FileText, PenLine } from "@lucide/svelte";
+  import SignOffModal from "../components/SignOffModal.svelte";
+  import Login from "../screens/Login.svelte";
+  import { title } from "../lib/labels";
+  import { isManagerPassword } from "../lib/session.svelte";
   import { onMount, tick } from "svelte";
   import { api, download, message, type Schemas } from "../lib/api";
   import { cellText, gapsByDate, headerGroups, monthLabel, recentMonths } from "../lib/books";
@@ -18,8 +22,20 @@
   let selected = $state<string | null>(param("book"));
   let error = $state("");
   let busy = $state<string | null>(null);
+  let signStatus = $state<Schemas["SignOffPreview"] | null>(null);
+  let signing = $state(false);
+  let managerLogin = $state(false);
+  // Bumped after a sign-off, so the booklets fill in again with it.
+  let version = $state(0);
 
   const canExport = $derived(session.user?.role === "manager" || session.user?.role === "head_chef");
+
+  function loadSignStatus() {
+    api
+      .previewSignOff()
+      .then((r) => (signStatus = r))
+      .catch(() => (signStatus = null));
+  }
 
   onMount(() => {
     if (!canExport) return;
@@ -27,13 +43,21 @@
       .recordBooks()
       .then((r) => (info = r))
       .catch((err: unknown) => (error = message(err)));
+    loadSignStatus();
   });
+
+  function signed() {
+    signing = false;
+    loadSignStatus();
+    version++;
+  }
 
   // Fill in every booklet Kishtin can, for the chosen month, so each shows
   // its missed checks before anyone opens it.
   $effect(() => {
     const m = month;
     const list = shown;
+    void version;
     if (!info) return;
     filled = {};
     let gone = false;
@@ -105,6 +129,31 @@
   {:else if !info}
     <Spinner />
   {:else}
+    <Card padding="md" title="Manager sign-off">
+      <div class="signoff">
+        <div class="stack">
+          {#if signStatus?.last}
+            <span>Last signed off: <strong>{title(signStatus.last)}</strong>, by {signStatus.last.logged_by_name}.</span>
+          {:else if signStatus}
+            <span>No records signed off yet.</span>
+          {/if}
+          {#if signStatus?.up_to_date}
+            <span class="small muted">Every day up to today is signed off.</span>
+          {:else if signStatus && signStatus.from <= signStatus.to}
+            <span class="small muted">
+              Next to sign off: {longDate(signStatus.from)} to {longDate(signStatus.to)} · {signStatus.review.records} records, {signStatus.review.out_of_limit} out of limit, {signStatus.review.missed} missed checks.
+            </span>
+          {/if}
+          <span class="small muted">A sign-off fills the manager or supervisor check line of every record book.</span>
+        </div>
+        <div class="stack end">
+          <Button tone="info" surface="solid" label="Sign off records" disabled={!isManagerPassword()} onclick={() => (signing = true)}><PenLine size={16} /></Button>
+          {#if !isManagerPassword()}
+            <Button size="sm" label="Manager login to sign" onclick={() => (managerLogin = true)} />
+          {/if}
+        </div>
+      </div>
+    </Card>
     {@const p = info.bundle}
       <Card padding="md" title={p.name} meta={`${p.country} · ${p.issuer}`}>
         <ul class="books">
@@ -209,6 +258,21 @@
             {/each}
           </ul>
         {/if}
+        {#if book.template.manager_check}
+          <h3>Manager check</h3>
+          {#if book.sign_offs.length > 0}
+            <ul class="gaps">
+              {#each book.sign_offs as so (so.seq)}
+                <li><span class="date">Signed by {so.by}</span><span>{longDate(so.date)} · covers {longDate(so.from)} to {longDate(so.to)} · record #{so.seq}{so.note ? ` · ${so.note}` : ""}</span></li>
+              {/each}
+            </ul>
+          {/if}
+          {#if book.unsigned.length > 0}
+            <p class="small">Not signed off: {book.unsigned.map((u) => (u.from === u.to ? longDate(u.from) : `${longDate(u.from)} to ${longDate(u.to)}`)).join(", ")}.</p>
+          {:else if book.sign_offs.length === 0}
+            <p class="small muted">No sign-offs for this month.</p>
+          {/if}
+        {/if}
         <p class="small muted">
           Layout from the {book.bundle_name}{book.template.source ? `, edition ${book.template.source.published}` : ""}{book.changed.length > 0 ? `, with this restaurant's changes to the ${book.changed.join(", ")}` : ""}. Failed and borderline readings show FAIL and CHECK. A missed check stays marked as missed: Kishtin never fills a gap in.
         </p>
@@ -216,6 +280,17 @@
     {/if}
   {/if}
 </div>
+
+{#if signing}
+  <SignOffModal onsigned={signed} onclose={() => (signing = false)} />
+{/if}
+
+{#if managerLogin}
+  <Modal title="Manager login" onclose={() => (managerLogin = false)} maxWidth="520px">
+    <p class="muted">This device will be logged in as the manager for 30 minutes.</p>
+    <Login managersOnly password onloggedin={() => (managerLogin = false)} />
+  </Modal>
+{/if}
 
 <style>
   .head {
@@ -272,6 +347,15 @@
   }
   .setup {
     margin-top: var(--space-4);
+  }
+  .signoff {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-5);
+  }
+  .end {
+    align-items: flex-end;
   }
   .notes {
     margin: 0 0 var(--space-4);

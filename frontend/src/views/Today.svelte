@@ -6,6 +6,11 @@
   import { details, limitText, outcomeStyle, title, typeLabel } from "../lib/labels";
   import { onChange } from "../lib/live.svelte";
   import { openLog } from "../lib/logdrawer.svelte";
+  import { navigate } from "../lib/router.svelte";
+  import { session } from "../lib/session.svelte";
+
+  /** SIGN_OFF_DAYS is how many unsigned days before Today reminds the head chef and manager. */
+  const SIGN_OFF_DAYS = 7;
 
   let today = $state<Today | null>(null);
   let error = $state("");
@@ -78,6 +83,15 @@
   {#if !today}
     {#if !error}<Spinner />{/if}
   {:else}
+    {#if today.sign_off.unsigned_days >= SIGN_OFF_DAYS && (session.user?.role === "manager" || session.user?.role === "head_chef") && today.sign_off.unsigned_from}
+      <Notice
+        tone="warning"
+        title="Records not signed off"
+        message={`Nothing is signed off from ${longDate(today.sign_off.unsigned_from)}: ${today.sign_off.unsigned_days} days. A manager signs off in Record books.`}
+        actionLabel="Open Record books"
+        onaction={() => navigate("/books")}
+      />
+    {/if}
     <div class="metrics">
       <MetricCard
         label="Checks done"

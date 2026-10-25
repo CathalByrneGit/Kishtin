@@ -130,6 +130,14 @@ type ClientInterface interface {
 	GetRecord(ctx context.Context, options *GetRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordResponse, error)
 	GetRecordWithResponse(ctx context.Context, options *GetRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordResp, error)
 
+	// SignOff Sign off the HACCP records for a period (manager password)
+	SignOff(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResponse, error)
+	SignOffWithResponse(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResp, error)
+
+	// PreviewSignOff Show what signing off a period would cover
+	PreviewSignOff(ctx context.Context, options *PreviewSignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSignOffResponse, error)
+	PreviewSignOffWithResponse(ctx context.Context, options *PreviewSignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSignOffResp, error)
+
 	// Today Show today's checks
 	Today(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*TodayResponse, error)
 	TodayWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*TodayResp, error)
@@ -1870,6 +1878,139 @@ func (c *Client) GetRecord(ctx context.Context, options *GetRecordRequestOptions
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/records/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SignOff Sign off the HACCP records for a period (manager password)
+func (c *Client) SignOff(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/sign-offs",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SignOffResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 201 {
+			target := new(SignOffErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SignOffErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SignOffResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SignOffResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/sign-offs")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewSignOff Show what signing off a period would cover
+func (c *Client) PreviewSignOff(ctx context.Context, options *PreviewSignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSignOffResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"from": {Style: "form", Explode: &[]bool{false}[0]},
+		"to":   {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/haccp/sign-offs/preview",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewSignOffResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewSignOffErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewSignOffErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewSignOffResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewSignOffResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/sign-offs/preview")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -6986,6 +7127,94 @@ func (o *GetRecordRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// SignOffRequestOptions is the options needed to make a request to SignOff.
+type SignOffRequestOptions struct {
+	Body *SignOffBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SignOffRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SignOffRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SignOffRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SignOffRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SignOffRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewSignOffRequestOptions is the options needed to make a request to PreviewSignOff.
+type PreviewSignOffRequestOptions struct {
+	Query *PreviewSignOffQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewSignOffRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewSignOffRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewSignOffRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewSignOffRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewSignOffRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // CreateKeyRequestOptions is the options needed to make a request to CreateKey.
 type CreateKeyRequestOptions struct {
 	Body *CreateKeyBody
@@ -10466,6 +10695,129 @@ func (c *Client) GetRecordWithResponse(ctx context.Context, options *GetRecordRe
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "GetRecordErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SignOff Sign off the HACCP records for a period (manager password)
+func (c *Client) SignOffWithResponse(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/sign-offs",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/sign-offs")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SignOffResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 201:
+		out.JSON201 = new(SignOffResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON201); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SignOffResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SignOffErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SignOffErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewSignOff Show what signing off a period would cover
+func (c *Client) PreviewSignOffWithResponse(ctx context.Context, options *PreviewSignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSignOffResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/sign-offs/preview",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/sign-offs/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewSignOffResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewSignOffResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSignOffResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewSignOffErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSignOffErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -15200,6 +15552,8 @@ type PreviewLimitBody = NewLimit
 
 type LogRecordBody = NewRecord
 
+type SignOffBody = SignOffInput
+
 type CreateKeyBody = NewKeyInBody
 
 type MoveItemsBody = ItemMove
@@ -15357,6 +15711,28 @@ func (l ListRecordsQuery) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(l))
 }
 
+type PreviewSignOffQuery struct {
+	// From First day, Dublin time. Leave out to start the day after the last sign-off.
+	From *string `json:"from,omitempty"`
+
+	// To Last day, inclusive. Leave out for yesterday.
+	To *string `json:"to,omitempty"`
+}
+
+func (p PreviewSignOffQuery) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := runtime.ValidatePattern(p.From, `^[0-9]{4}-[0-9]{2}-[0-9]{2}$`); err != nil {
+		errors = errors.Append("From", err)
+	}
+	if err := runtime.ValidatePattern(p.To, `^[0-9]{4}-[0-9]{2}-[0-9]{2}$`); err != nil {
+		errors = errors.Append("To", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type ListOrdersQuery struct {
 	// Date A day (YYYY-MM-DD, Dublin time). Leave out for open orders.
 	Date *string `json:"date,omitempty"`
@@ -15465,6 +15841,14 @@ type LogRecordErrorResponse = ErrorModel
 type GetRecordResponse = Record
 
 type GetRecordErrorResponse = ErrorModel
+
+type SignOffResponse = Record
+
+type SignOffErrorResponse = ErrorModel
+
+type PreviewSignOffResponse = SignOffPreview
+
+type PreviewSignOffErrorResponse = ErrorModel
 
 type TodayResponse = TodayView
 
@@ -15963,6 +16347,22 @@ type GetRecordResp struct {
 	StatusCode                        int
 	JSON200                           *GetRecordResponse
 	ApplicationProblemPlusJSONDefault *GetRecordErrorResponse
+}
+
+type SignOffResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON201                           *SignOffResponse
+	ApplicationProblemPlusJSONDefault *SignOffErrorResponse
+}
+
+type PreviewSignOffResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewSignOffResponse
+	ApplicationProblemPlusJSONDefault *PreviewSignOffErrorResponse
 }
 
 type TodayResp struct {
@@ -16666,19 +17066,21 @@ func (b BatchToday) Validate() error {
 }
 
 type Book struct {
-	BundleName      string   `json:"bundle_name" validate:"required"`
-	Changed         []string `json:"changed" validate:"required"`
-	Corrected       int64    `json:"corrected"`
-	FirstSeq        *int64   `json:"first_seq,omitempty"`
-	Gaps            []Gap    `json:"gaps" validate:"required"`
-	Issuer          string   `json:"issuer" validate:"required"`
-	LastSeq         *int64   `json:"last_seq,omitempty"`
-	Month           string   `json:"month" validate:"required"`
-	Pages           []Page   `json:"pages" validate:"required"`
-	Records         int64    `json:"records"`
-	SettingsVersion *string  `json:"settings_version,omitempty"`
-	Template        Template `json:"template"`
-	Unfilled        []string `json:"unfilled" validate:"required"`
+	BundleName      string    `json:"bundle_name" validate:"required"`
+	Changed         []string  `json:"changed" validate:"required"`
+	Corrected       int64     `json:"corrected"`
+	FirstSeq        *int64    `json:"first_seq,omitempty"`
+	Gaps            []Gap     `json:"gaps" validate:"required"`
+	Issuer          string    `json:"issuer" validate:"required"`
+	LastSeq         *int64    `json:"last_seq,omitempty"`
+	Month           string    `json:"month" validate:"required"`
+	Pages           []Page    `json:"pages" validate:"required"`
+	Records         int64     `json:"records"`
+	SettingsVersion *string   `json:"settings_version,omitempty"`
+	SignOffs        []SignOff `json:"sign_offs" validate:"required"`
+	Template        Template  `json:"template"`
+	Unfilled        []string  `json:"unfilled" validate:"required"`
+	Unsigned        []Span    `json:"unsigned" validate:"required"`
 }
 
 func (b Book) Validate() error {
@@ -16715,6 +17117,16 @@ func (b Book) Validate() error {
 			}
 		}
 	}
+	if err := typesValidator.Var(b.SignOffs, "required"); err != nil {
+		errors = errors.Append("SignOffs", err)
+	}
+	for i, item := range b.SignOffs {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("SignOffs[%d]", i), err)
+			}
+		}
+	}
 	if v, ok := any(b.Template).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
 			errors = errors.Append("Template", err)
@@ -16722,6 +17134,16 @@ func (b Book) Validate() error {
 	}
 	if err := typesValidator.Var(b.Unfilled, "required"); err != nil {
 		errors = errors.Append("Unfilled", err)
+	}
+	if err := typesValidator.Var(b.Unsigned, "required"); err != nil {
+		errors = errors.Append("Unsigned", err)
+	}
+	for i, item := range b.Unsigned {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Unsigned[%d]", i), err)
+			}
+		}
 	}
 	if len(errors) == 0 {
 		return nil
@@ -18693,8 +19115,11 @@ type Reading struct {
 	MadeOn        *string    `json:"made_on,omitempty"`
 	Notes         *string    `json:"notes,omitempty"`
 	PackagingOk   *bool      `json:"packaging_ok,omitempty"`
+	PeriodFrom    *string    `json:"period_from,omitempty"`
+	PeriodTo      *string    `json:"period_to,omitempty"`
 	Product       *string    `json:"product,omitempty"`
 	Quantity      *string    `json:"quantity,omitempty"`
+	Review        *Review    `json:"review,omitempty"`
 	ShelfLifeDays *int64     `json:"shelf_life_days,omitempty"`
 	Supplier      *string    `json:"supplier,omitempty"`
 	Task          *string    `json:"task,omitempty"`
@@ -18702,6 +19127,21 @@ type Reading struct {
 	TempC         *float64   `json:"temp_c,omitempty"`
 	Unit          *string    `json:"unit,omitempty"`
 	UseBy         *string    `json:"use_by,omitempty"`
+}
+
+func (r Reading) Validate() error {
+	var errors runtime.ValidationErrors
+	if r.Review != nil {
+		if v, ok := any(r.Review).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Review", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Record struct {
@@ -18905,6 +19345,13 @@ type Result struct {
 
 func (r Result) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(r))
+}
+
+type Review struct {
+	Missed        int64 `json:"missed"`
+	OutOfLimit    int64 `json:"out_of_limit"`
+	Records       int64 `json:"records"`
+	WithoutAction int64 `json:"without_action"`
 }
 
 type Row struct {
@@ -19431,6 +19878,110 @@ func (s Setup) Validate() error {
 	return errors
 }
 
+type SignOff struct {
+	By   string  `json:"by" validate:"required"`
+	Date string  `json:"date" validate:"required"`
+	From string  `json:"from" validate:"required"`
+	Note *string `json:"note,omitempty"`
+	Seq  int64   `json:"seq"`
+	To   string  `json:"to" validate:"required"`
+}
+
+func (s SignOff) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type SignOffInput struct {
+	From *string `json:"from,omitempty"`
+	Note *string `json:"note,omitempty"`
+	To   *string `json:"to,omitempty"`
+}
+
+type SignOffPreview struct {
+	From          string   `json:"from" validate:"required"`
+	Last          *Record  `json:"last,omitempty"`
+	Missed        []Gap    `json:"missed" validate:"required"`
+	NoteRequired  bool     `json:"note_required"`
+	OutOfLimit    []Record `json:"out_of_limit" validate:"required"`
+	Overlaps      []Record `json:"overlaps" validate:"required"`
+	Review        Review   `json:"review"`
+	To            string   `json:"to" validate:"required"`
+	UpToDate      bool     `json:"up_to_date"`
+	WithoutAction []Record `json:"without_action" validate:"required"`
+}
+
+func (s SignOffPreview) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.From, "required"); err != nil {
+		errors = errors.Append("From", err)
+	}
+	if s.Last != nil {
+		if v, ok := any(s.Last).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Last", err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Missed, "required"); err != nil {
+		errors = errors.Append("Missed", err)
+	}
+	for i, item := range s.Missed {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Missed[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.OutOfLimit, "required"); err != nil {
+		errors = errors.Append("OutOfLimit", err)
+	}
+	for i, item := range s.OutOfLimit {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("OutOfLimit[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Overlaps, "required"); err != nil {
+		errors = errors.Append("Overlaps", err)
+	}
+	for i, item := range s.Overlaps {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Overlaps[%d]", i), err)
+			}
+		}
+	}
+	if v, ok := any(s.Review).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Review", err)
+		}
+	}
+	if err := typesValidator.Var(s.To, "required"); err != nil {
+		errors = errors.Append("To", err)
+	}
+	if err := typesValidator.Var(s.WithoutAction, "required"); err != nil {
+		errors = errors.Append("WithoutAction", err)
+	}
+	for i, item := range s.WithoutAction {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("WithoutAction[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SignOffStatus struct {
+	SignedTo     *string `json:"signed_to,omitempty"`
+	UnsignedDays int64   `json:"unsigned_days"`
+	UnsignedFrom *string `json:"unsigned_from,omitempty"`
+}
+
 type SlotToday struct {
 	From   string  `json:"from" validate:"required"`
 	Label  string  `json:"label" validate:"required"`
@@ -19470,6 +20021,15 @@ type Source struct {
 }
 
 func (s Source) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type Span struct {
+	From string `json:"from" validate:"required"`
+	To   string `json:"to" validate:"required"`
+}
+
+func (s Span) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
@@ -19819,6 +20379,7 @@ type TodayView struct {
 	Percent           int64           `json:"percent"`
 	RestaurantName    string          `json:"restaurant_name" validate:"required"`
 	Ring              string          `json:"ring" validate:"required"`
+	SignOff           SignOffStatus   `json:"sign_off"`
 	Total             int64           `json:"total"`
 	Units             []UnitToday     `json:"units" validate:"required"`
 	WithoutAction     int64           `json:"without_action"`
@@ -19874,6 +20435,11 @@ func (t TodayView) Validate() error {
 	}
 	if err := typesValidator.Var(t.Ring, "required"); err != nil {
 		errors = errors.Append("Ring", err)
+	}
+	if v, ok := any(t.SignOff).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("SignOff", err)
+		}
 	}
 	if err := typesValidator.Var(t.Units, "required"); err != nil {
 		errors = errors.Append("Units", err)

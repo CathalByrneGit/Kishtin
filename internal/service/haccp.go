@@ -42,6 +42,9 @@ func (s *Service) prepare(ctx context.Context, tx store.Store, nr *NewRecord) (C
 	if !nr.Type.Valid() {
 		return Check{}, newErr(KindInvalid, "unknown record type %q", nr.Type)
 	}
+	if nr.Type == haccp.RecordSignOff {
+		return Check{}, newErr(KindInvalid, "a sign-off is saved by signing off a period (kishtin haccp sign-off), not logged as a reading")
+	}
 	nr.Reading = nr.Reading.Normalize()
 	nr.CorrectiveAction = strings.TrimSpace(nr.CorrectiveAction)
 	nr.Corrects = strings.TrimSpace(nr.Corrects)

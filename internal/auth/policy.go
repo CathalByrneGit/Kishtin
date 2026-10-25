@@ -19,6 +19,9 @@ const (
 	ActBackup       Action = "backup"
 	// ActManageSettings changes system settings such as the backup schedule.
 	ActManageSettings Action = "settings.manage"
+	// ActSignOff signs off the HACCP records for a period: the manager or
+	// supervisor check of a paper record book.
+	ActSignOff Action = "haccp.sign_off"
 
 	// ActViewKitchen sees the menu, orders, the pass and station queues.
 	ActViewKitchen Action = "kitchen.view"
@@ -53,6 +56,7 @@ var policy = map[Action]rule{
 	ActManageKeys:     {roles: []Role{RoleManager}, password: true},
 	ActBackup:         {roles: []Role{RoleManager}, password: true},
 	ActManageSettings: {roles: []Role{RoleManager}, password: true},
+	ActSignOff:        {roles: []Role{RoleManager}, password: true},
 
 	ActViewKitchen:     {roles: everyone},
 	ActManageMenu:      {roles: []Role{RoleManager}, password: true},

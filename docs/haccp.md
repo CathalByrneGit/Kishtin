@@ -15,6 +15,7 @@ What Kishtin's HACCP log does today, and what it does not.
 | `hot_hold` | food, temperature | ≥ 63°C |
 | `batch_label` | product, made on, use by (or shelf life in days), quantity | no limit; use-by cannot be before made-on |
 | `cleaning` | task, area, done or not | not done is a fail; a task can be done once a day |
+| `sign_off` | a manager's sign-off of a period, with what it held when signed | no limit; saved by signing off, not logged as a reading. See [record-books.md](record-books.md#manager-sign-off) |
 
 Delivery results also say what to do: a borderline delivery is accepted only if used or stored straight away; a failed one is rejected.
 
@@ -54,6 +55,8 @@ The FSAI defaults are constants in `internal/haccp/limits.go`. The restaurant's 
 `kishtin haccp today` (or `GET /api/haccp/today`, or the Today screen) shows each fridge and freezer check for today as done, due or missed, the cleaning checklist, how many of the day's checks are done, today's out-of-limit records and whether each has an action, and batches in use.
 
 Each unit has daily check times (see [settings.md](settings.md#lists)); by default AM until 12:00 and PM. A reading counts for the check whose time it falls in; the latest reading in a check counts. A check not logged by the time the next one starts is missed. A correction fills the check of the record it corrects.
+
+For the head chef and manager, Today also says when nothing has been signed off for 7 days or more. See [record-books.md](record-books.md#manager-sign-off).
 
 ## Exports
 

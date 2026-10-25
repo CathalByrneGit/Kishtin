@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { HaccpRecord } from "./api";
-import { details, limitText, limitWords, outcomeStyle, title, typeLabel } from "./labels";
+import { details, limitText, limitWords, LOGGABLE_TYPES, outcomeStyle, reviewText, title, typeLabel } from "./labels";
 
 const rec = (r: Partial<HaccpRecord>): HaccpRecord => ({ type: "fridge", reading: {}, ...r }) as HaccpRecord;
 
@@ -32,4 +32,14 @@ describe("limitWords", () => {
       limitWords({ check: "cooling", cooling: { into_fridge_within_seconds: 7200, cutoff_after_seconds: 9000, cutoff_max_c: 10 } }),
     ).toBe("into the fridge within 2 h; serve or discard if above 10.0°C at 2 h 30 min");
   });
+});
+
+test("sign-offs", () => {
+  const r = {
+    type: "sign_off",
+    reading: { period_from: "2026-10-01", period_to: "2026-10-07", review: { records: 1, out_of_limit: 2, without_action: 0, missed: 1 } },
+  } as unknown as Parameters<typeof title>[0];
+  expect(title(r)).toContain("to");
+  expect(reviewText({ records: 1, out_of_limit: 2, without_action: 0, missed: 1 })).toBe("1 record · 2 out of limit · 0 without an action · 1 missed check");
+  expect(LOGGABLE_TYPES).not.toContain("sign_off");
 });
