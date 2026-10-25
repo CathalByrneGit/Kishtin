@@ -1,6 +1,6 @@
 # Settings
 
-Everything Kishtin checks HACCP records against can be changed by a manager, and so can the cook scheduler and order import from Square. There are seven parts:
+Everything Kishtin checks HACCP records against can be changed by a manager, and so can the cook scheduler, order import from Square and the record books. There are eight parts:
 
 | What | Where | Changed with |
 |---|---|---|
@@ -11,6 +11,7 @@ Everything Kishtin checks HACCP records against can be changed by a manager, and
 | System settings | below | `kishtin settings set system` |
 | Scheduler settings | below, and [kitchen.md](kitchen.md#settings) | `kishtin settings set scheduler` |
 | Order import from Square | [square.md](square.md) | `kishtin settings set square` |
+| Record books: bundle, booklet changes, added booklets | [record-books.md](record-books.md) | `kishtin settings set record_books` |
 
 Every change works the same way:
 
@@ -27,9 +28,9 @@ kishtin settings show lists --value > lists.json
 kishtin settings set lists -f lists.json --reason "Add the fish fridge"
 ```
 
-The same actions are in the API under `/api/settings/{guidance,rules,lists,system,scheduler,square}` (`GET`, `GET …/history`, `POST …/preview`, `PUT`).
+The same actions are in the API under `/api/settings/{guidance,rules,lists,system,scheduler,square,record_books}` (`GET`, `GET …/history`, `POST …/preview`, `PUT`).
 
-In the screens, lists are under **Setup → Fridges and tasks**, rules and limits under **Setup → Limits and rules**, system settings under **Settings**, scheduler settings under **Setup → Scheduler**, and Square import under **Setup → Square**. Each shows the same preview and asks for the same reason. The reference guidance is changed with the CLI or API only. See [screens.md](screens.md#setup).
+In the screens, lists are under **Setup → Fridges and tasks**, rules and limits under **Setup → Limits and rules**, system settings under **Settings**, scheduler settings under **Setup → Scheduler**, Square import under **Setup → Square**, and record books under **Setup → HACCP records**. Each shows the same preview and asks for the same reason. The reference guidance is changed with the CLI or API only. See [screens.md](screens.md#setup).
 
 ## Reference guidance
 

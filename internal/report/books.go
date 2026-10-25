@@ -224,8 +224,15 @@ func WriteBook(p Book, out io.Writer) error {
 	if slices.ContainsFunc(tpl.Columns, func(c books.Column) bool { return c.Field == "ref" }) {
 		verify = "Kishtin ref is the record number. " + verify
 	}
-	about = append(about, fmt.Sprintf("Layout from %s, %s %s edition, filled in by Kishtin on %s for %s. FAIL and CHECK mark readings outside the restaurant's limits. %s",
-		b.PackName, tpl.Code, tpl.Source.Published, w.when(p.GeneratedAt), p.GeneratedBy, verify))
+	layout := "Layout from " + b.BundleName
+	if tpl.Source != nil {
+		layout += fmt.Sprintf(", %s %s edition", tpl.Code, tpl.Source.Published)
+	}
+	if len(b.Changed) > 0 {
+		layout += fmt.Sprintf(", with the restaurant's changes to the %s (record book settings %s)", strings.Join(b.Changed, ", "), b.SettingsVersion)
+	}
+	about = append(about, fmt.Sprintf("%s. Filled in by Kishtin on %s for %s. FAIL and CHECK mark readings outside the restaurant's limits. %s",
+		layout, w.when(p.GeneratedAt), p.GeneratedBy, verify))
 	for _, a := range about {
 		pdf.MultiCell(0, 3.2, w.text(a), "", "L", false)
 	}

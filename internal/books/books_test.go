@@ -40,13 +40,16 @@ func (r *recs) add(t haccp.RecordType, at time.Time, rd haccp.Reading, o haccp.O
 
 func c(v float64) *float64 { return &v }
 
-func book(t *testing.T, code string) (Template, Pack) {
+func book(t *testing.T, code string) (Template, Bundle) {
 	t.Helper()
-	packs, err := Builtin()
+	bundles, err := Builtin()
 	require.NoError(t, err)
-	tpl, p, ok := Find(packs, code)
+	_, booklets, err := Resolve(bundles, DefaultSettings())
+	require.NoError(t, err)
+	bk, ok := Find(booklets, code)
 	require.True(t, ok, code)
-	return tpl, p
+	b, _ := FindBundle(bundles, DefaultBundle)
+	return bk.Template, b
 }
 
 func texts(r Row) []string {
@@ -57,15 +60,22 @@ func texts(r Row) []string {
 	return out
 }
 
-func TestBuiltinPack(t *testing.T) {
-	packs, err := Builtin()
+func TestBuiltinBundles(t *testing.T) {
+	bundles, err := Builtin()
 	require.NoError(t, err)
-	require.Len(t, packs, 1)
-	p := packs[0]
-	assert.Equal(t, "fsai-safe-catering", p.ID)
-	assert.Len(t, p.Templates, 9)
+	var ids []string
+	for _, b := range bundles {
+		ids = append(ids, b.ID)
+	}
+	assert.ElementsMatch(t, []string{"fsai-safe-catering", "general"}, ids)
+
+	ie, ok := FindBundle(bundles, "fsai-safe-catering")
+	require.True(t, ok)
+	assert.Equal(t, "Ireland", ie.Country)
+	assert.Len(t, ie.Templates, 9)
 	var supported []string
-	for _, tpl := range p.Templates {
+	for _, tpl := range ie.Templates {
+		require.NotNil(t, tpl.Source, tpl.Code)
 		assert.Len(t, tpl.Source.SHA256, 64, tpl.Code)
 		if tpl.Supported() {
 			supported = append(supported, tpl.Code)
@@ -75,10 +85,18 @@ func TestBuiltinPack(t *testing.T) {
 	}
 	assert.Equal(t, []string{"SC2", "SC3", "SC4"}, supported)
 
-	tpl, _, ok := Find(packs, "sc4")
+	gen, ok := FindBundle(bundles, "general")
 	require.True(t, ok)
-	assert.Equal(t, []string{"Time into hot hold"}, tpl.Unfilled())
-	_, _, ok = Find(packs, "SC10")
+	for _, tpl := range gen.Templates {
+		assert.True(t, tpl.Supported(), tpl.Code)
+		assert.Nil(t, tpl.Source, "the general bundle copies no official booklet")
+	}
+
+	sc4, _ := book(t, "sc4")
+	assert.Equal(t, []string{"Time into hot hold"}, sc4.Unfilled())
+	_, booklets, err := Resolve(bundles, DefaultSettings())
+	require.NoError(t, err)
+	_, ok = Find(booklets, "SC10")
 	assert.False(t, ok)
 }
 
@@ -93,18 +111,19 @@ func TestValidate(t *testing.T) {
 		{"no width", Template{ID: "x", Code: "X", Title: "X", Builder: BuilderHotHold, Columns: []Column{{Label: "Food", Field: "food"}}}, "needs a width"},
 		{"grid without units", Template{ID: "x", Code: "X", Title: "X", Builder: BuilderUnitGrid, UnitsPerPage: 6, Columns: []Column{{Label: "Date", Field: "date", Width: 10}}}, "unit_checks"},
 		{"unsupported needs a reason", Template{ID: "x", Code: "X", Title: "X"}, "missing"},
+		{"two grids", Template{ID: "x", Code: "X", Title: "X", Builder: BuilderUnitGrid, UnitsPerPage: 6, Columns: []Column{{Label: "A", Field: "unit_checks", Width: 1}, {Label: "B", Field: "unit_checks", Width: 1}}}, "exactly one"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.ErrorContains(t, tt.tpl.Validate(), tt.want)
 		})
 	}
-	_, err := ParsePack([]byte(`{"id":"p","name":"P","templates":[],"extra":1}`))
+	_, err := ParseBundle([]byte(`{"id":"p","name":"P","country":"X","templates":[],"extra":1}`))
 	assert.ErrorContains(t, err, "unknown field")
 }
 
 func TestUnitGrid(t *testing.T) {
-	tpl, pack := book(t, "SC2")
+	tpl, bundle := book(t, "SC2")
 	units := []haccp.Unit{
 		{Name: "Walk-in fridge", Kind: haccp.RecordFridge},
 		{Name: "Chest freezer", Kind: haccp.RecordFreezer},
@@ -125,12 +144,12 @@ func TestUnitGrid(t *testing.T) {
 	r.add(haccp.RecordFridge, on(2, 9, 0), haccp.Reading{Unit: "Drinks fridge", TempC: c(6)}, haccp.OutcomePass)
 
 	b, err := Build(Input{
-		Template: tpl, Pack: pack, Year: 2026, Month: time.October, Loc: dublin,
+		Template: tpl, Bundle: bundle, Year: 2026, Month: time.October, Loc: dublin,
 		Now: on(3, 13, 0), Since: on(1, 0, 30), Records: r.list, Units: units,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "2026-10", b.Month)
-	assert.Equal(t, "FSAI Safe Catering record books", b.PackName)
+	assert.Equal(t, "FSAI Safe Catering record books", b.BundleName)
 	require.Len(t, b.Pages, 1)
 	page := b.Pages[0]
 
@@ -171,13 +190,13 @@ func TestUnitGrid(t *testing.T) {
 }
 
 func TestUnitGridPages(t *testing.T) {
-	tpl, pack := book(t, "SC2")
+	tpl, bundle := book(t, "SC2")
 	var units []haccp.Unit
 	for i := range 8 {
 		units = append(units, haccp.Unit{Name: fmt.Sprintf("Fridge %d", i+1), Kind: haccp.RecordFridge})
 	}
 	units[7].Checks = []haccp.CheckTime{{Label: "Open", From: "00:00"}, {Label: "Mid", From: "12:00"}, {Label: "Close", From: "18:00"}}
-	b, err := Build(Input{Template: tpl, Pack: pack, Year: 2026, Month: time.February, Loc: dublin, Now: on(1, 0, 0), Units: units})
+	b, err := Build(Input{Template: tpl, Bundle: bundle, Year: 2026, Month: time.February, Loc: dublin, Now: on(1, 0, 0), Units: units})
 	require.NoError(t, err)
 	require.Len(t, b.Pages, 2)
 	assert.Len(t, b.Pages[0].Columns, 3+12)
@@ -188,7 +207,7 @@ func TestUnitGridPages(t *testing.T) {
 }
 
 func TestCooking(t *testing.T) {
-	tpl, pack := book(t, "SC3")
+	tpl, bundle := book(t, "SC3")
 	var r recs
 	r.add(haccp.RecordCook, on(5, 12, 0), haccp.Reading{Food: "Chicken fillets", TempC: c(85)}, haccp.OutcomePass)
 	r.add(haccp.RecordCook, on(5, 13, 0), haccp.Reading{Food: "Whole chicken", TempC: c(70), HoldSeconds: ptr(int64(120))}, haccp.OutcomePass)
@@ -202,7 +221,7 @@ func TestCooking(t *testing.T) {
 		x.OutcomeReason, x.CorrectiveAction = "68.0°C is below 70.0°C", "Reheated again to 76°C"
 	})
 
-	b, err := Build(Input{Template: tpl, Pack: pack, Year: 2026, Month: time.October, Loc: dublin, Now: on(25, 12, 0), Records: r.list})
+	b, err := Build(Input{Template: tpl, Bundle: bundle, Year: 2026, Month: time.October, Loc: dublin, Now: on(25, 12, 0), Records: r.list})
 	require.NoError(t, err)
 	require.Len(t, b.Pages, 1)
 	rows := b.Pages[0].Rows
@@ -220,7 +239,7 @@ func TestCooking(t *testing.T) {
 }
 
 func TestHotHold(t *testing.T) {
-	tpl, pack := book(t, "SC4")
+	tpl, bundle := book(t, "SC4")
 	var r recs
 	for i, v := range []float64{82, 70, 66, 64} {
 		r.add(haccp.RecordHotHold, on(7, 12+i, 0), haccp.Reading{Food: "Chicken soup", TempC: c(v)}, haccp.OutcomePass)
@@ -228,7 +247,7 @@ func TestHotHold(t *testing.T) {
 	r.add(haccp.RecordHotHold, on(7, 12, 10), haccp.Reading{Food: "Beef stew", TempC: c(58)}, haccp.OutcomeFail, func(x *haccp.Record) {
 		x.OutcomeReason, x.CorrectiveAction = "58.0°C is below 63.0°C", "Thrown out"
 	})
-	b, err := Build(Input{Template: tpl, Pack: pack, Year: 2026, Month: time.October, Loc: dublin, Now: on(25, 12, 0), Records: r.list})
+	b, err := Build(Input{Template: tpl, Bundle: bundle, Year: 2026, Month: time.October, Loc: dublin, Now: on(25, 12, 0), Records: r.list})
 	require.NoError(t, err)
 	rows := b.Pages[0].Rows
 	require.Len(t, rows, 3)
@@ -240,8 +259,8 @@ func TestHotHold(t *testing.T) {
 }
 
 func TestUnsupported(t *testing.T) {
-	tpl, pack := book(t, "SC7")
-	_, err := Build(Input{Template: tpl, Pack: pack, Year: 2026, Month: time.October})
+	tpl, bundle := book(t, "SC7")
+	_, err := Build(Input{Template: tpl, Bundle: bundle, Year: 2026, Month: time.October})
 	assert.ErrorContains(t, err, "cannot fill SC7")
 }
 

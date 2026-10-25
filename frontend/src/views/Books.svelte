@@ -13,7 +13,7 @@
 
   const months = recentMonths(new Date(), 13);
   let month = $state(param("month") ?? months[0]!);
-  let packs = $state<Schemas["Pack"][] | null>(null);
+  let info = $state<Schemas["RecordBooks"] | null>(null);
   let filled = $state<Record<string, Book | string>>({});
   let selected = $state<string | null>(param("book"));
   let error = $state("");
@@ -24,8 +24,8 @@
   onMount(() => {
     if (!canExport) return;
     api
-      .bookPacks()
-      .then((r) => (packs = r.packs))
+      .recordBooks()
+      .then((r) => (info = r))
       .catch((err: unknown) => (error = message(err)));
   });
 
@@ -33,22 +33,21 @@
   // its missed checks before anyone opens it.
   $effect(() => {
     const m = month;
-    const list = packs;
-    if (!list) return;
+    const list = shown;
+    if (!info) return;
     filled = {};
     let gone = false;
-    for (const p of list) {
-      for (const t of p.templates) {
-        if (!t.builder) continue;
-        api
-          .book(t.id, m)
-          .then((b) => {
-            if (!gone) filled[t.id] = b;
-          })
-          .catch((err: unknown) => {
-            if (!gone) filled[t.id] = message(err);
-          });
-      }
+    for (const bk of list) {
+      const t = bk.template;
+      if (!t.builder) continue;
+      api
+        .book(t.id, m)
+        .then((b) => {
+          if (!gone) filled[t.id] = b;
+        })
+        .catch((err: unknown) => {
+          if (!gone) filled[t.id] = message(err);
+        });
     }
     return () => {
       gone = true;
@@ -80,6 +79,8 @@
     }
   }
 
+  const shown = $derived((info?.booklets ?? []).filter((b) => !b.off));
+  const hidden = $derived((info?.booklets ?? []).filter((b) => b.off).length);
   const current = $derived(selected ? filled[selected] : undefined);
   const book = $derived(typeof current === "object" ? current : null);
   const monthOptions = months.map((m) => ({ value: m, label: monthLabel(m) }));
@@ -101,19 +102,22 @@
     <Notice tone="info" title="Head chef or manager only" message="Record books are for the head chef and managers. Ask one of them to log in on this device." />
   {:else if error}
     <Notice tone="error" message={error} />
-  {:else if !packs}
+  {:else if !info}
     <Spinner />
   {:else}
-    {#each packs as p (p.id)}
-      <Card padding="md" title={p.name} meta={p.issuer}>
+    {@const p = info.bundle}
+      <Card padding="md" title={p.name} meta={`${p.country} · ${p.issuer}`}>
         <ul class="books">
-          {#each p.templates as t (t.id)}
+          {#each shown as bk (bk.template.id)}
+            {@const t = bk.template}
             {@const b = filled[t.id]}
             <li class:muted={!t.builder}>
               <span class="code num">{t.code}</span>
               <div class="about">
                 <span class="title">{t.title}</span>
-                <span class="small muted">Edition {t.source.published}</span>
+                <span class="small muted">
+                  {#if bk.custom}Added by this restaurant{:else if t.source}Edition {t.source.published}{/if}{#if bk.changed.length > 0}{bk.custom || t.source ? " · " : ""}Changed here: {bk.changed.join(", ")}{/if}
+                </span>
                 {#if !t.builder}
                   <span class="small">{t.missing}</span>
                 {:else if typeof b === "string"}
@@ -145,8 +149,11 @@
             </li>
           {/each}
         </ul>
+        <p class="small muted setup">
+          {hidden > 0 ? `${hidden} booklet${hidden === 1 ? " is" : "s are"} turned off. ` : ""}Choose your country's bundle, turn booklets off, or change titles and columns in
+          <a href="/setup/records">Setup › HACCP records</a>.
+        </p>
       </Card>
-    {/each}
 
     {#if book}
       <div id="book-preview"></div>
@@ -189,6 +196,11 @@
           </div>
         {/each}
 
+        {#if (book.template.notes?.length ?? 0) > 0}
+          <ul class="notes small muted">
+            {#each book.template.notes ?? [] as n (n)}<li>{n}</li>{/each}
+          </ul>
+        {/if}
         {#if book.gaps.length > 0}
           <h3>Missed checks</h3>
           <ul class="gaps">
@@ -198,7 +210,7 @@
           </ul>
         {/if}
         <p class="small muted">
-          Layout from the {book.pack_name}, edition {book.template.source.published}. Failed and borderline readings show FAIL and CHECK. A missed check stays marked as missed: Kishtin never fills a gap in.
+          Layout from the {book.bundle_name}{book.template.source ? `, edition ${book.template.source.published}` : ""}{book.changed.length > 0 ? `, with this restaurant's changes to the ${book.changed.join(", ")}` : ""}. Failed and borderline readings show FAIL and CHECK. A missed check stays marked as missed: Kishtin never fills a gap in.
         </p>
       </Card>
     {/if}
@@ -257,6 +269,16 @@
   }
   .muted {
     color: var(--text-secondary);
+  }
+  .setup {
+    margin-top: var(--space-4);
+  }
+  .notes {
+    margin: 0 0 var(--space-4);
+    padding-left: var(--space-6);
+  }
+  a {
+    color: var(--accent-blue);
   }
   .error {
     color: var(--accent-red);

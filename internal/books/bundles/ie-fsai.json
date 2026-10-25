@@ -1,8 +1,10 @@
 {
   "id": "fsai-safe-catering",
   "name": "FSAI Safe Catering record books",
+  "country": "Ireland",
   "issuer": "Food Safety Authority of Ireland",
   "jurisdiction": "IE",
+  "language": "en",
   "url": "https://www.fsai.ie/publications/safe-catering-pack-record-books",
   "templates": [
     {
@@ -28,10 +30,26 @@
       "builder": "unit_grid",
       "units_per_page": 6,
       "columns": [
-        { "label": "Date", "field": "date", "width": 14 },
-        { "label": "Unit", "field": "unit_checks", "width": 168 },
-        { "label": "Comments/Action", "field": "comments", "width": 66 },
-        { "label": "Sign", "field": "signed", "width": 25 }
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 14
+        },
+        {
+          "label": "Unit",
+          "field": "unit_checks",
+          "width": 168
+        },
+        {
+          "label": "Comments/Action",
+          "field": "comments",
+          "width": 66
+        },
+        {
+          "label": "Sign",
+          "field": "signed",
+          "width": 25
+        }
       ],
       "notes": [
         "Chilled food: 0°C to 5°C; frozen food: less than or equal to -18°C.",
@@ -50,18 +68,75 @@
       },
       "builder": "cooking",
       "columns": [
-        { "label": "Date", "field": "date", "width": 17 },
-        { "label": "Food", "field": "food", "width": 42 },
-        { "label": "Time started cooking", "group": "Cooking", "fixed": "N/A", "fixed_when": "core_temp", "width": 18 },
-        { "label": "Time finished cooking", "group": "Cooking", "field": "cook_finished", "width": 18 },
-        { "label": "Core temp", "group": "Cooking", "field": "core_temp", "width": 18 },
-        { "label": "Signed", "group": "Cooking", "field": "cook_signed", "width": 19 },
-        { "label": "Time into fridge/blast chiller", "group": "Cooling", "field": "into_fridge", "width": 22 },
-        { "label": "Signed", "group": "Cooling", "field": "cool_signed", "width": 19 },
-        { "label": "Core temp", "group": "Reheating", "field": "reheat_temp", "width": 18 },
-        { "label": "Signed", "group": "Reheating", "field": "reheat_signed", "width": 19 },
-        { "label": "Comments/Action", "field": "comments", "width": 49 },
-        { "label": "Kishtin ref", "field": "ref", "width": 14 }
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 17
+        },
+        {
+          "label": "Food",
+          "field": "food",
+          "width": 42
+        },
+        {
+          "label": "Time started cooking",
+          "group": "Cooking",
+          "fixed": "N/A",
+          "fixed_when": "core_temp",
+          "width": 18
+        },
+        {
+          "label": "Time finished cooking",
+          "group": "Cooking",
+          "field": "cook_finished",
+          "width": 18
+        },
+        {
+          "label": "Core temp",
+          "group": "Cooking",
+          "field": "core_temp",
+          "width": 18
+        },
+        {
+          "label": "Signed",
+          "group": "Cooking",
+          "field": "cook_signed",
+          "width": 19
+        },
+        {
+          "label": "Time into fridge/blast chiller",
+          "group": "Cooling",
+          "field": "into_fridge",
+          "width": 22
+        },
+        {
+          "label": "Signed",
+          "group": "Cooling",
+          "field": "cool_signed",
+          "width": 19
+        },
+        {
+          "label": "Core temp",
+          "group": "Reheating",
+          "field": "reheat_temp",
+          "width": 18
+        },
+        {
+          "label": "Signed",
+          "group": "Reheating",
+          "field": "reheat_signed",
+          "width": 19
+        },
+        {
+          "label": "Comments/Action",
+          "field": "comments",
+          "width": 49
+        },
+        {
+          "label": "Kishtin ref",
+          "field": "ref",
+          "width": 14
+        }
       ],
       "notes": [
         "Cooking: core temperature 75°C or above. Cooling: cool food as quickly as possible and place in fridge within 2 hours. Time finished cooking needs to be recorded if food is being cooled. Reheating: core temperature 70°C or above.",
@@ -80,17 +155,54 @@
       },
       "builder": "hot_hold",
       "columns": [
-        { "label": "Date", "field": "date", "width": 18 },
-        { "label": "Food", "field": "food", "width": 56 },
-        { "label": "Time into hot hold", "width": 22 },
-        { "label": "Core temp (1st check)", "field": "check_1", "width": 27 },
-        { "label": "Core temp (2nd check)", "field": "check_2", "width": 27 },
-        { "label": "Core temp (3rd check)", "field": "check_3", "width": 27 },
-        { "label": "Comments/Action", "field": "comments", "width": 60 },
-        { "label": "Signed", "field": "signed", "width": 22 },
-        { "label": "Kishtin ref", "field": "ref", "width": 14 }
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Food",
+          "field": "food",
+          "width": 56
+        },
+        {
+          "label": "Time into hot hold",
+          "width": 22
+        },
+        {
+          "label": "Core temp (1st check)",
+          "field": "check_1",
+          "width": 27
+        },
+        {
+          "label": "Core temp (2nd check)",
+          "field": "check_2",
+          "width": 27
+        },
+        {
+          "label": "Core temp (3rd check)",
+          "field": "check_3",
+          "width": 27
+        },
+        {
+          "label": "Comments/Action",
+          "field": "comments",
+          "width": 60
+        },
+        {
+          "label": "Signed",
+          "field": "signed",
+          "width": 22
+        },
+        {
+          "label": "Kishtin ref",
+          "field": "ref",
+          "width": 14
+        }
       ],
-      "notes": ["Keep hot food at or above 63°C."],
+      "notes": [
+        "Keep hot food at or above 63°C."
+      ],
       "manager_check": true
     },
     {

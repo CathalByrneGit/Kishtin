@@ -15,7 +15,7 @@ import (
 func (c *cli) booksCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "books",
-		Short: "List the official record books Kishtin can fill in",
+		Short: "List the record books in use and what each needs",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			res, err := c.api.ListRecordBooks(cmd.Context())
@@ -23,20 +23,47 @@ func (c *cli) booksCmd() *cobra.Command {
 				return apiErr(err)
 			}
 			return c.emit(res, func(w io.Writer) {
-				for i, p := range res.Packs {
-					if i > 0 {
-						fmt.Fprintln(w)
+				fmt.Fprintf(w, "%s, for %s (%s). Settings version %s.\n", res.Bundle.Name, res.Bundle.Country, res.Bundle.Issuer, res.SettingsVersion)
+				var rows [][]string
+				for _, b := range res.Booklets {
+					t := b.Template
+					status := "can fill"
+					var notes []string
+					switch {
+					case b.Off != nil && *b.Off:
+						status = "turned off"
+					case t.Builder == nil:
+						status = "not yet"
+						notes = append(notes, deref(t.Missing))
 					}
-					fmt.Fprintf(w, "%s (%s)\n", p.Name, p.Issuer)
-					var rows [][]string
-					for _, t := range p.Templates {
-						status := "can fill"
-						if t.Builder == nil {
-							status = "not yet: " + deref(t.Missing)
+					if b.Custom != nil && *b.Custom {
+						notes = append(notes, "added by the restaurant")
+					}
+					if len(b.Changed) > 0 {
+						notes = append(notes, "changed: "+strings.Join(b.Changed, ", "))
+					}
+					if cp := b.Copy; cp != nil && cp.Known {
+						if cp.Matches {
+							notes = append(notes, "uploaded copy matches")
+						} else {
+							notes = append(notes, "uploaded copy is a different edition")
 						}
-						rows = append(rows, []string{t.Code, t.Title, t.Source.Published, status})
 					}
-					table(w, "CODE\tTITLE\tEDITION\tSTATUS", rows)
+					edition := ""
+					if t.Source != nil {
+						edition = t.Source.Published
+					}
+					rows = append(rows, []string{t.Code, t.Title, edition, status, strings.Join(notes, "; ")})
+				}
+				table(w, "CODE\tTITLE\tEDITION\tSTATUS\tNOTES", rows)
+				var other []string
+				for _, b := range res.Bundles {
+					if b.ID != res.Bundle.ID {
+						other = append(other, fmt.Sprintf("%s (%s, %s)", b.Name, b.ID, b.Country))
+					}
+				}
+				if len(other) > 0 {
+					fmt.Fprintf(w, "\nOther bundles: %s.\nChange the bundle or booklets with: kishtin settings show record_books --value > books.json\n", strings.Join(other, "; "))
 				}
 			})
 		},

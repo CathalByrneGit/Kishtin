@@ -1,10 +1,49 @@
 # Record books
 
-Kishtin fills in official HACCP record books from the records staff log, so nobody has to copy readings onto paper. The first pack is the FSAI Safe Catering record books (Ireland).
+Kishtin fills in official HACCP record books from the records staff log, so nobody has to copy readings onto paper.
 
 Head chefs and managers only.
 
-## What it can fill in
+## Bundles
+
+A bundle is one country's set of record books. Kishtin ships two:
+
+| Bundle | For | Booklets |
+|---|---|---|
+| FSAI Safe Catering record books | Ireland (the default) | SC1 to SC9. Kishtin can fill in SC2, SC3 and SC4. |
+| Kishtin general record books | Any country | T1 fridges and freezers, T2 cooking, cooling and reheating, T3 hot holding, in plain English. Use these where no bundle for your country exists, and change titles and columns to match your own booklets. |
+
+Bundles for more countries are added to Kishtin as kitchens ask for them. A bundle is a data file in `internal/books/bundles/`, so adding one or updating it for a new edition needs no code, as long as its booklets use the kinds of row Kishtin already has (below).
+
+## Changing the booklets for your restaurant
+
+**Setup › HACCP records** (manager password). Choose the bundle, then for each booklet:
+
+- **In use**: turn a booklet off to hide it from Record books.
+- **Change**:
+  - Title.
+  - Columns: rename, reorder, remove, add, set a group heading over several columns, or a blank column to fill by hand. A column can show anything Kishtin records for that kind of booklet. Widths are shares of the page.
+  - Your own notes, printed under the booklet's notes.
+  - Fridges and freezers per sheet.
+  - Whether a manager check line prints.
+- **Upload your copy**: upload the official PDF you use. Kishtin keeps it with your records and says whether it is the edition the bundle was made from (it compares the file's SHA-256). If it is not, compare its columns with the booklet and change them here.
+- **Add a booklet**: for a booklet your country uses that is not in the bundle. Choose what it records (a fridge and freezer grid, a cooking log or a hot holding log), start from another booklet's columns, then change them.
+
+Every change is shown before it is saved, needs a reason, and is saved as a new settings version, like limits. Each filled-in booklet names the settings version and what was changed. Changes only affect how records print; saved records never change. The same settings are available with `kishtin settings show record_books` and `kishtin settings set record_books`, and over the API at `/api/settings/record_books`.
+
+![HACCP records setup](screenshots/haccp-records-setup.png)
+
+## Kinds of booklet
+
+| Kind | Rows | Fields a column can show |
+|---|---|---|
+| Fridge and freezer grid | A row per day, a column for each check on each fridge and freezer | day, readings, comments and actions, who logged |
+| Cooking, cooling and reheating | A row per cooking (with its cooling) and per reheat | date, food, time cooking finished, core temperature, time into the fridge, reheat temperature, who logged each, comments, record number |
+| Hot holding | A row per food per day, up to three checks | date, food, 1st/2nd/3rd check, comments, who logged, record number |
+
+A booklet that needs another kind of row, such as a checklist or a training record, needs new code.
+
+## What the FSAI bundle can fill in
 
 | Booklet | Filled in | How |
 |---|---|---|
@@ -36,7 +75,7 @@ Columns Kishtin does not record print blank, and the booklet says which ones the
 ## From the command line
 
 ```
-kishtin haccp books                              # list the booklets and what each needs
+kishtin haccp books                              # the bundle in use, its booklets and what each needs
 kishtin haccp book SC2 --month 2026-10           # missed checks and blank columns
 kishtin haccp book SC2 --month 2026-10 -o sc2.pdf
 kishtin haccp book SC4 --json                    # the filled-in pages as JSON
@@ -44,13 +83,9 @@ kishtin haccp book SC4 --json                    # the filled-in pages as JSON
 
 API: `GET /api/haccp/books`, `GET /api/haccp/books/{book}?month=YYYY-MM`, `GET /api/haccp/books/{book}/pdf?month=YYYY-MM`.
 
-## Templates
+## What Kishtin does not do yet
 
-Each booklet is a template kept as data in `internal/books/packs/`. A template lists its columns, which record field goes in each, its notes, and the SHA-256 and edition of the official PDF it copies. A new edition with renamed or reordered columns is a change to that data, not to code. A booklet that needs a new kind of row (for example a checklist) needs a new builder.
-
-What Kishtin does not do yet:
-
-- Templates ship with Kishtin. They cannot be added or edited from the screens.
-- Kishtin does not check the FSAI site for new editions.
+- Bundles ship with Kishtin. A restaurant can change booklets and add its own, but cannot load a new bundle file from the screens.
+- Kishtin does not read the uploaded PDF. It only compares the file with the edition the booklet was made from, and does not check the FSAI site for new editions.
 - It does not print onto the official PDF pages. It draws its own pages in the same layout.
 - Ask your environmental health officer whether they accept printed or on-screen records in place of the paper booklets.

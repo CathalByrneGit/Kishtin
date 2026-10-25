@@ -47,9 +47,14 @@ type Gap struct {
 
 // Book is a filled-in record book for one month.
 type Book struct {
-	Template Template `json:"template"`
-	PackName string   `json:"pack_name"`
-	Issuer   string   `json:"issuer"`
+	// Template is the booklet as the restaurant uses it.
+	Template   Template `json:"template"`
+	BundleName string   `json:"bundle_name"`
+	Issuer     string   `json:"issuer"`
+	// Changed lists what the restaurant changed from the bundle's booklet.
+	Changed []string `json:"changed"`
+	// SettingsVersion is the record book settings version used.
+	SettingsVersion string `json:"settings_version,omitempty"`
 	// Month is YYYY-MM.
 	Month string `json:"month"`
 	Pages []Page `json:"pages"`
@@ -69,7 +74,7 @@ type Book struct {
 // Input is what Build works from.
 type Input struct {
 	Template Template
-	Pack     Pack
+	Bundle   Bundle
 	Year     int
 	Month    time.Month
 	Loc      *time.Location
@@ -99,7 +104,7 @@ func Build(in Input) (Book, error) {
 	b := &builder{in: in, from: time.Date(in.Year, in.Month, 1, 0, 0, 0, 0, in.Loc)}
 	b.to = b.from.AddDate(0, 1, 0)
 	b.book = Book{
-		Template: t, PackName: in.Pack.Name, Issuer: in.Pack.Issuer,
+		Template: t, BundleName: in.Bundle.Name, Issuer: in.Bundle.Issuer, Changed: []string{},
 		Month: b.from.Format("2006-01"), Pages: []Page{}, Gaps: []Gap{}, Unfilled: t.Unfilled(),
 	}
 	if b.book.Unfilled == nil {

@@ -179,8 +179,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the official record books Kishtin can fill in
-         * @description Each pack is a set of booklets from one issuer, such as the FSAI Safe Catering pack. Booklets Kishtin cannot fill yet say why in missing.
+         * List the record books in use, and the bundles and booklet kinds available
+         * @description booklets are the bundle's booklets with the restaurant's changes, then the booklets it added. Booklets Kishtin cannot fill yet say why in missing.
          */
         get: operations["list-record-books"];
         put?: never;
@@ -220,7 +220,7 @@ export interface paths {
         };
         /**
          * Download a filled-in record book as PDF
-         * @description The same pages as the preview, laid out like the official booklet, with record numbers and the hash chain head in the footer.
+         * @description The same pages as the preview, laid out like the booklet, with record numbers and the hash chain head in the footer.
          */
         get: operations["export-record-book"];
         put?: never;
@@ -1006,6 +1006,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/record_books": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show the record book settings in force
+         * @description The record book bundle in use, the restaurant's changes to its booklets (turned off, title, columns, notes, sheet layout, manager check, uploaded copy) and booklets it added. Records never change; only how they are printed.
+         */
+        get: operations["get-record_books"];
+        /**
+         * Save a new version of the record book settings
+         * @description Needs a manager password login or a manager API key, and a reason. A change that makes food safety less strict also needs plan_ref. Saved records are never re-graded.
+         */
+        put: operations["save-record_books"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/record_books/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every saved version of the record book settings, oldest first */
+        get: operations["record_books-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/record_books/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a change to the record book settings
+         * @description Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.
+         */
+        post: operations["preview-record_books"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/rules": {
         parameters: {
             query?: never;
@@ -1536,6 +1597,8 @@ export interface components {
             use_by: string;
         };
         Book: {
+            bundle_name: string;
+            changed: string[];
             /** Format: int64 */
             corrected: number;
             /** Format: int64 */
@@ -1545,15 +1608,46 @@ export interface components {
             /** Format: int64 */
             last_seq?: number;
             month: string;
-            pack_name: string;
             pages: components["schemas"]["Page"][];
             /** Format: int64 */
             records: number;
+            settings_version?: string;
             template: components["schemas"]["Template"];
             unfilled: string[];
         };
-        BookPacksBody: {
-            packs: components["schemas"]["Pack"][];
+        BookSetting: {
+            columns?: components["schemas"]["Column"][];
+            copy_file?: string;
+            manager_check?: boolean;
+            notes?: string[];
+            off?: boolean;
+            template: string;
+            title?: string;
+            /** Format: int64 */
+            units_per_page?: number;
+        };
+        Booklet: {
+            base?: components["schemas"]["Template"];
+            changed: string[];
+            copy?: components["schemas"]["CopyCheck"];
+            custom?: boolean;
+            off?: boolean;
+            template: components["schemas"]["Template"];
+        };
+        Builder: {
+            fields: components["schemas"]["Field"][];
+            id: string;
+            label: string;
+        };
+        Bundle: {
+            country: string;
+            id: string;
+            issuer: string;
+            jurisdiction?: string;
+            language: string;
+            name: string;
+            templates: components["schemas"]["Template"][];
+            url?: string;
         };
         CatalogBody: {
             entries: components["schemas"]["CatalogRow"][];
@@ -1650,6 +1744,11 @@ export interface components {
             cutoff_max_c: number;
             /** Format: int64 */
             into_fridge_within_seconds: number;
+        };
+        CopyCheck: {
+            file: string;
+            known: boolean;
+            matches: boolean;
         };
         Course: {
             course: string;
@@ -1799,6 +1898,10 @@ export interface components {
         EventsBody: {
             events: components["schemas"]["Event"][];
         };
+        Field: {
+            key: string;
+            label: string;
+        };
         FileMeta: {
             mime: string;
             original_name?: string;
@@ -1842,6 +1945,9 @@ export interface components {
         };
         HistoryOutPOSSettingsBody: {
             versions: components["schemas"]["VersionedPOSSettings"][];
+        };
+        HistoryOutRecordBookSettingsBody: {
+            versions: components["schemas"]["VersionedRecordBookSettings"][];
         };
         HistoryOutRulesBody: {
             versions: components["schemas"]["VersionedRules"][];
@@ -2136,14 +2242,6 @@ export interface components {
             /** Format: int64 */
             poll_seconds: number;
         };
-        Pack: {
-            id: string;
-            issuer: string;
-            jurisdiction: string;
-            name: string;
-            templates: components["schemas"]["Template"][];
-            url: string;
-        };
         Page: {
             columns: components["schemas"]["Column"][];
             rows: components["schemas"]["Row"][];
@@ -2220,6 +2318,18 @@ export interface components {
             seq: number;
             type: string;
         };
+        RecordBookSettings: {
+            books: components["schemas"]["BookSetting"][];
+            bundle: string;
+            custom: components["schemas"]["Template"][];
+        };
+        RecordBooks: {
+            booklets: components["schemas"]["Booklet"][];
+            builders: components["schemas"]["Builder"][];
+            bundle: components["schemas"]["Bundle"];
+            bundles: components["schemas"]["Bundle"][];
+            settings_version: string;
+        };
         RecordRegrade: {
             changed: boolean;
             /** Format: date-time */
@@ -2288,6 +2398,11 @@ export interface components {
             reason: string;
             value: components["schemas"]["POSSettings"];
         };
+        SettingsChangeRecordBookSettings: {
+            plan_ref?: string;
+            reason: string;
+            value: components["schemas"]["RecordBookSettings"];
+        };
         SettingsChangeRules: {
             plan_ref?: string;
             reason: string;
@@ -2326,6 +2441,14 @@ export interface components {
             notes: string[];
             problem?: string;
             proposed: components["schemas"]["POSSettings"];
+        };
+        SettingsPreviewRecordBookSettings: {
+            changes: string[];
+            current: components["schemas"]["VersionedRecordBookSettings"];
+            less_strict?: string[];
+            notes: string[];
+            problem?: string;
+            proposed: components["schemas"]["RecordBookSettings"];
         };
         SettingsPreviewRules: {
             changes: string[];
@@ -2470,7 +2593,7 @@ export interface components {
             manager_check?: boolean;
             missing?: string;
             notes?: string[];
-            source: components["schemas"]["Source"];
+            source?: components["schemas"]["Source"];
             title: string;
             /** Format: int64 */
             units_per_page?: number;
@@ -2591,6 +2714,11 @@ export interface components {
         VersionedPOSSettings: {
             builtin: boolean;
             value: components["schemas"]["POSSettings"];
+            version: components["schemas"]["SettingsVersion"];
+        };
+        VersionedRecordBookSettings: {
+            builtin: boolean;
+            value: components["schemas"]["RecordBookSettings"];
             version: components["schemas"]["SettingsVersion"];
         };
         VersionedRules: {
@@ -2986,7 +3114,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BookPacksBody"];
+                    "application/json": components["schemas"]["RecordBooks"];
                 };
             };
             /** @description Error */
@@ -4610,6 +4738,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsPreviewLists"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-record_books": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedRecordBookSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "save-record_books": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangeRecordBookSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedRecordBookSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "record_books-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryOutRecordBookSettingsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-record_books": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangeRecordBookSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsPreviewRecordBookSettings"];
                 };
             };
             /** @description Error */

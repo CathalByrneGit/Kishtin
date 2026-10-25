@@ -22,6 +22,7 @@
     ChefHat,
     ClipboardPlus,
     CookingPot,
+    BookMarked,
     BookOpen,
     Download,
     House,
@@ -66,6 +67,7 @@
   import Keys from "./views/setup/Keys.svelte";
   import Limits from "./views/setup/Limits.svelte";
   import Lists from "./views/setup/Lists.svelte";
+  import RecordBooksSetup from "./views/setup/RecordBooks.svelte";
   import SettingsView from "./views/setup/Settings.svelte";
   import Staff from "./views/setup/Staff.svelte";
   import Today from "./views/Today.svelte";
@@ -98,6 +100,7 @@
     { path: "/setup/connections/square", label: "Square", section: "setup", view: "connections", group: "Setup / Connections", sub: true },
     { path: "/setup/lists", label: "Fridges and tasks", section: "setup", view: "lists", group: "Setup" },
     { path: "/setup/limits", label: "Limits and rules", section: "setup", view: "limits", group: "Setup" },
+    { path: "/setup/records", label: "HACCP records", section: "setup", view: "records", group: "Setup" },
     { path: "/setup/staff", label: "Staff", section: "setup", view: "staff", group: "Setup" },
     { path: "/setup/keys", label: "Device keys", section: "setup", view: "keys", group: "Setup" },
     { path: "/setup/backups", label: "Backups", section: "setup", view: "backups", group: "Setup" },
@@ -110,6 +113,7 @@
     connections: Plug,
     lists: ListChecks,
     limits: SlidersHorizontal,
+    records: BookMarked,
     staff: Users,
     keys: KeyRound,
     backups: Archive,
@@ -377,6 +381,8 @@
           <Verify />
         {:else if route.path === "/setup/lists"}
           <Lists />
+        {:else if route.path === "/setup/records"}
+          <RecordBooksSetup />
         {:else if route.path === "/setup/limits"}
           <Limits />
         {:else if route.path === "/setup/staff"}

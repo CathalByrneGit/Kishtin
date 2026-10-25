@@ -1,12 +1,17 @@
-// Package books fills in official HACCP record books, such as the FSAI
-// Safe Catering pack, from Kishtin's records. A record book is a template:
-// data that says which columns a booklet has and which record field goes
-// in each. Templates for other countries, or a new edition of a booklet,
-// are new data, not new code. The package does no I/O beyond reading its
-// built-in templates.
+// Package books fills in HACCP record books, such as the FSAI Safe
+// Catering booklets, from Kishtin's records.
+//
+// A bundle is one country's (or one issuer's) set of record books. Each
+// book is a template: data that says which columns a booklet has and which
+// record field goes in each. Developers add a bundle when a country needs
+// one; a new edition with renamed or reordered columns is new data, not
+// new code. A restaurant then picks its bundle and changes what is
+// relevant to it (see RecordBookSettings). The package does no I/O beyond reading
+// its built-in bundles.
 package books
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -29,24 +34,79 @@ const (
 	BuilderHotHold = "hot_hold"
 )
 
-// fields lists the record fields each builder can put in a column.
-var fields = map[string][]string{
-	BuilderUnitGrid: {"date", "unit_checks", "comments", "signed"},
-	BuilderCooking: {
-		"date", "food", "cook_finished", "core_temp", "cook_signed", "into_fridge",
-		"cool_signed", "reheat_temp", "reheat_signed", "comments", "ref",
-	},
-	BuilderHotHold: {"date", "food", "check_1", "check_2", "check_3", "comments", "signed", "ref"},
+// Field is a record field a builder can put in a column.
+type Field struct {
+	Key   string `json:"key"`
+	Label string `json:"label"`
 }
 
-// Pack is a set of record books from one issuer.
-type Pack struct {
-	ID           string     `json:"id"`
-	Name         string     `json:"name"`
-	Issuer       string     `json:"issuer"`
-	Jurisdiction string     `json:"jurisdiction"`
-	URL          string     `json:"url"`
-	Templates    []Template `json:"templates"`
+// Builder is a kind of booklet row, with the fields it can show.
+type Builder struct {
+	ID     string  `json:"id"`
+	Label  string  `json:"label"`
+	Fields []Field `json:"fields"`
+}
+
+// Builders lists every builder, for setting up a booklet.
+var Builders = []Builder{
+	{ID: BuilderUnitGrid, Label: "Fridge and freezer grid: a row per day, a column per check", Fields: []Field{
+		{"date", "Day of the month"},
+		{"unit_checks", "Readings: a column for each check on each fridge and freezer"},
+		{"comments", "Comments and actions"},
+		{"signed", "Who logged"},
+	}},
+	{ID: BuilderCooking, Label: "Cooking, cooling and reheating: a row per cooking or reheat", Fields: []Field{
+		{"date", "Date"},
+		{"food", "Food"},
+		{"cook_finished", "Time cooking finished"},
+		{"core_temp", "Core temperature after cooking"},
+		{"cook_signed", "Who logged the cooking"},
+		{"into_fridge", "Time into the fridge or blast chiller"},
+		{"cool_signed", "Who logged the cooling"},
+		{"reheat_temp", "Core temperature after reheating"},
+		{"reheat_signed", "Who logged the reheat"},
+		{"comments", "Comments and actions"},
+		{"ref", "Kishtin record number"},
+	}},
+	{ID: BuilderHotHold, Label: "Hot holding: a row per food per day, up to three checks", Fields: []Field{
+		{"date", "Date"},
+		{"food", "Food"},
+		{"check_1", "1st check: temperature and time"},
+		{"check_2", "2nd check: temperature and time"},
+		{"check_3", "3rd check: temperature and time"},
+		{"comments", "Comments and actions"},
+		{"signed", "Who logged"},
+		{"ref", "Kishtin record number"},
+	}},
+}
+
+func findBuilder(id string) (Builder, bool) {
+	for _, b := range Builders {
+		if b.ID == id {
+			return b, true
+		}
+	}
+	return Builder{}, false
+}
+
+// PageWidth is the printable width of a landscape A4 page, in mm. Column
+// widths are scaled to fill it.
+const PageWidth = 273.0
+
+// Bundle is a set of record books from one country or issuer.
+type Bundle struct {
+	ID string `json:"id"`
+	// Name is the bundle's name, such as "FSAI Safe Catering record books".
+	Name string `json:"name"`
+	// Country is who the bundle is for, in words: "Ireland", "Any country".
+	Country string `json:"country"`
+	Issuer  string `json:"issuer"`
+	// Jurisdiction is the ISO 3166 country code, or empty for any.
+	Jurisdiction string `json:"jurisdiction,omitempty"`
+	// Language is the language of the booklets, as a BCP 47 tag.
+	Language  string     `json:"language"`
+	URL       string     `json:"url,omitempty"`
+	Templates []Template `json:"templates"`
 }
 
 // Source is the official booklet a template copies.
@@ -71,16 +131,18 @@ type Column struct {
 	// FixedWhen (or always, when FixedWhen is empty).
 	Fixed     string `json:"fixed,omitempty"`
 	FixedWhen string `json:"fixed_when,omitempty"`
-	// Width is in millimetres on a landscape A4 page.
+	// Width is the column's share of the page width. Widths are scaled
+	// so the columns fill a landscape A4 page.
 	Width float64 `json:"width"`
 }
 
 // Template is one record book.
 type Template struct {
-	ID     string `json:"id"`
-	Code   string `json:"code"`
-	Title  string `json:"title"`
-	Source Source `json:"source"`
+	ID    string `json:"id"`
+	Code  string `json:"code"`
+	Title string `json:"title"`
+	// Source is the official booklet this copies, if there is one.
+	Source *Source `json:"source,omitempty"`
 	// Builder is empty when Kishtin cannot fill this booklet yet, and
 	// Missing says why.
 	Builder string `json:"builder,omitempty"`
@@ -89,9 +151,9 @@ type Template struct {
 	// a unit grid.
 	UnitsPerPage int      `json:"units_per_page,omitempty"`
 	Columns      []Column `json:"columns,omitempty"`
-	// Notes are printed under the table, as the booklet prints them.
+	// Notes are printed under the table.
 	Notes []string `json:"notes,omitempty"`
-	// ManagerCheck adds the booklet's manager or supervisor check line.
+	// ManagerCheck adds a manager or supervisor check line.
 	ManagerCheck bool `json:"manager_check,omitempty"`
 }
 
@@ -109,62 +171,82 @@ func (t Template) Unfilled() []string {
 	return out
 }
 
+// MaxColumns is the most columns a booklet can have.
+const MaxColumns = 16
+
 // Validate checks a template's columns against its builder.
 func (t Template) Validate() error {
-	if t.ID == "" || t.Code == "" || t.Title == "" {
+	if t.ID == "" || strings.TrimSpace(t.Code) == "" || strings.TrimSpace(t.Title) == "" {
 		return errors.New("a record book needs an id, code and title")
+	}
+	if len([]rune(t.Code)) > 12 || len([]rune(t.Title)) > 120 {
+		return fmt.Errorf("%s: the code is at most 12 characters and the title at most 120", t.Code)
 	}
 	if t.Builder == "" {
 		if t.Missing == "" {
-			return fmt.Errorf("%s: say why Kishtin cannot fill it (missing)", t.ID)
+			return fmt.Errorf("%s: say why Kishtin cannot fill it (missing)", t.Code)
 		}
 		return nil
 	}
-	known, ok := fields[t.Builder]
+	b, ok := findBuilder(t.Builder)
 	if !ok {
-		return fmt.Errorf("%s: unknown builder %q", t.ID, t.Builder)
+		return fmt.Errorf("%s: unknown builder %q", t.Code, t.Builder)
 	}
-	if len(t.Columns) == 0 {
-		return fmt.Errorf("%s: no columns", t.ID)
+	if len(t.Columns) == 0 || len(t.Columns) > MaxColumns {
+		return fmt.Errorf("%s: a booklet has 1 to %d columns", t.Code, MaxColumns)
 	}
+	known := func(f string) bool {
+		return slices.ContainsFunc(b.Fields, func(x Field) bool { return x.Key == f })
+	}
+	grid := 0
 	for _, c := range t.Columns {
+		if strings.TrimSpace(c.Label) == "" {
+			return fmt.Errorf("%s: every column needs a label", t.Code)
+		}
 		if c.Width <= 0 {
-			return fmt.Errorf("%s: column %q needs a width", t.ID, c.Label)
+			return fmt.Errorf("%s: column %q needs a width", t.Code, c.Label)
 		}
 		for _, f := range []string{c.Field, c.FixedWhen} {
-			if f != "" && !slices.Contains(known, f) {
-				return fmt.Errorf("%s: column %q uses field %q, which the %s builder does not have (it has %s)",
-					t.ID, c.Label, f, t.Builder, strings.Join(known, ", "))
+			if f != "" && !known(f) {
+				var names []string
+				for _, x := range b.Fields {
+					names = append(names, x.Key)
+				}
+				return fmt.Errorf("%s: column %q uses field %q, which this kind of booklet does not have (it has %s)",
+					t.Code, c.Label, f, strings.Join(names, ", "))
 			}
+		}
+		if c.Field == "unit_checks" {
+			grid++
 		}
 	}
 	if t.Builder == BuilderUnitGrid {
-		if t.UnitsPerPage < 1 {
-			return fmt.Errorf("%s: units_per_page must be at least 1", t.ID)
+		if t.UnitsPerPage < 1 || t.UnitsPerPage > 12 {
+			return fmt.Errorf("%s: fridges and freezers per sheet must be 1 to 12", t.Code)
 		}
-		if !slices.ContainsFunc(t.Columns, func(c Column) bool { return c.Field == "unit_checks" }) {
-			return fmt.Errorf("%s: a unit grid needs a unit_checks column", t.ID)
+		if grid != 1 {
+			return fmt.Errorf("%s: a fridge and freezer grid needs exactly one readings column (unit_checks)", t.Code)
 		}
 	}
 	return nil
 }
 
-//go:embed packs/*.json
-var packFiles embed.FS
+//go:embed bundles/*.json
+var bundleFiles embed.FS
 
-// Builtin returns the record book packs that ship with Kishtin.
-func Builtin() ([]Pack, error) {
-	names, err := fs.Glob(packFiles, "packs/*.json")
+// Builtin returns the bundles that ship with Kishtin.
+func Builtin() ([]Bundle, error) {
+	names, err := fs.Glob(bundleFiles, "bundles/*.json")
 	if err != nil {
 		return nil, err
 	}
-	var out []Pack
+	var out []Bundle
 	for _, n := range names {
-		b, err := packFiles.ReadFile(n)
+		b, err := bundleFiles.ReadFile(n)
 		if err != nil {
 			return nil, err
 		}
-		p, err := ParsePack(b)
+		p, err := ParseBundle(b)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", n, err)
 		}
@@ -173,39 +255,39 @@ func Builtin() ([]Pack, error) {
 	return out, nil
 }
 
-// ParsePack reads and checks a pack.
-func ParsePack(b []byte) (Pack, error) {
-	var p Pack
-	dec := json.NewDecoder(strings.NewReader(string(b)))
+// ParseBundle reads and checks a bundle.
+func ParseBundle(b []byte) (Bundle, error) {
+	var p Bundle
+	dec := json.NewDecoder(bytes.NewReader(b))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&p); err != nil {
-		return p, fmt.Errorf("read record book pack: %w", err)
+		return p, fmt.Errorf("read record book bundle: %w", err)
 	}
-	if p.ID == "" || p.Name == "" {
-		return p, errors.New("a record book pack needs an id and a name")
+	if p.ID == "" || p.Name == "" || p.Country == "" {
+		return p, errors.New("a record book bundle needs an id, a name and a country")
 	}
 	seen := map[string]bool{}
 	for _, t := range p.Templates {
 		if err := t.Validate(); err != nil {
 			return p, err
 		}
-		if seen[t.ID] {
-			return p, fmt.Errorf("record book %s appears twice", t.ID)
+		if t.Source != nil && len(t.Source.SHA256) != 64 {
+			return p, fmt.Errorf("%s: the source needs the SHA-256 of the official PDF", t.Code)
 		}
-		seen[t.ID] = true
+		if seen[t.ID] || seen["code:"+strings.ToLower(t.Code)] {
+			return p, fmt.Errorf("record book %s appears twice", t.Code)
+		}
+		seen[t.ID], seen["code:"+strings.ToLower(t.Code)] = true, true
 	}
 	return p, nil
 }
 
-// Find returns a template by ID or code, and the pack it is in. Codes are
-// matched without regard to case ("sc2").
-func Find(packs []Pack, ref string) (Template, Pack, bool) {
-	for _, p := range packs {
-		for _, t := range p.Templates {
-			if t.ID == ref || strings.EqualFold(t.Code, ref) {
-				return t, p, true
-			}
+// FindBundle returns a bundle by ID.
+func FindBundle(bundles []Bundle, id string) (Bundle, bool) {
+	for _, b := range bundles {
+		if b.ID == id {
+			return b, true
 		}
 	}
-	return Template{}, Pack{}, false
+	return Bundle{}, false
 }

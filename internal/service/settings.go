@@ -62,7 +62,10 @@ type groupSpec[T any] struct {
 	// lessStrict lists how next is less strict than the baseline.
 	lessStrict func(cur, next T) []string
 	notes      func(ctx context.Context, s *Service, st store.Store, cur, next T) ([]string, error)
-	edit       auth.Action
+	// changes, when set, describes a change in words instead of the
+	// field-by-field list.
+	changes func(cur, next T) []string
+	edit    auth.Action
 }
 
 // Group is a versioned settings group: reference guidance, food-safety
@@ -298,6 +301,9 @@ func (g *Group[T]) check(ctx context.Context, st store.Store, ch SettingsChange[
 	pv := SettingsPreview[T]{Current: cur, Proposed: next, Notes: []string{}}
 	if pv.Changes, err = settings.Changes(cur.Value, next); err != nil {
 		return pv, err
+	}
+	if g.spec.changes != nil && len(pv.Changes) > 0 {
+		pv.Changes = g.spec.changes(cur.Value, next)
 	}
 	if err := g.spec.validate(next); err != nil {
 		pv.Problem = err.Error()

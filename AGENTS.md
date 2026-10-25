@@ -239,6 +239,16 @@ Rules:
 - Batch labels track made-on and use-by dates (for example the house grape soda syrup, 5–7 days chilled).
 - Delivery records can attach a photo of the supplier's docket or invoice, taken on a phone. Store files on local disk under a content hash, referenced from the record. This works without AI and gives traceability back to the supplier; AI extraction comes later (see AI).
 
+#### Record books (`internal/books`)
+
+Official record books (for example Ireland's FSAI Safe Catering booklets) are filled in from HACCP records, never typed in twice.
+
+- A **bundle** is one country's or issuer's set of booklets, kept as a data file in `internal/books/bundles/`. Developers add a bundle when a country needs one. A new edition with renamed or reordered columns is a data change.
+- Each booklet is a template: its columns, the record field in each, its notes, and the edition and SHA-256 of the official PDF it copies. Rows come from a small set of pure builders (fridge grid, cooking log, hot holding log). Only a booklet that needs a new kind of row needs code.
+- The restaurant picks its bundle and changes what is relevant (booklets in use, titles, columns, notes, sheet layout, manager check, its own added booklets, its uploaded copy) through the versioned `record_books` settings. The same rules as limits apply: preview, reason, manager password, history.
+- These settings change only how records print. They never change a record or its result.
+- Never fill in a missed check. Never invent a bundle or edition: a bundle copies a real published booklet and records its source.
+
 ### Menu and stations (`internal/menu`)
 
 Each dish defines:

@@ -150,7 +150,7 @@ func (s *Service) Init(ctx context.Context) error {
 		return err
 	}
 	return s.st.WithTx(ctx, func(tx store.Store) error {
-		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed, s.Square().seed} {
+		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed, s.Square().seed, s.RecordBookSettings().seed} {
 			if err := seed(ctx, tx); err != nil {
 				return err
 			}

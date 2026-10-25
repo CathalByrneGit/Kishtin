@@ -146,7 +146,12 @@ export const api = {
     };
   },
 
-  bookPacks: () => json<Schemas["BookPacksBody"]>("GET", "/haccp/books"),
+  recordBooks: () => json<Schemas["RecordBooks"]>("GET", "/haccp/books"),
+  recordBookSettings: () => json<Schemas["VersionedRecordBookSettings"]>("GET", "/settings/record_books"),
+  previewRecordBookSettings: (body: Schemas["SettingsChangeRecordBookSettings"]) =>
+    json<Schemas["SettingsPreviewRecordBookSettings"]>("POST", "/settings/record_books/preview", { body }),
+  saveRecordBookSettings: (body: Schemas["SettingsChangeRecordBookSettings"]) =>
+    json<Schemas["VersionedRecordBookSettings"]>("PUT", "/settings/record_books", { body }),
   book: (ref: string, month: string) => json<Schemas["Book"]>("GET", `/haccp/books/${encodeURIComponent(ref)}`, { query: { month } }),
   bookPDF: async (ref: string, month: string): Promise<ExportResult> => {
     const res = await send("GET", `/haccp/books/${encodeURIComponent(ref)}/pdf`, { query: { month } });

@@ -152,10 +152,28 @@ func (c *cli) settingsGroups() map[string]settingsOps {
 				return result(c.api.SaveSquare(ctx, &client.SaveSquareRequestOptions{Body: body}))
 			},
 		},
+		"record_books": {
+			get:     func(ctx context.Context) (any, error) { return result(c.api.GetRecordBooks(ctx)) },
+			history: func(ctx context.Context) (any, error) { return result(c.api.RecordBooksHistory(ctx)) },
+			preview: func(ctx context.Context, b []byte) (any, error) {
+				body, err := decodeInto[client.SettingsChangeRecordBookSettings](b)
+				if err != nil {
+					return nil, err
+				}
+				return result(c.api.PreviewRecordBooks(ctx, &client.PreviewRecordBooksRequestOptions{Body: body}))
+			},
+			save: func(ctx context.Context, b []byte) (any, error) {
+				body, err := decodeInto[client.SettingsChangeRecordBookSettings](b)
+				if err != nil {
+					return nil, err
+				}
+				return result(c.api.SaveRecordBooks(ctx, &client.SaveRecordBooksRequestOptions{Body: body}))
+			},
+		},
 	}
 }
 
-var settingsKinds = []string{"guidance", "rules", "lists", "system", "scheduler", "square"}
+var settingsKinds = []string{"guidance", "rules", "lists", "system", "scheduler", "square", "record_books"}
 
 // versioned is the JSON shape of a settings version with its value.
 type versioned struct {
@@ -205,12 +223,13 @@ func (c *cli) settingsCmd() *cobra.Command {
 	kindsHelp := strings.Join(settingsKinds, ", ")
 	cmd := &cobra.Command{
 		Use:   "settings",
-		Short: "Show and change reference guidance, food-safety rules, lists, system, scheduler and Square settings",
+		Short: "Show and change reference guidance, food-safety rules, lists, system, scheduler, Square and record book settings",
 		Long: "Settings groups: " + kindsHelp + ".\n\n" +
 			"  guidance  the reference limits are measured against (starts as FSAI)\n" +
 			"  rules     whether borderline readings need a corrective action, and listed names only\n" +
 			"  lists     fridges, freezers, food categories and cleaning tasks\n" +
-			"  system    backup schedule and retention, upload size, limit preview length\n\n" +
+			"  system    backup schedule and retention, upload size, limit preview length\n" +
+			"  record_books  the record book bundle in use, changes to its booklets, added booklets\n\n" +
 			"To change a group, save its value, edit it, and set it:\n\n" +
 			"  kishtin settings show lists --value > lists.json\n" +
 			"  # edit lists.json\n" +

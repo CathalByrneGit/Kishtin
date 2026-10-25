@@ -9,11 +9,9 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/cathalbyrnegit/kishtin/internal/books"
+	"github.com/cathalbyrnegit/kishtin/internal/service"
+	"github.com/cathalbyrnegit/kishtin/internal/settings"
 )
-
-type bookPacksBody struct {
-	Packs []books.Pack `json:"packs"`
-}
 
 type bookIn struct {
 	Book  string `path:"book" doc:"Record book ID or code, such as SC2"`
@@ -24,11 +22,10 @@ func (s *Server) bookRoutes() {
 	tags := []string{"Record books"}
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-record-books", Method: http.MethodGet, Path: "/haccp/books", Tags: tags,
-		Summary:     "List the official record books Kishtin can fill in",
-		Description: "Each pack is a set of booklets from one issuer, such as the FSAI Safe Catering pack. Booklets Kishtin cannot fill yet say why in missing.",
-	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[bookPacksBody], error) {
-		packs, err := s.svc.RecordBookPacks(ctx, principal(ctx))
-		return reply(bookPacksBody{Packs: packs}, err)
+		Summary:     "List the record books in use, and the bundles and booklet kinds available",
+		Description: "booklets are the bundle's booklets with the restaurant's changes, then the booklets it added. Booklets Kishtin cannot fill yet say why in missing.",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.RecordBooks], error) {
+		return reply(s.svc.RecordBooks(ctx, principal(ctx)))
 	}))
 	huma.Register(s.api, huma.Operation{
 		OperationID: "get-record-book", Method: http.MethodGet, Path: "/haccp/books/{book}", Tags: tags,
@@ -40,7 +37,7 @@ func (s *Server) bookRoutes() {
 	huma.Register(s.api, huma.Operation{
 		OperationID: "export-record-book", Method: http.MethodGet, Path: "/haccp/books/{book}/pdf", Tags: tags,
 		Summary:     "Download a filled-in record book as PDF",
-		Description: "The same pages as the preview, laid out like the official booklet, with record numbers and the hash chain head in the footer.",
+		Description: "The same pages as the preview, laid out like the booklet, with record numbers and the hash chain head in the footer.",
 		Responses: map[string]*huma.Response{"200": {
 			Description: "The filled-in record book.",
 			Content:     map[string]*huma.MediaType{"application/pdf": {Schema: &huma.Schema{Type: "string", Format: "binary"}}},
@@ -61,4 +58,7 @@ func (s *Server) bookRoutes() {
 			Body:               buf.Bytes(),
 		}, nil
 	}))
+	registerGroup(s, settings.KindRecordBooks, "record book settings",
+		"The record book bundle in use, the restaurant's changes to its booklets (turned off, title, columns, notes, sheet layout, manager check, uploaded copy) and booklets it added. Records never change; only how they are printed.",
+		func() *service.Group[books.RecordBookSettings] { return s.svc.RecordBookSettings() })
 }

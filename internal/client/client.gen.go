@@ -78,7 +78,7 @@ type ClientInterface interface {
 	GetFile(ctx context.Context, options *GetFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*struct{}, error)
 	GetFileWithResponse(ctx context.Context, options *GetFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetFileResp, error)
 
-	// ListRecordBooks List the official record books Kishtin can fill in
+	// ListRecordBooks List the record books in use, and the bundles and booklet kinds available
 	ListRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResponse, error)
 	ListRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResp, error)
 
@@ -277,6 +277,22 @@ type ClientInterface interface {
 	// PreviewLists Preview a change to the lists
 	PreviewLists(ctx context.Context, options *PreviewListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewListsResponse, error)
 	PreviewListsWithResponse(ctx context.Context, options *PreviewListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewListsResp, error)
+
+	// GetRecordBooks Show the record book settings in force
+	GetRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRecordBooksResponse, error)
+	GetRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRecordBooksResp, error)
+
+	// SaveRecordBooks Save a new version of the record book settings
+	SaveRecordBooks(ctx context.Context, options *SaveRecordBooksRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveRecordBooksResponse, error)
+	SaveRecordBooksWithResponse(ctx context.Context, options *SaveRecordBooksRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveRecordBooksResp, error)
+
+	// RecordBooksHistory List every saved version of the record book settings, oldest first
+	RecordBooksHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*RecordBooksHistoryResponse, error)
+	RecordBooksHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*RecordBooksHistoryResp, error)
+
+	// PreviewRecordBooks Preview a change to the record book settings
+	PreviewRecordBooks(ctx context.Context, options *PreviewRecordBooksRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRecordBooksResponse, error)
+	PreviewRecordBooksWithResponse(ctx context.Context, options *PreviewRecordBooksRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRecordBooksResp, error)
 
 	// GetRules Show the food-safety rules in force
 	GetRules(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRulesResponse, error)
@@ -1060,7 +1076,7 @@ func (c *Client) GetFile(ctx context.Context, options *GetFileRequestOptions, re
 	return responseParser(ctx, resp)
 }
 
-// ListRecordBooks List the official record books Kishtin can fill in
+// ListRecordBooks List the record books in use, and the bundles and booklet kinds available
 func (c *Client) ListRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
@@ -4186,6 +4202,258 @@ func (c *Client) PreviewLists(ctx context.Context, options *PreviewListsRequestO
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/lists/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetRecordBooks Show the record book settings in force
+func (c *Client) GetRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRecordBooksResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/record_books",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetRecordBooksResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetRecordBooksErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetRecordBooksErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetRecordBooksResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetRecordBooksResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/record_books")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveRecordBooks Save a new version of the record book settings
+func (c *Client) SaveRecordBooks(ctx context.Context, options *SaveRecordBooksRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveRecordBooksResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/record_books",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveRecordBooksResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveRecordBooksErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveRecordBooksErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveRecordBooksResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveRecordBooksResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/record_books")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// RecordBooksHistory List every saved version of the record book settings, oldest first
+func (c *Client) RecordBooksHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*RecordBooksHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/record_books/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*RecordBooksHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(RecordBooksHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "RecordBooksHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(RecordBooksHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "RecordBooksHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/record_books/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewRecordBooks Preview a change to the record book settings
+func (c *Client) PreviewRecordBooks(ctx context.Context, options *PreviewRecordBooksRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRecordBooksResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/record_books/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewRecordBooksResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewRecordBooksErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewRecordBooksErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewRecordBooksResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewRecordBooksResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/record_books/preview")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -8040,6 +8308,94 @@ func (o *PreviewListsRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// SaveRecordBooksRequestOptions is the options needed to make a request to SaveRecordBooks.
+type SaveRecordBooksRequestOptions struct {
+	Body *SaveRecordBooksBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveRecordBooksRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveRecordBooksRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveRecordBooksRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveRecordBooksRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveRecordBooksRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewRecordBooksRequestOptions is the options needed to make a request to PreviewRecordBooks.
+type PreviewRecordBooksRequestOptions struct {
+	Body *PreviewRecordBooksBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewRecordBooksRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewRecordBooksRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewRecordBooksRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewRecordBooksRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewRecordBooksRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // SaveRulesRequestOptions is the options needed to make a request to SaveRules.
 type SaveRulesRequestOptions struct {
 	Body *SaveRulesBody
@@ -9353,7 +9709,7 @@ func (c *Client) GetFileWithResponse(ctx context.Context, options *GetFileReques
 	}
 }
 
-// ListRecordBooks List the official record books Kishtin can fill in
+// ListRecordBooks List the record books in use, and the bundles and booklet kinds available
 func (c *Client) ListRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
@@ -12373,6 +12729,250 @@ func (c *Client) PreviewListsWithResponse(ctx context.Context, options *PreviewL
 	}
 }
 
+// GetRecordBooks Show the record book settings in force
+func (c *Client) GetRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRecordBooksResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/record_books",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/record_books")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetRecordBooksResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetRecordBooksResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetRecordBooksResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetRecordBooksErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetRecordBooksErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveRecordBooks Save a new version of the record book settings
+func (c *Client) SaveRecordBooksWithResponse(ctx context.Context, options *SaveRecordBooksRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveRecordBooksResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/record_books",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/record_books")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveRecordBooksResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveRecordBooksResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveRecordBooksResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveRecordBooksErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveRecordBooksErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// RecordBooksHistory List every saved version of the record book settings, oldest first
+func (c *Client) RecordBooksHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*RecordBooksHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/record_books/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/record_books/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &RecordBooksHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(RecordBooksHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "RecordBooksHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(RecordBooksHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "RecordBooksHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewRecordBooks Preview a change to the record book settings
+func (c *Client) PreviewRecordBooksWithResponse(ctx context.Context, options *PreviewRecordBooksRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewRecordBooksResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/record_books/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/record_books/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewRecordBooksResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewRecordBooksResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewRecordBooksResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewRecordBooksErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewRecordBooksErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetRules Show the food-safety rules in force
 func (c *Client) GetRulesWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRulesResp, error) {
 	var err error
@@ -14638,6 +15238,10 @@ type SaveListsBody = SettingsChangeLists
 
 type PreviewListsBody = SettingsChangeLists
 
+type SaveRecordBooksBody = SettingsChangeRecordBookSettings
+
+type PreviewRecordBooksBody = SettingsChangeRecordBookSettings
+
 type SaveRulesBody = SettingsChangeRules
 
 type PreviewRulesBody = SettingsChangeRules
@@ -14810,7 +15414,7 @@ type UploadFileErrorResponse = ErrorModel
 
 type GetFileErrorResponse = ErrorModel
 
-type ListRecordBooksResponse = BookPacksBody
+type ListRecordBooksResponse = RecordBooks
 
 type ListRecordBooksErrorResponse = ErrorModel
 
@@ -15007,6 +15611,22 @@ type ListsHistoryErrorResponse = ErrorModel
 type PreviewListsResponse = SettingsPreviewLists
 
 type PreviewListsErrorResponse = ErrorModel
+
+type GetRecordBooksResponse = VersionedRecordBookSettings
+
+type GetRecordBooksErrorResponse = ErrorModel
+
+type SaveRecordBooksResponse = VersionedRecordBookSettings
+
+type SaveRecordBooksErrorResponse = ErrorModel
+
+type RecordBooksHistoryResponse = HistoryOutRecordBookSettingsBody
+
+type RecordBooksHistoryErrorResponse = ErrorModel
+
+type PreviewRecordBooksResponse = SettingsPreviewRecordBookSettings
+
+type PreviewRecordBooksErrorResponse = ErrorModel
 
 type GetRulesResponse = VersionedRules
 
@@ -15640,6 +16260,38 @@ type PreviewListsResp struct {
 	ApplicationProblemPlusJSONDefault *PreviewListsErrorResponse
 }
 
+type GetRecordBooksResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetRecordBooksResponse
+	ApplicationProblemPlusJSONDefault *GetRecordBooksErrorResponse
+}
+
+type SaveRecordBooksResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveRecordBooksResponse
+	ApplicationProblemPlusJSONDefault *SaveRecordBooksErrorResponse
+}
+
+type RecordBooksHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *RecordBooksHistoryResponse
+	ApplicationProblemPlusJSONDefault *RecordBooksHistoryErrorResponse
+}
+
+type PreviewRecordBooksResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewRecordBooksResponse
+	ApplicationProblemPlusJSONDefault *PreviewRecordBooksErrorResponse
+}
+
 type GetRulesResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -16014,21 +16666,29 @@ func (b BatchToday) Validate() error {
 }
 
 type Book struct {
-	Corrected int64    `json:"corrected"`
-	FirstSeq  *int64   `json:"first_seq,omitempty"`
-	Gaps      []Gap    `json:"gaps" validate:"required"`
-	Issuer    string   `json:"issuer" validate:"required"`
-	LastSeq   *int64   `json:"last_seq,omitempty"`
-	Month     string   `json:"month" validate:"required"`
-	PackName  string   `json:"pack_name" validate:"required"`
-	Pages     []Page   `json:"pages" validate:"required"`
-	Records   int64    `json:"records"`
-	Template  Template `json:"template"`
-	Unfilled  []string `json:"unfilled" validate:"required"`
+	BundleName      string   `json:"bundle_name" validate:"required"`
+	Changed         []string `json:"changed" validate:"required"`
+	Corrected       int64    `json:"corrected"`
+	FirstSeq        *int64   `json:"first_seq,omitempty"`
+	Gaps            []Gap    `json:"gaps" validate:"required"`
+	Issuer          string   `json:"issuer" validate:"required"`
+	LastSeq         *int64   `json:"last_seq,omitempty"`
+	Month           string   `json:"month" validate:"required"`
+	Pages           []Page   `json:"pages" validate:"required"`
+	Records         int64    `json:"records"`
+	SettingsVersion *string  `json:"settings_version,omitempty"`
+	Template        Template `json:"template"`
+	Unfilled        []string `json:"unfilled" validate:"required"`
 }
 
 func (b Book) Validate() error {
 	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(b.BundleName, "required"); err != nil {
+		errors = errors.Append("BundleName", err)
+	}
+	if err := typesValidator.Var(b.Changed, "required"); err != nil {
+		errors = errors.Append("Changed", err)
+	}
 	if err := typesValidator.Var(b.Gaps, "required"); err != nil {
 		errors = errors.Append("Gaps", err)
 	}
@@ -16044,9 +16704,6 @@ func (b Book) Validate() error {
 	}
 	if err := typesValidator.Var(b.Month, "required"); err != nil {
 		errors = errors.Append("Month", err)
-	}
-	if err := typesValidator.Var(b.PackName, "required"); err != nil {
-		errors = errors.Append("PackName", err)
 	}
 	if err := typesValidator.Var(b.Pages, "required"); err != nil {
 		errors = errors.Append("Pages", err)
@@ -16072,19 +16729,139 @@ func (b Book) Validate() error {
 	return errors
 }
 
-type BookPacksBody struct {
-	Packs []Pack `json:"packs" validate:"required"`
+type BookSetting struct {
+	Columns      []Column `json:"columns,omitempty"`
+	CopyFile     *string  `json:"copy_file,omitempty"`
+	ManagerCheck *bool    `json:"manager_check,omitempty"`
+	Notes        []string `json:"notes,omitempty"`
+	Off          *bool    `json:"off,omitempty"`
+	Template     string   `json:"template" validate:"required"`
+	Title        *string  `json:"title,omitempty"`
+	UnitsPerPage *int64   `json:"units_per_page,omitempty"`
 }
 
-func (b BookPacksBody) Validate() error {
+func (b BookSetting) Validate() error {
 	var errors runtime.ValidationErrors
-	if err := typesValidator.Var(b.Packs, "required"); err != nil {
-		errors = errors.Append("Packs", err)
-	}
-	for i, item := range b.Packs {
+	for i, item := range b.Columns {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				errors = errors.Append(fmt.Sprintf("Packs[%d]", i), err)
+				errors = errors.Append(fmt.Sprintf("Columns[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(b.Template, "required"); err != nil {
+		errors = errors.Append("Template", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Booklet struct {
+	Base     *Template  `json:"base,omitempty"`
+	Changed  []string   `json:"changed" validate:"required"`
+	Copy     *CopyCheck `json:"copy,omitempty"`
+	Custom   *bool      `json:"custom,omitempty"`
+	Off      *bool      `json:"off,omitempty"`
+	Template Template   `json:"template"`
+}
+
+func (b Booklet) Validate() error {
+	var errors runtime.ValidationErrors
+	if b.Base != nil {
+		if v, ok := any(b.Base).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Base", err)
+			}
+		}
+	}
+	if err := typesValidator.Var(b.Changed, "required"); err != nil {
+		errors = errors.Append("Changed", err)
+	}
+	if b.Copy != nil {
+		if v, ok := any(b.Copy).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Copy", err)
+			}
+		}
+	}
+	if v, ok := any(b.Template).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Template", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Builder struct {
+	Fields []Field `json:"fields" validate:"required"`
+	ID     string  `json:"id" validate:"required"`
+	Label  string  `json:"label" validate:"required"`
+}
+
+func (b Builder) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(b.Fields, "required"); err != nil {
+		errors = errors.Append("Fields", err)
+	}
+	for i, item := range b.Fields {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Fields[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(b.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if err := typesValidator.Var(b.Label, "required"); err != nil {
+		errors = errors.Append("Label", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Bundle struct {
+	Country      string     `json:"country" validate:"required"`
+	ID           string     `json:"id" validate:"required"`
+	Issuer       string     `json:"issuer" validate:"required"`
+	Jurisdiction *string    `json:"jurisdiction,omitempty"`
+	Language     string     `json:"language" validate:"required"`
+	Name         string     `json:"name" validate:"required"`
+	Templates    []Template `json:"templates" validate:"required"`
+	URL          *string    `json:"url,omitempty"`
+}
+
+func (b Bundle) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(b.Country, "required"); err != nil {
+		errors = errors.Append("Country", err)
+	}
+	if err := typesValidator.Var(b.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if err := typesValidator.Var(b.Issuer, "required"); err != nil {
+		errors = errors.Append("Issuer", err)
+	}
+	if err := typesValidator.Var(b.Language, "required"); err != nil {
+		errors = errors.Append("Language", err)
+	}
+	if err := typesValidator.Var(b.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(b.Templates, "required"); err != nil {
+		errors = errors.Append("Templates", err)
+	}
+	for i, item := range b.Templates {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Templates[%d]", i), err)
 			}
 		}
 	}
@@ -16382,6 +17159,16 @@ type CoolingLimit struct {
 	IntoFridgeWithinSeconds int64   `json:"into_fridge_within_seconds"`
 }
 
+type CopyCheck struct {
+	File    string `json:"file" validate:"required"`
+	Known   bool   `json:"known"`
+	Matches bool   `json:"matches"`
+}
+
+func (c CopyCheck) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
 type Course struct {
 	Course    string     `json:"course" validate:"required"`
 	FiredAt   *time.Time `json:"fired_at,omitempty"`
@@ -16632,6 +17419,15 @@ func (e EventsBody) Validate() error {
 	return errors
 }
 
+type Field struct {
+	Key   string `json:"key" validate:"required"`
+	Label string `json:"label" validate:"required"`
+}
+
+func (f Field) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(f))
+}
+
 type FileMeta struct {
 	Mime         string    `json:"mime" validate:"required"`
 	OriginalName *string   `json:"original_name,omitempty"`
@@ -16774,6 +17570,28 @@ type HistoryOutPOSSettingsBody struct {
 }
 
 func (h HistoryOutPOSSettingsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range h.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type HistoryOutRecordBookSettingsBody struct {
+	Versions []VersionedRecordBookSettings `json:"versions" validate:"required"`
+}
+
+func (h HistoryOutRecordBookSettingsBody) Validate() error {
 	var errors runtime.ValidationErrors
 	if err := typesValidator.Var(h.Versions, "required"); err != nil {
 		errors = errors.Append("Versions", err)
@@ -17756,48 +18574,6 @@ func (p POSSettings) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(p))
 }
 
-type Pack struct {
-	ID           string     `json:"id" validate:"required"`
-	Issuer       string     `json:"issuer" validate:"required"`
-	Jurisdiction string     `json:"jurisdiction" validate:"required"`
-	Name         string     `json:"name" validate:"required"`
-	Templates    []Template `json:"templates" validate:"required"`
-	URL          string     `json:"url" validate:"required"`
-}
-
-func (p Pack) Validate() error {
-	var errors runtime.ValidationErrors
-	if err := typesValidator.Var(p.ID, "required"); err != nil {
-		errors = errors.Append("ID", err)
-	}
-	if err := typesValidator.Var(p.Issuer, "required"); err != nil {
-		errors = errors.Append("Issuer", err)
-	}
-	if err := typesValidator.Var(p.Jurisdiction, "required"); err != nil {
-		errors = errors.Append("Jurisdiction", err)
-	}
-	if err := typesValidator.Var(p.Name, "required"); err != nil {
-		errors = errors.Append("Name", err)
-	}
-	if err := typesValidator.Var(p.Templates, "required"); err != nil {
-		errors = errors.Append("Templates", err)
-	}
-	for i, item := range p.Templates {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				errors = errors.Append(fmt.Sprintf("Templates[%d]", i), err)
-			}
-		}
-	}
-	if err := typesValidator.Var(p.URL, "required"); err != nil {
-		errors = errors.Append("URL", err)
-	}
-	if len(errors) == 0 {
-		return nil
-	}
-	return errors
-}
-
 type Page struct {
 	Columns []Column `json:"columns" validate:"required"`
 	Rows    []Row    `json:"rows" validate:"required"`
@@ -17988,6 +18764,97 @@ func (r Record) Validate() error {
 	}
 	if err := typesValidator.Var(r.Type, "required"); err != nil {
 		errors = errors.Append("Type", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type RecordBookSettings struct {
+	Books  []BookSetting `json:"books" validate:"required"`
+	Bundle string        `json:"bundle" validate:"required"`
+	Custom []Template    `json:"custom" validate:"required"`
+}
+
+func (r RecordBookSettings) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(r.Books, "required"); err != nil {
+		errors = errors.Append("Books", err)
+	}
+	for i, item := range r.Books {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Books[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(r.Bundle, "required"); err != nil {
+		errors = errors.Append("Bundle", err)
+	}
+	if err := typesValidator.Var(r.Custom, "required"); err != nil {
+		errors = errors.Append("Custom", err)
+	}
+	for i, item := range r.Custom {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Custom[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type RecordBooks struct {
+	Booklets        []Booklet `json:"booklets" validate:"required"`
+	Builders        []Builder `json:"builders" validate:"required"`
+	Bundle          Bundle    `json:"bundle"`
+	Bundles         []Bundle  `json:"bundles" validate:"required"`
+	SettingsVersion string    `json:"settings_version" validate:"required"`
+}
+
+func (r RecordBooks) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(r.Booklets, "required"); err != nil {
+		errors = errors.Append("Booklets", err)
+	}
+	for i, item := range r.Booklets {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Booklets[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(r.Builders, "required"); err != nil {
+		errors = errors.Append("Builders", err)
+	}
+	for i, item := range r.Builders {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Builders[%d]", i), err)
+			}
+		}
+	}
+	if v, ok := any(r.Bundle).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Bundle", err)
+		}
+	}
+	if err := typesValidator.Var(r.Bundles, "required"); err != nil {
+		errors = errors.Append("Bundles", err)
+	}
+	for i, item := range r.Bundles {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Bundles[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(r.SettingsVersion, "required"); err != nil {
+		errors = errors.Append("SettingsVersion", err)
 	}
 	if len(errors) == 0 {
 		return nil
@@ -18187,6 +19054,28 @@ func (s SettingsChangePOSSettings) Validate() error {
 	return errors
 }
 
+type SettingsChangeRecordBookSettings struct {
+	PlanRef *string            `json:"plan_ref,omitempty"`
+	Reason  string             `json:"reason" validate:"required"`
+	Value   RecordBookSettings `json:"value"`
+}
+
+func (s SettingsChangeRecordBookSettings) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Reason, "required"); err != nil {
+		errors = errors.Append("Reason", err)
+	}
+	if v, ok := any(s.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type SettingsChangeRules struct {
 	PlanRef *string `json:"plan_ref,omitempty"`
 	Reason  string  `json:"reason" validate:"required"`
@@ -18329,6 +19218,39 @@ type SettingsPreviewPOSSettings struct {
 }
 
 func (s SettingsPreviewPOSSettings) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Changes, "required"); err != nil {
+		errors = errors.Append("Changes", err)
+	}
+	if v, ok := any(s.Current).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Current", err)
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(s.Proposed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Proposed", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsPreviewRecordBookSettings struct {
+	Changes    []string                    `json:"changes" validate:"required"`
+	Current    VersionedRecordBookSettings `json:"current"`
+	LessStrict []string                    `json:"less_strict,omitempty"`
+	Notes      []string                    `json:"notes" validate:"required"`
+	Problem    *string                     `json:"problem,omitempty"`
+	Proposed   RecordBookSettings          `json:"proposed"`
+}
+
+func (s SettingsPreviewRecordBookSettings) Validate() error {
 	var errors runtime.ValidationErrors
 	if err := typesValidator.Var(s.Changes, "required"); err != nil {
 		errors = errors.Append("Changes", err)
@@ -18762,7 +19684,7 @@ type Template struct {
 	ManagerCheck *bool    `json:"manager_check,omitempty"`
 	Missing      *string  `json:"missing,omitempty"`
 	Notes        []string `json:"notes,omitempty"`
-	Source       Source   `json:"source"`
+	Source       *Source  `json:"source,omitempty"`
 	Title        string   `json:"title" validate:"required"`
 	UnitsPerPage *int64   `json:"units_per_page,omitempty"`
 }
@@ -18782,9 +19704,11 @@ func (t Template) Validate() error {
 	if err := typesValidator.Var(t.ID, "required"); err != nil {
 		errors = errors.Append("ID", err)
 	}
-	if v, ok := any(t.Source).(runtime.Validator); ok {
-		if err := v.Validate(); err != nil {
-			errors = errors.Append("Source", err)
+	if t.Source != nil {
+		if v, ok := any(t.Source).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Source", err)
+			}
 		}
 	}
 	if err := typesValidator.Var(t.Title, "required"); err != nil {
@@ -19162,6 +20086,30 @@ type VersionedPOSSettings struct {
 }
 
 func (v VersionedPOSSettings) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(v.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if v, ok := any(v.Version).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Version", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionedRecordBookSettings struct {
+	Builtin bool               `json:"builtin"`
+	Value   RecordBookSettings `json:"value"`
+	Version SettingsVersion    `json:"version"`
+}
+
+func (v VersionedRecordBookSettings) Validate() error {
 	var errors runtime.ValidationErrors
 	if v, ok := any(v.Value).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {

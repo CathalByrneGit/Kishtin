@@ -33,7 +33,7 @@ Choose what a device shows in **Settings → This device → This device shows**
 
 ## Layout
 
-- **Sidebar**: Service (Pass, Stations, Orders, Voice); HACCP (Today, Records, Record books, Exports, Verify); Setup (Menu, Scheduler, Connections, Fridges and tasks, Limits and rules, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
+- **Sidebar**: Service (Pass, Stations, Orders, Voice); HACCP (Today, Records, Record books, Exports, Verify); Setup (Menu, Scheduler, Connections, Fridges and tasks, Limits and rules, HACCP records, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
 - **Top bar**: where you are, a search box, the connection, **New order** and **Log check**.
 - **Search** (Ctrl K, or ⌘K on a Mac): jump to any page, start a new order, or start logging a check.
 - **Log check** (Ctrl L, or ⌘L): opens the log form in a panel on the right.
