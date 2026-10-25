@@ -55,7 +55,7 @@ How the kitchen side works, and how the scheduler decides, is in [kitchen.md](ki
 Every open order as a card, for the head chef or expo:
 
 - **Figures**: open orders, and how many fired courses are on track, at risk, late, or ready to serve, and how many courses are held.
-- **All day**: every dish not yet served, across the kitchen: to start, cooking, ready and held. Tap a dish to show only the orders with it.
+- **All day**: every dish not yet served, across the kitchen, with its variations (regular, well done, notes) and how many are to start, cooking, ready and held. Tap a dish to show only the orders with it.
 - **Show**: all orders, only those that need action (at risk, late or ready), or those with held courses.
 - Each card's heading is the order's name if it has one (with the table or takeaway number under it), otherwise its table or takeaway number. It shows the ticket number, time entered, covers, notes, a **Square** chip for orders from the till, and an **Allergy** chip and red edge when flagged. Each course shows its state and the scheduler's status (on track, at risk, late, ready) with the reason, the target time with a countdown, and its items grouped as "2× Burger (Well done)" with their state.
 - Head chefs and managers get the buttons: **Fire** a held course; **Serve** a course once every item is ready; **Change time** (a new target, with a reason for the log); **Hold again** on a fired course while nothing in it has started; **Mark ready** once every item in a course has been started, when the plates are at the pass; **Urgent**; and **Close order** once everything is served or voided. Other staff see the same cards without buttons.
@@ -65,7 +65,7 @@ Every open order as a card, for the head chef or expo:
 
 Pick a station. Its screen has three parts:
 
-- **All day**: how many of each dish the station has in hand, such as "3 Burger: 2 to start, 1 cooking". Tap a dish to show only the tickets with it (and again to show them all). When the scheduler says to start several of a dish together, for different tables, **Start 3** starts them in one tap.
+- **All day**: how many of each dish the station has in hand, counted once per dish, with its variations in small writing underneath and where they are: "5 Burger · 3 regular · 1 well done · 1 well done, no onion · 2 to start, 3 cooking". An item with a note counts as its own variation. Tap a dish to show only the tickets with it (and again to show them all). When the scheduler says to start several together, for different tables, **Start 3 regular** starts them in one tap.
 - **Tickets**: one per order and course with work for this station, the one that needs a hand soonest first. The heading is the order's name, or its table or takeaway number, with the course, the time since it was fired, and its status (on track, at risk, late) as a coloured top edge and a chip. Each item is its own line with its own button: **Start**, **Done cooking**, **Done resting** or **Ready**. A line says **Start now**, **Start 18:42**, or how long is left on what it is doing (red once overdue). The i button shows why the scheduler chose that time. Items already ready are struck through until the whole ticket is done. Allergies show in red at the top.
 - **Recently done**: items made ready here in the last 15 minutes, with **Undo** to put one back a step.
 

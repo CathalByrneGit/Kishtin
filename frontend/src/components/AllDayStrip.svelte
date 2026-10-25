@@ -17,6 +17,15 @@
 
   const shown = $derived(rows.filter((r) => active(r) + r.ready + (showHeld ? r.held : 0) > 0));
 
+  /** variants says how the dish is ordered, counted the same way as the big number. */
+  function variants(r: AllDay): string {
+    const useActive = active(r) > 0 || (showHeld && r.held > 0);
+    const n = (v: AllDay["variants"][number]) => (useActive ? v.active + (showHeld ? v.held : 0) : v.ready);
+    const shown = r.variants.filter((v) => n(v) > 0);
+    if (shown.length < 2 && shown[0]?.label === "regular") return "";
+    return shown.map((v) => `${n(v)} ${v.label}`).join(" · ");
+  }
+
   function parts(r: AllDay): string {
     const p: string[] = [];
     if (r.toStart) p.push(`${r.toStart} to start`);
@@ -42,10 +51,11 @@
           >
             <span class="count num">{active(r) + (showHeld ? r.held : 0) || r.ready}</span>
             <span class="name">{r.name}</span>
+            {#if variants(r)}<span class="variants">{variants(r)}</span>{/if}
             <span class="parts">{parts(r)}</span>
           </button>
           {#if onstart && r.startNow.length > 1}
-            <Button tone="success" surface="solid" label={`Start ${r.startNow.length}`} disabled={busy} onclick={() => onstart(r)} />
+            <Button tone="success" surface="solid" label={`Start ${r.startNow.length}${r.startNowVariant && r.variants.length > 1 ? ` ${r.startNowVariant}` : ""}`} disabled={busy} onclick={() => onstart(r)} />
           {/if}
         </div>
       {/each}
@@ -81,7 +91,7 @@
   .pick {
     display: grid;
     grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto;
     column-gap: var(--space-3);
     align-items: center;
     min-height: max(44px, var(--kit-control-height, 0px));
@@ -99,14 +109,21 @@
     box-shadow: inset 0 0 0 1px var(--accent-blue);
   }
   .count {
-    grid-row: span 2;
+    grid-row: 1 / span 3;
     font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-bold);
   }
   .name {
+    grid-column: 2;
     font-weight: var(--font-weight-semibold);
   }
+  .variants {
+    grid-column: 2;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+  }
   .parts {
+    grid-column: 2;
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
   }

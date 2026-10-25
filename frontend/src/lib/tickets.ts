@@ -79,8 +79,18 @@ export function stationTickets(view: KitchenView, stationId: string): Ticket[] {
   return out.sort((a, b) => a.nextAt - b.nextAt || a.order.number - b.order.number);
 }
 
-/** AllDay is how many of one dish (with its modifiers) are in the kitchen. */
+/** Variant is one way a dish is ordered: "regular", "well done", "well done, no onion". */
+export interface Variant {
+  label: string;
+  /** fired and not yet ready */
+  active: number;
+  held: number;
+  ready: number;
+}
+
+/** AllDay is how many of one dish are in the kitchen, with its variants. */
 export interface AllDay {
+  /** the dish ID */
   key: string;
   name: string;
   /** held: in courses not fired yet */
@@ -91,8 +101,19 @@ export interface AllDay {
   cooking: number;
   /** at the pass */
   ready: number;
-  /** items the scheduler says to start now, together */
+  /** items the scheduler says to start now */
   startNow: string[];
+  /** the variant those items share, or "" when they differ */
+  startNowVariant: string;
+  /** the ways it is ordered, regular first, then the most common */
+  variants: Variant[];
+}
+
+/** variantLabel names how an item differs from the plain dish. */
+export function variantLabel(it: Pick<OrderItem, "modifiers" | "notes">): string {
+  const parts = [...(it.modifiers ?? []).map((m) => m.toLowerCase())];
+  if (it.notes?.trim()) parts.push(it.notes.trim());
+  return parts.length ? parts.join(", ") : "regular";
 }
 
 /** allDay counts every dish not yet served, for one station or the whole kitchen. */
@@ -107,18 +128,37 @@ export function allDay(view: KitchenView, stationId?: string): AllDay[] {
     for (const it of o.items) {
       if (stationId && it.station_id !== stationId) continue;
       if (it.state === "served" || it.state === "voided") continue;
-      const key = `${it.dish_id}|${(it.modifiers ?? []).join(",")}`;
-      let r = rows.get(key);
+      let r = rows.get(it.dish_id);
       if (!r) {
-        r = { key, name: itemName(it), held: 0, toStart: 0, cooking: 0, ready: 0, startNow: [] };
-        rows.set(key, r);
+        r = { key: it.dish_id, name: it.dish_name, held: 0, toStart: 0, cooking: 0, ready: 0, startNow: [], startNowVariant: "", variants: [] };
+        rows.set(it.dish_id, r);
       }
-      if (it.state === "held") r.held++;
-      else if (it.state === "fired") r.toStart++;
-      else if (COOKING.has(it.state)) r.cooking++;
-      else if (it.state === "ready") r.ready++;
-      if (now.has(it.id)) r.startNow.push(it.id);
+      const label = variantLabel(it);
+      let v = r.variants.find((x) => x.label === label);
+      if (!v) {
+        v = { label, active: 0, held: 0, ready: 0 };
+        r.variants.push(v);
+      }
+      if (it.state === "held") {
+        r.held++;
+        v.held++;
+      } else if (it.state === "ready") {
+        r.ready++;
+        v.ready++;
+      } else {
+        if (it.state === "fired") r.toStart++;
+        else if (COOKING.has(it.state)) r.cooking++;
+        v.active++;
+      }
+      if (now.has(it.id)) {
+        r.startNowVariant = r.startNow.length === 0 || r.startNowVariant === label ? label : "";
+        r.startNow.push(it.id);
+      }
     }
+  }
+  for (const r of rows.values()) {
+    const n = (v: Variant) => v.active + v.held + v.ready;
+    r.variants.sort((a, b) => (a.label === "regular" ? -1 : b.label === "regular" ? 1 : n(b) - n(a) || a.label.localeCompare(b.label)));
   }
   return [...rows.values()].sort((a, b) => active(b) - active(a) || a.name.localeCompare(b.name));
 }
@@ -128,9 +168,9 @@ export function active(r: AllDay): number {
   return r.toStart + r.cooking;
 }
 
-/** lineKey is the all-day key of an item, to filter tickets by dish. */
-export function lineKey(it: OrderItem): string {
-  return `${it.dish_id}|${(it.modifiers ?? []).join(",")}`;
+/** lineKey is the all-day key of an item (its dish), to filter tickets by dish. */
+export function lineKey(it: Pick<OrderItem, "dish_id">): string {
+  return it.dish_id;
 }
 
 /** Done is an item a station finished recently, for Undo. */

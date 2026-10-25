@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { KitchenView } from "./api";
-import { active, allDay, lineKey, recentlyDone, stationTickets, stepBack } from "./tickets";
+import { active, allDay, lineKey, recentlyDone, stationTickets, stepBack, variantLabel } from "./tickets";
 
 const MIN = 60e9; // a minute in nanoseconds, as timings arrive
 
@@ -76,15 +76,25 @@ test("station tickets: one per fired course with work, soonest first", () => {
   expect(stationTickets(view, "fryer").map((x) => x.order.table)).toEqual(["4"]);
 });
 
-test("all day counts dishes by state, with what to start now", () => {
+test("all day counts each dish once, with its variants", () => {
   const rows = allDay(view, "grill");
-  expect(rows.map((r) => r.name)).toEqual(["Burger", "Burger (Well done)"]);
-  expect(rows[0]).toMatchObject({ held: 1, toStart: 1, cooking: 1, ready: 1, startNow: ["a"] });
-  expect(rows[1]).toMatchObject({ toStart: 1, ready: 0, startNow: [] });
-  expect(active(rows[0]!)).toBe(2);
+  expect(rows.map((r) => r.name)).toEqual(["Burger"]);
+  expect(rows[0]).toMatchObject({ key: "d-burger", held: 1, toStart: 2, cooking: 1, ready: 1, startNow: ["a"], startNowVariant: "regular" });
+  expect(active(rows[0]!)).toBe(3);
+  expect(rows[0]!.variants).toEqual([
+    { label: "regular", active: 2, held: 1, ready: 1 },
+    { label: "well done", active: 1, held: 0, ready: 0 },
+  ]);
   const kitchen = allDay(view);
   expect(kitchen.map((r) => r.name)).toContain("Fries");
-  expect(lineKey(view.orders[1]!.items[0]!)).toBe("d-burger|Well done");
+  expect(lineKey(view.orders[1]!.items[0]!)).toBe("d-burger");
+});
+
+test("variant labels", () => {
+  expect(variantLabel({ modifiers: [], notes: "" })).toBe("regular");
+  expect(variantLabel({ modifiers: ["Well done"] })).toBe("well done");
+  expect(variantLabel({ modifiers: ["Well done"], notes: "no onion" })).toBe("well done, no onion");
+  expect(variantLabel({ modifiers: [], notes: "no bun, gluten free" })).toBe("no bun, gluten free");
 });
 
 test("recently done and undo", () => {
