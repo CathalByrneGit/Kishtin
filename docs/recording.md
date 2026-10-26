@@ -58,7 +58,7 @@ Every version of every setting, limit and permission, with who changed it, when 
 
 ## Leavers
 
-When someone leaves, deactivate them in **Setup › Staff**. Then **Anonymise** replaces their name with "Former staff N":
+When someone leaves, deactivate them in **Setup › Staff and access › Staff**. Then **Anonymise** replaces their name with "Former staff N":
 
 - in order events, the voice log, the activity log and the staff list;
 - their PIN and password are removed and their API keys revoked.

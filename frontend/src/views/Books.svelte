@@ -5,7 +5,7 @@
   import SignOffModal from "../components/SignOffModal.svelte";
   import Login from "../screens/Login.svelte";
   import { title } from "../lib/labels";
-  import { onMount, tick } from "svelte";
+  import { tick } from "svelte";
   import { api, download, message, type Schemas } from "../lib/api";
   import { cellText, gapsByDate, headerGroups, monthLabel, recentMonths } from "../lib/books";
   import { longDate } from "../lib/format";
@@ -37,8 +37,12 @@
       .catch(() => (signStatus = null));
   }
 
-  onMount(() => {
-    if (!canExport) return;
+  // Loads once permissions are known: on a page reload they arrive after
+  // the page opens.
+  let loaded = false;
+  $effect(() => {
+    if (!canExport || loaded) return;
+    loaded = true;
     api
       .recordBooks()
       .then((r) => (info = r))
@@ -156,7 +160,7 @@
           {#if !can("haccp.sign_off") && canWithPassword("haccp.sign_off")}
             <Button size="sm" label="Log in with a password to sign" onclick={() => (managerLogin = true)} />
           {:else if !can("haccp.sign_off")}
-            <span class="small muted">A manager signs off, or can allow you in Setup › Permissions.</span>
+            <span class="small muted">A manager signs off, or can allow you in Setup › Staff and access › Permissions.</span>
           {/if}
         </div>
       </div>
@@ -211,7 +215,7 @@
         </ul>
         <p class="small muted setup">
           {hidden > 0 ? `${hidden} booklet${hidden === 1 ? " is" : "s are"} turned off. ` : ""}Choose your country's bundle, turn booklets off, or change titles and columns in
-          <a href="/setup/records">Setup › HACCP records</a>.
+          <a href="/setup/records">Setup › Food safety › HACCP records</a>.
         </p>
       </Card>
 

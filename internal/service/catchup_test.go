@@ -51,7 +51,7 @@ func TestPermissions(t *testing.T) {
 		Value: auth.Permissions{Grants: []auth.Grant{{Action: auth.ActInspect, Roles: []auth.Role{auth.RoleHeadChef}, Users: []string{f.cook.User.ID}}}}, Reason: "Liam does inspections",
 	})
 	require.NoError(t, err)
-	assert.Contains(t, pv.Notes, "Liam Cook has no password, so cannot log hygiene inspections and training, import paper pages until a manager sets one in Setup › Staff, or PIN is made enough.")
+	assert.Contains(t, pv.Notes, "Liam Cook has no password, so cannot log hygiene inspections and training, import paper pages until a manager sets one in Setup › Staff and access › Staff, or PIN is made enough.")
 	setPermissions(t, f, auth.Grant{Action: auth.ActInspect, Roles: []auth.Role{auth.RoleHeadChef}, Users: []string{f.cook.User.ID}, PIN: true})
 	assert.Equal(t, AllowedYes, f.svc.Can(f.cook)[auth.ActInspect])
 	assert.Equal(t, AllowedNo, f.svc.Can(chefP)[auth.ActSignOff], "saving a new version replaces the old grants")

@@ -2,7 +2,6 @@
   import { can, canWithPassword } from "../lib/can.svelte";
   import { Button, Card, Chip, IconButton, Notice, SelectDropdown, Spinner, Table, TextInput, showFlash } from "@kenn-io/kit-ui";
   import { Camera, Plus, Trash2 } from "@lucide/svelte";
-  import { onMount } from "svelte";
   import { api, message, type Lists, type Schemas } from "../lib/api";
   import { dublinDate, dublinTime } from "../lib/format";
   import { emptyRow, fromRecord, PAPER_KINDS, toRecord, type PaperRow } from "../lib/paper";
@@ -22,14 +21,20 @@
 
   const canImport = $derived(can("haccp.inspect"));
 
-  onMount(async () => {
-    if (!canImport) return;
-    try {
-      lists = (await api.lists()).value;
-      ai = (await api.recordBooks()).ai;
-    } catch (err) {
-      showFlash(message(err), { tone: "danger" });
-    }
+  // Loads once permissions are known: on a page reload they arrive after
+  // the page opens.
+  let loaded = false;
+  $effect(() => {
+    if (!canImport || loaded) return;
+    loaded = true;
+    void (async () => {
+      try {
+        lists = (await api.lists()).value;
+        ai = (await api.recordBooks()).ai;
+      } catch (err) {
+        showFlash(message(err), { tone: "danger" });
+      }
+    })();
   });
 
   async function pick(e: Event) {

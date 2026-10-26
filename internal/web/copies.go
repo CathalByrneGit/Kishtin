@@ -48,7 +48,7 @@ func (s *Server) copyRoutes() {
 	huma.Register(s.api, huma.Operation{
 		OperationID: "suggest-columns", Method: http.MethodPost, Path: "/haccp/books/{book}/suggest", Tags: tags,
 		Summary:     "Ask the local model to read a copy's columns (manager password)",
-		Description: "Needs [ai] url in kishtin.toml: a model server on this machine or the local network. The result is a draft to review and save in Setup › HACCP records; nothing is saved.",
+		Description: "Needs [ai] url in kishtin.toml: a model server on this machine or the local network. The result is a draft to review and save in Setup › Food safety › HACCP records; nothing is saved.",
 	}, wrap(s, func(ctx context.Context, in *copyIn) (*out[service.Suggestion], error) {
 		return reply(s.svc.SuggestColumns(ctx, principal(ctx), in.Book, in.Body.File))
 	}))

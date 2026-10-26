@@ -103,7 +103,7 @@
       <Notice
         tone="info"
         title={current.builtin ? "Kishtin's default permissions" : `Version saved: ${current.version.reason}`}
-        message="A password login lasts 30 minutes; a PIN login lasts a shift. Staff need a password (Setup › Staff) for actions that need one."
+        message="A password login lasts 30 minutes; a PIN login lasts a shift. Staff need a password (Setup › Staff and access › Staff) for actions that need one."
       />
       {#each groups as g (g)}
         <Card padding="md" title={g}>

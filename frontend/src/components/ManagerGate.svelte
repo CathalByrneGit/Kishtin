@@ -7,7 +7,7 @@
   interface Props {
     /** what the page is, for the notice: "Staff", "Device keys" */
     what: string;
-    /** the action that changes it, as in Setup › Permissions */
+    /** the action that changes it, as in Setup › Staff and access › Permissions */
     action: string;
     /** everyone can see the page; only editing needs permission */
     viewable?: boolean;
@@ -25,7 +25,7 @@
     title={viewable ? `${what} is shared by every device` : `${what} needs permission`}
     message={access === "password"
       ? `${viewable ? "Everyone can see it. " : ""}Log in with your password to change it. A PIN login is not enough.`
-      : `${viewable ? "Everyone can see it. " : ""}You cannot change it. A manager can log in here, or allow you in Setup › Permissions.`}
+      : `${viewable ? "Everyone can see it. " : ""}You cannot change it. A manager can log in here, or allow you in Setup › Staff and access › Permissions.`}
     actionLabel="Password login"
     onaction={() => (open = true)}
   />

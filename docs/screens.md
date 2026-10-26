@@ -6,7 +6,7 @@ Each device can instead show a full-screen kitchen layout: a **pass screen**, a 
 
 ## Pairing a device and logging in
 
-1. A manager makes a device key in **Setup → Device keys** (or with `kishtin keys create --kind device --name "Office PC"`). The pairing link is shown once.
+1. A manager makes a device key in **Setup → Staff and access → Device keys** (or with `kishtin keys create --kind device --name "Office PC"`). The pairing link is shown once.
 2. Open the link once on the computer, tablet or phone. The browser remembers the key. You can also paste the key on the setup screen.
 3. Staff pick their name and enter their PIN. A PIN login lasts 12 hours. The exit icon at the bottom of the sidebar switches staff.
 
@@ -33,7 +33,16 @@ Choose what a device shows in **Settings → This device → This device shows**
 
 ## Layout
 
-- **Sidebar**: Service (Pass, Stations, Orders, Voice); HACCP (Today, Records, Record books, Exports, Verify); Setup (Menu, Scheduler, Connections, Fridges and tasks, Limits and rules, HACCP records, Staff, Device keys, Backups); and Settings at the bottom. The Pass is the first page after logging in. The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice.
+- **Sidebar**: related pages share one entry, and a grouped entry lists its pages underneath while you are in it:
+  - **Service**: Pass, Stations, Orders, Voice.
+  - **Reports**.
+  - **HACCP**: Today; **Records** (All records, Catch up, Paper import); **Record books** (Booklets, Inspection); **Exports** (Downloads, Verify).
+  - **Setup**: **Kitchen** (Menu, Scheduler); **Food safety** (Fridges and tasks, Limits and rules, HACCP records); Connections; **Staff and access** (Staff, Permissions, Device keys); Backups.
+  - **Settings** at the bottom.
+
+  The Pass is the first page after logging in. The top bar shows where you are, for example "HACCP / Records / Catch up". The footer shows who is logged in and has the theme and switch-staff buttons. The collapse button shrinks the sidebar to icons, and the browser remembers that choice; pointing at a grouped icon shows its pages.
+
+  ![Collapsed sidebar](screenshots/sidebar-rail.png)
 - **Top bar**: where you are, a search box, the connection, **New order** and **Log check**.
 - **Search** (Ctrl K, or ⌘K on a Mac): jump to any page, start a new order, or start logging a check.
 - **Log check** (Ctrl L, or ⌘L): opens the log form in a panel on the right.
@@ -137,7 +146,7 @@ Pass times and HACCP checks for a period, with charts and tables. See [reports.m
 
 Every fridge and freezer check and cleaning task that was due and has no record, a card per day, by default for the last 14 days (choose **From** and **To** for up to 62). Type the temperature, or tick **Done** for a cleaning task, and the time it was done; the time starts at the start of the check's window. **Done by** names who did them, if not you. Leave checks that were not done blank: Kishtin never fills them in.
 
-**Check entries** shows each result. A reading out of limit needs the corrective action that was taken. **Save** adds every entry, or none if any cannot be saved. A day already signed off is marked; adding to it needs permission (Setup › Permissions).
+**Check entries** shows each result. A reading out of limit needs the corrective action that was taken. **Save** adds every entry, or none if any cannot be saved. A day already signed off is marked; adding to it needs permission (Setup › Staff and access › Permissions).
 
 ## Paper import
 
@@ -221,8 +230,10 @@ All taken with synthetic data, at 1440 × 960 unless noted.
 | ![Backups](screenshots/backups.png) | ![Settings](screenshots/settings.png) |
 | **Voice** | **Connections** |
 | ![Voice](screenshots/voice.png) | ![Connections](screenshots/connections.png) |
-| **Square** | |
-| ![Square](screenshots/square.png) | |
+| **Square** | **Permissions** |
+| ![Square](screenshots/square.png) | ![Permissions](screenshots/permissions.png) |
+| **Hygiene inspection** | **Collapsed sidebar** |
+| ![Hygiene inspection](screenshots/inspection.png) | ![Collapsed sidebar](screenshots/sidebar-rail.png) |
 
 ### Kitchen screens
 

@@ -1,6 +1,6 @@
 # Permissions
 
-Kishtin decides who may do what by role: head chef, line cook, front of house, manager. Kitchens hand out jobs differently, so a manager can change this in **Setup › Permissions**. For example, a head chef or a named cook can sign off records, run the pass, or do inspections.
+Kishtin decides who may do what by role: head chef, line cook, front of house, manager. Kitchens hand out jobs differently, so a manager can change this in **Setup › Staff and access › Permissions**. For example, a head chef or a named cook can sign off records, run the pass, or do inspections.
 
 ![Permissions](screenshots/permissions.png)
 
@@ -10,7 +10,7 @@ For each action:
 
 - **Roles**: which of head chefs, line cooks and front of house may take it. Managers always may.
 - **Named staff**: people who may take it whatever their role, for example one line cook who covers sign-off.
-- **Login**: whether a PIN is enough, or the action needs a password login. A password login lasts 30 minutes; a PIN login lasts a shift. Staff other than managers can be given a password in Setup › Staff.
+- **Login**: whether a PIN is enough, or the action needs a password login. A password login lasts 30 minutes; a PIN login lasts a shift. Staff other than managers can be given a password in Setup › Staff and access › Staff.
 
 **Reset to default** puts an action back to Kishtin's default.
 

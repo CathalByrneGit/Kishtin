@@ -47,6 +47,8 @@ Connect from a device that reaches the server over HTTPS, or on the server itsel
 
 **Setup → Connections** lists what Kishtin can connect to (Square, for now): what each does, exactly what it sends, whether it is connected and in use, when it last worked and the last problem. **Set up** or **Open** goes to its page.
 
+![Connections](screenshots/connections.png)
+
 ## The Square page
 
 - **Connect your Square account**: connected or not, production or sandbox, where the token is kept, and **Check and connect** or **Disconnect**.
@@ -55,6 +57,8 @@ Connect from a device that reaches the server over HTTPS, or on the server itsel
 - **Till items and the kitchen**: every item and modifier on the till, how it maps, and a suggestion by name.
 - **Recent till orders**: the last 50 till orders seen, their state on the till and version, and anything that needs checking: items not mapped, and changes the pass must deal with.
 - **Sync now** asks Square straight away (head chef or manager).
+
+![Square](screenshots/square.png)
 
 ## Commands
 

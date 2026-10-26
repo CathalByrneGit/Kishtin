@@ -30,11 +30,13 @@ kishtin settings set lists -f lists.json --reason "Add the fish fridge"
 
 The same actions are in the API under `/api/settings/{guidance,rules,lists,system,scheduler,square,record_books}` (`GET`, `GET …/history`, `POST …/preview`, `PUT`).
 
-In the screens, lists are under **Setup → Fridges and tasks**, rules and limits under **Setup → Limits and rules**, system settings under **Settings**, scheduler settings under **Setup → Scheduler**, Square import under **Setup → Square**, and record books under **Setup → HACCP records**. Each shows the same preview and asks for the same reason. The reference guidance is changed with the CLI or API only. See [screens.md](screens.md#setup).
+In the screens, lists are under **Setup → Food safety → Fridges and tasks**, rules and limits under **Setup → Food safety → Limits and rules**, system settings under **Settings**, scheduler settings under **Setup → Kitchen → Scheduler**, Square import under **Setup → Connections → Square**, and record books under **Setup → Food safety → HACCP records**. Each shows the same preview and asks for the same reason. The reference guidance is changed with the CLI or API only. See [screens.md](screens.md#setup).
 
 ## Reference guidance
 
 The reference guidance is what your limits are measured against. It starts as the FSAI defaults. Each check type (fridge, freezer, cook, reheat, hot hold, cooling, chilled and frozen delivery) has an entry, with the same fields as a limit.
+
+![Changing a limit](screenshots/limit-preview.png)
 
 A **limit** looser than the guidance needs a plan reference. **Guidance** looser than the FSAI defaults needs a plan reference when you save it. So every loosening is tied to a plan reference at one level or the other.
 
@@ -81,6 +83,8 @@ Each record stores the rules version in force when it was saved.
 }
 ```
 
+![Fridges and tasks](screenshots/lists.png)
+
 - The lists start with the prototype's: Walk-in fridge, Prep fridge and Chest freezer, its six daily cleaning tasks, and its quick-pick corrective actions.
 - `checks` sets a unit's daily check times. Each runs from its `from` time (HH:MM) until the next one starts; the first also covers the start of the day. Leave it out for AM (until 12:00) and PM.
 - `corrective_actions` are the quick-pick actions offered for each record type when a reading is not a pass. Staff can always write their own.
@@ -103,6 +107,8 @@ Dishes are not listed yet; they come with the menu (roadmap stage 2).
 | `max_upload_mb` | 15 | Largest docket or invoice file accepted (1–100). |
 | `preview_records` | 50 | How many recent records a limit preview re-scores (1–500). |
 | `voice_audio_days` | 0 | How many days recordings of spoken voice commands are kept on the server, then deleted (0–365). 0 keeps none. See [recording.md](recording.md#voice). |
+
+![Settings](screenshots/settings.png)
 
 Until you save a change, these come from `kishtin.toml` (`[backup] interval` and `keep`, `[files] max_size_mb`). Once saved, the saved version wins. Changes take effect without a restart.
 

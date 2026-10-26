@@ -15,7 +15,7 @@ import (
 const builtinPermissionsID = "builtin-permissions-v1"
 
 // Permissions is who may do what, where it differs from Kishtin's defaults.
-// A manager with a password changes it in Setup › Permissions.
+// A manager with a password changes it in Setup › Staff and access › Permissions.
 func (s *Service) Permissions() *Group[auth.Permissions] {
 	return &Group[auth.Permissions]{s: s, spec: groupSpec[auth.Permissions]{
 		kind: settings.KindPermissions, builtinID: builtinPermissionsID, seeded: true,
@@ -181,7 +181,7 @@ func permissionNotes(ctx context.Context, _ *Service, st store.Store, cur, next 
 		if !n.PIN {
 			for _, u := range n.Users {
 				if noPassword[u] {
-					out = append(out, fmt.Sprintf("%s has no password, so cannot %s until a manager sets one in Setup › Staff, or PIN is made enough.", names[u], strings.ToLower(a.Label[:1])+a.Label[1:]))
+					out = append(out, fmt.Sprintf("%s has no password, so cannot %s until a manager sets one in Setup › Staff and access › Staff, or PIN is made enough.", names[u], strings.ToLower(a.Label[:1])+a.Label[1:]))
 				}
 			}
 		}

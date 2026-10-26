@@ -26,7 +26,7 @@ func (c *cli) compareCopy(cmd *cobra.Command, book, path string, suggest bool) e
 			return apiErr(err)
 		}
 		return c.emit(res, func(w io.Writer) {
-			fmt.Fprintln(w, "The local model suggests these columns. Nothing is saved: review them in Setup › HACCP records, or set them with kishtin settings set record_books.")
+			fmt.Fprintln(w, "The local model suggests these columns. Nothing is saved: review them in Setup › Food safety › HACCP records, or set them with kishtin settings set record_books.")
 			var rows [][]string
 			for _, col := range res.Columns {
 				rows = append(rows, []string{col.Label, deref(col.Group), deref(col.Field)})
@@ -60,7 +60,7 @@ func (c *cli) compareCopy(cmd *cobra.Command, book, path string, suggest bool) e
 		if len(rows) > 0 {
 			fmt.Fprintln(w)
 			table(w, "NOT FOUND IN THE COPY", rows)
-			fmt.Fprintln(w, "\nCheck these against your copy, and change the booklet in Setup › HACCP records if they changed.")
+			fmt.Fprintln(w, "\nCheck these against your copy, and change the booklet in Setup › Food safety › HACCP records if they changed.")
 		}
 	})
 }

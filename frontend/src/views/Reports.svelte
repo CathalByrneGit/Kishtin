@@ -91,7 +91,7 @@
   </header>
 
   {#if !canPass && !canHACCP}
-    <Notice tone="info" title="Not allowed on this login" message="Reports are for the head chef and managers, or staff a manager allows in Setup › Permissions." />
+    <Notice tone="info" title="Not allowed on this login" message="Reports are for the head chef and managers, or staff a manager allows in Setup › Staff and access › Permissions." />
   {:else}
     <div class="filters">
       {#if canPass && canHACCP}
@@ -195,7 +195,7 @@
                   {/each}
                 </tbody>
               </Table>
-              <p class="muted small note">Set time is the dish's cook, rest and plate time. A dish much slower than set makes the scheduler plan too late; change its times in Setup › Menu.</p>
+              <p class="muted small note">Set time is the dish's cook, rest and plate time. A dish much slower than set makes the scheduler plan too late; change its times in Setup › Kitchen › Menu.</p>
             {/if}
           </Card>
 

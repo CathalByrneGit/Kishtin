@@ -1,7 +1,6 @@
 <script lang="ts">
   import { can, canWithPassword } from "../lib/can.svelte";
   import { Button, Card, MetricCard, Notice, SegmentedControl, SelectDropdown, Spinner, TextInput, showFlash } from "@kenn-io/kit-ui";
-  import { onMount } from "svelte";
   import { api, message, OfflineError, type Schemas } from "../lib/api";
   import { live } from "../lib/live.svelte";
   import { navigate } from "../lib/router.svelte";
@@ -30,8 +29,16 @@
     notes = "";
   }
 
-  onMount(async () => {
-    if (!canInspect) return;
+  // Loads once permissions are known: on a page reload they arrive after
+  // the page opens.
+  let loaded = false;
+  $effect(() => {
+    if (!canInspect || loaded) return;
+    loaded = true;
+    void loadChecklists();
+  });
+
+  async function loadChecklists() {
     try {
       const rb = await api.recordBooks();
       checklists = rb.booklets.filter((b) => !b.off && b.template.builder === "checklist").map((b) => b.template);
@@ -39,7 +46,7 @@
     } catch (err) {
       error = message(err);
     }
-  });
+  }
 
   const counts = $derived({
     yes: items.filter((i) => i.answer === "yes").length,
@@ -93,7 +100,7 @@
   {:else if !checklists}
     <Spinner />
   {:else if checklists.length === 0}
-    <Notice tone="info" message="The record books in use have no inspection checklist. Add one in Setup › HACCP records." />
+    <Notice tone="info" message="The record books in use have no inspection checklist. Add one in Setup › Food safety › HACCP records." />
   {:else}
     {#if checklists.length > 1}
       <label class="field">

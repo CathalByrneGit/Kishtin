@@ -17,7 +17,7 @@ Bundles for more countries are added to Kishtin as kitchens ask for them. A bund
 
 ## Changing the booklets for your restaurant
 
-**Setup › HACCP records** (manager password). Choose the bundle, then for each booklet:
+**Setup › Food safety › HACCP records** (manager password). Choose the bundle, then for each booklet:
 
 - **In use**: turn a booklet off to hide it from Record books.
 - **Change**:
@@ -38,7 +38,7 @@ Every change is shown before it is saved, needs a reason, and is saved as a new 
 
 Publishers bring out new editions of their booklets now and then, with renamed or moved columns. Kishtin helps you spot that and change the booklet to match.
 
-- **Compare** (Setup › HACCP records, shown once you have uploaded your copy, and opened straight after an upload): Kishtin reads the text of your PDF on this machine and checks that every column heading and checklist question of the booklet is in it. A heading counts as found when all its words are in the copy, so a heading split over two lines still counts. It lists any that are missing, and can show the text it read. Blank and "Kishtin ref" columns are not checked, because they are not on the official page. Nothing is sent anywhere.
+- **Compare** (Setup › Food safety › HACCP records, shown once you have uploaded your copy, and opened straight after an upload): Kishtin reads the text of your PDF on this machine and checks that every column heading and checklist question of the booklet is in it. A heading counts as found when all its words are in the copy, so a heading split over two lines still counts. It lists any that are missing, and can show the text it read. Blank and "Kishtin ref" columns are not checked, because they are not on the official page. Nothing is sent anywhere.
 - **Suggest columns** (needs a local model, below): the model reads the copy's text and suggests the booklet's columns, its notes, and for a checklist its questions. Kishtin checks the suggestion with the same rules as a change made by hand, shows it, and **Use these columns** puts it in your unsaved changes. Nothing is saved until you review and save it with a reason, as usual. A heading the model cannot match to something Kishtin records becomes a blank column.
 - **Check for new editions** (manager password): lists the official PDF of each booklet and where it comes from, then, once you agree, downloads each one from its publisher (for the FSAI bundle, www.fsai.ie) and compares it with the edition the booklet was made from. Only those public files are downloaded; nothing about your restaurant is sent. A booklet whose file has changed is marked **Changed**, and the new PDF is kept so you can compare it and change the booklet. A publisher that cannot be reached is marked **Unreachable**; nothing else happens.
 
@@ -48,7 +48,7 @@ Kishtin never changes a booklet by itself. A new edition is a change a manager r
 
 ## Bringing in paper records
 
-**HACCP › Paper import** (head chef or manager) brings pages of old paper record books into Kishtin, so the history is in one place.
+**HACCP › Records › Paper import** (head chef or manager) brings pages of old paper record books into Kishtin, so the history is in one place.
 
 1. Take a clear photo of the page (or upload a PDF scan). It is stored under its SHA-256 like a docket photo.
 2. Type each row next to the photo: date, time, kind (fridge, freezer, cooking, reheating or hot holding), the fridge or food, the temperature, the name or initials written on the paper, and the action written for a reading out of limit. With a local model, **Read the photo** fills the rows in as a draft; check every row against the photo, because it can misread handwriting.
@@ -105,7 +105,7 @@ A booklet that needs another kind of row, such as a checklist or a training reco
 | SC4 Hot Hold/Display Records | Yes | A row per food per day, with up to three checks. A fourth check starts a new row. |
 | SC1 Food Delivery Records | Yes | A row per delivery. The batch code, use-by date and vehicle check come from the delivery record; any not recorded print blank. |
 | SC8 All-in-One Daily Record | Yes | A sheet per day, from the first day records were kept up to today, with SC1, SC2, SC3 and SC4 sections for that day. The manager check line shows the sign-offs that cover that day. |
-| SC5 Hygiene Inspection Checklist | Yes | A sheet per inspection, with each question answered Yes, No or not checked, and the action taken for each No. The questions are the FSAI checklist; change them in Setup › HACCP records. Past inspections print as they were answered. |
+| SC5 Hygiene Inspection Checklist | Yes | A sheet per inspection, with each question answered Yes, No or not checked, and the action taken for each No. The questions are the FSAI checklist; change them in Setup › Food safety › HACCP records. Past inspections print as they were answered. |
 | SC6 Hygiene Training Record | Yes | A sheet per member of staff with every training record up to the end of the month: the FSAI topics with dates and trainers, then further training (courses). The employee signature column is left blank to sign by hand. |
 | SC7 Fitness to Work Assessment | Yes, outcome only | A row per assessment: date, employee, reason, fit or not, action taken, manager. Kishtin does not record the health questions or the employee's declaration: keep the signed form on paper. Only a manager logged in with a password can log, see or print these. |
 | SC9 Transport and Delivery Records | Yes | A row per delivery to a customer: food, batch code and use-by date, customer, whether raw and ready-to-eat food were kept apart, and the temperature on arrival. |
@@ -126,7 +126,7 @@ Columns Kishtin does not record print blank, and the booklet says which ones the
 
 ## Logging the new records
 
-- **Inspection** (HACCP › Inspection, head chef or manager): walk the kitchen and answer each question Yes, No or leave it not checked. A No needs the action taken. An inspection with any No is a fail, and its actions are its corrective action.
+- **Inspection** (HACCP › Record books › Inspection, head chef or manager): walk the kitchen and answer each question Yes, No or leave it not checked. A No needs the action taken. An inspection with any No is a fail, and its actions are its corrective action.
 - **Training** (Log a check › Training, head chef or manager): who, in-house topics and trainer, or a course and its provider, and the date.
 - **Fitness to work** (Log a check › Fitness to work, manager with a password): who, the date, the reason, fit or not, and the action taken if not. Nothing else is kept: no symptoms, answers or notes. These records are hidden from everyone except managers with a password, including in lists, exports and record books.
 - **To a customer** (Log a check › To a customer, anyone): food, customer, chilled, frozen, hot or ambient, the temperature on arrival, whether raw and ready-to-eat food were kept apart, and optionally batch code and use-by date. Chilled and frozen use the delivery limits; hot uses the hot holding limit. Not kept apart is a fail.

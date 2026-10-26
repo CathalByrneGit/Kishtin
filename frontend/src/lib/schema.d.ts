@@ -302,7 +302,7 @@ export interface paths {
         put?: never;
         /**
          * Ask the local model to read a copy's columns (manager password)
-         * @description Needs [ai] url in kishtin.toml: a model server on this machine or the local network. The result is a draft to review and save in Setup › HACCP records; nothing is saved.
+         * @description Needs [ai] url in kishtin.toml: a model server on this machine or the local network. The result is a draft to review and save in Setup › Food safety › HACCP records; nothing is saved.
          */
         post: operations["suggest-columns"];
         delete?: never;

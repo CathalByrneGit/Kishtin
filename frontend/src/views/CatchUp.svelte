@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button, Card, Checkbox, Chip, DatePicker, Notice, Spinner, TextInput, showFlash } from "@kenn-io/kit-ui";
-  import { onMount } from "svelte";
+  import { untrack } from "svelte";
   import { api, message, OfflineError, type NewRecord, type Schemas } from "../lib/api";
   import { can } from "../lib/can.svelte";
   import { entryFor, filled, gapLabel, toRecord, type Entry } from "../lib/catchup";
@@ -34,9 +34,11 @@
     }
   }
 
-  onMount(() => {
+  // Loads once permissions are known: on a page reload they arrive after
+  // the page opens.
+  $effect(() => {
     if (!allowed) return;
-    void load();
+    untrack(() => void load());
     return onChange((k) => {
       // Someone else logging a check fills a gap; reload only when nothing is typed.
       if ((k === "record" || k === "settings") && !entries.some(filled)) void load();
@@ -100,7 +102,7 @@
   </header>
 
   {#if !allowed}
-    <Notice tone="info" title="Not allowed on this login" message="Logging checks done earlier is turned off for you. A manager can change this in Setup › Permissions." />
+    <Notice tone="info" title="Not allowed on this login" message="Logging checks done earlier is turned off for you. A manager can change this in Setup › Staff and access › Permissions." />
   {:else}
     <div class="filters">
       <label class="field"><span>From</span><DatePicker value={from} onchange={(d) => (from = d)} ariaLabel="From" /></label>
@@ -131,7 +133,7 @@
               tone="info"
               message={intoSignedOff
                 ? "This day is already signed off. Records added now still count."
-                : "This day is already signed off. Adding to it needs permission: a manager can log in, or allow it in Setup › Permissions."}
+                : "This day is already signed off. Adding to it needs permission: a manager can log in, or allow it in Setup › Staff and access › Permissions."}
             />
           {/if}
           <ul class="entries">

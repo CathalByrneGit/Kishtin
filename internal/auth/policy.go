@@ -124,7 +124,7 @@ func (pm Permissions) Can(p Principal, a Action) Decision {
 		roles, users, password = g.Roles, g.Users, !g.PIN
 	}
 	if p.User.Role != RoleManager && !slices.Contains(roles, p.User.Role) && !slices.Contains(users, p.User.ID) {
-		return Decision{Reason: "you are not allowed to do this: a manager can change this in Setup › Permissions"}
+		return Decision{Reason: "you are not allowed to do this: a manager can change this in Setup › Staff and access › Permissions"}
 	}
 	if password && p.Method == MethodPIN {
 		return Decision{NeedPassword: true, Reason: "log in with your password to do this"}

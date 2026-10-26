@@ -208,7 +208,7 @@
       <label class="field"><span>Role</span><SelectDropdown value={role} options={roleOptions} onchange={(v) => (role = v)} title="Role" /></label>
       <label class="field"><span>PIN (4–8 digits)</span><TextInput bind:value={pin} block autocomplete="off" invalid={pin !== "" && !pinOK(pin)} /></label>
       <label class="field">
-        <span>Password {role === "manager" ? "(at least 10 characters; needed to change setup)" : "(optional, at least 10 characters; for actions a manager allows with a password in Setup › Permissions)"}</span>
+        <span>Password {role === "manager" ? "(at least 10 characters; needed to change setup)" : "(optional, at least 10 characters; for actions a manager allows with a password in Setup › Staff and access › Permissions)"}</span>
         <TextInput type="password" bind:value={password} block autocomplete="new-password" />
       </label>
       <span class="muted small">A PIN or a password is needed to log in.</span>

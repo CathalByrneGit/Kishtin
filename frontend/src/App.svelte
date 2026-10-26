@@ -22,26 +22,17 @@
     ChefHat,
     ClipboardPlus,
     CookingPot,
-    BookMarked,
-    CalendarClock,
     ChartColumn,
-    ShieldUser,
-    ClipboardCheck,
-    ScanText,
     BookOpen,
     Download,
     House,
-    KeyRound,
     List,
-    ListChecks,
     LogOut,
     Mic,
     ReceiptText,
-    Timer,
     UtensilsCrossed,
     Search,
     Settings,
-    ShieldCheck,
     SlidersHorizontal,
     Plug,
     Users,
@@ -87,12 +78,40 @@
   interface Page {
     path: string;
     label: string;
-    section: string;
+    /** the sidebar section the page sits under */
+    section: SectionId;
+    /** the page's entry under its section, or null for a section that is one page */
     view: string | null;
     group: string;
     /** sub-pages are reached from their parent page, not the sidebar */
     sub?: boolean;
   }
+
+  interface Section {
+    id: string;
+    label: string;
+    icon: typeof House;
+  }
+
+  // Related pages share a sidebar section and show as entries under it.
+  const sections = {
+    pass: { id: "pass", label: "Pass", icon: ChefHat },
+    stations: { id: "stations", label: "Stations", icon: CookingPot },
+    orders: { id: "orders", label: "Orders", icon: ReceiptText },
+    voice: { id: "voice", label: "Voice", icon: Mic },
+    reports: { id: "reports", label: "Reports", icon: ChartColumn },
+    today: { id: "today", label: "Today", icon: House },
+    records: { id: "records", label: "Records", icon: List },
+    books: { id: "books", label: "Record books", icon: BookOpen },
+    exports: { id: "exports", label: "Exports", icon: Download },
+    kitchen: { id: "kitchen", label: "Kitchen", icon: UtensilsCrossed },
+    safety: { id: "safety", label: "Food safety", icon: SlidersHorizontal },
+    connections: { id: "connections", label: "Connections", icon: Plug },
+    people: { id: "people", label: "Staff and access", icon: Users },
+    backups: { id: "backups", label: "Backups", icon: Archive },
+    settings: { id: "settings", label: "Settings", icon: Settings },
+  } satisfies Record<string, Section>;
+  type SectionId = keyof typeof sections;
 
   const pages: Page[] = [
     { path: "/pass", label: "Pass", section: "pass", view: null, group: "Service" },
@@ -101,78 +120,47 @@
     { path: "/voice", label: "Voice", section: "voice", view: null, group: "Service" },
     { path: "/reports", label: "Reports", section: "reports", view: null, group: "Reports" },
     { path: "/today", label: "Today", section: "today", view: null, group: "HACCP" },
-    { path: "/records", label: "Records", section: "records", view: null, group: "HACCP" },
-    { path: "/catch-up", label: "Catch up", section: "catch-up", view: null, group: "HACCP" },
-    { path: "/books", label: "Record books", section: "books", view: null, group: "HACCP" },
-    { path: "/inspection", label: "Inspection", section: "inspection", view: null, group: "HACCP" },
-    { path: "/paper", label: "Paper import", section: "paper", view: null, group: "HACCP" },
-    { path: "/exports", label: "Exports", section: "exports", view: null, group: "HACCP" },
-    { path: "/verify", label: "Verify", section: "verify", view: null, group: "HACCP" },
-    { path: "/setup/menu", label: "Menu", section: "setup", view: "menu", group: "Setup" },
-    { path: "/setup/scheduler", label: "Scheduler", section: "setup", view: "scheduler", group: "Setup" },
-    { path: "/setup/connections", label: "Connections", section: "setup", view: "connections", group: "Setup" },
-    { path: "/setup/connections/square", label: "Square", section: "setup", view: "connections", group: "Setup / Connections", sub: true },
-    { path: "/setup/lists", label: "Fridges and tasks", section: "setup", view: "lists", group: "Setup" },
-    { path: "/setup/limits", label: "Limits and rules", section: "setup", view: "limits", group: "Setup" },
-    { path: "/setup/records", label: "HACCP records", section: "setup", view: "records", group: "Setup" },
-    { path: "/setup/staff", label: "Staff", section: "setup", view: "staff", group: "Setup" },
-    { path: "/setup/permissions", label: "Permissions", section: "setup", view: "permissions", group: "Setup" },
-    { path: "/setup/keys", label: "Device keys", section: "setup", view: "keys", group: "Setup" },
-    { path: "/setup/backups", label: "Backups", section: "setup", view: "backups", group: "Setup" },
+    { path: "/records", label: "All records", section: "records", view: "records", group: "HACCP" },
+    { path: "/catch-up", label: "Catch up", section: "records", view: "catch-up", group: "HACCP" },
+    { path: "/paper", label: "Paper import", section: "records", view: "paper", group: "HACCP" },
+    { path: "/books", label: "Booklets", section: "books", view: "books", group: "HACCP" },
+    { path: "/inspection", label: "Inspection", section: "books", view: "inspection", group: "HACCP" },
+    { path: "/exports", label: "Downloads", section: "exports", view: "exports", group: "HACCP" },
+    { path: "/verify", label: "Verify", section: "exports", view: "verify", group: "HACCP" },
+    { path: "/setup/menu", label: "Menu", section: "kitchen", view: "menu", group: "Setup" },
+    { path: "/setup/scheduler", label: "Scheduler", section: "kitchen", view: "scheduler", group: "Setup" },
+    { path: "/setup/lists", label: "Fridges and tasks", section: "safety", view: "lists", group: "Setup" },
+    { path: "/setup/limits", label: "Limits and rules", section: "safety", view: "limits", group: "Setup" },
+    { path: "/setup/records", label: "HACCP records", section: "safety", view: "records", group: "Setup" },
+    { path: "/setup/connections", label: "Connections", section: "connections", view: null, group: "Setup" },
+    { path: "/setup/connections/square", label: "Square", section: "connections", view: null, group: "Setup / Connections", sub: true },
+    { path: "/setup/staff", label: "Staff", section: "people", view: "staff", group: "Setup" },
+    { path: "/setup/permissions", label: "Permissions", section: "people", view: "permissions", group: "Setup" },
+    { path: "/setup/keys", label: "Device keys", section: "people", view: "keys", group: "Setup" },
+    { path: "/setup/backups", label: "Backups", section: "backups", view: null, group: "Setup" },
     { path: "/setup/settings", label: "Settings", section: "settings", view: null, group: "This device" },
   ];
 
-  const setupIcons: Record<string, typeof House> = {
-    menu: UtensilsCrossed,
-    scheduler: Timer,
-    connections: Plug,
-    lists: ListChecks,
-    limits: SlidersHorizontal,
-    records: BookMarked,
-    staff: Users,
-    permissions: ShieldUser,
-    keys: KeyRound,
-    backups: Archive,
-  };
+  function sidebarGroup(label: string | null, ids: SectionId[], end = false): SidebarGroup {
+    return {
+      label,
+      end,
+      sections: ids.map((id) => {
+        const inSection = pages.filter((p) => p.section === id && !p.sub);
+        const first = inSection[0]?.path ?? "/";
+        const views = inSection.filter((p) => p.view !== null).map((p) => ({ id: p.view ?? "", label: p.label, href: p.path }));
+        const { label: sectionLabel, icon } = sections[id];
+        return { id, label: sectionLabel, href: first, icon, viewRuns: views.length > 0 ? [{ heading: null, views }] : [] };
+      }),
+    };
+  }
 
   const groups: SidebarGroup[] = [
-    {
-      label: "Service",
-      sections: [
-        { id: "pass", label: "Pass", href: "/pass", icon: ChefHat, viewRuns: [] },
-        { id: "stations", label: "Stations", href: "/stations", icon: CookingPot, viewRuns: [] },
-        { id: "orders", label: "Orders", href: "/orders", icon: ReceiptText, viewRuns: [] },
-        { id: "voice", label: "Voice", href: "/voice", icon: Mic, viewRuns: [] },
-      ],
-    },
-    {
-      label: "Reports",
-      sections: [{ id: "reports", label: "Reports", href: "/reports", icon: ChartColumn, viewRuns: [] }],
-    },
-    {
-      label: "HACCP",
-      sections: [
-        { id: "today", label: "Today", href: "/today", icon: House, viewRuns: [] },
-        { id: "records", label: "Records", href: "/records", icon: List, viewRuns: [] },
-        { id: "catch-up", label: "Catch up", href: "/catch-up", icon: CalendarClock, viewRuns: [] },
-        { id: "books", label: "Record books", href: "/books", icon: BookOpen, viewRuns: [] },
-        { id: "inspection", label: "Inspection", href: "/inspection", icon: ClipboardCheck, viewRuns: [] },
-        { id: "paper", label: "Paper import", href: "/paper", icon: ScanText, viewRuns: [] },
-        { id: "exports", label: "Exports", href: "/exports", icon: Download, viewRuns: [] },
-        { id: "verify", label: "Verify", href: "/verify", icon: ShieldCheck, viewRuns: [] },
-      ],
-    },
-    {
-      label: "Setup",
-      sections: pages
-        .filter((p) => p.section === "setup" && !p.sub)
-        .map((p) => ({ id: `setup-${p.view}`, label: p.label, href: p.path, icon: setupIcons[p.view ?? ""] ?? Settings, viewRuns: [] })),
-    },
-    {
-      label: null,
-      end: true,
-      sections: [{ id: "settings", label: "Settings", href: "/setup/settings", icon: Settings, viewRuns: [] }],
-    },
+    sidebarGroup("Service", ["pass", "stations", "orders", "voice"]),
+    sidebarGroup("Reports", ["reports"]),
+    sidebarGroup("HACCP", ["today", "records", "books", "exports"]),
+    sidebarGroup("Setup", ["kitchen", "safety", "connections", "people", "backups"]),
+    sidebarGroup(null, ["settings"], true),
   ];
 
   let restaurant = $state("");
@@ -185,9 +173,17 @@
   const current = $derived(pages.find((p) => p.path === route.path) ?? null);
   const location = $derived(
     current
-      ? { section: current.section === "setup" ? `setup-${current.view}` : current.section, view: null }
+      ? { section: current.section, view: current.view }
       : { section: null, view: null },
   );
+
+  // Where the page sits, for example "HACCP / Records / ".
+  const trail = $derived.by(() => {
+    if (!current || current.group === "This device") return "";
+    const parts = [current.group];
+    if (current.view !== null) parts.push(sections[current.section].label);
+    return parts.map((p) => `${p} / `).join("");
+  });
 
   async function loadName() {
     try {
@@ -342,7 +338,7 @@
       <div class="top-bar">
         <TopBar>
           {#snippet left()}
-            <span class="where">{current && current.group !== "This device" ? `${current.group} / ` : ""}<strong>{current?.label ?? ""}</strong></span>
+            <span class="where">{trail}<strong>{current?.label ?? ""}</strong></span>
           {/snippet}
           {#snippet search()}
             <button type="button" class="search-trigger kit-control-states" onclick={() => (paletteOpen = true)}>

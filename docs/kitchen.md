@@ -12,6 +12,8 @@ The menu is three kinds of thing:
 | **Equipment** | station, name, slots (how many units it holds at once), in use | Flat-top, 3 slots |
 | **Dish** | name, course, station, equipment (optional), batch capacity, cook / rest / plate time, how long it can wait at the pass, batchable, modifiers, HACCP food category, available (86), on the menu | Burger: flat-top, 8 min cook, 2 min rest, 1 min plate, can wait 3 min, "Well done" +2 min |
 
+![Menu](screenshots/menu.png)
+
 - **Capacity.** A dish's batch capacity is how many of it the equipment cooks at once when used for nothing else; it defaults to the equipment's slots. One unit uses 1/capacity of the equipment, so different dishes share it fairly: on a 6-slot grill, a steak with capacity 3 uses twice the room of a burger with capacity 6.
 - **No equipment** means no capacity limit, for dishes that are only plated (salads, cold desserts).
 - **Modifiers** add to (or take from) the cook time, such as "Well done" +2 min or "Rare" −1 min.
@@ -24,6 +26,8 @@ The menu is three kinds of thing:
 
 An order is a **table** (with a table number) or a **takeaway**. Any order can also have a **name**, such as the guest's: screens then show the name as the order's heading, with the table or takeaway number under it. The name can be added or changed at any time (the change is logged), and voice commands can use it ("fire Aoife mains"). It can have covers, notes for the kitchen, and an allergy flag that every screen highlights. Each order gets a ticket number, counting from 1 each day.
 
+![New order](screenshots/new-order.png)
+
 - Each item is one dish, so "2x burger" is two items, cooked and tracked on their own. An item copies its dish's station, equipment, capacity and times (with modifiers applied) when it is ordered, so a menu change does not change an order already in the kitchen.
 - Items are grouped into **courses**: starters, mains and desserts. A dish has a usual course; an order can put it in another.
 - Front of house, head chefs and managers enter orders and add items to open ones. An item added to a course that has already been fired is fired straight away; a course that has been served takes no more items.
@@ -31,6 +35,8 @@ An order is a **table** (with a table number) or a **takeaway**. Any order can a
 ### Firing, cooking and serving
 
 A course is **held** until the expo fires it. Firing sets its **target time**: now plus its longest item's cook, rest and plate time. The head chef or a manager fires; they can also fire courses straight away when entering an order (useful for takeaways).
+
+![Pass](screenshots/pass.png)
 
 Items then move through these states:
 
@@ -63,11 +69,15 @@ On a fired course the expo can:
 - **Hold again**: un-fire the course, for example when the table has stepped outside. Its items leave the station queues and its target time is cleared; firing it again sets a fresh target. This only works while nothing in the course has started. Once a cook has started an item the food is already cooking, so void or change those items instead.
 - **Urgent**: flag the course so the scheduler puts it first. Also logged.
 
+![Order history](screenshots/order-history.png)
+
 An override always beats the scheduler's settings.
 
 ## The scheduler
 
 The scheduler decides what each station should start and when, so every item of a course reaches the pass together, without going over any equipment's capacity. It is a pure function of the kitchen's state, its settings and the time: the same inputs always give the same plan. Kishtin makes a fresh plan whenever a screen asks (after every order, fire, start, finish or void, and every 15 seconds by default), and every plan records the settings version that produced it.
+
+![Station: the grill](screenshots/station.png)
 
 ### How backward scheduling works
 
@@ -96,6 +106,8 @@ When a course's own items cannot all fit on the equipment at once (two burgers a
 ### Settings
 
 The scheduler settings are a versioned settings group, changed like the HACCP settings: previewed, with a reason, by a manager logged in with a password. See [settings.md](settings.md#scheduler-settings).
+
+![Scheduler settings](screenshots/scheduler.png)
 
 | Setting | Default | Meaning |
 |---|---|---|
