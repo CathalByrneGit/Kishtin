@@ -44,14 +44,10 @@ jobs:
           version: "~> v2"
           args: check
 
-  # Builds this platform's release download and installs it with the
-  # install script, as a restaurant would, on Linux, macOS and Windows.
-  install:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  # Builds every release download once, as a release would, without
+  # publishing it.
+  snapshot:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
@@ -63,26 +59,49 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
-      - name: Build the frontend for embedding
-        shell: bash
-        run: cd frontend && bun install --frozen-lockfile && bun run build
-      - name: Build this platform's download
+      - name: Build every download
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --snapshot --clean --single-target --skip=before
+          args: release --snapshot --clean
+      - uses: actions/upload-artifact@v4
+        with:
+          name: downloads
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS
+          retention-days: 3
+
+  # Installs the snapshot with the install script, as a restaurant would, on
+  # Linux, macOS and Windows.
+  install:
+    needs: snapshot
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: downloads
+          path: downloads
       - name: Install with install.sh
         if: runner.os != 'Windows'
         run: |
-          KISHTIN_RELEASE_URL="$PWD/dist" KISHTIN_INSTALL_DIR="$RUNNER_TEMP/kishtin" sh scripts/install.sh
+          KISHTIN_RELEASE_URL="$PWD/downloads" KISHTIN_INSTALL_DIR="$RUNNER_TEMP/kishtin" sh scripts/install.sh
           "$RUNNER_TEMP/kishtin/kishtind" --version
           "$RUNNER_TEMP/kishtin/kishtin" --version
+          "$RUNNER_TEMP/kishtin/kishtind" licenses > "$RUNNER_TEMP/licenses.txt"
+          grep -q "Apache License" "$RUNNER_TEMP/licenses.txt"
       - name: Install with install.ps1
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $env:KISHTIN_RELEASE_URL = Join-Path $PWD 'dist'
+          $env:KISHTIN_RELEASE_URL = Join-Path $PWD 'downloads'
           $env:KISHTIN_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'kishtin'
           $env:KISHTIN_NO_MODIFY_PATH = '1'
           ./scripts/install.ps1
