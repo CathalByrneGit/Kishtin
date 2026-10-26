@@ -18,6 +18,7 @@ func kitchenTests() map[string]func(*testing.T, store.Store) {
 	return map[string]func(*testing.T, store.Store){
 		"MenuRoundTrip":       testMenuRoundTrip,
 		"MenuUniqueNames":     testMenuUniqueNames,
+		"LearnedResets":       testLearnedResets,
 		"OrderRoundTrip":      testOrderRoundTrip,
 		"OrderListAndNumbers": testOrderListAndNumbers,
 		"OrderEvents":         testOrderEvents,
@@ -105,6 +106,22 @@ func testMenuUniqueNames(t *testing.T, s store.Store) {
 	assert.ErrorIs(t, s.Menu().CreateDish(ctx, dupD), store.ErrConflict)
 }
 
+func testLearnedResets(t *testing.T, s store.Store) {
+	ctx := context.Background()
+	_, _, d := sampleMenu(t, s)
+	got, err := s.Menu().LearnedResets(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	require.NoError(t, s.Menu().ResetLearned(ctx, d.ID, t0, "u1"))
+	later := t0.Add(48 * time.Hour)
+	require.NoError(t, s.Menu().ResetLearned(ctx, d.ID, later, "u2"), "a second reset replaces the first")
+	got, err = s.Menu().LearnedResets(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]time.Time{d.ID: later}, got)
+	assert.Error(t, s.Menu().ResetLearned(ctx, "no-such-dish", t0, "u1"), "only dishes that exist")
+}
+
 func sampleOrder(id string, number int, at time.Time) orders.Order {
 	fired := at.Add(time.Minute)
 	target := fired.Add(11 * time.Minute)
@@ -121,7 +138,7 @@ func sampleOrder(id string, number int, at time.Time) orders.Order {
 				Course: menu.CourseMain, Modifiers: []string{"Well done"}, Notes: "no onion", State: orders.StateCooking,
 				StationID: "st-grill", EquipmentID: "eq-flat", BatchCapacity: 6, HoldSeconds: 180, Batchable: true,
 				Timing:  menu.Timing{Cook: 10 * time.Minute, Rest: 2 * time.Minute, Plate: time.Minute},
-				StateAt: fired, StartedAt: &fired,
+				StateAt: fired, StartedAt: &fired, CookLearned: true,
 			},
 			{
 				ID: id + "-i2", OrderID: id, Position: 2, DishID: "dish-burger", DishName: "Synthetic burger",

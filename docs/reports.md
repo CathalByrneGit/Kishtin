@@ -14,7 +14,7 @@ For courses fired in the period whose items all reached the pass (courses still 
 - **Why courses were late**: the cause the scheduler gave the last time it saw the course at risk or late (equipment full, started late, took longer than set, waited too long at the pass, equipment busy), from its kept plans. "No cause recorded" means no kept plan gave one, for example a course fired before plans were kept.
 - **On time by hour fired**.
 - **By course**: starters, mains and desserts.
-- **Dishes: actual time against set time**: each dish's time from started to ready on the station screens, against its cook, rest and plate time. A dish much slower than set makes the scheduler plan too late; change its times in Setup › Kitchen › Menu. This is the groundwork for learned cook times, which Kishtin does not do yet.
+- **Dishes: actual time against set time**: each dish's time from started to ready on the station screens, against its cook, rest and plate time. A dish much slower than set makes the scheduler plan too late; change its times in Setup › Kitchen › Menu. Kishtin can also learn cook times and use them for new orders: see [learned cook times](kitchen.md#learned-cook-times).
 - **Late courses**: the latest, with when each was due, when it reached the pass and why.
 
 Times are medians (half were quicker), with the time nine in ten were quicker than. Head chef or manager (the "Run the pass" permission).

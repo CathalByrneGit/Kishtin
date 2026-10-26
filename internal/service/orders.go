@@ -72,8 +72,9 @@ func (s *Service) event(p *auth.Principal, o orders.Order, kind orders.EventKind
 }
 
 // buildItems turns new items into order items, checking each dish is on
-// the menu and available.
-func (s *Service) buildItems(setup menu.Setup, o *orders.Order, in []NewItem, now time.Time) ([]orders.Item, error) {
+// the menu and available. cook gives the cook time to use for dishes whose
+// learned time is in use (see cookTimes).
+func (s *Service) buildItems(setup menu.Setup, cook map[string]int, o *orders.Order, in []NewItem, now time.Time) ([]orders.Item, error) {
 	var out []orders.Item
 	pos := len(o.Items)
 	for _, ni := range in {
@@ -94,7 +95,11 @@ func (s *Service) buildItems(setup menu.Setup, o *orders.Order, in []NewItem, no
 		if c, ok := o.Course(course); ok && c.State == orders.CourseServed {
 			return nil, newErr(KindConflict, "%s has already been served: add %s to another course", course, d.Name)
 		}
-		timing, err := d.TimingFor(ni.Modifiers)
+		base, learned := cook[d.ID]
+		if !learned {
+			base = d.CookSeconds
+		}
+		timing, err := d.TimingWithCook(base, ni.Modifiers)
 		if err != nil {
 			return nil, newErr(KindInvalid, "%s", err)
 		}
@@ -119,7 +124,7 @@ func (s *Service) buildItems(setup menu.Setup, o *orders.Order, in []NewItem, no
 				ID: newID(), OrderID: o.ID, Position: pos, DishID: d.ID, DishName: d.Name, Course: course,
 				Modifiers: mods, Notes: strings.TrimSpace(ni.Notes), State: orders.StateHeld,
 				StationID: d.StationID, EquipmentID: d.EquipmentID, BatchCapacity: setup.Capacity(d),
-				HoldSeconds: d.HoldSeconds, Batchable: d.Batchable, Timing: timing, StateAt: now,
+				HoldSeconds: d.HoldSeconds, Batchable: d.Batchable, Timing: timing, CookLearned: learned, StateAt: now,
 			})
 		}
 	}
@@ -165,7 +170,11 @@ func (s *Service) CreateOrder(ctx context.Context, p *auth.Principal, in NewOrde
 		if err := o.Validate(); err != nil {
 			return newErr(KindInvalid, "%s", err)
 		}
-		items, err := s.buildItems(setup, &o, in.Items, now)
+		cook, err := s.cookTimes(ctx, tx)
+		if err != nil {
+			return err
+		}
+		items, err := s.buildItems(setup, cook, &o, in.Items, now)
 		if err != nil {
 			return err
 		}
@@ -213,7 +222,11 @@ func (s *Service) AddItems(ctx context.Context, p *auth.Principal, orderID strin
 			return err
 		}
 		now := s.clk.Now()
-		items, err := s.buildItems(setup, o, in, now)
+		cook, err := s.cookTimes(ctx, tx)
+		if err != nil {
+			return err
+		}
+		items, err := s.buildItems(setup, cook, o, in, now)
 		if err != nil {
 			return err
 		}
@@ -432,7 +445,11 @@ func (s *Service) ReplaceItem(ctx context.Context, p *auth.Principal, itemID str
 			return err
 		}
 		now := s.clk.Now()
-		items, err := s.buildItems(setup, o, []NewItem{ni}, now)
+		cook, err := s.cookTimes(ctx, tx)
+		if err != nil {
+			return err
+		}
+		items, err := s.buildItems(setup, cook, o, []NewItem{ni}, now)
 		if err != nil {
 			return err
 		}

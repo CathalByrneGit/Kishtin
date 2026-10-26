@@ -11,6 +11,8 @@
   import { session } from "../../lib/session.svelte";
 
   let menu = $state<Setup | null>(null);
+  let learned = $state<Schemas["LearnedTimes"] | null>(null);
+  let resetting = $state<Dish | null>(null);
   let categories = $state<string[]>([]);
   let error = $state("");
   let editing = $state<{ dish: Dish | null } | null>(null);
@@ -24,8 +26,9 @@
 
   async function load() {
     try {
-      const [m, l] = await Promise.all([api.menu(), api.lists()]);
+      const [m, l, lt] = await Promise.all([api.menu(), api.lists(), api.learned()]);
       menu = m;
+      learned = lt;
       categories = l.value.food_categories;
       error = "";
     } catch (err) {
@@ -40,6 +43,25 @@
     });
   });
 
+  const learnedOf = (id: string) => learned?.dishes.find((x) => x.dish_id === id);
+  const readyCount = $derived(learned?.dishes.filter((x) => x.ready).length ?? 0);
+
+  async function resetLearned() {
+    if (!resetting) return;
+    const d = resetting;
+    busy = true;
+    try {
+      await api.resetLearned(d.id);
+      resetting = null;
+      showFlash(`${d.name} learns its cook time again from its next cook`, { tone: "success" });
+      await load();
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 8000 });
+    } finally {
+      busy = false;
+    }
+  }
+
   const stationName = (id: string) => menu?.stations.find((s) => s.id === id)?.name ?? "";
   const equipmentOf = (id: string | null | undefined) => menu?.equipment.find((e) => e.id === id);
 
@@ -50,6 +72,7 @@
       station: (d) => stationName(d.station_id),
       equipment: (d) => equipmentOf(d.equipment_id)?.name ?? "",
       cook: (d) => d.cook_seconds,
+      learned: (d) => learnedOf(d.id)?.learned_seconds ?? -1,
       total: (d) => d.cook_seconds + d.rest_seconds + d.plate_seconds,
       hold: (d) => d.hold_seconds,
       status: (d) => (d.active ? (d.available ? 0 : 1) : 2),
@@ -170,6 +193,13 @@
             <h2>Dishes</h2>
             <Toggle checked={showInactive} label="Show dishes off the menu" onchange={(on) => (showInactive = on)} />
           </div>
+          <div class="learned-note">
+            {#if learned?.on}
+              <Notice tone="info" message={`New orders use the learned cook time for dishes with ${learned.min_cooks} cooks or more, and the set time for the rest. Orders already in the kitchen keep their times.`} />
+            {:else if readyCount > 0}
+              <Notice tone="info" message={`${readyCount} ${readyCount === 1 ? "dish has" : "dishes have"} a learned cook time from ${learned?.min_cooks} cooks or more. New orders still use the set times: turn on "Use learned cook times" in Setup › Kitchen › Scheduler to use them.`} />
+            {/if}
+          </div>
           <Table ariaLabel="Dishes">
             {#snippet header()}
               <TableHeaderCell label="Dish" sort={sorter} column="name" />
@@ -177,6 +207,7 @@
               <TableHeaderCell label="Station" sort={sorter} column="station" />
               <TableHeaderCell label="Cooks on" sort={sorter} column="equipment" />
               <TableHeaderCell label="Cook" numeric sort={sorter} column="cook" />
+              <TableHeaderCell label="Learned cook" numeric sort={sorter} column="learned" />
               <TableHeaderCell label="Cook + rest + plate" numeric sort={sorter} column="total" />
               <TableHeaderCell label="Can wait" numeric sort={sorter} column="hold" />
               <TableHeaderCell label="Status" sort={sorter} column="status" />
@@ -195,6 +226,17 @@
                 <td>{stationName(d.station_id)}</td>
                 <td>{eq ? `${eq.name}, ${d.batch_capacity || eq.slots} at once${d.batchable ? ", batched" : ""}` : "–"}</td>
                 <td class="num">{seconds(d.cook_seconds)}</td>
+                <td class="num">
+                  {#if learnedOf(d.id)?.cooks}
+                    {@const l = learnedOf(d.id)!}
+                    <span class:strong={l.in_use}>{seconds(l.learned_seconds)}</span>
+                    <div class="muted small">
+                      {#if l.in_use}In use · {l.cooks} cooks{:else if l.ready}{l.cooks} cooks · not in use{:else}{l.cooks} of {learned?.min_cooks} cooks{/if}
+                    </div>
+                  {:else}
+                    <span class="muted">No cooks yet</span>
+                  {/if}
+                </td>
                 <td class="num">{seconds(d.cook_seconds + d.rest_seconds + d.plate_seconds)}</td>
                 <td class="num">{seconds(d.hold_seconds)}</td>
                 <td>
@@ -212,6 +254,7 @@
                       <Button size="sm" label={d.available ? "86" : "Back on"} tone={d.available ? "danger" : "neutral"} onclick={() => set86(d)} />
                     {/if}
                     {#if canEdit}<Button size="sm" label="Edit" onclick={() => (editing = { dish: d })} />{/if}
+                    {#if canEdit && learnedOf(d.id)?.cooks}<Button size="sm" label="Reset learned" onclick={() => (resetting = d)} />{/if}
                   </div>
                 </td>
               </tr>
@@ -235,6 +278,21 @@
       void load();
     }}
   />
+{/if}
+
+{#if resetting}
+  <Modal title={`Reset ${resetting.name}'s learned cook time?`} onclose={() => (resetting = null)} maxWidth="480px">
+    <p>
+      Kishtin stops learning from {resetting.name}'s past cooks and starts again from the next one. Until it has {learned?.min_cooks} cooks, new orders
+      use the set cook time, {seconds(resetting.cook_seconds)}. Do this after a new recipe or new equipment. It is noted in the activity log.
+    </p>
+    {#snippet footer()}
+      <div class="row">
+        <Button label="Cancel" onclick={() => (resetting = null)} />
+        <Button tone="danger" surface="solid" label={busy ? "Resetting…" : "Reset learned time"} disabled={busy} onclick={resetLearned} />
+      </div>
+    {/snippet}
+  </Modal>
 {/if}
 
 {#if stationForm}
@@ -286,6 +344,12 @@
 {/if}
 
 <style>
+  .learned-note:not(:empty) {
+    padding: 0 var(--space-5) var(--space-4);
+  }
+  .strong {
+    font-weight: 600;
+  }
   .stations {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

@@ -56,6 +56,10 @@ type Settings struct {
 	// ReplanSeconds is how often screens ask for a fresh plan, on top of
 	// re-planning after every change.
 	ReplanSeconds int `json:"replan_seconds"`
+	// LearnedTimes gives new orders each dish's cook time learned from past
+	// cooks, once it has enough of them, in place of the time set on the
+	// menu. Orders already in the kitchen keep the times they had.
+	LearnedTimes bool `json:"learned_times"`
 }
 
 // DefaultSettings returns the built-in scheduler settings.

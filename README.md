@@ -31,6 +31,7 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 - **Checks logged later**: any check can be logged with the time it was done and who did it, and **Catch up** lists the daily checks with no record so they can be filled in together. See [docs/haccp.md](docs/haccp.md#checks-logged-later).
 - **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts. A forgotten manager password can be reset with `kishtind reset-password` on the Kishtin computer itself.
 - **Starts with the computer**: the installer offers it, and it can be turned on in Settings or with `kishtind startup on`. It uses Task Scheduler on Windows, a LaunchAgent on macOS and a systemd user service on Linux. See [docs/install.md](docs/install.md#start-with-the-computer).
+- **Learned cook times**: Kishtin learns each dish's real cook time from the station screens and, when a manager turns it on, new orders use it once a dish has 10 cooks. Setup › Kitchen › Menu shows set and learned times side by side, with a reset per dish. See [docs/kitchen.md](docs/kitchen.md#learned-cook-times).
 - **Reports**: pass times (share on time, fire to pass, waiting at the pass, why courses were late, dish times against set times) and HACCP checks (checks and cleaning done and missed, out-of-limit readings, each fridge's temperatures). See [docs/reports.md](docs/reports.md).
 - **Recording**: scheduler plans as they change, with why each course ran late; an activity log of sold-out dishes, logins, screens dropping off and how each HACCP record was entered; the device behind each action; every version of each till order; optional voice recordings. Leavers can be anonymised. See [docs/recording.md](docs/recording.md).
 - **Permissions**: a manager can give any role or named member of staff jobs such as signing off records, and choose whether a PIN is enough. See [docs/permissions.md](docs/permissions.md).
@@ -38,7 +39,6 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 
 ## What does not exist yet
 
-- Cook times learned from real cooks (stage 6).
 - Ticket progress written back to Square, and menu sync from the Square catalog.
 - Scheduler service profiles, replaying a service under new settings, and a fixed pace between courses.
 - Postgres and DuckDB backends. Only SQLite is built.

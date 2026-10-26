@@ -917,6 +917,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/menu/dishes/{id}/learned/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a dish's learned cook time again from its next cook
+         * @description For example after a new recipe or new equipment. Cooks before now are no longer learned from. Noted in the activity log.
+         */
+        post: operations["reset-learned-time"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/menu/equipment": {
         parameters: {
             query?: never;
@@ -944,6 +964,26 @@ export interface paths {
         get?: never;
         /** Change equipment (manager password) */
         put: operations["update-equipment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/learned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Each dish's cook time as set and as learned from past cooks
+         * @description A learned cook time is a smoothed average of each cook's time from started to ready, less the rest and plate time and any modifier, over the last 90 days and since any reset. New orders use it once a dish has enough cooks and the scheduler setting learned_times is on.
+         */
+        get: operations["list-learned-times"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2807,6 +2847,7 @@ export interface components {
             /** Format: int64 */
             batch_capacity?: number;
             batchable: boolean;
+            cook_learned?: boolean;
             course: string;
             dish_id: string;
             dish_name: string;
@@ -2898,6 +2939,30 @@ export interface components {
             reason?: string;
             /** Format: date-time */
             target: string;
+        };
+        LearnedDish: {
+            /** Format: int64 */
+            cooks: number;
+            dish_id: string;
+            dish_name: string;
+            in_use: boolean;
+            /** Format: date-time */
+            last_cook?: string;
+            /** Format: int64 */
+            learned_seconds: number;
+            ready: boolean;
+            /** Format: date-time */
+            reset_at?: string;
+            /** Format: int64 */
+            set_seconds: number;
+            /** Format: int64 */
+            skipped: number;
+        };
+        LearnedTimes: {
+            dishes: components["schemas"]["LearnedDish"][];
+            /** Format: int64 */
+            min_cooks: number;
+            on: boolean;
         };
         LimitPreview: {
             below_fsai?: string[];
@@ -3343,6 +3408,7 @@ export interface components {
             batching: boolean;
             /** Format: int64 */
             large_table_covers: number;
+            learned_times: boolean;
             /** Format: int64 */
             max_pass_wait_seconds: number;
             priority_allergy: boolean;
@@ -5608,6 +5674,37 @@ export interface operations {
             };
         };
     };
+    "reset-learned-time": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnedDish"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "create-equipment": {
         parameters: {
             query?: never;
@@ -5663,6 +5760,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Equipment"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-learned-times": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnedTimes"];
                 };
             };
             /** @description Error */

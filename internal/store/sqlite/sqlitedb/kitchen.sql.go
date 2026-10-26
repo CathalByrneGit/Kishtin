@@ -143,8 +143,8 @@ func (q *Queries) InsertEquipment(ctx context.Context, arg InsertEquipmentParams
 const insertItem = `-- name: InsertItem :exec
 INSERT INTO order_items (id, order_id, position, dish_id, dish_name, course, modifiers, notes, state, station_id,
     equipment_id, batch_capacity, hold_seconds, batchable, cook_ms, rest_ms, plate_ms, state_at, started_at,
-    ready_at, served_at, void_reason)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ready_at, served_at, void_reason, cook_learned)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertItemParams struct {
@@ -170,6 +170,7 @@ type InsertItemParams struct {
 	ReadyAt       sql.NullInt64
 	ServedAt      sql.NullInt64
 	VoidReason    string
+	CookLearned   int64
 }
 
 func (q *Queries) InsertItem(ctx context.Context, arg InsertItemParams) error {
@@ -196,6 +197,7 @@ func (q *Queries) InsertItem(ctx context.Context, arg InsertItemParams) error {
 		arg.ReadyAt,
 		arg.ServedAt,
 		arg.VoidReason,
+		arg.CookLearned,
 	)
 	return err
 }
@@ -464,7 +466,7 @@ func (q *Queries) ListItemEventsBetween(ctx context.Context, arg ListItemEventsB
 }
 
 const listItems = `-- name: ListItems :many
-SELECT id, order_id, position, dish_id, dish_name, course, modifiers, notes, state, station_id, equipment_id, batch_capacity, hold_seconds, batchable, cook_ms, rest_ms, plate_ms, state_at, started_at, ready_at, served_at, void_reason FROM order_items WHERE order_id = ? ORDER BY position
+SELECT id, order_id, position, dish_id, dish_name, course, modifiers, notes, state, station_id, equipment_id, batch_capacity, hold_seconds, batchable, cook_ms, rest_ms, plate_ms, state_at, started_at, ready_at, served_at, void_reason, cook_learned FROM order_items WHERE order_id = ? ORDER BY position
 `
 
 func (q *Queries) ListItems(ctx context.Context, orderID string) ([]OrderItem, error) {
@@ -499,7 +501,35 @@ func (q *Queries) ListItems(ctx context.Context, orderID string) ([]OrderItem, e
 			&i.ReadyAt,
 			&i.ServedAt,
 			&i.VoidReason,
+			&i.CookLearned,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLearnedResets = `-- name: ListLearnedResets :many
+SELECT dish_id, reset_at, reset_by FROM learned_resets
+`
+
+func (q *Queries) ListLearnedResets(ctx context.Context) ([]LearnedReset, error) {
+	rows, err := q.db.QueryContext(ctx, listLearnedResets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LearnedReset
+	for rows.Next() {
+		var i LearnedReset
+		if err := rows.Scan(&i.DishID, &i.ResetAt, &i.ResetBy); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -888,5 +918,21 @@ func (q *Queries) UpsertCourse(ctx context.Context, arg UpsertCourseParams) erro
 		arg.Urgent,
 		arg.ServedAt,
 	)
+	return err
+}
+
+const upsertLearnedReset = `-- name: UpsertLearnedReset :exec
+INSERT INTO learned_resets (dish_id, reset_at, reset_by) VALUES (?, ?, ?)
+ON CONFLICT (dish_id) DO UPDATE SET reset_at = excluded.reset_at, reset_by = excluded.reset_by
+`
+
+type UpsertLearnedResetParams struct {
+	DishID  string
+	ResetAt int64
+	ResetBy string
+}
+
+func (q *Queries) UpsertLearnedReset(ctx context.Context, arg UpsertLearnedResetParams) error {
+	_, err := q.db.ExecContext(ctx, upsertLearnedReset, arg.DishID, arg.ResetAt, arg.ResetBy)
 	return err
 }

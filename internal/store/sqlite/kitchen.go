@@ -162,6 +162,22 @@ func (s *Store) GetDish(ctx context.Context, id string) (menu.Dish, error) {
 	return dishFromRow(r)
 }
 
+func (s *Store) ResetLearned(ctx context.Context, dishID string, at time.Time, by string) error {
+	return mapErr(s.w.UpsertLearnedReset(ctx, sqlitedb.UpsertLearnedResetParams{DishID: dishID, ResetAt: us(at), ResetBy: by}))
+}
+
+func (s *Store) LearnedResets(ctx context.Context) (map[string]time.Time, error) {
+	rows, err := s.r.ListLearnedResets(ctx)
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	out := make(map[string]time.Time, len(rows))
+	for _, r := range rows {
+		out[r.DishID] = fromUS(r.ResetAt)
+	}
+	return out, nil
+}
+
 func (s *Store) ListDishes(ctx context.Context) ([]menu.Dish, error) {
 	rows, err := s.r.ListDishes(ctx)
 	if err != nil {
@@ -252,7 +268,7 @@ func (s *Store) fillOrder(ctx context.Context, r sqlitedb.Order) (orders.Order, 
 				Plate: time.Duration(it.PlateMs) * time.Millisecond,
 			},
 			StateAt: fromUS(it.StateAt), StartedAt: timePtr(it.StartedAt), ReadyAt: timePtr(it.ReadyAt),
-			ServedAt: timePtr(it.ServedAt), VoidReason: it.VoidReason,
+			ServedAt: timePtr(it.ServedAt), VoidReason: it.VoidReason, CookLearned: it.CookLearned != 0,
 		})
 	}
 	return o, nil
@@ -331,6 +347,7 @@ func (s *Store) AddItem(ctx context.Context, it orders.Item) error {
 		Batchable: boolInt(it.Batchable), CookMs: it.Timing.Cook.Milliseconds(), RestMs: it.Timing.Rest.Milliseconds(),
 		PlateMs: it.Timing.Plate.Milliseconds(), StateAt: us(it.StateAt), StartedAt: nullTime(it.StartedAt),
 		ReadyAt: nullTime(it.ReadyAt), ServedAt: nullTime(it.ServedAt), VoidReason: it.VoidReason,
+		CookLearned: boolInt(it.CookLearned),
 	}))
 }
 

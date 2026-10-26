@@ -169,7 +169,7 @@ func (s *Service) Scheduler() *Group[scheduler.Settings] {
 
 // schedulerNotes checks station buffers name real stations, and says what
 // the change does to service.
-func schedulerNotes(ctx context.Context, _ *Service, st store.Store, cur, next scheduler.Settings) ([]string, error) {
+func schedulerNotes(ctx context.Context, s *Service, st store.Store, cur, next scheduler.Settings) ([]string, error) {
 	stations, err := st.Menu().ListStations(ctx)
 	if err != nil {
 		return nil, err
@@ -198,6 +198,11 @@ func schedulerNotes(ctx context.Context, _ *Service, st store.Store, cur, next s
 	if cur.Strategy != next.Strategy {
 		out = append(out, "Every screen switches to the new strategy on its next plan, within a few seconds.")
 	}
+	learned, err := s.learnedNotes(ctx, cur.LearnedTimes, next.LearnedTimes)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, learned...)
 	out = append(out, "Plans already shown are not changed; the next plan uses the new settings.")
 	return out, nil
 }

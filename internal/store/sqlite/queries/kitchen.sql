@@ -67,8 +67,8 @@ SELECT * FROM order_courses WHERE order_id = ?;
 -- name: InsertItem :exec
 INSERT INTO order_items (id, order_id, position, dish_id, dish_name, course, modifiers, notes, state, station_id,
     equipment_id, batch_capacity, hold_seconds, batchable, cook_ms, rest_ms, plate_ms, state_at, started_at,
-    ready_at, served_at, void_reason)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    ready_at, served_at, void_reason, cook_learned)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: UpdateItem :execrows
 UPDATE order_items SET course = ?, modifiers = ?, notes = ?, state = ?, state_at = ?, started_at = ?, ready_at = ?,
@@ -87,3 +87,10 @@ SELECT * FROM order_events WHERE order_id = ? ORDER BY at, id;
 
 -- name: ListItemEventsBetween :many
 SELECT * FROM order_events WHERE kind = 'item_state' AND at >= ? AND at < ? ORDER BY at, id;
+
+-- name: UpsertLearnedReset :exec
+INSERT INTO learned_resets (dish_id, reset_at, reset_by) VALUES (?, ?, ?)
+ON CONFLICT (dish_id) DO UPDATE SET reset_at = excluded.reset_at, reset_by = excluded.reset_by;
+
+-- name: ListLearnedResets :many
+SELECT * FROM learned_resets;

@@ -116,6 +116,6 @@ The backup folder, listen address and TLS stay in `kishtin.toml` only. They deci
 
 ## Scheduler settings
 
-The cook scheduler's strategy, batching window, priorities, station buffers, how long a ready course can wait at the pass, and how often screens re-plan. Each field is explained in [kitchen.md](kitchen.md#settings).
+The cook scheduler's strategy, batching window, priorities, station buffers, how long a ready course can wait at the pass, how often screens re-plan, and whether new orders use learned cook times. Each field is explained in [kitchen.md](kitchen.md#settings).
 
 Changing them needs a manager password and a reason, like every settings change, but never a plan reference: they do not affect food safety. The preview names each station whose buffer changes. Every plan says which version of these settings produced it, and the expo's own changes on the pass always come first.
