@@ -20,6 +20,7 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/client"
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
+	"github.com/cathalbyrnegit/kishtin/internal/legal"
 )
 
 // version is the release, set at build time with
@@ -73,7 +74,7 @@ func newRoot(out, errOut io.Writer, in io.Reader) *cobra.Command {
 	root.SetErr(errOut)
 	root.PersistentFlags().StringVar(&c.url, "url", envOr("KISHTIN_URL", "http://127.0.0.1:8080"), "server URL ($KISHTIN_URL)")
 	root.PersistentFlags().BoolVar(&c.asJSON, "json", false, "print JSON instead of text")
-	root.AddCommand(c.whoamiCmd(), c.permissionsCmd(), c.plansCmd(), c.activityCmd(), c.reportCmd(), c.haccpCmd(), c.limitsCmd(), c.settingsCmd(), c.staffCmd(), c.keysCmd(), c.backupCmd(),
+	root.AddCommand(c.whoamiCmd(), c.licensesCmd(), c.permissionsCmd(), c.plansCmd(), c.activityCmd(), c.reportCmd(), c.haccpCmd(), c.limitsCmd(), c.settingsCmd(), c.staffCmd(), c.keysCmd(), c.backupCmd(),
 		c.menuCmd(), c.orderCmd(), c.passCmd(), c.stationCmd(), c.itemsCmd(), c.sayCmd(), c.voiceCmd(), c.squareCmd(), c.connectorsCmd())
 	return root
 }
@@ -173,6 +174,21 @@ func deref[T any](p *T) T {
 		return zero
 	}
 	return *p
+}
+
+// licensesCmd prints the licence notices. It works without a server.
+func (c *cli) licensesCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "licenses",
+		Short: "Show Kishtin's licence and the licences of the software it includes",
+		Args:  cobra.NoArgs,
+		// Needs no server or key, so it skips connecting.
+		PersistentPreRunE: func(*cobra.Command, []string) error { return nil },
+		RunE: func(*cobra.Command, []string) error {
+			_, err := fmt.Fprint(c.out, legal.Notices())
+			return err
+		},
+	}
 }
 
 func (c *cli) whoamiCmd() *cobra.Command {

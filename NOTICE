@@ -1,0 +1,11 @@
+Kishtin
+Copyright 2026 The Kishtin Authors
+
+Kishtin, from cistin, Irish for kitchen.
+
+This product is licensed under the Apache License, Version 2.0 (see
+LICENSE). It includes software from other projects, each under its own
+licence: the Go modules linked into kishtind and kishtin, and the npm
+packages the screens are built from, including kit-ui (Copyright 2026 Kenn
+Software LLC, Apache License 2.0). Their licences are printed by
+`kishtind licenses` and kept in internal/legal/licenses.txt.

@@ -119,3 +119,7 @@ make generate   # sqlc queries, api/openapi.json, the CLI's API client and the s
 ```
 
 Tests, fixtures and docs use synthetic data only.
+
+## Licence
+
+Kishtin is licensed under the [Apache License, Version 2.0](LICENSE). See [NOTICE](NOTICE). It includes open-source software under its own licences (MIT, BSD and Apache 2.0); `kishtind licenses` prints them all, and they are kept in [internal/legal/licenses.txt](internal/legal/licenses.txt).

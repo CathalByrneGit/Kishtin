@@ -27,6 +27,7 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/events"
 	"github.com/cathalbyrnegit/kishtin/internal/files"
 	"github.com/cathalbyrnegit/kishtin/internal/integrations"
+	"github.com/cathalbyrnegit/kishtin/internal/legal"
 	"github.com/cathalbyrnegit/kishtin/internal/service"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 	"github.com/cathalbyrnegit/kishtin/internal/store/sqlite"
@@ -58,7 +59,7 @@ func rootCmd() *cobra.Command {
 		},
 	}
 	root.PersistentFlags().StringVar(&cfgPath, "config", "", "path to kishtin.toml (default $KISHTIN_CONFIG, then <data dir>/kishtin.toml)")
-	root.AddCommand(setupCmd(&cfgPath), migrateCmd(&cfgPath), openapiCmd())
+	root.AddCommand(setupCmd(&cfgPath), migrateCmd(&cfgPath), openapiCmd(), licensesCmd())
 	return root
 }
 
@@ -297,6 +298,18 @@ func cleanSessions(ctx context.Context, svc *service.Service, log *slog.Logger) 
 				log.Warn("clean sessions", "err", err)
 			}
 		}
+	}
+}
+
+func licensesCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "licenses",
+		Short: "Show Kishtin's licence and the licences of the software it includes",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := fmt.Fprint(cmd.OutOrStdout(), legal.Notices())
+			return err
+		},
 	}
 }
 

@@ -90,6 +90,10 @@ Each release on [GitHub](https://github.com/cathalbyrnegit/kishtin/releases) has
 
 Check the archive against its line in `SHA256SUMS` (`sha256sum`, `shasum -a 256`, or `Get-FileHash` on Windows), unpack it, and put `kishtind` and `kishtin` somewhere on your PATH. On a Mac, a file downloaded in a browser is blocked the first time ("cannot be opened"); the install line above avoids that. To allow a hand-downloaded copy, run `xattr -d com.apple.quarantine kishtind kishtin` in its folder.
 
+## Licence
+
+Kishtin is free to use, copy and change under the Apache License, Version 2.0. `kishtind licenses` prints its licence and the licences of the open-source software built into it.
+
 ## Uninstall
 
 Delete `kishtind` and `kishtin` from where they were installed. Kishtin's data stays in `~/.kishtin` until you delete that folder too. Keep a backup: HACCP records are evidence for inspections.

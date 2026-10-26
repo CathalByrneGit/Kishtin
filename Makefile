@@ -35,13 +35,14 @@ test-cgo: frontend
 lint: frontend
 	golangci-lint run
 
-# Regenerate sqlc queries, the OpenAPI spec, the CLI's API client and the
-# frontend's API types.
+# Regenerate sqlc queries, the OpenAPI spec, the CLI's API client, the
+# frontend's API types and the licence notices built into the programs.
 generate:
 	$(SQLC) generate
 	$(GO) run ./cmd/kishtind openapi > api/openapi.json
 	$(OAPI_CODEGEN) --config internal/client/cfg.yaml api/openapi.json
 	cd frontend && $(BUN) run generate:api
+	$(GO) run ./scripts/licenses > internal/legal/licenses.txt
 
 # Migrations run when kishtind starts; this applies them without serving.
 migrate:

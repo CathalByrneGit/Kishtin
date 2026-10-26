@@ -187,3 +187,15 @@ func TestCLI(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not valid")
 }
+
+func TestLicensesNeedNoServer(t *testing.T) {
+	t.Setenv("KISHTIN_API_KEY", "")
+	var out, errOut bytes.Buffer
+	root := newRoot(&out, &errOut, strings.NewReader(""))
+	root.SetArgs([]string{"licenses"})
+	require.NoError(t, root.Execute())
+	assert.True(t, strings.HasPrefix(out.String(), "Kishtin\nCopyright"), "Kishtin's own notice comes first")
+	assert.Contains(t, out.String(), "Apache License")
+	assert.Contains(t, out.String(), "--- github.com/spf13/cobra ")
+	assert.Contains(t, out.String(), "--- svelte ")
+}
