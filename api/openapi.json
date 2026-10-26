@@ -1879,6 +1879,30 @@
         ],
         "type": "object"
       },
+      "FirstRunResult": {
+        "additionalProperties": false,
+        "properties": {
+          "api_key": {
+            "type": "string"
+          },
+          "device_key": {
+            "type": "string"
+          },
+          "key": {
+            "$ref": "#/components/schemas/APIKey"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "user",
+          "device_key",
+          "api_key",
+          "key"
+        ],
+        "type": "object"
+      },
       "Gap": {
         "additionalProperties": false,
         "properties": {
@@ -4759,6 +4783,56 @@
           "stations",
           "equipment",
           "dishes"
+        ],
+        "type": "object"
+      },
+      "SetupInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "pin": {
+            "type": "string"
+          },
+          "restaurant": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "restaurant",
+          "name",
+          "password",
+          "device"
+        ],
+        "type": "object"
+      },
+      "SetupStatusOutBody": {
+        "additionalProperties": false,
+        "properties": {
+          "code_needed": {
+            "type": "boolean"
+          },
+          "needed": {
+            "type": "boolean"
+          },
+          "possible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "needed",
+          "code_needed",
+          "possible"
         ],
         "type": "object"
       },
@@ -10630,6 +10704,80 @@
         "summary": "Preview a change to the system settings",
         "tags": [
           "Settings"
+        ]
+      }
+    },
+    "/setup": {
+      "get": {
+        "description": "Works without an API key. Needed is true while there are no staff.",
+        "operationId": "setup-status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatusOutBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Whether this install still needs setting up",
+        "tags": [
+          "Setup"
+        ]
+      },
+      "post": {
+        "description": "Creates the first manager, a device key for the screen doing the setup, and the restaurant's name. Works without an API key, only while there are no staff, and from another device only with the setup code shown on the server machine. The device key and API key are shown once.",
+        "operationId": "setup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirstRunResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Set up a new install from the screens",
+        "tags": [
+          "Setup"
         ]
       }
     },

@@ -52,17 +52,17 @@ You need Go 1.27 or later, Bun 1.4.4 and git (the kit-ui component library is a 
 git submodule update --init       # fetches frontend/vendor/kit-ui
 make build                         # builds the screens, then bin/kishtind and bin/kishtin
 
-# First time only, with the server stopped: create the first manager.
-bin/kishtind setup --name "Your Name"
-# It asks for a password and prints an API key. Keep the key safe.
-
 bin/kishtind                       # serves on 127.0.0.1:8080
 ```
 
-In another terminal:
+Open `http://127.0.0.1:8080/` in a browser on the same computer. A new install shows **Set up Kishtin**: name the restaurant and make the manager's account. The last step shows a key for the `kishtin` command line once. See [Setting Kishtin up](docs/screens.md#setting-kishtin-up).
+
+To do it from the command line instead, run `bin/kishtind setup --name "Your Name"` with the server stopped. It asks for a password and prints an API key.
+
+To use the command line, in another terminal:
 
 ```sh
-export KISHTIN_API_KEY=kishtin_key_...   # the key from setup
+export KISHTIN_API_KEY=kishtin_key_...   # the key shown at setup
 bin/kishtin whoami
 bin/kishtin haccp log fridge --unit "Walk-in" --temp 3.4
 bin/kishtin haccp list

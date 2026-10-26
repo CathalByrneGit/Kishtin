@@ -120,6 +120,8 @@ export interface ExportResult {
 }
 
 export const api = {
+  setupStatus: () => json<Schemas["SetupStatusOutBody"]>("GET", "/setup"),
+  setup: (body: Schemas["SetupInBody"]) => json<Schemas["FirstRunResult"]>("POST", "/setup", { body }),
   staff: () => json<Schemas["StaffOutBody"]>("GET", "/auth/staff"),
   login: (body: { user_id: string; pin?: string; password?: string }) =>
     json<Schemas["LoginResult"]>("POST", "/auth/login", { body }),

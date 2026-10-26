@@ -20,6 +20,7 @@ import (
 )
 
 func (s *Server) routes() {
+	s.setupRoutes()
 	s.authRoutes()
 	s.haccpRoutes()
 	s.packRoute()

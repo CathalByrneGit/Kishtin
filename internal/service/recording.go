@@ -24,12 +24,13 @@ const (
 	ActivityBackOn             = "dish.back_on"
 	ActivityHACCPEntered       = "haccp.entered"
 	ActivityStaffAnonymised    = "staff.anonymised"
+	ActivitySetup              = "setup"
 )
 
 // ActivityKinds lists every activity kind.
 var ActivityKinds = []string{
 	ActivityLogin, ActivityLogout, ActivityScreenConnected, ActivityScreenDisconnected,
-	ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityStaffAnonymised,
+	ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityStaffAnonymised, ActivitySetup,
 }
 
 // How a HACCP record was entered, kept in the activity log.

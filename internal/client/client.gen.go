@@ -442,6 +442,14 @@ type ClientInterface interface {
 	PreviewSystem(ctx context.Context, options *PreviewSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSystemResponse, error)
 	PreviewSystemWithResponse(ctx context.Context, options *PreviewSystemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSystemResp, error)
 
+	// SetupStatus Whether this install still needs setting up
+	SetupStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SetupStatusResponse, error)
+	SetupStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SetupStatusResp, error)
+
+	// Setup Set up a new install from the screens
+	Setup(ctx context.Context, options *SetupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetupResponse, error)
+	SetupWithResponse(ctx context.Context, options *SetupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetupResp, error)
+
 	// SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
 	SquareStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResponse, error)
 	SquareStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResp, error)
@@ -6935,6 +6943,132 @@ func (c *Client) PreviewSystem(ctx context.Context, options *PreviewSystemReques
 	return responseParser(ctx, resp)
 }
 
+// SetupStatus Whether this install still needs setting up
+func (c *Client) SetupStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SetupStatusResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/setup",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SetupStatusResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SetupStatusErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SetupStatusErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SetupStatusResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SetupStatusResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/setup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// Setup Set up a new install from the screens
+func (c *Client) Setup(ctx context.Context, options *SetupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetupResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/setup",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SetupResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SetupErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SetupErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SetupResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SetupResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/setup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
 func (c *Client) SquareStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResponse, error) {
 	var err error
@@ -11186,6 +11320,50 @@ func (o *PreviewSystemRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *PreviewSystemRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SetupRequestOptions is the options needed to make a request to Setup.
+type SetupRequestOptions struct {
+	Body *SetupBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SetupRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SetupRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SetupRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SetupRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SetupRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -17852,6 +18030,128 @@ func (c *Client) PreviewSystemWithResponse(ctx context.Context, options *Preview
 	}
 }
 
+// SetupStatus Whether this install still needs setting up
+func (c *Client) SetupStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SetupStatusResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/setup",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/setup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SetupStatusResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SetupStatusResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetupStatusResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SetupStatusErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetupStatusErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// Setup Set up a new install from the screens
+func (c *Client) SetupWithResponse(ctx context.Context, options *SetupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetupResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/setup",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/setup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SetupResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SetupResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetupResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SetupErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetupErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
 func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResp, error) {
 	var err error
@@ -19478,6 +19778,8 @@ type SaveSystemBody = SettingsChangeSystem
 
 type PreviewSystemBody = SettingsChangeSystem
 
+type SetupBody = SetupInBody
+
 type SaveSquareMappingsBody = MappingsIn
 
 type CreateUserBody = NewUser
@@ -20074,6 +20376,14 @@ type SystemHistoryErrorResponse = ErrorModel
 type PreviewSystemResponse = SettingsPreviewSystem
 
 type PreviewSystemErrorResponse = ErrorModel
+
+type SetupStatusResponse = SetupStatusOutBody
+
+type SetupStatusErrorResponse = ErrorModel
+
+type SetupResponse = FirstRunResult
+
+type SetupErrorResponse = ErrorModel
 
 type SquareStatusResponse = SquareStatus
 
@@ -20985,6 +21295,22 @@ type PreviewSystemResp struct {
 	StatusCode                        int
 	JSON200                           *PreviewSystemResponse
 	ApplicationProblemPlusJSONDefault *PreviewSystemErrorResponse
+}
+
+type SetupStatusResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SetupStatusResponse
+	ApplicationProblemPlusJSONDefault *SetupStatusErrorResponse
+}
+
+type SetupResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SetupResponse
+	ApplicationProblemPlusJSONDefault *SetupErrorResponse
 }
 
 type SquareStatusResp struct {
@@ -22512,6 +22838,37 @@ type FileProblem struct {
 
 func (f FileProblem) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(f))
+}
+
+type FirstRunResult struct {
+	APIKey    string `json:"api_key" validate:"required"`
+	DeviceKey string `json:"device_key" validate:"required"`
+	Key       APIKey `json:"key"`
+	User      User   `json:"user"`
+}
+
+func (f FirstRunResult) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(f.APIKey, "required"); err != nil {
+		errors = errors.Append("APIKey", err)
+	}
+	if err := typesValidator.Var(f.DeviceKey, "required"); err != nil {
+		errors = errors.Append("DeviceKey", err)
+	}
+	if v, ok := any(f.Key).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Key", err)
+		}
+	}
+	if v, ok := any(f.User).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("User", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Gap struct {
@@ -25055,6 +25412,25 @@ func (s Setup) Validate() error {
 		return nil
 	}
 	return errors
+}
+
+type SetupInBody struct {
+	Code       *string `json:"code,omitempty"`
+	Device     string  `json:"device" validate:"required"`
+	Name       string  `json:"name" validate:"required"`
+	Password   string  `json:"password" validate:"required"`
+	Pin        *string `json:"pin,omitempty"`
+	Restaurant string  `json:"restaurant" validate:"required"`
+}
+
+func (s SetupInBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type SetupStatusOutBody struct {
+	CodeNeeded bool `json:"code_needed"`
+	Needed     bool `json:"needed"`
+	Possible   bool `json:"possible"`
 }
 
 type SignOff struct {

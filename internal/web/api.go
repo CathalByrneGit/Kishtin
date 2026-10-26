@@ -32,6 +32,9 @@ type Server struct {
 	mux      *http.ServeMux
 	specJSON []byte
 	ui       fs.FS
+	// setupCode lets another device set up a new install; see SetSetupCode.
+	setupCode string
+	setupDone func()
 }
 
 type callerKey struct{}
@@ -104,6 +107,10 @@ func bearer(h string) string {
 }
 
 func (s *Server) authenticate(ctx huma.Context, next func(huma.Context)) {
+	if op := ctx.Operation(); op != nil && op.Metadata[publicKey] == true {
+		next(noteOrigin(ctx))
+		return
+	}
 	c, err := s.svc.Authenticate(ctx.Context(), bearer(ctx.Header("Authorization")), ctx.Header(SessionHeader))
 	if err != nil {
 		s.writeErr(ctx, err)

@@ -1693,6 +1693,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether this install still needs setting up
+         * @description Works without an API key. Needed is true while there are no staff.
+         */
+        get: operations["setup-status"];
+        put?: never;
+        /**
+         * Set up a new install from the screens
+         * @description Creates the first manager, a device key for the screen doing the setup, and the restaurant's name. Works without an API key, only while there are no staff, and from another device only with the setup code shown on the server machine. The device key and API key are shown once.
+         */
+        post: operations["setup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/square": {
         parameters: {
             query?: never;
@@ -2510,6 +2534,12 @@ export interface components {
             problem: string;
             sha256: string;
         };
+        FirstRunResult: {
+            api_key: string;
+            device_key: string;
+            key: components["schemas"]["APIKey"];
+            user: components["schemas"]["User"];
+        };
         Gap: {
             check: string;
             date: string;
@@ -3263,6 +3293,19 @@ export interface components {
             dishes: components["schemas"]["Dish"][];
             equipment: components["schemas"]["Equipment"][];
             stations: components["schemas"]["Station"][];
+        };
+        SetupInBody: {
+            code?: string;
+            device: string;
+            name: string;
+            password: string;
+            pin?: string;
+            restaurant: string;
+        };
+        SetupStatusOutBody: {
+            code_needed: boolean;
+            needed: boolean;
+            possible: boolean;
         };
         SignOff: {
             by: string;
@@ -6919,6 +6962,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsPreviewSystem"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "setup-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupStatusOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    setup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetupInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FirstRunResult"];
                 };
             };
             /** @description Error */

@@ -4,6 +4,22 @@
 
 Each device can instead show a full-screen kitchen layout: a **pass screen**, a **station screen** or a **phone** layout. See [Kitchen screens](#kitchen-screens). On the desktop layout below 900 px wide, the sidebar becomes a menu button and pages stack into one column.
 
+## Setting Kishtin up
+
+A new install has no staff. Until it does, `kishtind` starts in setup mode and the screens show **Set up Kishtin**: the restaurant's name, the manager's name and password (at least 10 characters), and an optional PIN for kitchen tablets.
+
+![Set up Kishtin](screenshots/first-run.png)
+
+- Anyone at the computer Kishtin runs on can set it up there, in a browser at the address `kishtind` prints (`http://127.0.0.1:8080/` by default).
+- From any other device, setup also asks for the **setup code**. `kishtind` prints it when it starts and saves it in `setup-code.txt` in its data folder. The file is deleted once setup is done. A request passed on by a proxy counts as from another device, even when the proxy runs on the same computer.
+- Setup makes the manager, names the restaurant (a settings change by that manager, with the reason "Restaurant name set at first setup"), and pairs the screen it was done on with a new device key called "Office computer".
+- **Kishtin is ready** then lists what to do next, and shows a key for scripts and the `kishtin` command line once. Most kitchens never need it; another can be made later in Device keys. **Open Kishtin** logs the manager in on that screen.
+- Once anyone is set up, setup is closed for good: staff are added from a manager account.
+
+![Kishtin is ready](screenshots/first-run-ready.png)
+
+`kishtind setup --name "Your Name"`, with the server stopped, still does the same from the command line, without naming the restaurant or pairing a screen.
+
 ## Pairing a device and logging in
 
 1. A manager makes a device key in **Setup → Staff and access → Device keys** (or with `kishtin keys create --kind device --name "Office PC"`). The pairing link is shown once.

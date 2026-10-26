@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -166,17 +168,18 @@ func serve(ctx context.Context, cfgPath string) error {
 		}
 	}()
 
-	staff, err := a.svc.StaffList(ctx)
-	if err != nil {
-		return err
-	}
-	if len(staff) == 0 {
-		return errors.New("no staff yet: stop here and run `kishtind setup` to create the first manager")
-	}
-
 	h, err := web.New(a.svc, log, frontend.Files())
 	if err != nil {
 		return err
+	}
+	needed, err := a.svc.SetupNeeded(ctx)
+	if err != nil {
+		return err
+	}
+	if needed {
+		if err := startSetup(cfg, h, log); err != nil {
+			return err
+		}
 	}
 	srv := &http.Server{
 		Addr:              cfg.Server.Listen,
@@ -217,6 +220,64 @@ func serve(ctx context.Context, cfgPath string) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return srv.Shutdown(shutdownCtx)
+}
+
+// startSetup lets the screens set up a new install. On the server machine
+// itself anyone can; another device needs a one-time code, shown here and
+// kept in the data folder until setup is done.
+func startSetup(cfg config.Config, h *web.Server, log *slog.Logger) error {
+	code, err := setupCode()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(cfg.DataDir, "setup-code.txt")
+	if err := os.WriteFile(path, []byte(code+"\n"), 0o600); err != nil {
+		return fmt.Errorf("save setup code: %w", err)
+	}
+	h.SetSetupCode(code, func() {
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Warn("remove setup code", "err", err)
+		}
+		log.Info("Kishtin is set up")
+	})
+	scheme := "http"
+	if cfg.Server.TLSCert != "" {
+		scheme = "https"
+	}
+	log.Info("Kishtin needs setting up: open it in a browser on this computer", "url", scheme+"://"+browserAddr(cfg.Server.Listen)+"/")
+	log.Info("From another device, give this setup code", "code", code, "also_in", path)
+	return nil
+}
+
+// setupCode makes a one-time code of 12 letters and digits, without ones
+// that look alike, in groups of four: about 60 bits.
+func setupCode() (string, error) {
+	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	b := make([]byte, 12)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("make setup code: %w", err)
+	}
+	var sb strings.Builder
+	for i, c := range b {
+		if i > 0 && i%4 == 0 {
+			sb.WriteByte('-')
+		}
+		sb.WriteByte(alphabet[int(c)%len(alphabet)])
+	}
+	return sb.String(), nil
+}
+
+// browserAddr is the listen address as a browser on this machine reaches
+// it.
+func browserAddr(listen string) string {
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		return listen
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, port)
 }
 
 func cleanSessions(ctx context.Context, svc *service.Service, log *slog.Logger) {

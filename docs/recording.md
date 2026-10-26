@@ -39,6 +39,7 @@ Things staff and screens do that are not HACCP records or order events:
 | `screen.connected`, `screen.disconnected` | which device and who was logged in; on disconnect, how many seconds it stayed connected. A screen that drops off the Wi-Fi shows as disconnected once the server notices, within about 20 seconds. |
 | `haccp.entered` | for each HACCP record: how it was entered (`form`, `voice`, `catch_up`, `paper`, `api`), when the check was done and when it was saved |
 | `staff.anonymised` | which leaver was anonymised, by whom, and how many entries changed |
+| `setup` | when Kishtin was set up, by which manager, and whether from the screens or `kishtind setup` |
 
 `kishtin activity --kind dish.sold_out`, or `GET /api/activity`. Head chef or manager (the "Exports, record books and the activity log" permission).
 

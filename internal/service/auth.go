@@ -242,12 +242,20 @@ type SetupResult struct {
 // Setup creates the first manager and a user API key for them. It only
 // works while there are no users.
 func (s *Service) Setup(ctx context.Context, nu NewUser) (SetupResult, error) {
+	res, _, err := s.setup(ctx, nu, "")
+	return res, err
+}
+
+// setup creates the first manager, a user API key for them and, when
+// device is named, a device key for the screen setting Kishtin up.
+func (s *Service) setup(ctx context.Context, nu NewUser, device string) (SetupResult, NewKeyResult, error) {
 	nu.Role = auth.RoleManager
 	u, err := s.buildUser(nu)
 	if err != nil {
-		return SetupResult{}, err
+		return SetupResult{}, NewKeyResult{}, err
 	}
 	var res SetupResult
+	var dev NewKeyResult
 	err = s.st.WithTx(ctx, func(tx store.Store) error {
 		existing, err := tx.Users().ListUsers(ctx)
 		if err != nil {
@@ -264,9 +272,20 @@ func (s *Service) Setup(ctx context.Context, nu NewUser) (SetupResult, error) {
 			return err
 		}
 		res = SetupResult{User: u, Key: key, Secret: secret}
-		return nil
+		if device != "" {
+			key, secret, err := s.newKey(ctx, tx, auth.KeyDevice, device, "", u.ID)
+			if err != nil {
+				return err
+			}
+			dev = NewKeyResult{Key: key, Secret: secret}
+		}
+		from := "command"
+		if device != "" {
+			from = "screen"
+		}
+		return s.note(ctx, tx, &auth.Principal{User: u, Device: dev.Key.ID, DeviceName: dev.Key.Name}, ActivitySetup, u.ID, map[string]any{"from": from})
 	})
-	return res, err
+	return res, dev, err
 }
 
 // CreateUser adds a staff member.

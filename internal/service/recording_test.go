@@ -106,10 +106,12 @@ func TestActivity(t *testing.T) {
 			sources = append(sources, a.Detail["source"])
 		}
 	}
-	assert.Equal(t, []string{ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityHACCPEntered, ActivityHACCPEntered}, kinds)
+	assert.Equal(t, []string{ActivitySetup, ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityHACCPEntered, ActivityHACCPEntered}, kinds)
 	assert.Equal(t, []string{SourceForm, SourceAPI, SourceCatchUp}, sources)
-	assert.Equal(t, "Pass tablet", all[0].DeviceName)
-	assert.Equal(t, "Aoife Chef", all[0].UserName)
+	assert.Equal(t, k.manager.User.Name, all[0].UserName, "setup names the first manager")
+	assert.Equal(t, "command", all[0].Detail["from"])
+	assert.Equal(t, "Pass tablet", all[1].DeviceName)
+	assert.Equal(t, "Aoife Chef", all[1].UserName)
 
 	soldOut, err := k.svc.Activity(ctx, k.chef, ActivityQuery{Kinds: []string{ActivitySoldOut}})
 	require.NoError(t, err)
