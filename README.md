@@ -46,6 +46,8 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 
 ## Install and run
 
+Setting Kishtin up in a restaurant, and not technical? Start with **[Getting started](docs/getting-started.md)**: a step-by-step guide that also explains how Kishtin differs from cloud systems.
+
 On Windows, in PowerShell:
 
 ```powershell

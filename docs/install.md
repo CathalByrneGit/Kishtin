@@ -1,5 +1,7 @@
 # Installing Kishtin
 
+New to Kishtin? [Getting started](getting-started.md) walks through the whole setup in plain steps, from installing to connecting tablets. This page has the details.
+
 Kishtin runs on one computer in the restaurant, which every screen in the kitchen connects to. It is two programs: `kishtind` (the server) and `kishtin` (the command line). This page installs both from a release.
 
 ## What you need
