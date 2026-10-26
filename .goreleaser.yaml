@@ -1,0 +1,64 @@
+# Builds the release downloads: kishtind and kishtin for Linux, macOS and
+# Windows on amd64 and arm64, with the screens embedded. Pure Go SQLite, so
+# no C toolchain is needed. Run by .github/workflows/release.yml on a v* tag;
+# try it locally with `goreleaser release --snapshot --clean`.
+version: 2
+
+project_name: kishtin
+
+before:
+  hooks:
+    - make frontend
+
+builds:
+  - id: kishtind
+    main: ./cmd/kishtind
+    binary: kishtind
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{ .Tag }}"]
+    mod_timestamp: "{{ .CommitTimestamp }}"
+  - id: kishtin
+    main: ./cmd/kishtin
+    binary: kishtin
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{ .Tag }}"]
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  # Names carry no version, so .../releases/latest/download/<name> always
+  # works. Each archive holds the two programs and nothing else; the
+  # installers refuse an archive with anything more.
+  - name_template: "kishtin_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - none*
+
+checksum:
+  name_template: SHA256SUMS
+  algorithm: sha256
+
+release:
+  github:
+    owner: cathalbyrnegit
+    name: kishtin
+  prerelease: auto
+  # The installers are attached too, so they have a stable address:
+  # .../releases/latest/download/install.sh
+  extra_files:
+    - glob: ./scripts/install.sh
+    - glob: ./scripts/install.ps1
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^Merge "

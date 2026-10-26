@@ -2,12 +2,18 @@ GO ?= go
 BUN ?= bun
 OAPI_CODEGEN ?= $(GO) run github.com/doordash-oss/oapi-codegen-dd/v3/cmd/oapi-codegen@v3.76.3
 SQLC ?= sqlc
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-.PHONY: build test test-cgo lint generate migrate dev frontend frontend-deps frontend-test test-pg test-duckdb
+.PHONY: build release-snapshot test test-cgo lint generate migrate dev frontend frontend-deps frontend-test test-pg test-duckdb
 
 # The Go build embeds frontend/dist, so build the screens first.
 build: frontend
-	$(GO) build -o bin/ ./cmd/...
+	$(GO) build -ldflags "-X main.version=$(VERSION)" -o bin/ ./cmd/...
+
+# Builds every release download into dist/ without publishing, to try a
+# release locally. Needs goreleaser v2.
+release-snapshot:
+	goreleaser release --snapshot --clean
 
 frontend-deps:
 	git submodule update --init frontend/vendor/kit-ui

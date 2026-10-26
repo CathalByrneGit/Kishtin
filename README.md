@@ -46,6 +46,22 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 
 ## Install and run
 
+On Windows, in PowerShell:
+
+```powershell
+irm https://github.com/cathalbyrnegit/kishtin/releases/latest/download/install.ps1 | iex
+```
+
+On macOS or Linux, in Terminal:
+
+```sh
+curl -fsSL https://github.com/cathalbyrnegit/kishtin/releases/latest/download/install.sh | sh
+```
+
+Then run `kishtind` and open `http://127.0.0.1:8080/` in a browser on the same computer to set it up. The installer checks the download against the release's `SHA256SUMS` first. See [docs/install.md](docs/install.md) for updates, other options, and what it does not do yet.
+
+### Build from source
+
 You need Go 1.27 or later, Bun 1.4.4 and git (the kit-ui component library is a git submodule).
 
 ```sh

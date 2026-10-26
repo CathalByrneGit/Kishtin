@@ -33,6 +33,10 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/web"
 )
 
+// version is the release, set at build time with
+// -ldflags "-X main.version=v1.2.3"; "dev" for a local build.
+var version = "dev"
+
 func main() {
 	if err := rootCmd().Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "kishtind:", err)
@@ -44,6 +48,7 @@ func rootCmd() *cobra.Command {
 	var cfgPath string
 	root := &cobra.Command{
 		Use:           "kishtind",
+		Version:       version,
 		Short:         "Kishtin server",
 		Long:          "Kishtin, from cistin, Irish for kitchen.\n\nkishtind serves the Kishtin API and runs scheduled backups.",
 		SilenceUsage:  true,
@@ -200,7 +205,7 @@ func serve(ctx context.Context, cfgPath string) error {
 	errc := make(chan error, 1)
 	go func() {
 		tls := cfg.Server.TLSCert != ""
-		log.Info("Kishtin is listening", "addr", cfg.Server.Listen, "tls", tls, "data", cfg.DataDir)
+		log.Info("Kishtin is listening", "version", version, "addr", cfg.Server.Listen, "tls", tls, "data", cfg.DataDir)
 		if tls {
 			errc <- srv.ListenAndServeTLS(cfg.Server.TLSCert, cfg.Server.TLSKey)
 		} else {

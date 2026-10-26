@@ -22,6 +22,10 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
 )
 
+// version is the release, set at build time with
+// -ldflags "-X main.version=v1.2.3"; "dev" for a local build.
+var version = "dev"
+
 func main() {
 	if err := newRoot(os.Stdout, os.Stderr, os.Stdin).Execute(); err != nil {
 		var ee exitError
@@ -52,8 +56,9 @@ type cli struct {
 func newRoot(out, errOut io.Writer, in io.Reader) *cobra.Command {
 	c := &cli{out: out, errOut: errOut, in: in}
 	root := &cobra.Command{
-		Use:   "kishtin",
-		Short: "Kishtin command line",
+		Use:     "kishtin",
+		Version: version,
+		Short:   "Kishtin command line",
 		Long: "Kishtin, from cistin, Irish for kitchen.\n\n" +
 			"kishtin talks to a running kishtind over its API. Set KISHTIN_API_KEY to a user API key\n" +
 			"(from `kishtind setup` or `kishtin keys create`). Set KISHTIN_URL if the server is not on\n" +
