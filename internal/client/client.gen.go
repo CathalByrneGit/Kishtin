@@ -306,6 +306,14 @@ type ClientInterface interface {
 	RenameOrder(ctx context.Context, options *RenameOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RenameOrderResponse, error)
 	RenameOrderWithResponse(ctx context.Context, options *RenameOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RenameOrderResp, error)
 
+	// ReportHaccp How well the daily HACCP checks were kept up in a period
+	ReportHaccp(ctx context.Context, options *ReportHaccpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportHaccpResponse, error)
+	ReportHaccpWithResponse(ctx context.Context, options *ReportHaccpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportHaccpResp, error)
+
+	// ReportPass How fast courses reached the pass in a period
+	ReportPass(ctx context.Context, options *ReportPassRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportPassResponse, error)
+	ReportPassWithResponse(ctx context.Context, options *ReportPassRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportPassResp, error)
+
 	// GetGuidance Show the reference guidance in force
 	GetGuidance(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResponse, error)
 	GetGuidanceWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResp, error)
@@ -4767,6 +4775,144 @@ func (c *Client) RenameOrder(ctx context.Context, options *RenameOrderRequestOpt
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/orders/{id}/name")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ReportHaccp How well the daily HACCP checks were kept up in a period
+func (c *Client) ReportHaccp(ctx context.Context, options *ReportHaccpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportHaccpResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"from": {Style: "form", Explode: &[]bool{false}[0]},
+		"to":   {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/reports/haccp",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ReportHaccpResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ReportHaccpErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ReportHaccpErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ReportHaccpResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ReportHaccpResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/reports/haccp")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ReportPass How fast courses reached the pass in a period
+func (c *Client) ReportPass(ctx context.Context, options *ReportPassRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportPassResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"from": {Style: "form", Explode: &[]bool{false}[0]},
+		"to":   {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/reports/pass",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ReportPassResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ReportPassErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ReportPassErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ReportPassResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ReportPassResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/reports/pass")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -10251,6 +10397,94 @@ func (o *RenameOrderRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// ReportHaccpRequestOptions is the options needed to make a request to ReportHaccp.
+type ReportHaccpRequestOptions struct {
+	Query *ReportHaccpQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ReportHaccpRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ReportHaccpRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *ReportHaccpRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ReportHaccpRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *ReportHaccpRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// ReportPassRequestOptions is the options needed to make a request to ReportPass.
+type ReportPassRequestOptions struct {
+	Query *ReportPassQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ReportPassRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ReportPassRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *ReportPassRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ReportPassRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *ReportPassRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // SaveGuidanceRequestOptions is the options needed to make a request to SaveGuidance.
 type SaveGuidanceRequestOptions struct {
 	Body *SaveGuidanceBody
@@ -15544,6 +15778,128 @@ func (c *Client) RenameOrderWithResponse(ctx context.Context, options *RenameOrd
 	}
 }
 
+// ReportHaccp How well the daily HACCP checks were kept up in a period
+func (c *Client) ReportHaccpWithResponse(ctx context.Context, options *ReportHaccpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportHaccpResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/reports/haccp",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/reports/haccp")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ReportHaccpResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ReportHaccpResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReportHaccpResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ReportHaccpErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReportHaccpErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ReportPass How fast courses reached the pass in a period
+func (c *Client) ReportPassWithResponse(ctx context.Context, options *ReportPassRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportPassResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/reports/pass",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/reports/pass")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ReportPassResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ReportPassResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReportPassResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ReportPassErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ReportPassErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetGuidance Show the reference guidance in force
 func (c *Client) GetGuidanceWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetGuidanceResp, error) {
 	var err error
@@ -19289,6 +19645,22 @@ type ListOrdersQuery struct {
 	Date *string `json:"date,omitempty"`
 }
 
+type ReportHaccpQuery struct {
+	// From First day, YYYY-MM-DD (Dublin). Default: 27 days before the last day.
+	From *string `json:"from,omitempty"`
+
+	// To Last day, YYYY-MM-DD (Dublin). Default: today.
+	To *string `json:"to,omitempty"`
+}
+
+type ReportPassQuery struct {
+	// From First day, YYYY-MM-DD (Dublin). Default: 27 days before the last day.
+	From *string `json:"from,omitempty"`
+
+	// To Last day, YYYY-MM-DD (Dublin). Default: today.
+	To *string `json:"to,omitempty"`
+}
+
 type VoiceAudioQuery struct {
 	// HandsFree Hands-free: the phrase must start with a wake word, or it is ignored and not logged.
 	HandsFree *bool `json:"hands_free,omitempty"`
@@ -19566,6 +19938,14 @@ type AddItemsErrorResponse = ErrorModel
 type RenameOrderResponse = Order
 
 type RenameOrderErrorResponse = ErrorModel
+
+type ReportHaccpResponse = HACCPReport
+
+type ReportHaccpErrorResponse = ErrorModel
+
+type ReportPassResponse = PassReport
+
+type ReportPassErrorResponse = ErrorModel
 
 type GetGuidanceResponse = VersionedGuidance
 
@@ -20333,6 +20713,22 @@ type RenameOrderResp struct {
 	StatusCode                        int
 	JSON200                           *RenameOrderResponse
 	ApplicationProblemPlusJSONDefault *RenameOrderErrorResponse
+}
+
+type ReportHaccpResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ReportHaccpResponse
+	ApplicationProblemPlusJSONDefault *ReportHaccpErrorResponse
+}
+
+type ReportPassResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ReportPassResponse
+	ApplicationProblemPlusJSONDefault *ReportPassErrorResponse
 }
 
 type GetGuidanceResp struct {
@@ -21677,6 +22073,17 @@ func (c CopyReport) Validate() error {
 	return errors
 }
 
+type Count struct {
+	Count int64  `json:"count"`
+	Key   string `json:"key" validate:"required"`
+	Label string `json:"label" validate:"required"`
+	Of    *int64 `json:"of,omitempty"`
+}
+
+func (c Count) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
 type Course struct {
 	Course    string     `json:"course" validate:"required"`
 	FiredAt   *time.Time `json:"fired_at,omitempty"`
@@ -21692,6 +22099,35 @@ func (c Course) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(c))
 }
 
+type CourseStats struct {
+	Course        string `json:"course" validate:"required"`
+	Courses       int64  `json:"courses"`
+	OnTimePercent int64  `json:"on_time_percent"`
+	PassWait      Spread `json:"pass_wait"`
+	Ticket        Spread `json:"ticket"`
+}
+
+func (c CourseStats) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Course, "required"); err != nil {
+		errors = errors.Append("Course", err)
+	}
+	if v, ok := any(c.PassWait).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("PassWait", err)
+		}
+	}
+	if v, ok := any(c.Ticket).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Ticket", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type CourseStatus struct {
 	Cause        *string   `json:"cause,omitempty"`
 	Course       string    `json:"course" validate:"required"`
@@ -21705,6 +22141,18 @@ type CourseStatus struct {
 
 func (c CourseStatus) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type DayTemp struct {
+	AvgC  *float64 `json:"avg_c,omitempty"`
+	Count int64    `json:"count"`
+	Date  string   `json:"date" validate:"required"`
+	MaxC  *float64 `json:"max_c,omitempty"`
+	MinC  *float64 `json:"min_c,omitempty"`
+}
+
+func (d DayTemp) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(d))
 }
 
 type Dish struct {
@@ -21797,6 +22245,33 @@ func (d DishInput) Validate() error {
 	}
 	if err := typesValidator.Var(d.StationID, "required"); err != nil {
 		errors = errors.Append("StationID", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type DishTimes struct {
+	Actual      Spread `json:"actual"`
+	DishID      string `json:"dish_id" validate:"required"`
+	DishName    string `json:"dish_name" validate:"required"`
+	OverSeconds int64  `json:"over_seconds"`
+	SetSeconds  int64  `json:"set_seconds"`
+}
+
+func (d DishTimes) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(d.Actual).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Actual", err)
+		}
+	}
+	if err := typesValidator.Var(d.DishID, "required"); err != nil {
+		errors = errors.Append("DishID", err)
+	}
+	if err := typesValidator.Var(d.DishName, "required"); err != nil {
+		errors = errors.Append("DishName", err)
 	}
 	if len(errors) == 0 {
 		return nil
@@ -22121,6 +22596,101 @@ func (g GuidanceCheck) Validate() error {
 	return errors
 }
 
+type HACCPReport struct {
+	ChecksDone           int64       `json:"checks_done"`
+	ChecksDue            int64       `json:"checks_due"`
+	ChecksMissed         int64       `json:"checks_missed"`
+	ChecksPercent        int64       `json:"checks_percent"`
+	CleaningDone         int64       `json:"cleaning_done"`
+	CleaningDue          int64       `json:"cleaning_due"`
+	CleaningMissedByTask []Count     `json:"cleaning_missed_by_task" validate:"required"`
+	CleaningPercent      int64       `json:"cleaning_percent"`
+	From                 string      `json:"from" validate:"required"`
+	MissedByUnit         []Count     `json:"missed_by_unit" validate:"required"`
+	MissedByWeekday      []Count     `json:"missed_by_weekday" validate:"required"`
+	OutOfLimit           int64       `json:"out_of_limit"`
+	OutOfLimitByType     []Count     `json:"out_of_limit_by_type" validate:"required"`
+	Recent               []Record    `json:"recent" validate:"required"`
+	Records              int64       `json:"records"`
+	Temperatures         []UnitTemps `json:"temperatures" validate:"required"`
+	To                   string      `json:"to" validate:"required"`
+	WithoutAction        int64       `json:"without_action"`
+}
+
+func (h HACCPReport) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.CleaningMissedByTask, "required"); err != nil {
+		errors = errors.Append("CleaningMissedByTask", err)
+	}
+	for i, item := range h.CleaningMissedByTask {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("CleaningMissedByTask[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(h.From, "required"); err != nil {
+		errors = errors.Append("From", err)
+	}
+	if err := typesValidator.Var(h.MissedByUnit, "required"); err != nil {
+		errors = errors.Append("MissedByUnit", err)
+	}
+	for i, item := range h.MissedByUnit {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("MissedByUnit[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(h.MissedByWeekday, "required"); err != nil {
+		errors = errors.Append("MissedByWeekday", err)
+	}
+	for i, item := range h.MissedByWeekday {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("MissedByWeekday[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(h.OutOfLimitByType, "required"); err != nil {
+		errors = errors.Append("OutOfLimitByType", err)
+	}
+	for i, item := range h.OutOfLimitByType {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("OutOfLimitByType[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(h.Recent, "required"); err != nil {
+		errors = errors.Append("Recent", err)
+	}
+	for i, item := range h.Recent {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Recent[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(h.Temperatures, "required"); err != nil {
+		errors = errors.Append("Temperatures", err)
+	}
+	for i, item := range h.Temperatures {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Temperatures[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(h.To, "required"); err != nil {
+		errors = errors.Append("To", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type HistoryOutGuidanceBody struct {
 	Versions []VersionedGuidance `json:"versions" validate:"required"`
 }
@@ -22299,6 +22869,12 @@ func (h HistoryOutSystemBody) Validate() error {
 
 type HoldBody struct {
 	Reason *string `json:"reason,omitempty"`
+}
+
+type HourStats struct {
+	Courses int64 `json:"courses"`
+	Hour    int64 `json:"hour"`
+	OnTime  int64 `json:"on_time"`
 }
 
 type Imported struct {
@@ -22561,6 +23137,22 @@ type LabelCheck struct {
 }
 
 func (l LabelCheck) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(l))
+}
+
+type LateCourse struct {
+	Cause         string    `json:"cause" validate:"required"`
+	Course        string    `json:"course" validate:"required"`
+	FiredAt       time.Time `json:"fired_at" validate:"required"`
+	Label         string    `json:"label" validate:"required"`
+	LateBySeconds int64     `json:"late_by_seconds"`
+	OrderID       string    `json:"order_id" validate:"required"`
+	ReadyAt       time.Time `json:"ready_at" validate:"required"`
+	Reason        *string   `json:"reason,omitempty"`
+	Target        time.Time `json:"target" validate:"required"`
+}
+
+func (l LateCourse) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(l))
 }
 
@@ -23378,6 +23970,96 @@ func (p PaperSavedBody) Validate() error {
 				errors = errors.Append(fmt.Sprintf("Records[%d]", i), err)
 			}
 		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type PassReport struct {
+	ByCourse      []CourseStats `json:"by_course" validate:"required"`
+	ByHour        []HourStats   `json:"by_hour" validate:"required"`
+	Courses       int64         `json:"courses"`
+	Dishes        []DishTimes   `json:"dishes" validate:"required"`
+	From          string        `json:"from" validate:"required"`
+	Late          int64         `json:"late"`
+	LateByCause   []Count       `json:"late_by_cause" validate:"required"`
+	LateCourses   []LateCourse  `json:"late_courses" validate:"required"`
+	OnTime        int64         `json:"on_time"`
+	OnTimePercent int64         `json:"on_time_percent"`
+	PassWait      Spread        `json:"pass_wait"`
+	Ticket        Spread        `json:"ticket"`
+	To            string        `json:"to" validate:"required"`
+}
+
+func (p PassReport) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.ByCourse, "required"); err != nil {
+		errors = errors.Append("ByCourse", err)
+	}
+	for i, item := range p.ByCourse {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("ByCourse[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.ByHour, "required"); err != nil {
+		errors = errors.Append("ByHour", err)
+	}
+	for i, item := range p.ByHour {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("ByHour[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.Dishes, "required"); err != nil {
+		errors = errors.Append("Dishes", err)
+	}
+	for i, item := range p.Dishes {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Dishes[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.From, "required"); err != nil {
+		errors = errors.Append("From", err)
+	}
+	if err := typesValidator.Var(p.LateByCause, "required"); err != nil {
+		errors = errors.Append("LateByCause", err)
+	}
+	for i, item := range p.LateByCause {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("LateByCause[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(p.LateCourses, "required"); err != nil {
+		errors = errors.Append("LateCourses", err)
+	}
+	for i, item := range p.LateCourses {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("LateCourses[%d]", i), err)
+			}
+		}
+	}
+	if v, ok := any(p.PassWait).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("PassWait", err)
+		}
+	}
+	if v, ok := any(p.Ticket).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Ticket", err)
+		}
+	}
+	if err := typesValidator.Var(p.To, "required"); err != nil {
+		errors = errors.Append("To", err)
 	}
 	if len(errors) == 0 {
 		return nil
@@ -24623,6 +25305,12 @@ func (s SpeakBody) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
+type Spread struct {
+	Count         int64 `json:"count"`
+	MedianSeconds int64 `json:"median_seconds"`
+	P90Seconds    int64 `json:"p90_seconds"`
+}
+
 type SquareStatus struct {
 	Connected bool                 `json:"connected"`
 	Mappings  []Mapping            `json:"mappings" validate:"required"`
@@ -25116,6 +25804,37 @@ func (u Unit) Validate() error {
 	}
 	if err := typesValidator.Var(u.Name, "required"); err != nil {
 		errors = errors.Append("Name", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type UnitTemps struct {
+	Days []DayTemp `json:"days" validate:"required"`
+	Kind string    `json:"kind" validate:"required"`
+	MaxC *float64  `json:"max_c,omitempty"`
+	Unit string    `json:"unit" validate:"required"`
+}
+
+func (u UnitTemps) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(u.Days, "required"); err != nil {
+		errors = errors.Append("Days", err)
+	}
+	for i, item := range u.Days {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Days[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(u.Kind, "required"); err != nil {
+		errors = errors.Append("Kind", err)
+	}
+	if err := typesValidator.Var(u.Unit, "required"); err != nil {
+		errors = errors.Append("Unit", err)
 	}
 	if len(errors) == 0 {
 		return nil

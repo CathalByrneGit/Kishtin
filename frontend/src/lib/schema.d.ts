@@ -1165,6 +1165,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/haccp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How well the daily HACCP checks were kept up in a period
+         * @description Fridge and freezer checks due, done and missed (counted as the record books count them), by day of the week and by unit; cleaning tasks done; records out of limit; each unit's temperatures per day. At most 366 days.
+         */
+        get: operations["report-haccp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/pass": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How fast courses reached the pass in a period
+         * @description Courses fired in the period that reached the pass: share on time (within a minute of target), time from fire to pass and from pass to served, late courses by the scheduler's cause, by course and by hour, and each dish's actual time against its set time. Head chef or manager.
+         */
+        get: operations["report-pass"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/guidance": {
         parameters: {
             query?: never;
@@ -2239,6 +2279,14 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        Count: {
+            /** Format: int64 */
+            count: number;
+            key: string;
+            label: string;
+            /** Format: int64 */
+            of?: number;
+        };
         Course: {
             course: string;
             /** Format: date-time */
@@ -2252,6 +2300,15 @@ export interface components {
             target_set?: boolean;
             urgent?: boolean;
         };
+        CourseStats: {
+            course: string;
+            /** Format: int64 */
+            courses: number;
+            /** Format: int64 */
+            on_time_percent: number;
+            pass_wait: components["schemas"]["Spread"];
+            ticket: components["schemas"]["Spread"];
+        };
         CourseStatus: {
             cause?: string;
             course: string;
@@ -2263,6 +2320,17 @@ export interface components {
             status: string;
             /** Format: date-time */
             target: string;
+        };
+        DayTemp: {
+            /** Format: double */
+            avg_c?: number;
+            /** Format: int64 */
+            count: number;
+            date: string;
+            /** Format: double */
+            max_c?: number;
+            /** Format: double */
+            min_c?: number;
         };
         Dish: {
             active: boolean;
@@ -2310,6 +2378,15 @@ export interface components {
             /** Format: int64 */
             rest_seconds?: number;
             station_id: string;
+        };
+        DishTimes: {
+            actual: components["schemas"]["Spread"];
+            dish_id: string;
+            dish_name: string;
+            /** Format: int64 */
+            over_seconds: number;
+            /** Format: int64 */
+            set_seconds: number;
         };
         EditionResult: {
             booklet: string;
@@ -2460,6 +2537,36 @@ export interface components {
             /** Format: double */
             min_c?: number;
         };
+        HACCPReport: {
+            /** Format: int64 */
+            checks_done: number;
+            /** Format: int64 */
+            checks_due: number;
+            /** Format: int64 */
+            checks_missed: number;
+            /** Format: int64 */
+            checks_percent: number;
+            /** Format: int64 */
+            cleaning_done: number;
+            /** Format: int64 */
+            cleaning_due: number;
+            cleaning_missed_by_task: components["schemas"]["Count"][];
+            /** Format: int64 */
+            cleaning_percent: number;
+            from: string;
+            missed_by_unit: components["schemas"]["Count"][];
+            missed_by_weekday: components["schemas"]["Count"][];
+            /** Format: int64 */
+            out_of_limit: number;
+            out_of_limit_by_type: components["schemas"]["Count"][];
+            recent: components["schemas"]["Record"][];
+            /** Format: int64 */
+            records: number;
+            temperatures: components["schemas"]["UnitTemps"][];
+            to: string;
+            /** Format: int64 */
+            without_action: number;
+        };
         HistoryOutGuidanceBody: {
             versions: components["schemas"]["VersionedGuidance"][];
         };
@@ -2486,6 +2593,14 @@ export interface components {
         };
         HoldBody: {
             reason?: string;
+        };
+        HourStats: {
+            /** Format: int64 */
+            courses: number;
+            /** Format: int64 */
+            hour: number;
+            /** Format: int64 */
+            on_time: number;
         };
         Imported: {
             added: {
@@ -2577,6 +2692,21 @@ export interface components {
         LabelCheck: {
             found: boolean;
             label: string;
+        };
+        LateCourse: {
+            cause: string;
+            course: string;
+            /** Format: date-time */
+            fired_at: string;
+            label: string;
+            /** Format: int64 */
+            late_by_seconds: number;
+            order_id: string;
+            /** Format: date-time */
+            ready_at: string;
+            reason?: string;
+            /** Format: date-time */
+            target: string;
         };
         LimitPreview: {
             below_fsai?: string[];
@@ -2812,6 +2942,25 @@ export interface components {
         };
         PaperSavedBody: {
             records: components["schemas"]["Record"][];
+        };
+        PassReport: {
+            by_course: components["schemas"]["CourseStats"][];
+            by_hour: components["schemas"]["HourStats"][];
+            /** Format: int64 */
+            courses: number;
+            dishes: components["schemas"]["DishTimes"][];
+            from: string;
+            /** Format: int64 */
+            late: number;
+            late_by_cause: components["schemas"]["Count"][];
+            late_courses: components["schemas"]["LateCourse"][];
+            /** Format: int64 */
+            on_time: number;
+            /** Format: int64 */
+            on_time_percent: number;
+            pass_wait: components["schemas"]["Spread"];
+            ticket: components["schemas"]["Spread"];
+            to: string;
         };
         Permissions: {
             grants: components["schemas"]["Grant"][];
@@ -3178,6 +3327,14 @@ export interface components {
         SpeakBody: {
             text: string;
         };
+        Spread: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            median_seconds: number;
+            /** Format: int64 */
+            p90_seconds: number;
+        };
         SquareStatus: {
             connected: boolean;
             mappings: components["schemas"]["Mapping"][];
@@ -3348,6 +3505,13 @@ export interface components {
             kind: string;
             name: string;
             non_food?: boolean;
+        };
+        UnitTemps: {
+            days: components["schemas"]["DayTemp"][];
+            kind: string;
+            /** Format: double */
+            max_c?: number;
+            unit: string;
         };
         UnitToday: {
             kind: string;
@@ -5695,6 +5859,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "report-haccp": {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD (Dublin). Default: 27 days before the last day. */
+                from?: string;
+                /** @description Last day, YYYY-MM-DD (Dublin). Default: today. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HACCPReport"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "report-pass": {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD (Dublin). Default: 27 days before the last day. */
+                from?: string;
+                /** @description Last day, YYYY-MM-DD (Dublin). Default: today. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PassReport"];
                 };
             };
             /** @description Error */

@@ -24,6 +24,7 @@
     CookingPot,
     BookMarked,
     CalendarClock,
+    ChartColumn,
     ShieldUser,
     ClipboardCheck,
     ScanText,
@@ -62,6 +63,7 @@
   import Inspection from "./views/Inspection.svelte";
   import Paper from "./views/Paper.svelte";
   import CatchUp from "./views/CatchUp.svelte";
+  import Reports from "./views/Reports.svelte";
   import PermissionsSetup from "./views/setup/Permissions.svelte";
   import OrdersView from "./views/Orders.svelte";
   import Pass from "./views/Pass.svelte";
@@ -97,6 +99,7 @@
     { path: "/stations", label: "Stations", section: "stations", view: null, group: "Service" },
     { path: "/orders", label: "Orders", section: "orders", view: null, group: "Service" },
     { path: "/voice", label: "Voice", section: "voice", view: null, group: "Service" },
+    { path: "/reports", label: "Reports", section: "reports", view: null, group: "Reports" },
     { path: "/today", label: "Today", section: "today", view: null, group: "HACCP" },
     { path: "/records", label: "Records", section: "records", view: null, group: "HACCP" },
     { path: "/catch-up", label: "Catch up", section: "catch-up", view: null, group: "HACCP" },
@@ -141,6 +144,10 @@
         { id: "orders", label: "Orders", href: "/orders", icon: ReceiptText, viewRuns: [] },
         { id: "voice", label: "Voice", href: "/voice", icon: Mic, viewRuns: [] },
       ],
+    },
+    {
+      label: "Reports",
+      sections: [{ id: "reports", label: "Reports", href: "/reports", icon: ChartColumn, viewRuns: [] }],
     },
     {
       label: "HACCP",
@@ -389,6 +396,8 @@
           <Today />
         {:else if route.path === "/records"}
           <Records />
+        {:else if route.path === "/reports"}
+          <Reports />
         {:else if route.path === "/catch-up"}
           <CatchUp />
         {:else if route.path === "/setup/permissions"}

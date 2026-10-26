@@ -140,3 +140,15 @@ textarea.text-area:focus {
 .table-head span {
   font-size: var(--font-size-sm);
 }
+
+/* Chart marks: one hue, validated against the chart surface in each mode
+   with the dataviz palette checks. Light: the accent blue (#2563eb on
+   white). Dark: the accent blue is too light for a mark, so it is mixed 85%
+   with the surface (#558dd5 on #16161e). Text never uses it. */
+:root {
+  --chart-series: var(--accent-blue);
+  --chart-grid: var(--border-muted, var(--border-default));
+}
+:root.dark {
+  --chart-series: color-mix(in oklab, var(--accent-blue) 85%, var(--bg-surface));
+}

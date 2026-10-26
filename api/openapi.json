@@ -1169,6 +1169,31 @@
         ],
         "type": "object"
       },
+      "Count": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "of": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "count"
+        ],
+        "type": "object"
+      },
       "Course": {
         "additionalProperties": false,
         "properties": {
@@ -1204,6 +1229,36 @@
           "order_id",
           "course",
           "state"
+        ],
+        "type": "object"
+      },
+      "CourseStats": {
+        "additionalProperties": false,
+        "properties": {
+          "course": {
+            "type": "string"
+          },
+          "courses": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "on_time_percent": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "pass_wait": {
+            "$ref": "#/components/schemas/Spread"
+          },
+          "ticket": {
+            "$ref": "#/components/schemas/Spread"
+          }
+        },
+        "required": [
+          "course",
+          "courses",
+          "on_time_percent",
+          "ticket",
+          "pass_wait"
         ],
         "type": "object"
       },
@@ -1245,6 +1300,35 @@
           "planned_ready",
           "status",
           "reason"
+        ],
+        "type": "object"
+      },
+      "DayTemp": {
+        "additionalProperties": false,
+        "properties": {
+          "avg_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "date": {
+            "type": "string"
+          },
+          "max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "min_c": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "date",
+          "count"
         ],
         "type": "object"
       },
@@ -1389,6 +1473,36 @@
           "name",
           "course",
           "station_id"
+        ],
+        "type": "object"
+      },
+      "DishTimes": {
+        "additionalProperties": false,
+        "properties": {
+          "actual": {
+            "$ref": "#/components/schemas/Spread"
+          },
+          "dish_id": {
+            "type": "string"
+          },
+          "dish_name": {
+            "type": "string"
+          },
+          "over_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "set_seconds": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dish_id",
+          "dish_name",
+          "set_seconds",
+          "actual",
+          "over_seconds"
         ],
         "type": "object"
       },
@@ -1868,6 +1982,114 @@
         ],
         "type": "object"
       },
+      "HACCPReport": {
+        "additionalProperties": false,
+        "properties": {
+          "checks_done": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "checks_due": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "checks_missed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "checks_percent": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "cleaning_done": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "cleaning_due": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "cleaning_missed_by_task": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "type": "array"
+          },
+          "cleaning_percent": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from": {
+            "type": "string"
+          },
+          "missed_by_unit": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "type": "array"
+          },
+          "missed_by_weekday": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "type": "array"
+          },
+          "out_of_limit": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "out_of_limit_by_type": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "type": "array"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/Record"
+            },
+            "type": "array"
+          },
+          "records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "temperatures": {
+            "items": {
+              "$ref": "#/components/schemas/UnitTemps"
+            },
+            "type": "array"
+          },
+          "to": {
+            "type": "string"
+          },
+          "without_action": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "checks_due",
+          "checks_done",
+          "checks_missed",
+          "checks_percent",
+          "missed_by_weekday",
+          "missed_by_unit",
+          "cleaning_due",
+          "cleaning_done",
+          "cleaning_percent",
+          "cleaning_missed_by_task",
+          "records",
+          "out_of_limit",
+          "without_action",
+          "out_of_limit_by_type",
+          "temperatures",
+          "recent"
+        ],
+        "type": "object"
+      },
       "HistoryOutGuidanceBody": {
         "additionalProperties": false,
         "properties": {
@@ -1995,6 +2217,29 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "HourStats": {
+        "additionalProperties": false,
+        "properties": {
+          "courses": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "hour": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "on_time": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hour",
+          "courses",
+          "on_time"
+        ],
         "type": "object"
       },
       "Imported": {
@@ -2313,6 +2558,53 @@
         "required": [
           "label",
           "found"
+        ],
+        "type": "object"
+      },
+      "LateCourse": {
+        "additionalProperties": false,
+        "properties": {
+          "cause": {
+            "type": "string"
+          },
+          "course": {
+            "type": "string"
+          },
+          "fired_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "late_by_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "ready_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "target": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_id",
+          "label",
+          "course",
+          "fired_at",
+          "target",
+          "ready_at",
+          "late_by_seconds",
+          "cause"
         ],
         "type": "object"
       },
@@ -3211,6 +3503,85 @@
         },
         "required": [
           "records"
+        ],
+        "type": "object"
+      },
+      "PassReport": {
+        "additionalProperties": false,
+        "properties": {
+          "by_course": {
+            "items": {
+              "$ref": "#/components/schemas/CourseStats"
+            },
+            "type": "array"
+          },
+          "by_hour": {
+            "items": {
+              "$ref": "#/components/schemas/HourStats"
+            },
+            "type": "array"
+          },
+          "courses": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dishes": {
+            "items": {
+              "$ref": "#/components/schemas/DishTimes"
+            },
+            "type": "array"
+          },
+          "from": {
+            "type": "string"
+          },
+          "late": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "late_by_cause": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "type": "array"
+          },
+          "late_courses": {
+            "items": {
+              "$ref": "#/components/schemas/LateCourse"
+            },
+            "type": "array"
+          },
+          "on_time": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "on_time_percent": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "pass_wait": {
+            "$ref": "#/components/schemas/Spread"
+          },
+          "ticket": {
+            "$ref": "#/components/schemas/Spread"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "courses",
+          "on_time",
+          "on_time_percent",
+          "late",
+          "ticket",
+          "pass_wait",
+          "late_by_cause",
+          "by_course",
+          "by_hour",
+          "dishes",
+          "late_courses"
         ],
         "type": "object"
       },
@@ -4652,6 +5023,29 @@
         ],
         "type": "object"
       },
+      "Spread": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "median_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "p90_seconds": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count",
+          "median_seconds",
+          "p90_seconds"
+        ],
+        "type": "object"
+      },
       "SquareStatus": {
         "additionalProperties": false,
         "properties": {
@@ -5273,6 +5667,33 @@
         "required": [
           "name",
           "kind"
+        ],
+        "type": "object"
+      },
+      "UnitTemps": {
+        "additionalProperties": false,
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/DayTemp"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit",
+          "kind",
+          "days"
         ],
         "type": "object"
       },
@@ -8941,6 +9362,114 @@
         "summary": "Name an order, such as a guest's name, or clear the name (logged)",
         "tags": [
           "Orders"
+        ]
+      }
+    },
+    "/reports/haccp": {
+      "get": {
+        "description": "Fridge and freezer checks due, done and missed (counted as the record books count them), by day of the week and by unit; cleaning tasks done; records out of limit; each unit's temperatures per day. At most 366 days.",
+        "operationId": "report-haccp",
+        "parameters": [
+          {
+            "description": "First day, YYYY-MM-DD (Dublin). Default: 27 days before the last day.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "First day, YYYY-MM-DD (Dublin). Default: 27 days before the last day.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Last day, YYYY-MM-DD (Dublin). Default: today.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "Last day, YYYY-MM-DD (Dublin). Default: today.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HACCPReport"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "How well the daily HACCP checks were kept up in a period",
+        "tags": [
+          "Reports"
+        ]
+      }
+    },
+    "/reports/pass": {
+      "get": {
+        "description": "Courses fired in the period that reached the pass: share on time (within a minute of target), time from fire to pass and from pass to served, late courses by the scheduler's cause, by course and by hour, and each dish's actual time against its set time. Head chef or manager.",
+        "operationId": "report-pass",
+        "parameters": [
+          {
+            "description": "First day, YYYY-MM-DD (Dublin). Default: 27 days before the last day.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "First day, YYYY-MM-DD (Dublin). Default: 27 days before the last day.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Last day, YYYY-MM-DD (Dublin). Default: today.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "Last day, YYYY-MM-DD (Dublin). Default: today.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassReport"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "How fast courses reached the pass in a period",
+        "tags": [
+          "Reports"
         ]
       }
     },

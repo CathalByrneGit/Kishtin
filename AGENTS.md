@@ -188,6 +188,7 @@ internal/speech/       client for the local speech-to-text / text-to-speech side
 internal/ai/           client for an optional local model server (drafts only)
 internal/pdftext/      PDF text extraction without CGO (go-pdfium on wazero)
 internal/books/        record book bundles, templates and page builders
+internal/analytics/    pure report calculations (pass times, HACCP checks); no I/O
 internal/integrations/ POS adapters, starting with Square (later)
 frontend/              Svelte 5 app (kit-ui), built with Vite into frontend/dist/
 ```

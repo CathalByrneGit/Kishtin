@@ -127,6 +127,10 @@ Select a record to open its details panel:
 
 Head chefs and managers only. Choose a month, check each booklet's missed checks and preview, then download the PDF. See [record-books.md](record-books.md).
 
+## Reports
+
+Pass times and HACCP checks for a period, with charts and tables. See [reports.md](reports.md).
+
 ## Catch up
 
 ![Catch up](screenshots/catch-up.png)

@@ -28,6 +28,7 @@ func (s *Server) routes() {
 	s.copyRoutes()
 	s.catchUpRoutes()
 	s.recordingRoutes()
+	s.reportRoutes()
 	s.limitRoutes()
 	s.fileRoutes()
 	s.settingsRoutes()
