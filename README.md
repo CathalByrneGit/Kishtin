@@ -29,7 +29,8 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 - **Record books**: official HACCP booklets filled in from the records for a month, with missed checks marked. Bundles per country (Ireland's FSAI Safe Catering booklets SC1 to SC9, and a general set for any country), which a manager can change in Setup › Food safety › HACCP records. A manager signs off each period, which fills the booklets' manager check line. Kishtin compares your copy of a booklet with its template, checks the publisher for new editions when asked, and brings in old paper pages from a photo. An optional local model can suggest columns and read photos. See [docs/record-books.md](docs/record-books.md).
 - **Backups** on a schedule. Each copy is verified and gets a `.sha256` file.
 - **Checks logged later**: any check can be logged with the time it was done and who did it, and **Catch up** lists the daily checks with no record so they can be filled in together. See [docs/haccp.md](docs/haccp.md#checks-logged-later).
-- **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts.
+- **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts. A forgotten manager password can be reset with `kishtind reset-password` on the Kishtin computer itself.
+- **Starts with the computer**: the installer offers it, and it can be turned on in Settings or with `kishtind startup on`. It uses Task Scheduler on Windows, a LaunchAgent on macOS and a systemd user service on Linux. See [docs/install.md](docs/install.md#start-with-the-computer).
 - **Reports**: pass times (share on time, fire to pass, waiting at the pass, why courses were late, dish times against set times) and HACCP checks (checks and cleaning done and missed, out-of-limit readings, each fridge's temperatures). See [docs/reports.md](docs/reports.md).
 - **Recording**: scheduler plans as they change, with why each course ran late; an activity log of sold-out dishes, logins, screens dropping off and how each HACCP record was entered; the device behind each action; every version of each till order; optional voice recordings. Leavers can be anonymised. See [docs/recording.md](docs/recording.md).
 - **Permissions**: a manager can give any role or named member of staff jobs such as signing off records, and choose whether a PIN is enough. See [docs/permissions.md](docs/permissions.md).
@@ -61,7 +62,7 @@ On macOS or Linux, in Terminal:
 curl -fsSL https://github.com/cathalbyrnegit/kishtin/releases/latest/download/install.sh | sh
 ```
 
-Then run `kishtind` and open `http://127.0.0.1:8080/` in a browser on the same computer to set it up. The installer checks the download against the release's `SHA256SUMS` first. See [docs/install.md](docs/install.md) for updates, other options, and what it does not do yet.
+The installer offers to start Kishtin with the computer, and starts it. Otherwise run `kishtind`. Then open `http://127.0.0.1:8080/` in a browser on the same computer to set it up. The installer checks the download against the release's `SHA256SUMS` first. See [docs/install.md](docs/install.md) for updates, other options, and what it does not do yet.
 
 ### Build from source
 

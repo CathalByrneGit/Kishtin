@@ -234,6 +234,8 @@ export const api = {
   revokeKey: (id: string) => json<void>("DELETE", `/keys/${encodeURIComponent(id)}`),
   backups: () => json<Schemas["BackupsOutBody"]>("GET", "/backups"),
   backupNow: () => json<Schemas["Backup"]>("POST", "/backups"),
+  startup: () => json<Schemas["StartupStatus"]>("GET", "/startup"),
+  setStartup: (on: boolean) => json<Schemas["StartupStatus"]>("PUT", "/startup", { body: { on } }),
 
   menu: () => json<Setup>("GET", "/menu"),
   createStation: (body: Schemas["StationInput"]) => json<Schemas["Station"]>("POST", "/menu/stations", { body }),

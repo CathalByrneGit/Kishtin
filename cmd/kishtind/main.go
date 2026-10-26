@@ -61,7 +61,7 @@ func rootCmd() *cobra.Command {
 		},
 	}
 	root.PersistentFlags().StringVar(&cfgPath, "config", "", "path to kishtin.toml (default $KISHTIN_CONFIG, then <data dir>/kishtin.toml)")
-	root.AddCommand(setupCmd(&cfgPath), migrateCmd(&cfgPath), openapiCmd(), licensesCmd())
+	root.AddCommand(setupCmd(&cfgPath), resetPasswordCmd(&cfgPath), startupCmd(&cfgPath), migrateCmd(&cfgPath), openapiCmd(), licensesCmd())
 	return root
 }
 
@@ -89,9 +89,17 @@ type app struct {
 	certs *localtls.Server
 }
 
+// busyError is a data folder another Kishtin process holds, usually the
+// running server.
+type busyError struct{ dir string }
+
+func (e busyError) Error() string {
+	return fmt.Sprintf("another Kishtin process is using %s: stop it first", e.dir)
+}
+
 // open locks the data directory and opens the store. Only one process can
 // hold the lock, so offline commands cannot run while the server does.
-func open(ctx context.Context, cfg config.Config, serving bool) (*app, error) {
+func open(ctx context.Context, cfg config.Config, serving bool, startup service.Startup) (*app, error) {
 	if err := os.MkdirAll(cfg.DataDir, 0o750); err != nil {
 		return nil, fmt.Errorf("create data folder %s: %w", cfg.DataDir, err)
 	}
@@ -101,7 +109,7 @@ func open(ctx context.Context, cfg config.Config, serving bool) (*app, error) {
 		return nil, fmt.Errorf("lock data folder: %w", err)
 	}
 	if !ok {
-		return nil, fmt.Errorf("another Kishtin process is using %s: stop it first", cfg.DataDir)
+		return nil, busyError{cfg.DataDir}
 	}
 	// fail releases what was opened so far.
 	var st *sqlite.Store
@@ -147,6 +155,7 @@ func open(ctx context.Context, cfg config.Config, serving bool) (*app, error) {
 	}
 	svc := service.New(service.Options{
 		Tablets: tablets,
+		Startup: startup,
 		Tills: map[string]service.TillConnection{
 			service.TillSquare: {Adapter: sq, Source: cfg.Square.TokenFrom, New: cfg.NewSquare},
 			service.TillSumUp:  {Adapter: su, Source: cfg.SumUp.TokenFrom, New: cfg.NewSumUp},
@@ -185,7 +194,13 @@ func serve(ctx context.Context, cfgPath string) error {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	a, err := open(ctx, cfg, true)
+	var st service.Startup
+	if s, err := newStartup(cfg, cfgPath); err != nil {
+		log.Warn("Kishtin cannot turn starting with the computer on or off", "err", err)
+	} else {
+		st = s
+	}
+	a, err := open(ctx, cfg, true, st)
 	if err != nil {
 		return err
 	}
@@ -199,6 +214,7 @@ func serve(ctx context.Context, cfgPath string) error {
 	if err != nil {
 		return err
 	}
+	h.SetRecoveryCodeFile(cfg.RecoveryCodePath())
 	needed, err := a.svc.SetupNeeded(ctx)
 	if err != nil {
 		return err
@@ -428,12 +444,12 @@ func setupCmd(cfgPath *string) *cobra.Command {
 			}
 			pw := os.Getenv("KISHTIN_SETUP_PASSWORD")
 			if pw == "" {
-				pw, err = readPassword(cmd)
+				pw, err = readPassword(cmd, "Manager password", "KISHTIN_SETUP_PASSWORD", "setup")
 				if err != nil {
 					return err
 				}
 			}
-			a, err := open(cmd.Context(), cfg, false)
+			a, err := open(cmd.Context(), cfg, false, nil)
 			if err != nil {
 				return err
 			}
@@ -458,12 +474,15 @@ func setupCmd(cfgPath *string) *cobra.Command {
 	return cmd
 }
 
-func readPassword(cmd *cobra.Command) (string, error) {
+// readPassword asks for a password twice in a terminal. env is the
+// variable that gives it without a terminal, and what the command that
+// asks.
+func readPassword(cmd *cobra.Command, prompt, env, what string) (string, error) {
 	fd := int(os.Stdin.Fd())
 	if !term.IsTerminal(fd) {
-		return "", errors.New("set KISHTIN_SETUP_PASSWORD, or run setup in a terminal to type the password")
+		return "", fmt.Errorf("set %s, or run %s in a terminal to type the password", env, what)
 	}
-	fmt.Fprint(cmd.ErrOrStderr(), "Manager password (at least 10 characters): ")
+	fmt.Fprintf(cmd.ErrOrStderr(), "%s (at least 10 characters): ", prompt)
 	a, err := term.ReadPassword(fd)
 	fmt.Fprintln(cmd.ErrOrStderr())
 	if err != nil {
@@ -490,7 +509,7 @@ func migrateCmd(cfgPath *string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			a, err := open(cmd.Context(), cfg, false)
+			a, err := open(cmd.Context(), cfg, false, nil)
 			if err != nil {
 				return err
 			}

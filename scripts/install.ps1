@@ -8,6 +8,8 @@
 # KISHTIN_RELEASE_URL     a folder holding the archives and SHA256SUMS, for a
 #                         mirror or a local test (default: GitHub releases)
 # KISHTIN_NO_MODIFY_PATH  set to 1 to leave the user PATH as it is
+# KISHTIN_STARTUP         yes or no: whether Kishtin starts by itself when you
+#                         log in (default: ask, or keep it on if it was)
 #
 # The archive is checked against SHA256SUMS before anything is installed,
 # and must hold kishtind.exe and kishtin.exe and nothing else.
@@ -48,6 +50,7 @@ function Get-File($name, $to) {
     }
 }
 
+$wasOn = $false
 $tmp = Join-Path ([IO.Path]::GetTempPath()) ("kishtin-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $tmp | Out-Null
 try {
@@ -73,8 +76,22 @@ try {
     $x = Join-Path $tmp 'x'
     Expand-Archive -LiteralPath (Join-Path $tmp $archive) -DestinationPath $x
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    # A Kishtin the computer started is stopped while it is replaced, and
+    # started again below: Windows cannot replace a running program.
+    $exe = Join-Path $dir 'kishtind.exe'
+    if (Test-Path -LiteralPath $exe) {
+        try { $wasOn = [bool]((& $exe startup --json 2>$null) | ConvertFrom-Json).on } catch { $wasOn = $false }
+        if ($wasOn) {
+            try { & $exe startup stop *> $null } catch {}
+            Start-Sleep -Seconds 2
+        }
+    }
     foreach ($p in 'kishtind.exe', 'kishtin.exe') {
-        Copy-Item -LiteralPath (Join-Path $x $p) -Destination (Join-Path $dir $p) -Force
+        try {
+            Copy-Item -LiteralPath (Join-Path $x $p) -Destination (Join-Path $dir $p) -Force
+        } catch {
+            Fail "could not replace $p, probably because Kishtin is running: close Kishtin's window (or press Ctrl C in it), then run this line again."
+        }
     }
 } finally {
     Remove-Item -Recurse -Force -LiteralPath $tmp -ErrorAction SilentlyContinue
@@ -96,7 +113,44 @@ if (-not $onPath -and $env:KISHTIN_NO_MODIFY_PATH -ne '1') {
 } elseif ($onPath) {
     $run = 'kishtind'
 }
+$startup = $env:KISHTIN_STARTUP
+if (-not $startup) {
+    if ($wasOn) {
+        $startup = 'yes'
+    } elseif ([Console]::IsInputRedirected) {
+        $startup = 'no'
+    } else {
+        try {
+            Write-Host ""
+            $answer = Read-Host "Start Kishtin by itself whenever you log in to this computer? Recommended, so nobody has to remember to start it after a restart. [Y/n]"
+            $startup = if ($answer -match '^[Nn]') { 'no' } else { 'yes' }
+        } catch {
+            $startup = 'no'
+        }
+    }
+}
+$started = $false
+if ($startup -match '^[Yy]') {
+    Write-Host ""
+    try {
+        & (Join-Path $dir 'kishtind.exe') startup on
+        $started = $LASTEXITCODE -eq 0
+    } catch {
+        Write-Host $_
+    }
+    if (-not $started) {
+        Write-Host "Kishtin could not set itself to start when you log in. Start it by hand as below."
+    }
+}
+
 Write-Host ""
-Write-Host "Next:"
-Write-Host "  1. Start Kishtin:   $run"
-Write-Host "  2. Open http://127.0.0.1:8080 in a browser on this computer to set it up."
+if ($started) {
+    Write-Host "Next: open http://127.0.0.1:8080 in a browser on this computer to set it up."
+    Write-Host "Kishtin runs in its own window. Leave it open, or minimise it."
+} else {
+    Write-Host "Next:"
+    Write-Host "  1. Start Kishtin:   $run"
+    Write-Host "  2. Open http://127.0.0.1:8080 in a browser on this computer to set it up."
+    Write-Host ""
+    Write-Host "To have Kishtin start by itself when you log in, later: $run startup on"
+}

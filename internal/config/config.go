@@ -357,6 +357,11 @@ func (c Config) TLSDir() string { return filepath.Join(c.DataDir, "tls") }
 // LockPath is the single-instance lock file.
 func (c Config) LockPath() string { return filepath.Join(c.DataDir, "kishtin.lock") }
 
+// RecoveryCodePath is where kishtind reset-password leaves a one-time code
+// for the running server, proving the request comes from someone who can
+// use the data folder.
+func (c Config) RecoveryCodePath() string { return filepath.Join(c.DataDir, "recovery-code.txt") }
+
 // Validate checks the configuration.
 func (c Config) Validate() error {
 	if c.DataDir == "" {

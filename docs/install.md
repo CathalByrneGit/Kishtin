@@ -44,13 +44,42 @@ Before installing anything, the installer:
 
 If any check fails, it says what went wrong and nothing is installed.
 
+At the end, the installer asks whether Kishtin should **start by itself whenever this computer starts**. Say yes (press Enter) unless you have a reason not to: then nobody has to remember to start it after a restart or a power cut, and Kishtin starts straight away. See [Start with the computer](#start-with-the-computer).
+
 ## Start Kishtin and set it up
 
-1. Start the server: type `kishtind` and press Enter. Leave the window open: closing it stops Kishtin.
+1. If you said no to starting with the computer, start the server: type `kishtind` and press Enter. Leave the window open: closing it stops Kishtin.
 2. On the same computer, open a browser at **http://127.0.0.1:8080**.
 3. Fill in **Set up Kishtin**: the restaurant's name, your name and a password. See [Setting Kishtin up](screens.md#setting-kishtin-up).
 
 `kishtind` keeps its data in `~/.kishtin` (on Windows, `C:\Users\<you>\.kishtin`): one database file, attached photos and backups.
+
+## Start with the computer
+
+Kishtin can start by itself, as the person who installed it, with their data folder, using the computer's own start-up settings:
+
+| System | How | When it starts |
+|---|---|---|
+| Windows | a Task Scheduler task called **Kishtin** | when that person logs in to Windows. Kishtin opens in its own window: leave it open, or minimise it. If it stops by mistake, Windows starts it again within a minute. |
+| macOS | a LaunchAgent, `~/Library/LaunchAgents/kishtin.kishtind.plist` | when that person logs in, in the background, and again if it stops by mistake. Its messages go to `kishtind.log` in the data folder. |
+| Linux | a systemd user service, `~/.config/systemd/user/kishtind.service` | when the computer starts, if the system lets Kishtin turn on "lingering" for the user; otherwise when the user logs in. `journalctl --user -u kishtind` shows its messages. |
+
+Turn it on or off in any of these ways:
+
+- The installer asks at the end. Set `KISHTIN_STARTUP=yes` or `no` before the install line to answer in advance.
+- **Settings › The Kishtin computer › Start Kishtin when this computer starts**, as a manager logged in with the password.
+- `kishtind startup on` or `off` on the Kishtin computer, or `kishtin startup on` or `off` from anywhere with an API key. `kishtind startup` says how it stands.
+
+![Settings, The Kishtin computer](screenshots/startup.png)
+
+Turning it on while Kishtin is not running starts it straight away. Turning it off leaves a running Kishtin running until it is stopped or the computer restarts. Both are noted in the activity log when done on the screens.
+
+Said plainly:
+
+- **On Windows and a Mac, Kishtin starts when someone logs in, not at power-on.** For a computer that should bring Kishtin back after a power cut with nobody there, set it to log in by itself: on a Mac, **System Settings › Users & Groups › Automatically log in as**; on Windows, ask whoever looks after the computer to set up automatic sign-in.
+- On Linux, if the start-up note says so, an administrator runs `sudo loginctl enable-linger <user>` once, so Kishtin starts at power-on without anyone logging in.
+- Settings given to `kishtind` in its environment (such as `KISHTIN_DATA_DIR` or `KISHTIN_SQUARE_TOKEN`) are not passed on. Put them in `kishtin.toml`; `kishtind startup` warns about any it sees.
+- `kishtind startup stop` stops a Kishtin the computer started, for example to update by hand. Start-up stays on, and `kishtind startup on` starts it again.
 
 ## Tablets and phones
 
@@ -64,7 +93,12 @@ Kishtin lets tablets and phones on the restaurant's network use it from the star
 
 ## Update
 
-Run the same install line again. It replaces the two programs and leaves the data alone. Stop `kishtind` first (press Ctrl C in its window), and take a backup in **Setup › Backups** before a big update. Start `kishtind` again afterwards; it brings the database up to date when it starts.
+Run the same install line again. It replaces the two programs and leaves the data alone. Take a backup in **Setup › Backups** before a big update.
+
+- If Kishtin starts with the computer, the installer stops it, replaces the programs and starts it again.
+- If you started Kishtin by hand, stop it first (press Ctrl C in its window), and start `kishtind` again afterwards.
+
+Kishtin brings the database up to date when it starts.
 
 `kishtind --version` shows which version is installed.
 
@@ -78,6 +112,7 @@ Set these before the install line:
 | `KISHTIN_INSTALL_DIR=/some/folder` | installs there instead |
 | `KISHTIN_RELEASE_URL=https://…` | downloads from a mirror: a folder holding the archives and `SHA256SUMS` |
 | `KISHTIN_NO_MODIFY_PATH=1` | Windows only: leaves your PATH as it is |
+| `KISHTIN_STARTUP=yes` or `no` | answers the start-with-the-computer question in advance |
 
 For example, on macOS or Linux:
 
@@ -102,20 +137,36 @@ Each release on [GitHub](https://github.com/cathalbyrnegit/kishtin/releases) has
 
 Check the archive against its line in `SHA256SUMS` (`sha256sum`, `shasum -a 256`, or `Get-FileHash` on Windows), unpack it, and put `kishtind` and `kishtin` somewhere on your PATH. On a Mac, a file downloaded in a browser is blocked the first time ("cannot be opened"); the install line above avoids that. To allow a hand-downloaded copy, run `xattr -d com.apple.quarantine kishtind kishtin` in its folder.
 
+## Forgotten manager password
+
+Another manager can set a new password in **Setup › Staff and access › Staff**. If nobody can log in as a manager, on the Kishtin computer open PowerShell or Terminal and run:
+
+```sh
+kishtind reset-password
+```
+
+It asks for the new password twice. It works whether or not Kishtin is running, but only on the Kishtin computer, as the user Kishtin runs as: being able to use that computer account, which already holds Kishtin's data folder, is what allows it. With several managers, add `--name "Their Name"`. If no manager is left (the last one was deactivated), `--name` makes that staff member a manager, or adds a new manager with that name. Every reset is noted in the activity log.
+
+The password login's **Forgot the password?** says the same on the screens.
+
+![Forgot the password?](screenshots/forgot-password.png)
+
+While Kishtin runs, the command leaves a one-time code in `recovery-code.txt` in the data folder and gives the same code to Kishtin on this computer's own address. Kishtin accepts it once, within 10 minutes, and never from another device. The file is removed straight away.
+
 ## Licence
 
 Kishtin is free to use, copy and change under the Apache License, Version 2.0. `kishtind licenses` prints its licence and the licences of the open-source software built into it.
 
 ## Uninstall
 
-Delete `kishtind` and `kishtin` from where they were installed. Kishtin's data stays in `~/.kishtin` until you delete that folder too. Keep a backup: HACCP records are evidence for inspections.
+Run `kishtind startup off` first if Kishtin starts with the computer. Then delete `kishtind` and `kishtin` from where they were installed. Kishtin's data stays in `~/.kishtin` until you delete that folder too. Keep a backup: HACCP records are evidence for inspections.
 
 ## Not done yet
 
 Said plainly, so nobody is caught out:
 
 - No release has been published yet, so the install lines above do not work until the first `v*` tag is pushed (see Making a release). Until then, build from source as in the [README](../README.md#build-from-source).
-- Kishtin does not start by itself when the computer starts. Someone has to run `kishtind` after a restart.
+- On Windows and a Mac, Kishtin starts when someone logs in, not at power-on, unless the computer logs in by itself (see [Start with the computer](#start-with-the-computer)). On Windows its window has to stay open.
 - Each tablet installs Kishtin's certificate once, by hand, following the steps on its screen. On an iPad that is three screens of Settings.
 - If the router gives the Kishtin computer a new address, tablets must be pointed at it again (Kishtin renews its own certificate by itself). Reserve the computer's address in the router to avoid this.
 - The programs are not signed by Apple or Microsoft. The install lines above work without warnings; a copy downloaded in a browser may show one.

@@ -188,6 +188,7 @@ internal/voice/        command grammar, parsing, confirmations (no audio I/O)
 internal/speech/       client for the local speech-to-text / text-to-speech sidecar
 internal/ai/           client for an optional local model server (drafts only)
 internal/pdftext/      PDF text extraction without CGO (go-pdfium on wazero)
+internal/autostart/    starting kishtind with the computer: Task Scheduler, LaunchAgent, systemd user service
 internal/localtls/     Kishtin's own certificate authority and server certificates for tablets (no I/O beyond its folder)
 internal/books/        record book bundles, templates and page builders
 internal/analytics/    pure report calculations (pass times, HACCP checks); no I/O

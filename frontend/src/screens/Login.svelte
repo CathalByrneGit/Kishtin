@@ -22,6 +22,7 @@
   let passwordMode = $state(false);
   let error = $state("");
   let busy = $state(false);
+  let forgot = $state(false);
 
   $effect(() => {
     passwordMode = usePassword;
@@ -112,6 +113,15 @@
         {#if error}<Notice tone="error" message={error} />{/if}
         <Button type="submit" tone="info" surface="solid" label={busy ? "Logging in…" : "Log in"} disabled={busy || !pw} />
       </form>
+      {#if forgot}
+        <Notice
+          tone="info"
+          title="Forgot the password?"
+          message="Another manager can set a new one in Setup › Staff and access › Staff. If nobody can log in as a manager: on the Kishtin computer, open PowerShell (Windows) or Terminal (Mac), type kishtind reset-password and press Enter, then type the new password twice. It works only on that computer."
+        />
+      {:else}
+        <Button label="Forgot the password?" onclick={() => (forgot = true)} />
+      {/if}
     {:else}
       <div class="pin num" aria-live="polite" aria-label="PIN entered">
         {#each { length: Math.max(4, pin.length) } as _, i (i)}

@@ -314,6 +314,10 @@ type ClientInterface interface {
 	RenameOrder(ctx context.Context, options *RenameOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RenameOrderResponse, error)
 	RenameOrderWithResponse(ctx context.Context, options *RenameOrderRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RenameOrderResp, error)
 
+	// RecoverManager Reset a manager's password from the Kishtin computer
+	RecoverManager(ctx context.Context, options *RecoverManagerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RecoverManagerResponse, error)
+	RecoverManagerWithResponse(ctx context.Context, options *RecoverManagerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RecoverManagerResp, error)
+
 	// ReportHaccp How well the daily HACCP checks were kept up in a period
 	ReportHaccp(ctx context.Context, options *ReportHaccpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportHaccpResponse, error)
 	ReportHaccpWithResponse(ctx context.Context, options *ReportHaccpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportHaccpResp, error)
@@ -473,6 +477,14 @@ type ClientInterface interface {
 	// Setup Set up a new install from the screens
 	Setup(ctx context.Context, options *SetupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetupResponse, error)
 	SetupWithResponse(ctx context.Context, options *SetupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetupResp, error)
+
+	// GetStartup Whether Kishtin starts by itself with this computer
+	GetStartup(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetStartupResponse, error)
+	GetStartupWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetStartupResp, error)
+
+	// SetStartup Turn Kishtin starting with this computer on or off
+	SetStartup(ctx context.Context, options *SetStartupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetStartupResponse, error)
+	SetStartupWithResponse(ctx context.Context, options *SetStartupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetStartupResp, error)
 
 	// TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
 	TillStatus(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResponse, error)
@@ -4942,6 +4954,70 @@ func (c *Client) RenameOrder(ctx context.Context, options *RenameOrderRequestOpt
 	return responseParser(ctx, resp)
 }
 
+// RecoverManager Reset a manager's password from the Kishtin computer
+func (c *Client) RecoverManager(ctx context.Context, options *RecoverManagerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RecoverManagerResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/recover",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*RecoverManagerResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(RecoverManagerErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "RecoverManagerErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(RecoverManagerResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "RecoverManagerResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/recover")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // ReportHaccp How well the daily HACCP checks were kept up in a period
 func (c *Client) ReportHaccp(ctx context.Context, options *ReportHaccpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportHaccpResponse, error) {
 	var err error
@@ -7468,6 +7544,132 @@ func (c *Client) Setup(ctx context.Context, options *SetupRequestOptions, reqEdi
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/setup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetStartup Whether Kishtin starts by itself with this computer
+func (c *Client) GetStartup(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetStartupResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/startup",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetStartupResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetStartupErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetStartupErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetStartupResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetStartupResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/startup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SetStartup Turn Kishtin starting with this computer on or off
+func (c *Client) SetStartup(ctx context.Context, options *SetStartupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetStartupResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/startup",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SetStartupResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SetStartupErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SetStartupErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SetStartupResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SetStartupResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/startup")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -11081,6 +11283,50 @@ func (o *RenameOrderRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// RecoverManagerRequestOptions is the options needed to make a request to RecoverManager.
+type RecoverManagerRequestOptions struct {
+	Body *RecoverManagerBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *RecoverManagerRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *RecoverManagerRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *RecoverManagerRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *RecoverManagerRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *RecoverManagerRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // ReportHaccpRequestOptions is the options needed to make a request to ReportHaccp.
 type ReportHaccpRequestOptions struct {
 	Query *ReportHaccpQuery
@@ -12002,6 +12248,50 @@ func (o *SetupRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *SetupRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SetStartupRequestOptions is the options needed to make a request to SetStartup.
+type SetStartupRequestOptions struct {
+	Body *SetStartupBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SetStartupRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SetStartupRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SetStartupRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SetStartupRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SetStartupRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -16904,6 +17194,68 @@ func (c *Client) RenameOrderWithResponse(ctx context.Context, options *RenameOrd
 	}
 }
 
+// RecoverManager Reset a manager's password from the Kishtin computer
+func (c *Client) RecoverManagerWithResponse(ctx context.Context, options *RecoverManagerRequestOptions, reqEditors ...runtime.RequestEditorFn) (*RecoverManagerResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/recover",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/recover")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &RecoverManagerResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(RecoverManagerResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "RecoverManagerResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(RecoverManagerErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "RecoverManagerErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // ReportHaccp How well the daily HACCP checks were kept up in a period
 func (c *Client) ReportHaccpWithResponse(ctx context.Context, options *ReportHaccpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReportHaccpResp, error) {
 	var err error
@@ -19344,6 +19696,128 @@ func (c *Client) SetupWithResponse(ctx context.Context, options *SetupRequestOpt
 	}
 }
 
+// GetStartup Whether Kishtin starts by itself with this computer
+func (c *Client) GetStartupWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetStartupResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/startup",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/startup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetStartupResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetStartupResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetStartupResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetStartupErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetStartupErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SetStartup Turn Kishtin starting with this computer on or off
+func (c *Client) SetStartupWithResponse(ctx context.Context, options *SetStartupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetStartupResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/startup",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/startup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SetStartupResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SetStartupResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetStartupResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SetStartupErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SetStartupErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
 func (c *Client) TillStatusWithResponse(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResp, error) {
 	var err error
@@ -21224,6 +21698,8 @@ type SetCourseUrgentBody = UrgentBody
 
 type RenameOrderBody = NameBody
 
+type RecoverManagerBody = RecoverInBody
+
 type SaveGuidanceBody = SettingsChangeGuidance
 
 type PreviewGuidanceBody = SettingsChangeGuidance
@@ -21261,6 +21737,8 @@ type SaveSystemBody = SettingsChangeSystem
 type PreviewSystemBody = SettingsChangeSystem
 
 type SetupBody = SetupInBody
+
+type SetStartupBody = StartupInBody
 
 type SaveTillMappingsBody = MappingsInBody
 
@@ -21731,6 +22209,10 @@ type RenameOrderResponse = Order
 
 type RenameOrderErrorResponse = ErrorModel
 
+type RecoverManagerResponse = RecoveryResult
+
+type RecoverManagerErrorResponse = ErrorModel
+
 type ReportHaccpResponse = HACCPReport
 
 type ReportHaccpErrorResponse = ErrorModel
@@ -21890,6 +22372,14 @@ type SetupStatusErrorResponse = ErrorModel
 type SetupResponse = FirstRunResult
 
 type SetupErrorResponse = ErrorModel
+
+type GetStartupResponse = StartupStatus
+
+type GetStartupErrorResponse = ErrorModel
+
+type SetStartupResponse = StartupStatus
+
+type SetStartupErrorResponse = ErrorModel
 
 type TillStatusResponse = TillStatus
 
@@ -22547,6 +23037,14 @@ type RenameOrderResp struct {
 	ApplicationProblemPlusJSONDefault *RenameOrderErrorResponse
 }
 
+type RecoverManagerResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *RecoverManagerResponse
+	ApplicationProblemPlusJSONDefault *RecoverManagerErrorResponse
+}
+
 type ReportHaccpResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -22865,6 +23363,22 @@ type SetupResp struct {
 	StatusCode                        int
 	JSON200                           *SetupResponse
 	ApplicationProblemPlusJSONDefault *SetupErrorResponse
+}
+
+type GetStartupResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetStartupResponse
+	ApplicationProblemPlusJSONDefault *GetStartupErrorResponse
+}
+
+type SetStartupResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SetStartupResponse
+	ApplicationProblemPlusJSONDefault *SetStartupErrorResponse
 }
 
 type TillStatusResp struct {
@@ -26459,6 +26973,35 @@ func (r RecordsOutBody) Validate() error {
 	return errors
 }
 
+type RecoverInBody struct {
+	Code     string  `json:"code" validate:"required"`
+	Name     *string `json:"name,omitempty"`
+	Password string  `json:"password" validate:"required"`
+}
+
+func (r RecoverInBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(r))
+}
+
+type RecoveryResult struct {
+	Created  bool `json:"created"`
+	Promoted bool `json:"promoted"`
+	User     User `json:"user"`
+}
+
+func (r RecoveryResult) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(r.User).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("User", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type Result struct {
 	Outcome string `json:"outcome" validate:"required"`
 	Reason  string `json:"reason" validate:"required"`
@@ -27361,6 +27904,22 @@ func (s StaffOutBody) Validate() error {
 		return nil
 	}
 	return errors
+}
+
+type StartupInBody struct {
+	On bool `json:"on"`
+}
+
+type StartupStatus struct {
+	Method    *string `json:"method,omitempty"`
+	Note      string  `json:"note" validate:"required"`
+	On        bool    `json:"on"`
+	Supported bool    `json:"supported"`
+	Where     *string `json:"where,omitempty"`
+}
+
+func (s StartupStatus) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
 type Station struct {

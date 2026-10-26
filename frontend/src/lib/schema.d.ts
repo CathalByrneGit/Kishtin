@@ -1205,6 +1205,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset a manager's password from the Kishtin computer
+         * @description Used by kishtind reset-password while the server runs. Works without an API key, only from the Kishtin computer itself, and only with the one-time code that command leaves in the data folder, which is removed on first use and expires after 10 minutes. With no active manager left, the named staff member is made a manager, or a new manager is added.
+         */
+        post: operations["recover-manager"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reports/haccp": {
         parameters: {
             query?: never;
@@ -1812,6 +1832,30 @@ export interface paths {
          * @description Creates the first manager, a device key for the screen doing the setup, and the restaurant's name. Works without an API key, only while there are no staff, and from another device only with the setup code shown on the server machine. The device key and API key are shown once.
          */
         post: operations["setup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/startup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether Kishtin starts by itself with this computer
+         * @description How Kishtin starts on the computer it runs on (Task Scheduler, a LaunchAgent or a systemd user service), and what that does not do.
+         */
+        get: operations["get-startup"];
+        /**
+         * Turn Kishtin starting with this computer on or off
+         * @description Changes the computer Kishtin runs on, as the user it runs as. Turning it off leaves this Kishtin running until it is stopped or the computer restarts. Noted in the activity log.
+         */
+        put: operations["set-startup"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3248,6 +3292,16 @@ export interface components {
         RecordsOutBody: {
             records: components["schemas"]["Record"][];
         };
+        RecoverInBody: {
+            code: string;
+            name?: string;
+            password: string;
+        };
+        RecoveryResult: {
+            created: boolean;
+            promoted: boolean;
+            user: components["schemas"]["User"];
+        };
         Result: {
             outcome: string;
             reason: string;
@@ -3512,6 +3566,16 @@ export interface components {
         };
         StaffOutBody: {
             staff: components["schemas"]["StaffEntry"][];
+        };
+        StartupInBody: {
+            on: boolean;
+        };
+        StartupStatus: {
+            method?: string;
+            note: string;
+            on: boolean;
+            supported: boolean;
+            where?: string;
         };
         Station: {
             active: boolean;
@@ -6112,6 +6176,39 @@ export interface operations {
             };
         };
     };
+    "recover-manager": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoverInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "report-haccp": {
         parameters: {
             query?: {
@@ -7345,6 +7442,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FirstRunResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-startup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartupStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-startup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartupInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartupStatus"];
                 };
             };
             /** @description Error */

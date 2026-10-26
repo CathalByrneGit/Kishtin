@@ -54,14 +54,18 @@ Kishtin does not take payments. Card payments stay on your Square or SumUp till 
    curl -fsSL https://github.com/cathalbyrnegit/kishtin/releases/latest/download/install.sh | sh
    ```
 
-The installer downloads Kishtin, checks that the download is genuine and complete, and installs it. When it finishes it says **Installed** and what to do next. If anything goes wrong, it says what, and installs nothing.
+The installer downloads Kishtin, checks that the download is genuine and complete, and installs it. If anything goes wrong, it says what, and installs nothing.
 
-## Step 2: Start Kishtin
+## Step 2: Start Kishtin, and have it start by itself
 
-In the same window, type `kishtind` and press Enter.
+At the end, the installer asks: **Start Kishtin by itself whenever this computer starts?** Press Enter for yes. Kishtin starts straight away, and again every time the computer starts, so nobody has to remember.
 
 - The first time, the computer asks whether to let Kishtin use the network. **Windows:** tick **Private networks** and click **Allow**. **Mac:** click **Allow**. This is what lets your tablets reach it.
-- **Leave this window open.** Closing it stops Kishtin. You can minimise it.
+- **On Windows**, Kishtin runs in its own window. Leave it open; you can minimise it. Closing it stops Kishtin until you next log in.
+- **On a Mac**, Kishtin runs in the background, with no window.
+- Kishtin starts when you **log in** to the computer. So that it also comes back by itself after a power cut, set the computer to log in by itself: on a Mac, **System Settings › Users & Groups › Automatically log in as**; on Windows, ask whoever looks after your computer to turn on automatic sign-in.
+
+If you said no, type `kishtind` and press Enter to start Kishtin, and leave that window open. You can turn starting by itself on later in **Settings › The Kishtin computer**.
 
 ## Step 3: Set up your restaurant
 
@@ -80,7 +84,7 @@ You see **Set up Kishtin**. Fill in:
 
 Click **Set up Kishtin**, then **Open Kishtin**.
 
-> **Write the password down somewhere safe.** Kishtin cannot show it again. A manager can reset another person's password, so make a second manager account (Step 4) in case the first is forgotten. If the only manager's password is lost, there is no way back in through Kishtin today.
+> **Write the password down somewhere safe.** Kishtin cannot show it again. If it is forgotten, another manager can set a new one, or you can set one on the Kishtin computer itself (see [If something goes wrong](#if-something-goes-wrong)).
 
 ## Step 4: Add your staff
 
@@ -133,7 +137,7 @@ On each tablet, open the menu (☰) at the top right, or **Settings › This dev
 
 ## Every day
 
-- **Start Kishtin** after the computer has been switched off or restarted: open PowerShell or Terminal, type `kishtind`, press Enter. Kishtin does not yet start by itself.
+- **Kishtin starts by itself** when you log in to the computer, if you said yes in Step 2. If you said no, start it after every restart: open PowerShell or Terminal, type `kishtind`, press Enter.
 - **Fridge checks and cleaning** are on **Today**. Tap **Log check** to record one. A reading out of limit asks what you did about it.
 - **Copy the backups every week.** Kishtin makes a backup every 6 hours, but it is on the same computer. Copy the `backups` and `files` folders from Kishtin's data folder (`C:\Users\<you>\.kishtin` on Windows, `.kishtin` in your home folder on a Mac) to a USB stick or another computer. See **Setup › Backups** for where they are.
 
@@ -142,13 +146,21 @@ On each tablet, open the menu (☰) at the top right, or **Settings › This dev
 ## If something goes wrong
 
 **A tablet can't find Kishtin.**
-- Is the Kishtin computer on, with the `kishtind` window open?
+- Is the Kishtin computer on, and logged in? On Windows, is the Kishtin window open?
 - Is the tablet on the same Wi-Fi as the computer, and not a guest network?
 - Did the computer get a new network address? This happens when a router restarts. Make a new QR code and scan it again. To stop it happening, ask whoever looks after your internet to "reserve the address" of the Kishtin computer in the router.
 
 **The tablet says the connection is not private, or not secure.** The certificate step isn't finished. Make a new QR code, scan it, and follow the steps on the tablet again. On an iPad, check that **Certificate Trust Settings** is turned on.
 
 **A screen says "Not connected".** The tablet can't reach the computer right now. It keeps showing what it last knew. Check the Wi-Fi and the computer; it reconnects by itself.
+
+**The manager password is forgotten.** Another manager can set a new one in **Setup › Staff and access › Staff**. If nobody can log in as a manager:
+
+1. On the Kishtin computer, open PowerShell (Windows) or Terminal (Mac), as in Step 1.
+2. Type `kishtind reset-password` and press Enter.
+3. Type the new password, press Enter, then type it again and press Enter.
+
+It says **Done** and who can now log in. This works only on the Kishtin computer, which is what keeps it safe. If there are several managers, it asks you to add their name: `kishtind reset-password --name "Máire Manager"`.
 
 **Voice says "The microphone needs a secure connection".** That device was not connected with a QR code. Connect it as in Step 5.
 

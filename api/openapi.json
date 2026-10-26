@@ -4178,6 +4178,45 @@
         ],
         "type": "object"
       },
+      "RecoverInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "password"
+        ],
+        "type": "object"
+      },
+      "RecoveryResult": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "promoted": {
+            "type": "boolean"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "user",
+          "created",
+          "promoted"
+        ],
+        "type": "object"
+      },
       "Result": {
         "additionalProperties": false,
         "properties": {
@@ -5258,6 +5297,44 @@
         },
         "required": [
           "staff"
+        ],
+        "type": "object"
+      },
+      "StartupInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "on": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "type": "object"
+      },
+      "StartupStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "on": {
+            "type": "boolean"
+          },
+          "supported": {
+            "type": "boolean"
+          },
+          "where": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "supported",
+          "on",
+          "note"
         ],
         "type": "object"
       },
@@ -9656,6 +9733,49 @@
         ]
       }
     },
+    "/recover": {
+      "post": {
+        "description": "Used by kishtind reset-password while the server runs. Works without an API key, only from the Kishtin computer itself, and only with the one-time code that command leaves in the data folder, which is removed on first use and expires after 10 minutes. With no active manager left, the named staff member is made a manager, or a new manager is added.",
+        "operationId": "recover-manager",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoverInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Reset a manager's password from the Kishtin computer",
+        "tags": [
+          "Staff"
+        ]
+      }
+    },
     "/reports/haccp": {
       "get": {
         "description": "Fridge and freezer checks due, done and missed (counted as the record books count them), by day of the week and by unit; cleaning tasks done; records out of limit; each unit's temperatures per day. At most 366 days.",
@@ -11138,6 +11258,78 @@
         },
         "security": [],
         "summary": "Set up a new install from the screens",
+        "tags": [
+          "Setup"
+        ]
+      }
+    },
+    "/startup": {
+      "get": {
+        "description": "How Kishtin starts on the computer it runs on (Task Scheduler, a LaunchAgent or a systemd user service), and what that does not do.",
+        "operationId": "get-startup",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartupStatus"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Whether Kishtin starts by itself with this computer",
+        "tags": [
+          "Setup"
+        ]
+      },
+      "put": {
+        "description": "Changes the computer Kishtin runs on, as the user it runs as. Turning it off leaves this Kishtin running until it is stopped or the computer restarts. Noted in the activity log.",
+        "operationId": "set-startup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartupInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartupStatus"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Turn Kishtin starting with this computer on or off",
         "tags": [
           "Setup"
         ]

@@ -20,6 +20,8 @@ A new install has no staff. Until it does, `kishtind` starts in setup mode and t
 
 `kishtind setup --name "Your Name"`, with the server stopped, still does the same from the command line, without naming the restaurant or pairing a screen.
 
+On the password login, **Forgot the password?** says what to do: another manager sets a new one in **Staff**, or, if nobody can log in as a manager, `kishtind reset-password` on the Kishtin computer. See [Forgotten manager password](install.md#forgotten-manager-password).
+
 ## Connecting a tablet or phone
 
 Tablets and phones on the restaurant's Wi-Fi connect by QR code, with no internet needed.
@@ -230,6 +232,7 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and ru
 ## Settings
 
 - **Restaurant**: the name, backup schedule and retention, largest upload, and preview length. These change through the same review as Setup. See [settings.md](settings.md#system-settings).
+- **The Kishtin computer**: whether Kishtin starts by itself when the computer it runs on starts, with a switch to turn that on or off (a manager with the password), how it does it, and what it does not do (on Windows and a Mac it starts at login, not at power-on). See [Start with the computer](install.md#start-with-the-computer).
 - **This device**: which screen it shows (see [Kitchen screens](#kitchen-screens)), light, dark or system theme, high contrast, and unpairing.
 
 ## Screenshots

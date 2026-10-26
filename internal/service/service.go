@@ -65,6 +65,7 @@ func KindOf(err error) Kind {
 // Service runs Kishtin's actions.
 type Service struct {
 	tablets *TabletNetwork
+	startup Startup
 	joins   joins
 	st      store.Store
 	clk     clock.Clock
@@ -139,6 +140,8 @@ type Options struct {
 	// Tablets says how tablets reach Kishtin on the restaurant's network.
 	// Nil turns pairing tablets by QR code off.
 	Tablets *TabletNetwork
+	// Startup turns Kishtin starting with this computer on and off.
+	Startup Startup
 }
 
 // DefaultSystem returns the system settings used when none are configured.
@@ -173,7 +176,7 @@ func New(o Options) *Service {
 	}
 	pos[TillSquare] = sq
 	return &Service{pos: pos, wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech,
-		creds: o.Credentials, ai: o.AI, fetch: o.Fetch, voiceAudioDir: o.VoiceAudioDir, tablets: o.Tablets}
+		creds: o.Credentials, ai: o.AI, fetch: o.Fetch, voiceAudioDir: o.VoiceAudioDir, tablets: o.Tablets, startup: o.Startup}
 }
 
 // Events returns the hub that change notices are published to.
