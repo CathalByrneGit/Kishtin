@@ -12,6 +12,8 @@ const (
 	KindStaff    = "staff"
 	KindMenu     = "menu"
 	KindOrder    = "order"
+	// KindDevice is a tablet or phone paired by QR code.
+	KindDevice = "device"
 )
 
 // Event says something changed. Screens refetch what they show; the event

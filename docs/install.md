@@ -50,6 +50,16 @@ If any check fails, it says what went wrong and nothing is installed.
 
 `kishtind` keeps its data in `~/.kishtin` (on Windows, `C:\Users\<you>\.kishtin`): one database file, attached photos and backups.
 
+## Tablets and phones
+
+Kishtin lets tablets and phones on the restaurant's network use it from the start. Connect each one with a QR code from **Setup › Staff and access › Device keys › Connect a tablet**; see [Connecting a tablet or phone](screens.md#connecting-a-tablet-or-phone).
+
+- Kishtin answers tablets over HTTPS on port 8443, with its own certificate, and on port 8080 with only the page a tablet opens first, which helps it install the certificate. Everything else on port 8080 is for the Kishtin computer itself. Every request still needs a device key, and pairing needs a one-time code from a manager.
+- The first time `kishtind` starts, Windows asks whether to allow it on networks, and a Mac whether to accept incoming connections. Allow it on **private** networks only, not public ones.
+- Keep tablets on the staff Wi-Fi, not a guest network: guests' phones should not reach the kitchen system at all.
+- On a computer with several networks or a VPN, name the address tablets should use in `kishtin.toml`: `tablet_addresses = ["192.168.1.20"]` under `[server]`.
+- To keep Kishtin on this computer only, set `tablets = false` under `[server]`.
+
 ## Update
 
 Run the same install line again. It replaces the two programs and leaves the data alone. Stop `kishtind` first (press Ctrl C in its window), and take a backup in **Setup › Backups** before a big update. Start `kishtind` again afterwards; it brings the database up to date when it starts.
@@ -104,7 +114,8 @@ Said plainly, so nobody is caught out:
 
 - No release has been published yet, so the install lines above do not work until the first `v*` tag is pushed (see Making a release). Until then, build from source as in the [README](../README.md#build-from-source).
 - Kishtin does not start by itself when the computer starts. Someone has to run `kishtind` after a restart.
-- Tablets and phones cannot reach Kishtin until it listens on the restaurant's network, which needs settings in `kishtin.toml` and HTTPS. See [Configuration](../README.md#configuration). Voice needs HTTPS on tablets.
+- Each tablet installs Kishtin's certificate once, by hand, following the steps on its screen. On an iPad that is three screens of Settings.
+- If the router gives the Kishtin computer a new address, tablets must be pointed at it again (Kishtin renews its own certificate by itself). Reserve the computer's address in the router to avoid this.
 - The programs are not signed by Apple or Microsoft. The install lines above work without warnings; a copy downloaded in a browser may show one.
 - There are no click-to-install packages (`.msi`, `.pkg`, `.deb`) yet.
 

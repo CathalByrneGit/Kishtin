@@ -45,6 +45,7 @@
   import { closeLog, logDrawer, openLog } from "./lib/logdrawer.svelte";
   import { initRouter, navigate, route } from "./lib/router.svelte";
   import { screen } from "./lib/screen.svelte";
+  import { join, takeJoinFromURL } from "./lib/join.svelte";
   import { endSession, session, takePairingFromURL } from "./lib/session.svelte";
   import KitchenShell from "./screens/KitchenShell.svelte";
   import Login from "./screens/Login.svelte";
@@ -168,6 +169,8 @@
   let paletteOpen = $state(false);
 
   takePairingFromURL();
+  const joinCode = takeJoinFromURL();
+  if (joinCode) void join(joinCode);
 
   const loggedIn = $derived(Boolean(session.deviceKey && session.token));
   const current = $derived(pages.find((p) => p.path === route.path) ?? null);

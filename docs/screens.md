@@ -20,13 +20,28 @@ A new install has no staff. Until it does, `kishtind` starts in setup mode and t
 
 `kishtind setup --name "Your Name"`, with the server stopped, still does the same from the command line, without naming the restaurant or pairing a screen.
 
-## Pairing a device and logging in
+## Connecting a tablet or phone
 
-1. A manager makes a device key in **Setup → Staff and access → Device keys** (or with `kishtin keys create --kind device --name "Office PC"`). The pairing link is shown once.
-2. Open the link once on the computer, tablet or phone. The browser remembers the key. You can also paste the key on the setup screen.
-3. Staff pick their name and enter their PIN. A PIN login lasts 12 hours. The exit icon at the bottom of the sidebar switches staff.
+Tablets and phones on the restaurant's Wi-Fi connect by QR code, with no internet needed.
 
-To take a device out of use, revoke its key in **Device keys**, or use **Unpair this device** in **Settings**.
+1. On the Kishtin computer, a manager logged in with a password opens **Setup › Staff and access › Device keys**, taps **Connect a tablet**, names it ("Pass tablet") and taps **Make QR code**.
+2. Point the tablet's camera at the QR code and open the link. The code works once, for 15 minutes. With no camera, type the link shown under **No camera? Type the link instead**.
+3. The first time, the tablet installs Kishtin's own certificate. The page on the tablet opens the steps for that kind of device (iPhone or iPad, Android, Windows, Mac, Chromebook) and checks every few seconds whether it has worked.
+4. Once the tablet trusts Kishtin, it moves to the secure address by itself, pairs, and shows the staff login. On the Kishtin computer, the window says **Pass tablet is connected**, and the tablet is listed under Device keys.
+
+![Connect a tablet](screenshots/connect-tablet.png)
+
+| On the tablet, before it trusts Kishtin | After, ready for staff |
+|---|---|
+| ![Join page](screenshots/join-tablet.png) | ![Staff login](screenshots/join-tablet-paired.png) |
+
+Why the certificate: browsers only allow the microphone and keeping the screen awake on a secure (HTTPS) page. Kishtin runs in the restaurant, not on the internet, so no public authority can vouch for it; it vouches for itself instead. Kishtin makes its own certificate authority once, in `tls/` in its data folder, and each tablet installs it once. It can only vouch for local network names and private addresses, so trusting it does not let it vouch for any internet site, even if its key were copied. Its fingerprint (SHA-256) is shown on the QR window, on the tablet's page and in the iPhone profile, so they can be compared.
+
+From the command line: `kishtin keys join --name "Pass tablet"` prints the QR code in the terminal (`--invert` for a light background) and the link.
+
+The older way still works: make a device key with **New key** (or `kishtin keys create --kind device`) and open its pairing link, or paste the key on the tablet.
+
+Staff then pick their name and enter their PIN. A PIN login lasts 12 hours. The exit icon at the bottom of the sidebar switches staff. To take a device out of use, revoke its key in **Device keys**, or use **Unpair this device** in **Settings**.
 
 ## Kitchen screens
 

@@ -174,6 +174,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/devices/join-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a QR code that pairs a tablet or phone
+         * @description Makes a one-time code, good for 15 minutes, with a link and QR code for each address this computer has on the restaurant network. A tablet that opens the link installs Kishtin's certificate if it needs to, then pairs itself with a new device key. Manager with a password.
+         */
+        post: operations["create-join-code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/devices/pair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pair this tablet or phone with a join code
+         * @description Works without an API key: the one-time code from a manager's QR code is the proof. Returns a device key for this device, shown once.
+         */
+        post: operations["pair-device"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files": {
         parameters: {
             query?: never;
@@ -2707,6 +2747,22 @@ export interface components {
             item: components["schemas"]["NewItem"];
             reason?: string;
         };
+        JoinCode: {
+            code: string;
+            /** Format: date-time */
+            expires_at: string;
+            fingerprint?: string;
+            links: components["schemas"]["JoinLink"][];
+            name: string;
+        };
+        JoinCodeInBody: {
+            name: string;
+        };
+        JoinLink: {
+            address: string;
+            qr: string[];
+            url: string;
+        };
         KeysOutBody: {
             keys: components["schemas"]["APIKey"][];
         };
@@ -2952,6 +3008,14 @@ export interface components {
             sheet?: string;
             sheet_label?: string;
             title?: string;
+        };
+        PairInBody: {
+            code: string;
+        };
+        Paired: {
+            key: components["schemas"]["APIKey"];
+            name: string;
+            secret: string;
         };
         PaperCheck: {
             check?: components["schemas"]["Check"];
@@ -4002,6 +4066,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-join-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinCodeInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinCode"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "pair-device": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Paired"];
+                };
             };
             /** @description Error */
             default: {

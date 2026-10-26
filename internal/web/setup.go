@@ -5,15 +5,16 @@ import (
 	"crypto/subtle"
 	"net"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/service"
 )
 
 // publicKey marks the few operations that work without an API key: setting
-// up a new install, before any key exists.
+// up a new install, before any key exists, and pairing a tablet with a
+// one-time code.
 const publicKey = "public"
 
 // SetSetupCode sets the one-time code another device must give to set up a
@@ -108,11 +109,11 @@ func (s *Server) setupRoutes() {
 		Metadata: map[string]any{publicKey: true},
 	}, wrap(s, func(ctx context.Context, in *setupIn) (*setupOut, error) {
 		if remote(ctx) {
-			code := normalCode(in.Body.Code)
+			code := auth.NormalCode(in.Body.Code)
 			if s.setupCode == "" {
 				return nil, huma.Error403Forbidden("set Kishtin up on the computer it runs on: open it there in a browser")
 			}
-			if subtle.ConstantTimeCompare([]byte(code), []byte(normalCode(s.setupCode))) != 1 {
+			if subtle.ConstantTimeCompare([]byte(code), []byte(auth.NormalCode(s.setupCode))) != 1 {
 				return nil, huma.Error403Forbidden("that setup code is wrong: it is shown where Kishtin was started, and in setup-code.txt in its data folder")
 			}
 		}
@@ -125,18 +126,4 @@ func (s *Server) setupRoutes() {
 		}
 		return &setupOut{Body: res}, nil
 	}))
-}
-
-// normalCode lets a setup code be typed in any case, with or without the
-// dashes and spaces.
-func normalCode(c string) string {
-	return strings.Map(func(r rune) rune {
-		switch {
-		case r == '-' || r == ' ':
-			return -1
-		case r >= 'a' && r <= 'z':
-			return r - 'a' + 'A'
-		}
-		return r
-	}, c)
 }

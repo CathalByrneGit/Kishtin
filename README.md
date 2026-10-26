@@ -105,7 +105,7 @@ The server only listens on the machine itself by default; see Configuration to s
 
 Data lives in `~/.kishtin/` by default (or `/var/lib/kishtin/`). Change it with `KISHTIN_DATA_DIR` or a `kishtin.toml`. See [kishtin.example.toml](kishtin.example.toml).
 
-The server only listens on loopback unless you configure TLS, or explicitly mark the network as trusted. Every API request needs an API key.
+Out of the box, Kishtin serves the Kishtin computer over plain HTTP on port 8080, and tablets on the restaurant's network over HTTPS on port 8443 with its own certificate, paired by QR code (see [docs/screens.md](docs/screens.md#connecting-a-tablet-or-phone)). Other devices get nothing over plain HTTP but the page that helps them install that certificate. Set `tablets = false` under `[server]` to keep Kishtin on this computer only. To serve plain HTTP more widely, configure your own TLS certificate, or explicitly mark the network as trusted. Every API request needs an API key.
 
 ## Development
 

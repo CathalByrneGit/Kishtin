@@ -9,12 +9,26 @@
 # restaurant_name = "The Synthetic Kitchen"
 
 [server]
-# Loopback only by default. To serve kitchen tablets over Wi-Fi, listen on
-# the network address and either set tls_cert and tls_key, or set
-# trusted_network = true on a private network you control.
+# The full app over plain HTTP, for this computer. With tablets on (below),
+# Kishtin also answers this port on the network, but other devices only get
+# the page that helps them install Kishtin's certificate.
 listen = "127.0.0.1:8080"
+
+# Tablets and phones on the restaurant's network, paired by QR code in
+# Setup > Staff and access > Device keys, over HTTPS with Kishtin's own
+# certificate (made once, in tls/ in the data folder). false keeps Kishtin on
+# this computer only.
+tablets = true
+tablet_listen = ":8443"
+# The addresses tablets use to reach this computer. Empty finds every private
+# address it has; name one when it is on several networks or a VPN.
+# tablet_addresses = ["192.168.1.20"]
+
+# A certificate of your own instead, for listen. Then listen can be on the
+# network, and tablets need not install Kishtin's certificate.
 # tls_cert = "/etc/kishtin/cert.pem"
 # tls_key = "/etc/kishtin/key.pem"
+# Or plain HTTP on the network, only on a private network you control.
 # trusted_network = false
 
 [store]

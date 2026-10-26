@@ -64,6 +64,8 @@ func KindOf(err error) Kind {
 
 // Service runs Kishtin's actions.
 type Service struct {
+	tablets *TabletNetwork
+	joins   joins
 	st      store.Store
 	clk     clock.Clock
 	files   *files.Store
@@ -133,6 +135,9 @@ type Options struct {
 	// VoiceAudioDir is where recordings of voice commands are kept, when
 	// system settings say to keep them. Empty keeps none.
 	VoiceAudioDir string
+	// Tablets says how tablets reach Kishtin on the restaurant's network.
+	// Nil turns pairing tablets by QR code off.
+	Tablets *TabletNetwork
 }
 
 // DefaultSystem returns the system settings used when none are configured.
@@ -155,7 +160,7 @@ func New(o Options) *Service {
 		wake = voice.DefaultWakeWords
 	}
 	return &Service{wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech, pos: o.POS,
-		posSource: o.POSSource, creds: o.Credentials, newSquare: o.NewSquare, ai: o.AI, fetch: o.Fetch, voiceAudioDir: o.VoiceAudioDir}
+		posSource: o.POSSource, creds: o.Credentials, newSquare: o.NewSquare, ai: o.AI, fetch: o.Fetch, voiceAudioDir: o.VoiceAudioDir, tablets: o.Tablets}
 }
 
 // Events returns the hub that change notices are published to.

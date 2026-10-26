@@ -78,6 +78,14 @@ type ClientInterface interface {
 	ConnectSquare(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResponse, error)
 	ConnectSquareWithResponse(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResp, error)
 
+	// CreateJoinCode Make a QR code that pairs a tablet or phone
+	CreateJoinCode(ctx context.Context, options *CreateJoinCodeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateJoinCodeResponse, error)
+	CreateJoinCodeWithResponse(ctx context.Context, options *CreateJoinCodeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateJoinCodeResp, error)
+
+	// PairDevice Pair this tablet or phone with a join code
+	PairDevice(ctx context.Context, options *PairDeviceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PairDeviceResponse, error)
+	PairDeviceWithResponse(ctx context.Context, options *PairDeviceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PairDeviceResp, error)
+
 	// UploadFile Upload a docket or invoice photo
 	UploadFile(ctx context.Context, options *UploadFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UploadFileResponse, error)
 	UploadFileWithResponse(ctx context.Context, options *UploadFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UploadFileResp, error)
@@ -1179,6 +1187,134 @@ func (c *Client) ConnectSquare(ctx context.Context, options *ConnectSquareReques
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// CreateJoinCode Make a QR code that pairs a tablet or phone
+func (c *Client) CreateJoinCode(ctx context.Context, options *CreateJoinCodeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateJoinCodeResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/devices/join-codes",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CreateJoinCodeResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(CreateJoinCodeErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CreateJoinCodeErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CreateJoinCodeResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CreateJoinCodeResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/devices/join-codes")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PairDevice Pair this tablet or phone with a join code
+func (c *Client) PairDevice(ctx context.Context, options *PairDeviceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PairDeviceResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/devices/pair",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PairDeviceResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PairDeviceErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PairDeviceErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PairDeviceResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PairDeviceResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/devices/pair")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -8328,6 +8464,94 @@ func (o *ConnectSquareRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// CreateJoinCodeRequestOptions is the options needed to make a request to CreateJoinCode.
+type CreateJoinCodeRequestOptions struct {
+	Body *CreateJoinCodeBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *CreateJoinCodeRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *CreateJoinCodeRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *CreateJoinCodeRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *CreateJoinCodeRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *CreateJoinCodeRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PairDeviceRequestOptions is the options needed to make a request to PairDevice.
+type PairDeviceRequestOptions struct {
+	Body *PairDeviceBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PairDeviceRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PairDeviceRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PairDeviceRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PairDeviceRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PairDeviceRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // UploadFileRequestOptions is the options needed to make a request to UploadFile.
 type UploadFileRequestOptions struct {
 	Query *UploadFileQuery
@@ -12507,6 +12731,130 @@ func (c *Client) ConnectSquareWithResponse(ctx context.Context, options *Connect
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "ConnectSquareErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// CreateJoinCode Make a QR code that pairs a tablet or phone
+func (c *Client) CreateJoinCodeWithResponse(ctx context.Context, options *CreateJoinCodeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateJoinCodeResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/devices/join-codes",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/devices/join-codes")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CreateJoinCodeResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(CreateJoinCodeResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateJoinCodeResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CreateJoinCodeErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CreateJoinCodeErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PairDevice Pair this tablet or phone with a join code
+func (c *Client) PairDeviceWithResponse(ctx context.Context, options *PairDeviceRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PairDeviceResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/devices/pair",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/devices/pair")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PairDeviceResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PairDeviceResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PairDeviceResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PairDeviceErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PairDeviceErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -19690,6 +20038,10 @@ type LoginBody = LoginInBody
 
 type ConnectSquareBody = ConnectInput
 
+type CreateJoinCodeBody = JoinCodeInBody
+
+type PairDeviceBody = PairInBody
+
 type UploadFileBody = runtime.File
 
 type CompareCopyBody = FileBody
@@ -20016,6 +20368,14 @@ type DisconnectSquareErrorResponse = ErrorModel
 type ConnectSquareResponse = ConnectResult
 
 type ConnectSquareErrorResponse = ErrorModel
+
+type CreateJoinCodeResponse = JoinCode
+
+type CreateJoinCodeErrorResponse = ErrorModel
+
+type PairDeviceResponse = Paired
+
+type PairDeviceErrorResponse = ErrorModel
 
 type UploadFileResponse = FileMeta
 
@@ -20537,6 +20897,22 @@ type ConnectSquareResp struct {
 	StatusCode                        int
 	JSON200                           *ConnectSquareResponse
 	ApplicationProblemPlusJSONDefault *ConnectSquareErrorResponse
+}
+
+type CreateJoinCodeResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *CreateJoinCodeResponse
+	ApplicationProblemPlusJSONDefault *CreateJoinCodeErrorResponse
+}
+
+type PairDeviceResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PairDeviceResponse
+	ApplicationProblemPlusJSONDefault *PairDeviceErrorResponse
 }
 
 type UploadFileResp struct {
@@ -23422,6 +23798,59 @@ func (i ItemReplace) Validate() error {
 	return errors
 }
 
+type JoinCode struct {
+	Code        string     `json:"code" validate:"required"`
+	ExpiresAt   time.Time  `json:"expires_at" validate:"required"`
+	Fingerprint *string    `json:"fingerprint,omitempty"`
+	Links       []JoinLink `json:"links" validate:"required"`
+	Name        string     `json:"name" validate:"required"`
+}
+
+func (j JoinCode) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(j.Code, "required"); err != nil {
+		errors = errors.Append("Code", err)
+	}
+	if err := typesValidator.Var(j.ExpiresAt, "required"); err != nil {
+		errors = errors.Append("ExpiresAt", err)
+	}
+	if err := typesValidator.Var(j.Links, "required"); err != nil {
+		errors = errors.Append("Links", err)
+	}
+	for i, item := range j.Links {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Links[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(j.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type JoinCodeInBody struct {
+	Name string `json:"name" validate:"required"`
+}
+
+func (j JoinCodeInBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(j))
+}
+
+type JoinLink struct {
+	Address string   `json:"address" validate:"required"`
+	Qr      []string `json:"qr" validate:"required"`
+	URL     string   `json:"url" validate:"required"`
+}
+
+func (j JoinLink) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(j))
+}
+
 type KeysOutBody struct {
 	Keys []APIKey `json:"keys" validate:"required"`
 }
@@ -24210,6 +24639,39 @@ func (p Page) Validate() error {
 				errors = errors.Append(fmt.Sprintf("Rows[%d]", i), err)
 			}
 		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type PairInBody struct {
+	Code string `json:"code" validate:"required,min=1"`
+}
+
+func (p PairInBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(p))
+}
+
+type Paired struct {
+	Key    APIKey `json:"key"`
+	Name   string `json:"name" validate:"required"`
+	Secret string `json:"secret" validate:"required"`
+}
+
+func (p Paired) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(p.Key).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Key", err)
+		}
+	}
+	if err := typesValidator.Var(p.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(p.Secret, "required"); err != nil {
+		errors = errors.Append("Secret", err)
 	}
 	if len(errors) == 0 {
 		return nil

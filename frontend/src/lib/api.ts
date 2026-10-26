@@ -120,6 +120,8 @@ export interface ExportResult {
 }
 
 export const api = {
+  createJoinCode: (name: string) => json<Schemas["JoinCode"]>("POST", "/devices/join-codes", { body: { name } }),
+  pairDevice: (code: string) => json<Schemas["Paired"]>("POST", "/devices/pair", { body: { code } }),
   setupStatus: () => json<Schemas["SetupStatusOutBody"]>("GET", "/setup"),
   setup: (body: Schemas["SetupInBody"]) => json<Schemas["FirstRunResult"]>("POST", "/setup", { body }),
   staff: () => json<Schemas["StaffOutBody"]>("GET", "/auth/staff"),

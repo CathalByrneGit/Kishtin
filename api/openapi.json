@@ -2518,6 +2518,72 @@
         ],
         "type": "object"
       },
+      "JoinCode": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/JoinLink"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "expires_at",
+          "links"
+        ],
+        "type": "object"
+      },
+      "JoinCodeInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "JoinLink": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "qr": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "url",
+          "qr"
+        ],
+        "type": "object"
+      },
       "KeysOutBody": {
         "additionalProperties": false,
         "properties": {
@@ -3437,6 +3503,39 @@
         "required": [
           "columns",
           "rows"
+        ],
+        "type": "object"
+      },
+      "PairInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "Paired": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/APIKey"
+          },
+          "name": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "key",
+          "secret"
         ],
         "type": "object"
       },
@@ -6642,6 +6741,91 @@
         "summary": "Connect Square with an access token (manager password)",
         "tags": [
           "Connections"
+        ]
+      }
+    },
+    "/devices/join-codes": {
+      "post": {
+        "description": "Makes a one-time code, good for 15 minutes, with a link and QR code for each address this computer has on the restaurant network. A tablet that opens the link installs Kishtin's certificate if it needs to, then pairs itself with a new device key. Manager with a password.",
+        "operationId": "create-join-code",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinCodeInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCode"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Make a QR code that pairs a tablet or phone",
+        "tags": [
+          "Keys"
+        ]
+      }
+    },
+    "/devices/pair": {
+      "post": {
+        "description": "Works without an API key: the one-time code from a manager's QR code is the proof. Returns a device key for this device, shown once.",
+        "operationId": "pair-device",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Paired"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Pair this tablet or phone with a join code",
+        "tags": [
+          "Keys"
         ]
       }
     },

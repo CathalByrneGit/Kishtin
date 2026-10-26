@@ -151,7 +151,7 @@ func TestOnlySetupIsPublic(t *testing.T) {
 			}
 		}
 	}
-	assert.ElementsMatch(t, []string{"setup-status", "setup"}, public)
+	assert.ElementsMatch(t, []string{"setup-status", "setup", "pair-device"}, public)
 	// A blank install still needs a key for everything else.
 	for _, p := range []string{"/api/auth/staff", "/api/haccp/records", "/api/users"} {
 		assert.Equal(t, http.StatusUnauthorized, call(t, srv, http.MethodGet, p, "", false, nil).status, p)

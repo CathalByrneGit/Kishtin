@@ -21,6 +21,7 @@ import (
 
 func (s *Server) routes() {
 	s.setupRoutes()
+	s.deviceRoutes()
 	s.authRoutes()
 	s.haccpRoutes()
 	s.packRoute()
