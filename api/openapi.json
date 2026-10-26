@@ -967,7 +967,6 @@
           }
         },
         "required": [
-          "environment",
           "token"
         ],
         "type": "object"
@@ -2518,6 +2517,72 @@
         ],
         "type": "object"
       },
+      "JoinCode": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/JoinLink"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "expires_at",
+          "links"
+        ],
+        "type": "object"
+      },
+      "JoinCodeInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "JoinLink": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "qr": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "url",
+          "qr"
+        ],
+        "type": "object"
+      },
       "KeysOutBody": {
         "additionalProperties": false,
         "properties": {
@@ -3017,7 +3082,7 @@
         ],
         "type": "object"
       },
-      "MappingsIn": {
+      "MappingsInBody": {
         "additionalProperties": false,
         "properties": {
           "mappings": {
@@ -3437,6 +3502,39 @@
         "required": [
           "columns",
           "rows"
+        ],
+        "type": "object"
+      },
+      "PairInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "Paired": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/APIKey"
+          },
+          "name": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "key",
+          "secret"
         ],
         "type": "object"
       },
@@ -4077,6 +4175,45 @@
         },
         "required": [
           "records"
+        ],
+        "type": "object"
+      },
+      "RecoverInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "password"
+        ],
+        "type": "object"
+      },
+      "RecoveryResult": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "promoted": {
+            "type": "boolean"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "user",
+          "created",
+          "promoted"
         ],
         "type": "object"
       },
@@ -5120,39 +5257,6 @@
         ],
         "type": "object"
       },
-      "SquareStatus": {
-        "additionalProperties": false,
-        "properties": {
-          "connected": {
-            "type": "boolean"
-          },
-          "mappings": {
-            "items": {
-              "$ref": "#/components/schemas/Mapping"
-            },
-            "type": "array"
-          },
-          "recent": {
-            "items": {
-              "$ref": "#/components/schemas/Imported"
-            },
-            "type": "array"
-          },
-          "settings": {
-            "$ref": "#/components/schemas/VersionedPOSSettings"
-          },
-          "state": {
-            "$ref": "#/components/schemas/SyncState"
-          }
-        },
-        "required": [
-          "connected",
-          "settings",
-          "recent",
-          "mappings"
-        ],
-        "type": "object"
-      },
       "StaffEntry": {
         "additionalProperties": false,
         "properties": {
@@ -5193,6 +5297,44 @@
         },
         "required": [
           "staff"
+        ],
+        "type": "object"
+      },
+      "StartupInBody": {
+        "additionalProperties": false,
+        "properties": {
+          "on": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "type": "object"
+      },
+      "StartupStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "on": {
+            "type": "boolean"
+          },
+          "supported": {
+            "type": "boolean"
+          },
+          "where": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "supported",
+          "on",
+          "note"
         ],
         "type": "object"
       },
@@ -5591,6 +5733,43 @@
           "state",
           "lines",
           "updated_at"
+        ],
+        "type": "object"
+      },
+      "TillStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "connected": {
+            "type": "boolean"
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/Mapping"
+            },
+            "type": "array"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/Imported"
+            },
+            "type": "array"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/VersionedPOSSettings"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SyncState"
+          },
+          "till": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "till",
+          "connected",
+          "settings",
+          "recent",
+          "mappings"
         ],
         "type": "object"
       },
@@ -6581,9 +6760,25 @@
         ]
       }
     },
-    "/connectors/square": {
+    "/connectors/{till}": {
       "delete": {
-        "operationId": "disconnect-square",
+        "operationId": "disconnect-till",
+        "parameters": [
+          {
+            "description": "The till: square or sumup.",
+            "in": "path",
+            "name": "till",
+            "required": true,
+            "schema": {
+              "description": "The till: square or sumup.",
+              "enum": [
+                "square",
+                "sumup"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": "No Content"
@@ -6599,14 +6794,28 @@
             "description": "Error"
           }
         },
-        "summary": "Disconnect Square and delete the saved token (manager password); turn order import off first",
+        "summary": "Disconnect a till and delete its saved token (manager password); turn order import off first",
         "tags": [
           "Connections"
         ]
       },
       "put": {
-        "description": "Kishtin checks the token by asking Square for the account's locations, and saves it only if Square accepts it. It is kept in a file only the server can read, outside the database, so it is never in a backup or export. Not possible when the token is set in the environment or kishtin.toml.",
-        "operationId": "connect-square",
+        "description": "Kishtin checks the token by asking the till for the account's locations, and saves it only if the till accepts it. It is kept in a file only the server can read, outside the database, so it is never in a backup or export. Not possible when the token is set in the environment or kishtin.toml. SumUp has only the production environment.",
+        "operationId": "connect-till",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "till",
+            "required": true,
+            "schema": {
+              "enum": [
+                "square",
+                "sumup"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -6639,9 +6848,94 @@
             "description": "Error"
           }
         },
-        "summary": "Connect Square with an access token (manager password)",
+        "summary": "Connect a till with its token: a Square access token or a SumUp API key (manager password)",
         "tags": [
           "Connections"
+        ]
+      }
+    },
+    "/devices/join-codes": {
+      "post": {
+        "description": "Makes a one-time code, good for 15 minutes, with a link and QR code for each address this computer has on the restaurant network. A tablet that opens the link installs Kishtin's certificate if it needs to, then pairs itself with a new device key. Manager with a password.",
+        "operationId": "create-join-code",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinCodeInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCode"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Make a QR code that pairs a tablet or phone",
+        "tags": [
+          "Keys"
+        ]
+      }
+    },
+    "/devices/pair": {
+      "post": {
+        "description": "Works without an API key: the one-time code from a manager's QR code is the proof. Returns a device key for this device, shown once.",
+        "operationId": "pair-device",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Paired"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Pair this tablet or phone with a join code",
+        "tags": [
+          "Keys"
         ]
       }
     },
@@ -9439,6 +9733,49 @@
         ]
       }
     },
+    "/recover": {
+      "post": {
+        "description": "Used by kishtind reset-password while the server runs. Works without an API key, only from the Kishtin computer itself, and only with the one-time code that command leaves in the data folder, which is removed on first use and expires after 10 minutes. With no active manager left, the named staff member is made a manager, or a new manager is added.",
+        "operationId": "recover-manager",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoverInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Reset a manager's password from the Kishtin computer",
+        "tags": [
+          "Staff"
+        ]
+      }
+    },
     "/reports/haccp": {
       "get": {
         "description": "Fridge and freezer checks due, done and missed (counted as the record books count them), by day of the week and by unit; cleaning tasks done; records out of limit; each unit's temperatures per day. At most 366 days.",
@@ -10562,6 +10899,151 @@
         ]
       }
     },
+    "/settings/sumup": {
+      "get": {
+        "description": "Whether paid sales are imported from SumUp, for which merchant account (its merchant code is the location ID), and how often Kishtin asks. The preview says exactly what is sent to SumUp. Turning it on needs the manager password.",
+        "operationId": "get-sumup",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionedPOSSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show the SumUp settings in force",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "put": {
+        "description": "Needs a manager password login or a manager API key, and a reason. A change that makes food safety less strict also needs plan_ref. Saved records are never re-graded.",
+        "operationId": "save-sumup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChangePOSSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionedPOSSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Save a new version of the SumUp settings",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/sumup/history": {
+      "get": {
+        "operationId": "sumup-history",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryOutPOSSettingsBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List every saved version of the SumUp settings, oldest first",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/sumup/preview": {
+      "post": {
+        "description": "Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.",
+        "operationId": "preview-sumup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChangePOSSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsPreviewPOSSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Preview a change to the SumUp settings",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
     "/settings/system": {
       "get": {
         "description": "Backup schedule and retention, upload size and limit preview length. Until changed here they come from kishtin.toml.",
@@ -10781,15 +11263,16 @@
         ]
       }
     },
-    "/square": {
+    "/startup": {
       "get": {
-        "operationId": "square-status",
+        "description": "How Kishtin starts on the computer it runs on (Task Scheduler, a LaunchAgent or a systemd user service), and what that does not do.",
+        "operationId": "get-startup",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SquareStatus"
+                  "$ref": "#/components/schemas/StartupStatus"
                 }
               }
             },
@@ -10806,16 +11289,119 @@
             "description": "Error"
           }
         },
-        "summary": "Show whether order import from Square is on and working, recent till orders, and mappings",
+        "summary": "Whether Kishtin starts by itself with this computer",
         "tags": [
-          "Square"
+          "Setup"
+        ]
+      },
+      "put": {
+        "description": "Changes the computer Kishtin runs on, as the user it runs as. Turning it off leaves this Kishtin running until it is stopped or the computer restarts. Noted in the activity log.",
+        "operationId": "set-startup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartupInBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartupStatus"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Turn Kishtin starting with this computer on or off",
+        "tags": [
+          "Setup"
         ]
       }
     },
-    "/square/catalog": {
+    "/tills/{till}": {
       "get": {
-        "description": "Sends Square only the access token. Suggestions match dishes and modifiers by name; nothing is saved until mappings are saved.",
-        "operationId": "square-catalog",
+        "operationId": "till-status",
+        "parameters": [
+          {
+            "description": "The till: square or sumup.",
+            "in": "path",
+            "name": "till",
+            "required": true,
+            "schema": {
+              "description": "The till: square or sumup.",
+              "enum": [
+                "square",
+                "sumup"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TillStatus"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show whether order import from a till is on and working, recent till orders, and mappings",
+        "tags": [
+          "Tills"
+        ]
+      }
+    },
+    "/tills/{till}/catalog": {
+      "get": {
+        "description": "Sends the till only its token and location. Suggestions match dishes and modifiers by name; nothing is saved until mappings are saved. SumUp has no product list in its API, so its catalog is the items sold in recent sales.",
+        "operationId": "till-catalog",
+        "parameters": [
+          {
+            "description": "The till: square or sumup.",
+            "in": "path",
+            "name": "till",
+            "required": true,
+            "schema": {
+              "description": "The till: square or sumup.",
+              "enum": [
+                "square",
+                "sumup"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -10838,15 +11424,31 @@
             "description": "Error"
           }
         },
-        "summary": "Read the catalog from Square, with how each entry maps to the kitchen (manager password)",
+        "summary": "Read the catalog from a till, with how each entry maps to the kitchen (manager password)",
         "tags": [
-          "Square"
+          "Tills"
         ]
       }
     },
-    "/square/locations": {
+    "/tills/{till}/locations": {
       "get": {
-        "operationId": "square-locations",
+        "operationId": "till-locations",
+        "parameters": [
+          {
+            "description": "The till: square or sumup.",
+            "in": "path",
+            "name": "till",
+            "required": true,
+            "schema": {
+              "description": "The till: square or sumup.",
+              "enum": [
+                "square",
+                "sumup"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -10869,21 +11471,35 @@
             "description": "Error"
           }
         },
-        "summary": "List the Square account's locations (sends Square the access token only)",
+        "summary": "List a till account's locations; for SumUp, its merchant accounts (sends the till its token only)",
         "tags": [
-          "Square"
+          "Tills"
         ]
       }
     },
-    "/square/mappings": {
+    "/tills/{till}/mappings": {
       "put": {
         "description": "Mark an entry ignore for anything not for the kitchen, such as drinks. Open till orders with items that are now mapped get them added.",
-        "operationId": "save-square-mappings",
+        "operationId": "save-till-mappings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "till",
+            "required": true,
+            "schema": {
+              "enum": [
+                "square",
+                "sumup"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MappingsIn"
+                "$ref": "#/components/schemas/MappingsInBody"
               }
             }
           },
@@ -10913,14 +11529,26 @@
         },
         "summary": "Map till items to dishes and till modifiers to dish modifiers (manager password)",
         "tags": [
-          "Square"
+          "Tills"
         ]
       }
     },
-    "/square/orders/{id}/versions": {
+    "/tills/{till}/orders/{id}/versions": {
       "get": {
-        "operationId": "square-order-versions",
+        "operationId": "till-order-versions",
         "parameters": [
+          {
+            "in": "path",
+            "name": "till",
+            "required": true,
+            "schema": {
+              "enum": [
+                "square",
+                "sumup"
+              ],
+              "type": "string"
+            }
+          },
           {
             "in": "path",
             "name": "id",
@@ -10954,14 +11582,30 @@
         },
         "summary": "List every version of a till order Kishtin saw",
         "tags": [
-          "Square"
+          "Tills"
         ]
       }
     },
-    "/square/sync": {
+    "/tills/{till}/sync": {
       "post": {
-        "description": "Kishtin also asks on its own while import is on. Orders are deduped on Square's order ID and version.",
-        "operationId": "square-sync",
+        "description": "Kishtin also asks on its own while import is on. Orders are deduped on the till's order ID and version.",
+        "operationId": "till-sync",
+        "parameters": [
+          {
+            "description": "The till: square or sumup.",
+            "in": "path",
+            "name": "till",
+            "required": true,
+            "schema": {
+              "description": "The till: square or sumup.",
+              "enum": [
+                "square",
+                "sumup"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -10984,9 +11628,9 @@
             "description": "Error"
           }
         },
-        "summary": "Ask Square for new and changed orders now",
+        "summary": "Ask a till for new and changed orders now",
         "tags": [
-          "Square"
+          "Tills"
         ]
       }
     },

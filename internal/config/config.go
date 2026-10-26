@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/integrations"
 	"github.com/cathalbyrnegit/kishtin/internal/integrations/square"
+	"github.com/cathalbyrnegit/kishtin/internal/integrations/sumup"
+	"github.com/cathalbyrnegit/kishtin/internal/localtls"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/speech"
 )
@@ -30,6 +33,7 @@ type Config struct {
 	Files   Files  `toml:"files"`
 	Speech  Speech `toml:"speech"`
 	Square  Square `toml:"square"`
+	SumUp   SumUp  `toml:"sumup"`
 	AI      AI     `toml:"ai"`
 	// RestaurantName is the starting restaurant name for the screens.
 	RestaurantName string `toml:"restaurant_name"`
@@ -43,6 +47,17 @@ type Server struct {
 	// TrustedNetwork allows listening beyond loopback without TLS. Set it
 	// only on a private kitchen network you control.
 	TrustedNetwork bool `toml:"trusted_network"`
+	// Tablets lets tablets and phones on the restaurant's network use
+	// Kishtin, paired by QR code, over HTTPS with Kishtin's own certificate.
+	// On by default; false keeps Kishtin on this computer only. Ignored
+	// when tls_cert is set: then listen serves tablets itself.
+	Tablets bool `toml:"tablets"`
+	// TabletListen is where tablets reach Kishtin over HTTPS.
+	TabletListen string `toml:"tablet_listen"`
+	// TabletAddresses are the addresses tablets use to reach this computer,
+	// such as ["192.168.1.20"]. Empty finds them: every private address the
+	// computer has. Name them when it is on several networks or a VPN.
+	TabletAddresses []string `toml:"tablet_addresses"`
 }
 
 // Store selects the storage backend.
@@ -106,6 +121,21 @@ type Square struct {
 	TokenFrom string `toml:"-"`
 }
 
+// SumUp is how Kishtin reads paid sales from SumUp.
+type SumUp struct {
+	// Environment is "production", or a URL for testing against a local
+	// stand-in.
+	Environment string `toml:"environment"`
+	// Token is an API key from SumUp's dashboard. KISHTIN_SUMUP_TOKEN
+	// overrides it. Without either, a manager can connect SumUp on the
+	// screens instead.
+	Token   string   `toml:"token"`
+	Timeout Duration `toml:"timeout"`
+	// TokenFrom says where Token came from: "environment" or
+	// "kishtin.toml".
+	TokenFrom string `toml:"-"`
+}
+
 // Duration is a time.Duration written as a string such as "6h".
 type Duration struct{ time.Duration }
 
@@ -138,12 +168,13 @@ func DefaultDataDir() string {
 func Default() Config {
 	return Config{
 		DataDir: DefaultDataDir(),
-		Server:  Server{Listen: "127.0.0.1:8080"},
+		Server:  Server{Listen: "127.0.0.1:8080", Tablets: true, TabletListen: ":8443"},
 		Store:   Store{Driver: "sqlite"},
 		Backup:  Backup{Interval: Duration{6 * time.Hour}, Keep: 28},
 		Files:   Files{MaxSizeMB: 15},
 		Speech:  Speech{Timeout: Duration{20 * time.Second}},
 		Square:  Square{Environment: "production", Timeout: Duration{15 * time.Second}},
+		SumUp:   SumUp{Environment: "production", Timeout: Duration{15 * time.Second}},
 		AI:      AI{Timeout: Duration{2 * time.Minute}},
 	}
 }
@@ -170,11 +201,30 @@ func Load(path string, mustExist bool) (Config, error) {
 	if v := os.Getenv("KISHTIN_LISTEN"); v != "" {
 		cfg.Server.Listen = v
 	}
+	if v := os.Getenv("KISHTIN_TABLETS"); v != "" {
+		on, err := strconv.ParseBool(v)
+		if err != nil {
+			return cfg, fmt.Errorf("KISHTIN_TABLETS %q: use true or false", v)
+		}
+		cfg.Server.Tablets = on
+	}
+	if v := os.Getenv("KISHTIN_TABLET_LISTEN"); v != "" {
+		cfg.Server.TabletListen = v
+	}
+	if v := os.Getenv("KISHTIN_TABLET_ADDRESSES"); v != "" {
+		cfg.Server.TabletAddresses = strings.Split(v, ",")
+	}
 	if cfg.Square.Token != "" {
 		cfg.Square.TokenFrom = "kishtin.toml"
 	}
 	if v := os.Getenv("KISHTIN_SQUARE_TOKEN"); v != "" {
 		cfg.Square.Token, cfg.Square.TokenFrom = v, "environment"
+	}
+	if cfg.SumUp.Token != "" {
+		cfg.SumUp.TokenFrom = "kishtin.toml"
+	}
+	if v := os.Getenv("KISHTIN_SUMUP_TOKEN"); v != "" {
+		cfg.SumUp.Token, cfg.SumUp.TokenFrom = v, "environment"
 	}
 	if v := os.Getenv("KISHTIN_STT_URL"); v != "" {
 		cfg.Speech.STTURL = v
@@ -251,6 +301,27 @@ func (c Config) NewSquare(environment, token string) (integrations.POSAdapter, e
 	return square.New(environment, token, c.Square.Timeout.Duration)
 }
 
+// SumUpClient returns the SumUp client, or nil when no token is set.
+func (c Config) SumUpClient() (integrations.POSAdapter, error) {
+	if c.SumUp.Token == "" {
+		return nil, nil
+	}
+	return c.NewSumUp(c.SumUp.Environment, c.SumUp.Token)
+}
+
+// NewSumUp makes a SumUp client for an API key, with the configured
+// timeout. It is used for keys saved on the screens too. When
+// sumup.environment is a URL (a local stand-in for testing), it is used.
+func (c Config) NewSumUp(environment, token string) (integrations.POSAdapter, error) {
+	if strings.HasPrefix(c.SumUp.Environment, "http://") || strings.HasPrefix(c.SumUp.Environment, "https://") {
+		environment = c.SumUp.Environment
+	}
+	if c.SumUp.Timeout.Duration <= 0 {
+		return nil, errors.New("sumup.timeout must be positive, such as \"15s\"")
+	}
+	return sumup.New(environment, token, c.SumUp.Timeout.Duration)
+}
+
 // CredentialsDir holds connector tokens saved on the screens: outside the
 // database, so they are never in a backup or export.
 func (c Config) CredentialsDir() string { return filepath.Join(c.DataDir, "connectors") }
@@ -258,8 +329,38 @@ func (c Config) CredentialsDir() string { return filepath.Join(c.DataDir, "conne
 // FilesDir is where attachments are stored.
 func (c Config) FilesDir() string { return filepath.Join(c.DataDir, "files") }
 
+// LocalTLS reports whether Kishtin serves tablets with its own certificate
+// authority: tablets are on and kishtin.toml names no certificate.
+func (c Config) LocalTLS() bool { return c.Server.Tablets && c.Server.TLSCert == "" }
+
+// TabletIPs lists the addresses tablets use: the ones named in
+// kishtin.toml, or else every private address this computer has now.
+func (c Config) TabletIPs() []net.IP {
+	if len(c.Server.TabletAddresses) == 0 {
+		return localtls.Addresses()
+	}
+	var ips []net.IP
+	for _, a := range c.Server.TabletAddresses {
+		if ip := net.ParseIP(strings.TrimSpace(a)); ip != nil {
+			if ip4 := ip.To4(); ip4 != nil {
+				ip = ip4
+			}
+			ips = append(ips, ip)
+		}
+	}
+	return ips
+}
+
+// TLSDir holds Kishtin's own certificate authority.
+func (c Config) TLSDir() string { return filepath.Join(c.DataDir, "tls") }
+
 // LockPath is the single-instance lock file.
 func (c Config) LockPath() string { return filepath.Join(c.DataDir, "kishtin.lock") }
+
+// RecoveryCodePath is where kishtind reset-password leaves a one-time code
+// for the running server, proving the request comes from someone who can
+// use the data folder.
+func (c Config) RecoveryCodePath() string { return filepath.Join(c.DataDir, "recovery-code.txt") }
 
 // Validate checks the configuration.
 func (c Config) Validate() error {
@@ -283,6 +384,21 @@ func (c Config) Validate() error {
 	if !isLoopback(host) && c.Server.TLSCert == "" && !c.Server.TrustedNetwork {
 		return fmt.Errorf("server.listen %q is reachable from the network: set server.tls_cert and server.tls_key, or set server.trusted_network = true if this is a private kitchen network you control", c.Server.Listen)
 	}
+	if c.LocalTLS() {
+		_, tport, err := net.SplitHostPort(c.Server.TabletListen)
+		if err != nil {
+			return fmt.Errorf("server.tablet_listen %q: %w", c.Server.TabletListen, err)
+		}
+		for _, a := range c.Server.TabletAddresses {
+			ip := net.ParseIP(strings.TrimSpace(a))
+			if ip == nil || !localtls.Private(ip) {
+				return fmt.Errorf("server.tablet_addresses: %q is not a private network address, such as 192.168.1.20", a)
+			}
+		}
+		if _, port, _ := net.SplitHostPort(c.Server.Listen); port == tport {
+			return fmt.Errorf("server.tablet_listen %q uses the same port as server.listen: pick another, such as \":8443\"", c.Server.TabletListen)
+		}
+	}
 	if c.Backup.Keep < 0 {
 		return errors.New("backup.keep cannot be negative")
 	}
@@ -293,6 +409,9 @@ func (c Config) Validate() error {
 		return err
 	}
 	if _, err := c.SquareClient(); err != nil {
+		return err
+	}
+	if _, err := c.SumUpClient(); err != nil {
 		return err
 	}
 	if err := c.SystemSettings().Validate(); err != nil {

@@ -80,7 +80,7 @@ func TestMappingAndSettings(t *testing.T) {
 	assert.Error(t, Mapping{ExternalID: "x", Kind: "drink", DishID: "d"}.Validate())
 
 	assert.NoError(t, DefaultPOSSettings().Validate())
-	assert.ErrorContains(t, POSSettings{Enabled: true, PollSeconds: 5}.Validate(), "location ID")
+	assert.ErrorContains(t, POSSettings{Enabled: true, PollSeconds: 5}.Validate(), "choose the location")
 	assert.ErrorContains(t, POSSettings{PollSeconds: 1}.Validate(), "between 2 and 300")
 
 	assert.Equal(t, "Burger", CatalogEntry{Kind: EntryItem, Name: "Regular", Group: "Burger"}.Label())

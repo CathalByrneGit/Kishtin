@@ -101,6 +101,9 @@ async function json<T>(method: string, path: string, opts?: SendOpts): Promise<T
   return (await res.json()) as T;
 }
 
+/** Till is a point-of-sale system Kishtin imports orders from. */
+export type Till = "square" | "sumup";
+
 export interface RecordFilter {
   from?: string;
   to?: string;
@@ -120,6 +123,8 @@ export interface ExportResult {
 }
 
 export const api = {
+  createJoinCode: (name: string) => json<Schemas["JoinCode"]>("POST", "/devices/join-codes", { body: { name } }),
+  pairDevice: (code: string) => json<Schemas["Paired"]>("POST", "/devices/pair", { body: { code } }),
   setupStatus: () => json<Schemas["SetupStatusOutBody"]>("GET", "/setup"),
   setup: (body: Schemas["SetupInBody"]) => json<Schemas["FirstRunResult"]>("POST", "/setup", { body }),
   staff: () => json<Schemas["StaffOutBody"]>("GET", "/auth/staff"),
@@ -229,6 +234,8 @@ export const api = {
   revokeKey: (id: string) => json<void>("DELETE", `/keys/${encodeURIComponent(id)}`),
   backups: () => json<Schemas["BackupsOutBody"]>("GET", "/backups"),
   backupNow: () => json<Schemas["Backup"]>("POST", "/backups"),
+  startup: () => json<Schemas["StartupStatus"]>("GET", "/startup"),
+  setStartup: (on: boolean) => json<Schemas["StartupStatus"]>("PUT", "/startup", { body: { on } }),
 
   menu: () => json<Setup>("GET", "/menu"),
   createStation: (body: Schemas["StationInput"]) => json<Schemas["Station"]>("POST", "/menu/stations", { body }),
@@ -274,17 +281,17 @@ export const api = {
   voiceLog: (limit = 100) => json<Schemas["VoiceLogBody"]>("GET", "/voice/log", { query: { limit } }),
 
   connectors: () => json<Schemas["ConnectorsBody"]>("GET", "/connectors"),
-  connectSquare: (body: Schemas["ConnectInput"]) => json<Schemas["ConnectResult"]>("PUT", "/connectors/square", { body }),
-  disconnectSquare: () => json<void>("DELETE", "/connectors/square"),
-  squareLocations: () => json<Schemas["LocationsBody"]>("GET", "/square/locations"),
-  square: () => json<Schemas["SquareStatus"]>("GET", "/square"),
-  previewSquare: (body: Schemas["SettingsChangePOSSettings"]) =>
-    json<Schemas["SettingsPreviewPOSSettings"]>("POST", "/settings/square/preview", { body }),
-  saveSquare: (body: Schemas["SettingsChangePOSSettings"]) => json<Schemas["VersionedPOSSettings"]>("PUT", "/settings/square", { body }),
-  squareCatalog: () => json<Schemas["CatalogBody"]>("GET", "/square/catalog"),
-  saveSquareMappings: (mappings: Schemas["MappingInput"][]) =>
-    json<Schemas["MappingsBody"]>("PUT", "/square/mappings", { body: { mappings } }),
-  squareSync: () => json<Schemas["SyncResult"]>("POST", "/square/sync"),
+  connectTill: (till: Till, body: Schemas["ConnectInput"]) => json<Schemas["ConnectResult"]>("PUT", `/connectors/${till}`, { body }),
+  disconnectTill: (till: Till) => json<void>("DELETE", `/connectors/${till}`),
+  tillLocations: (till: Till) => json<Schemas["LocationsBody"]>("GET", `/tills/${till}/locations`),
+  till: (till: Till) => json<Schemas["TillStatus"]>("GET", `/tills/${till}`),
+  previewTill: (till: Till, body: Schemas["SettingsChangePOSSettings"]) =>
+    json<Schemas["SettingsPreviewPOSSettings"]>("POST", `/settings/${till}/preview`, { body }),
+  saveTill: (till: Till, body: Schemas["SettingsChangePOSSettings"]) => json<Schemas["VersionedPOSSettings"]>("PUT", `/settings/${till}`, { body }),
+  tillCatalog: (till: Till) => json<Schemas["CatalogBody"]>("GET", `/tills/${till}/catalog`),
+  saveTillMappings: (till: Till, mappings: Schemas["MappingInput"][]) =>
+    json<Schemas["MappingsBody"]>("PUT", `/tills/${till}/mappings`, { body: { mappings } }),
+  tillSync: (till: Till) => json<Schemas["SyncResult"]>("POST", `/tills/${till}/sync`),
 
   scheduler: () => json<Schemas["VersionedSettings"]>("GET", "/settings/scheduler"),
   previewScheduler: (body: Schemas["SettingsChangeSettings"]) =>

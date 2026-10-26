@@ -32,6 +32,13 @@ var Connectors = []Connector{
 		Sends:        "The access token, the location ID and the time of the last order change seen. Nothing about the kitchen, staff or HACCP records.",
 		Environments: []string{"production", "sandbox"},
 	},
+	{
+		ID:           "sumup",
+		Name:         "SumUp",
+		Summary:      "Sales paid on the SumUp till come into the kitchen on their own, with their items. Suits counter service and takeaways, where people pay first. Kishtin only reads from SumUp.",
+		Sends:        "The API key, the merchant code, the time of the last change seen, and the IDs of changed sales. Nothing about the kitchen, staff or HACCP records.",
+		Environments: []string{"production"},
+	},
 }
 
 // ConnectorByID finds a connector.

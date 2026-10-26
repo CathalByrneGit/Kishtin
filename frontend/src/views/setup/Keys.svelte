@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button, Card, Chip, CopyButton, Modal, Notice, SegmentedControl, SelectDropdown, Spinner, Table, TableHeaderCell, TextInput, showFlash } from "@kenn-io/kit-ui";
-  import { Plus } from "@lucide/svelte";
+  import { Plus, QrCode as QrCodeIcon } from "@lucide/svelte";
+  import ConnectTablet from "../../components/ConnectTablet.svelte";
   import ManagerGate from "../../components/ManagerGate.svelte";
   import { api, message, type Schemas } from "../../lib/api";
   import { dublinDate, dublinTime, shortDate } from "../../lib/format";
@@ -20,6 +21,7 @@
   let userId = $state("");
   let made = $state<Schemas["NewKeyResult"] | null>(null);
   let revoking = $state<Key | null>(null);
+  let connecting = $state(false);
 
   async function load() {
     try {
@@ -79,12 +81,16 @@
     <div>
       <h1>Device keys</h1>
       <p>
-        A device key lets a kitchen tablet, phone or computer reach Kishtin; staff then log in on it with their PIN. A staff key lets the
-        <code>kishtin</code> CLI or a script act as one person.
+        A device key lets a kitchen tablet, phone or computer reach Kishtin; staff then log in on it with their PIN. <strong>Connect a
+        tablet</strong> shows a QR code that sets a tablet up and makes its key. A staff key lets the <code>kishtin</code> CLI or a script act as
+        one person.
       </p>
     </div>
     {#if can("keys.manage")}
-      <Button tone="info" surface="solid" label="New key" onclick={() => (creating = true)}><Plus size={16} /></Button>
+      <div class="head-actions">
+        <Button label="New key" onclick={() => (creating = true)}><Plus size={16} /></Button>
+        <Button tone="info" surface="solid" label="Connect a tablet" onclick={() => (connecting = true)}><QrCodeIcon size={16} /></Button>
+      </div>
     {/if}
   </header>
 
@@ -199,7 +205,16 @@
   </Modal>
 {/if}
 
+{#if connecting}
+  <ConnectTablet onclose={() => (connecting = false)} onpaired={() => void load()} />
+{/if}
+
 <style>
+  .head-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
   .secret {
     display: flex;
     align-items: center;

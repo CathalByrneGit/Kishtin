@@ -203,13 +203,13 @@ func (c *cli) recordingCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *cli) squareVersionsCmd() *cobra.Command {
+func (c *cli) tillVersionsCmd(id string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "versions TILL-ORDER-ID",
 		Short: "List every version of a till order Kishtin saw",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := c.api.SquareOrderVersions(cmd.Context(), &client.SquareOrderVersionsRequestOptions{PathParams: &client.SquareOrderVersionsPath{ID: args[0]}})
+			res, err := c.api.TillOrderVersions(cmd.Context(), &client.TillOrderVersionsRequestOptions{PathParams: &client.TillOrderVersionsPath{Till: client.TillOrderVersionsPathTill(id), ID: args[0]}})
 			if err != nil {
 				return apiErr(err)
 			}

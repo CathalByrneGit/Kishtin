@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"net"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -198,4 +199,30 @@ func TestLicensesNeedNoServer(t *testing.T) {
 	assert.Contains(t, out.String(), "Apache License")
 	assert.Contains(t, out.String(), "--- github.com/spf13/cobra ")
 	assert.Contains(t, out.String(), "--- svelte ")
+}
+
+func TestKeysJoinPrintsAQRCode(t *testing.T) {
+	url, key := serverWith(t, func(o *service.Options) {
+		o.Tablets = &service.TabletNetwork{Addresses: func() []net.IP { return []net.IP{net.ParseIP("192.168.1.20").To4()} }, JoinPort: "8080", HTTPSPort: "8443", Fingerprint: "AB:CD"}
+	})
+	out, _, err := run(t, url, key, "", "keys", "join", "--name", "Pass tablet")
+	require.NoError(t, err)
+	assert.Contains(t, out, `Scan this with "Pass tablet"`)
+	assert.Contains(t, out, "http://192.168.1.20:8080/join?code=")
+	assert.Contains(t, out, "█", "draws the QR code")
+	assert.Contains(t, out, "AB:CD")
+
+	out, _, err = run(t, url, key, "", "keys", "join", "--name", "Station tablet", "--json")
+	require.NoError(t, err)
+	var jc struct {
+		Code  string `json:"code"`
+		Links []struct {
+			URL string   `json:"url"`
+			QR  []string `json:"qr"`
+		} `json:"links"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(out), &jc))
+	assert.NotEmpty(t, jc.Code)
+	require.Len(t, jc.Links, 1)
+	assert.NotEmpty(t, jc.Links[0].QR)
 }

@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/integrations"
 	"github.com/cathalbyrnegit/kishtin/internal/menu"
 	"github.com/cathalbyrnegit/kishtin/internal/orders"
@@ -56,20 +58,20 @@ func TestSquareImport(t *testing.T) {
 		{ID: "mod-welldone", Kind: integrations.EntryModifier, Name: "Well done", Group: "Cooking"},
 	}}
 
-	_, err := k.svc.SyncSquare(ctx)
+	_, err := k.svc.SyncTill(ctx, TillSquare)
 	assert.ErrorContains(t, err, "Order import from Square is off")
-	st, err := k.svc.SquareStatus(ctx, k.cook)
+	st, err := k.svc.TillStatus(ctx, k.cook, TillSquare)
 	require.NoError(t, err)
 	assert.False(t, st.Connected)
-	_, err = k.svc.SquareCatalog(ctx, k.manager)
+	_, err = k.svc.TillCatalog(ctx, k.manager, TillSquare)
 	assert.ErrorContains(t, err, "Square is not connected")
 
-	k.svc.pos = till
+	k.svc.setAdapter(TillSquare, till, SourceEnvironment)
 
 	// The catalog, with suggestions by name.
-	_, err = k.svc.SquareCatalog(ctx, k.cook)
+	_, err = k.svc.TillCatalog(ctx, k.cook, TillSquare)
 	assert.Equal(t, KindForbidden, KindOf(err))
-	rows, err := k.svc.SquareCatalog(ctx, k.manager)
+	rows, err := k.svc.TillCatalog(ctx, k.manager, TillSquare)
 	require.NoError(t, err)
 	require.Len(t, rows, 4)
 	assert.Equal(t, "Lamb special", rows[0].Label)
@@ -90,13 +92,13 @@ func TestSquareImport(t *testing.T) {
 	_, err = k.svc.Square().Save(ctx, k.manager, SettingsChange[integrations.POSSettings]{Value: on, Reason: "Go live"})
 	require.NoError(t, err)
 
-	_, err = k.svc.SaveSquareMappings(ctx, k.manager, []MappingInput{
+	_, err = k.svc.SaveTillMappings(ctx, k.manager, TillSquare, []MappingInput{
 		{ExternalID: "var-burger", Kind: integrations.EntryItem, Name: "Synthetic burger", DishID: k.burger.ID},
 		{ExternalID: "var-cola", Kind: integrations.EntryItem, Name: "Synthetic cola", Ignore: true},
 		{ExternalID: "mod-welldone", Kind: integrations.EntryModifier, Name: "Well done", Modifier: "well done"},
 	})
 	require.NoError(t, err)
-	_, err = k.svc.SaveSquareMappings(ctx, k.manager, []MappingInput{{ExternalID: "mod-x", Kind: integrations.EntryModifier, Name: "Extra", Modifier: "Extra cheese"}})
+	_, err = k.svc.SaveTillMappings(ctx, k.manager, TillSquare, []MappingInput{{ExternalID: "mod-x", Kind: integrations.EntryModifier, Name: "Extra", Modifier: "Extra cheese"}})
 	assert.ErrorContains(t, err, `no dish has a modifier called "Extra cheese"`)
 
 	k.clk.Advance(time.Minute)
@@ -115,7 +117,7 @@ func TestSquareImport(t *testing.T) {
 		ID: "sq-3", Version: 1, State: integrations.OrderOpen, Ticket: "Bar", UpdatedAt: t1,
 		Lines: []integrations.TillLine{{UID: "b1", CatalogID: "var-cola", Name: "Synthetic cola", Quantity: 3}},
 	}}
-	res, err := k.svc.SyncSquare(ctx)
+	res, err := k.svc.SyncTill(ctx, TillSquare)
 	require.NoError(t, err)
 	assert.Equal(t, SyncResult{Seen: 3, Created: 2, Skipped: 1}, res, "drinks only: nothing for the kitchen")
 	assert.True(t, enabledAt.Equal(till.since[0]), "import starts from when it was turned on")
@@ -136,13 +138,13 @@ func TestSquareImport(t *testing.T) {
 	assert.Equal(t, "Takeaway #2 (Synthetic customer)", open[1].Label())
 
 	// The same orders again change nothing.
-	res, err = k.svc.SyncSquare(ctx)
+	res, err = k.svc.SyncTill(ctx, TillSquare)
 	require.NoError(t, err)
 	assert.Equal(t, SyncResult{Seen: 3, Skipped: 3}, res)
 	assert.True(t, t1.Equal(till.since[1]), "asks again from the last change")
 
 	// Mapping the lamb adds it to the open order.
-	_, err = k.svc.SaveSquareMappings(ctx, k.manager, []MappingInput{{ExternalID: "var-lamb", Kind: integrations.EntryItem, Name: "Lamb special", DishID: k.salad.ID}})
+	_, err = k.svc.SaveTillMappings(ctx, k.manager, TillSquare, []MappingInput{{ExternalID: "var-lamb", Kind: integrations.EntryItem, Name: "Lamb special", DishID: k.salad.ID}})
 	require.NoError(t, err)
 	t4, err = k.svc.GetOrder(ctx, k.chef, t4.ID)
 	require.NoError(t, err)
@@ -153,7 +155,7 @@ func TestSquareImport(t *testing.T) {
 	// Version 2: one more burger, and fries while they are 86.
 	fries, err := k.svc.CreateDish(ctx, k.manager, DishInput{Name: "Synthetic fries", Course: menu.CourseMain, StationID: k.grill.ID, CookSeconds: 240})
 	require.NoError(t, err)
-	_, err = k.svc.SaveSquareMappings(ctx, k.manager, []MappingInput{{ExternalID: "var-fries", Kind: integrations.EntryItem, Name: "Fries", DishID: fries.ID}})
+	_, err = k.svc.SaveTillMappings(ctx, k.manager, TillSquare, []MappingInput{{ExternalID: "var-fries", Kind: integrations.EntryItem, Name: "Fries", DishID: fries.ID}})
 	require.NoError(t, err)
 	_, err = k.svc.SetAvailability(ctx, k.chef, fries.ID, false)
 	require.NoError(t, err)
@@ -166,7 +168,7 @@ func TestSquareImport(t *testing.T) {
 	o.Lines[0].Quantity = 3
 	o.Lines = append(o.Lines, integrations.TillLine{UID: "l4", CatalogID: "var-fries", Name: "Fries", Quantity: 1})
 	till.orders = []integrations.TillOrder{o}
-	res, err = k.svc.SyncSquare(ctx)
+	res, err = k.svc.SyncTill(ctx, TillSquare)
 	require.NoError(t, err)
 	assert.Equal(t, 1, res.Updated)
 	t4, err = k.svc.GetOrder(ctx, k.chef, t4.ID)
@@ -181,7 +183,7 @@ func TestSquareImport(t *testing.T) {
 	o.Lines = append([]integrations.TillLine{}, o.Lines...)
 	o.Lines[0].Quantity = 1
 	till.orders = []integrations.TillOrder{o}
-	_, err = k.svc.SyncSquare(ctx)
+	_, err = k.svc.SyncTill(ctx, TillSquare)
 	require.NoError(t, err)
 	t4, err = k.svc.GetOrder(ctx, k.chef, t4.ID)
 	require.NoError(t, err)
@@ -192,9 +194,9 @@ func TestSquareImport(t *testing.T) {
 
 	// Square down: nothing changes, and the reason is kept.
 	till.err = errors.New("connection refused")
-	_, err = k.svc.SyncSquare(ctx)
+	_, err = k.svc.SyncTill(ctx, TillSquare)
 	assert.ErrorContains(t, err, "Could not reach Square: connection refused")
-	st, err = k.svc.SquareStatus(ctx, k.cook)
+	st, err = k.svc.TillStatus(ctx, k.cook, TillSquare)
 	require.NoError(t, err)
 	assert.True(t, st.Connected)
 	require.NotNil(t, st.State)
@@ -203,7 +205,7 @@ func TestSquareImport(t *testing.T) {
 	require.Len(t, st.Recent, 3)
 	assert.Len(t, st.Mappings, 5)
 
-	_, err = k.svc.SyncSquareNow(ctx, k.foh)
+	_, err = k.svc.SyncTillNow(ctx, k.foh, TillSquare)
 	assert.Equal(t, KindForbidden, KindOf(err))
 }
 
@@ -212,4 +214,84 @@ func eventsOf(t *testing.T, k *kitchen, id string) []orders.Event {
 	evs, err := k.svc.OrderEvents(context.Background(), k.chef, id)
 	require.NoError(t, err)
 	return evs
+}
+
+func TestSumUpSales(t *testing.T) {
+	k := setupKitchen(t)
+	ctx := context.Background()
+	sale := integrations.TillOrder{
+		ID: "tx-synthetic-1", Version: 1, State: integrations.OrderOpen, Takeaway: true, Ticket: "SumUp TSYNTH1",
+		UpdatedAt: k.clk.Now().Add(time.Minute),
+		Lines: []integrations.TillLine{
+			{UID: "0:name:synthetic burger", CatalogID: "name:synthetic burger", Name: "Synthetic burger", Quantity: 2},
+			{UID: "1:name:flat white", CatalogID: "name:flat white", Name: "Flat white", Quantity: 1},
+		},
+	}
+	sumup := &fakeTill{orders: []integrations.TillOrder{sale}}
+	k.svc.setAdapter(TillSumUp, sumup, SourceSaved)
+
+	on := integrations.DefaultPOSSettings()
+	on.Enabled, on.LocationID = true, "MSYNTH01"
+	pv, err := k.svc.SumUp().Preview(ctx, k.manager, SettingsChange[integrations.POSSettings]{Value: on, Reason: "Counter service"})
+	require.NoError(t, err)
+	assert.Contains(t, strings.Join(pv.Notes, " "), "card type and last four digits", "says plainly what SumUp's answer holds")
+	_, err = k.svc.SumUp().Save(ctx, k.manager, SettingsChange[integrations.POSSettings]{Value: on, Reason: "Counter service"})
+	require.NoError(t, err)
+
+	k.clk.Advance(2 * time.Minute)
+	res, err := k.svc.SyncTill(ctx, TillSumUp)
+	require.NoError(t, err)
+	assert.Equal(t, 1, res.Seen)
+	st, err := k.svc.TillStatus(ctx, k.cook, TillSumUp)
+	require.NoError(t, err)
+	require.Len(t, st.Recent, 1)
+	assert.Equal(t, []string{"2 × Synthetic burger", "1 × Flat white"}, st.Recent[0].Unmapped, "nothing is cooked until mapped")
+	assert.Empty(t, st.Recent[0].OrderID)
+	sq, err := k.svc.TillStatus(ctx, k.cook, TillSquare)
+	require.NoError(t, err)
+	assert.Empty(t, sq.Recent, "Square's history is separate")
+
+	// Mapping by name sends the waiting sale to the kitchen.
+	_, err = k.svc.SaveTillMappings(ctx, k.manager, TillSumUp, []MappingInput{
+		{ExternalID: "name:synthetic burger", Kind: integrations.EntryItem, Name: "Synthetic burger", DishID: k.burger.ID},
+		{ExternalID: "name:flat white", Kind: integrations.EntryItem, Name: "Flat white", Ignore: true},
+	})
+	require.NoError(t, err)
+	st, err = k.svc.TillStatus(ctx, k.cook, TillSumUp)
+	require.NoError(t, err)
+	require.NotEmpty(t, st.Recent[0].OrderID)
+	o, err := k.svc.GetOrder(ctx, k.cook, st.Recent[0].OrderID)
+	require.NoError(t, err)
+	assert.Equal(t, "SumUp TSYNTH1", o.Name, "a takeaway named by the sale's code")
+	require.Len(t, o.Items, 2)
+	evs, err := k.svc.OrderEvents(ctx, k.cook, o.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "SumUp", evs[0].ByName, "entered by SumUp")
+
+	// A refund on the till reaches the pass, which decides.
+	refund := sale
+	refund.Version, refund.State, refund.UpdatedAt = 2, integrations.OrderCanceled, k.clk.Now().Add(time.Minute)
+	sumup.orders = append(sumup.orders, refund)
+	k.clk.Advance(2 * time.Minute)
+	_, err = k.svc.SyncTill(ctx, TillSumUp)
+	require.NoError(t, err)
+	o, err = k.svc.GetOrder(ctx, k.cook, o.ID)
+	require.NoError(t, err)
+	assert.Contains(t, o.Notes, "SumUp: Cancelled on the till")
+	assert.Len(t, o.Items, 2, "nothing is voided on its own")
+}
+
+func TestConnectSumUpIsProductionOnly(t *testing.T) {
+	k := setupKitchen(t)
+	k.svc.creds = &integrations.CredentialStore{Dir: t.TempDir()}
+	setNewTill(k.svc, TillSumUp, func(string, string) (integrations.POSAdapter, error) { return &fakeTill{}, nil })
+	mgr := &auth.Principal{User: k.manager.User, Method: auth.MethodPassword}
+	_, err := k.svc.ConnectTill(context.Background(), mgr, TillSumUp, ConnectInput{Environment: "sandbox", Token: "sup_sk_synthetic"})
+	assert.Equal(t, KindInvalid, KindOf(err))
+	res, err := k.svc.ConnectTill(context.Background(), mgr, TillSumUp, ConnectInput{Token: "sup_sk_synthetic"})
+	require.NoError(t, err)
+	assert.True(t, res.Connector.Connected)
+	assert.Equal(t, "sumup", res.Connector.ID)
+	_, err = k.svc.TillStatus(context.Background(), k.cook, "lightspeed")
+	assert.Equal(t, KindNotFound, KindOf(err))
 }

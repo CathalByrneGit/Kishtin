@@ -21,6 +21,9 @@ import (
 
 func (s *Server) routes() {
 	s.setupRoutes()
+	s.recoveryRoutes()
+	s.startupRoutes()
+	s.deviceRoutes()
 	s.authRoutes()
 	s.haccpRoutes()
 	s.packRoute()
@@ -36,7 +39,7 @@ func (s *Server) routes() {
 	s.adminRoutes()
 	s.kitchenRoutes()
 	s.voiceRoutes()
-	s.squareRoutes()
+	s.tillRoutes()
 	s.connectorRoutes()
 }
 

@@ -20,13 +20,30 @@ A new install has no staff. Until it does, `kishtind` starts in setup mode and t
 
 `kishtind setup --name "Your Name"`, with the server stopped, still does the same from the command line, without naming the restaurant or pairing a screen.
 
-## Pairing a device and logging in
+On the password login, **Forgot the password?** says what to do: another manager sets a new one in **Staff**, or, if nobody can log in as a manager, `kishtind reset-password` on the Kishtin computer. See [Forgotten manager password](install.md#forgotten-manager-password).
 
-1. A manager makes a device key in **Setup → Staff and access → Device keys** (or with `kishtin keys create --kind device --name "Office PC"`). The pairing link is shown once.
-2. Open the link once on the computer, tablet or phone. The browser remembers the key. You can also paste the key on the setup screen.
-3. Staff pick their name and enter their PIN. A PIN login lasts 12 hours. The exit icon at the bottom of the sidebar switches staff.
+## Connecting a tablet or phone
 
-To take a device out of use, revoke its key in **Device keys**, or use **Unpair this device** in **Settings**.
+Tablets and phones on the restaurant's Wi-Fi connect by QR code, with no internet needed.
+
+1. On the Kishtin computer, a manager logged in with a password opens **Setup › Staff and access › Device keys**, taps **Connect a tablet**, names it ("Pass tablet") and taps **Make QR code**.
+2. Point the tablet's camera at the QR code and open the link. The code works once, for 15 minutes. With no camera, type the link shown under **No camera? Type the link instead**.
+3. The first time, the tablet installs Kishtin's own certificate. The page on the tablet opens the steps for that kind of device (iPhone or iPad, Android, Windows, Mac, Chromebook) and checks every few seconds whether it has worked.
+4. Once the tablet trusts Kishtin, it moves to the secure address by itself, pairs, and shows the staff login. On the Kishtin computer, the window says **Pass tablet is connected**, and the tablet is listed under Device keys.
+
+![Connect a tablet](screenshots/connect-tablet.png)
+
+| On the tablet, before it trusts Kishtin | After, ready for staff |
+|---|---|
+| ![Join page](screenshots/join-tablet.png) | ![Staff login](screenshots/join-tablet-paired.png) |
+
+Why the certificate: browsers only allow the microphone and keeping the screen awake on a secure (HTTPS) page. Kishtin runs in the restaurant, not on the internet, so no public authority can vouch for it; it vouches for itself instead. Kishtin makes its own certificate authority once, in `tls/` in its data folder, and each tablet installs it once. It can only vouch for local network names and private addresses, so trusting it does not let it vouch for any internet site, even if its key were copied. Its fingerprint (SHA-256) is shown on the QR window, on the tablet's page and in the iPhone profile, so they can be compared.
+
+From the command line: `kishtin keys join --name "Pass tablet"` prints the QR code in the terminal (`--invert` for a light background) and the link.
+
+The older way still works: make a device key with **New key** (or `kishtin keys create --kind device`) and open its pairing link, or paste the key on the tablet.
+
+Staff then pick their name and enter their PIN. A PIN login lasts 12 hours. The exit icon at the bottom of the sidebar switches staff. To take a device out of use, revoke its key in **Device keys**, or use **Unpair this device** in **Settings**.
 
 ## Kitchen screens
 
@@ -198,7 +215,7 @@ It runs when you open the page, and again with **Check again**. If something doe
 Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and rules** and **Permissions**. Changing them, and opening **Staff**, **Device keys** and **Backups** at all, needs a manager logged in with their password, unless a manager has given that job to others in **Permissions**. Use **Password login** on the page. That logs this device in with a password for 30 minutes.
 
 - **Menu**: a card per station with its equipment and how many each holds, and every dish in a sortable table with its course, station, equipment and capacity, cook time, total time, how long it can wait, and status (Available, 86, off the menu). **Add station**, **Add equipment**, **Add dish** and **Edit** need the manager password. The dish form takes times in minutes or minutes:seconds, the food category from the HACCP lists, and modifiers with their extra cook minutes. **86** and **Back on** are open to head chefs, line cooks and managers.
-- **Connections**: what Kishtin can connect to (Square, for now), what each sends, and whether it is connected and in use. **Set up** opens the connector's page. **Square** has its setup in three steps: connect the account (paste the access token, checked with Square before it is saved), map till items to dishes, and turn import on (with a review of exactly what is sent to Square); then recent till orders with anything to check. See [square.md](square.md).
+- **Connections**: what Kishtin can connect to (Square and SumUp), what each sends, and whether it is connected and in use. **Set up** opens the connector's page. **Square** has its setup in three steps: connect the account (paste the access token, checked with Square before it is saved), map till items to dishes, and turn import on (with a review of exactly what is sent to Square); then recent till orders with anything to check. See [square.md](square.md). **SumUp** has the same three steps, with an API key and a merchant account; it brings in sales once they are paid. See [sumup.md](sumup.md).
 - **Scheduler**: the strategy, batching, priorities, how long a ready course can wait at the pass, how often screens re-plan, and a buffer per station. **Review changes** shows what changes before saving with a reason. A card lists what the scheduler does not do yet.
 - **Fridges and tasks**: fridges and freezers with their check times, and which fridges are non-food; daily cleaning tasks and their areas; food categories; quick-pick corrective actions per record type. Edit freely, then **Review changes** shows what changes and what it affects, and asks for a reason before saving.
 - **Limits and rules**: the limits in use, and the full history with who changed each one and why.
@@ -215,6 +232,7 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and ru
 ## Settings
 
 - **Restaurant**: the name, backup schedule and retention, largest upload, and preview length. These change through the same review as Setup. See [settings.md](settings.md#system-settings).
+- **The Kishtin computer**: whether Kishtin starts by itself when the computer it runs on starts, with a switch to turn that on or off (a manager with the password), how it does it, and what it does not do (on Windows and a Mac it starts at login, not at power-on). See [Start with the computer](install.md#start-with-the-computer).
 - **This device**: which screen it shows (see [Kitchen screens](#kitchen-screens)), light, dark or system theme, high contrast, and unpairing.
 
 ## Screenshots

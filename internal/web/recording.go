@@ -87,15 +87,6 @@ func (s *Server) recordingRoutes() {
 		return &audioOut{ContentType: ct, Body: b}, nil
 	}))
 	huma.Register(s.api, huma.Operation{
-		OperationID: "square-order-versions", Method: http.MethodGet, Path: "/square/orders/{id}/versions", Tags: []string{"Square"},
-		Summary: "List every version of a till order Kishtin saw",
-	}, wrap(s, func(ctx context.Context, in *struct {
-		ID string `path:"id"`
-	}) (*out[versionsBody], error) {
-		r, err := s.svc.SquareOrderVersions(ctx, principal(ctx), in.ID)
-		return reply(versionsBody{Versions: r}, err)
-	}))
-	huma.Register(s.api, huma.Operation{
 		OperationID: "preview-anonymise", Method: http.MethodGet, Path: "/users/{id}/anonymise", Tags: []string{"Staff"},
 		Summary: "Show what anonymising a leaver would change, without changing anything",
 	}, wrap(s, func(ctx context.Context, in *struct {

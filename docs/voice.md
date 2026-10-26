@@ -71,7 +71,7 @@ The same permissions apply as on the screens. A front-of-house login cannot fire
    tts_url = "http://127.0.0.1:5000"
    ```
 
-4. Serve the screens over HTTPS (`server.tls_cert` and `server.tls_key`). Browsers only allow the microphone on a secure connection, or on the server machine itself. Without HTTPS, devices show "The microphone needs a secure connection" and typed commands still work.
+4. Browsers only allow the microphone on a secure (HTTPS) connection, or on the Kishtin computer itself. Tablets connected by QR code use HTTPS with Kishtin's own certificate, so voice works on them; see [Connecting a tablet or phone](screens.md#connecting-a-tablet-or-phone). A device that opens Kishtin over plain HTTP shows "The microphone needs a secure connection", and typed commands still work.
 
 The Voice page shows whether spoken commands and spoken replies are set up, and whether this device's microphone can be used.
 

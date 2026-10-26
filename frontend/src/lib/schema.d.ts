@@ -153,7 +153,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/connectors/square": {
+    "/connectors/{till}": {
         parameters: {
             query?: never;
             header?: never;
@@ -162,13 +162,53 @@ export interface paths {
         };
         get?: never;
         /**
-         * Connect Square with an access token (manager password)
-         * @description Kishtin checks the token by asking Square for the account's locations, and saves it only if Square accepts it. It is kept in a file only the server can read, outside the database, so it is never in a backup or export. Not possible when the token is set in the environment or kishtin.toml.
+         * Connect a till with its token: a Square access token or a SumUp API key (manager password)
+         * @description Kishtin checks the token by asking the till for the account's locations, and saves it only if the till accepts it. It is kept in a file only the server can read, outside the database, so it is never in a backup or export. Not possible when the token is set in the environment or kishtin.toml. SumUp has only the production environment.
          */
-        put: operations["connect-square"];
+        put: operations["connect-till"];
         post?: never;
-        /** Disconnect Square and delete the saved token (manager password); turn order import off first */
-        delete: operations["disconnect-square"];
+        /** Disconnect a till and delete its saved token (manager password); turn order import off first */
+        delete: operations["disconnect-till"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/devices/join-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a QR code that pairs a tablet or phone
+         * @description Makes a one-time code, good for 15 minutes, with a link and QR code for each address this computer has on the restaurant network. A tablet that opens the link installs Kishtin's certificate if it needs to, then pairs itself with a new device key. Manager with a password.
+         */
+        post: operations["create-join-code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/devices/pair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pair this tablet or phone with a join code
+         * @description Works without an API key: the one-time code from a manager's QR code is the proof. Returns a device key for this device, shown once.
+         */
+        post: operations["pair-device"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1165,6 +1205,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset a manager's password from the Kishtin computer
+         * @description Used by kishtind reset-password while the server runs. Works without an API key, only from the Kishtin computer itself, and only with the one-time code that command leaves in the data folder, which is removed on first use and expires after 10 minutes. With no active manager left, the named staff member is made a manager, or a new manager is added.
+         */
+        post: operations["recover-manager"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reports/haccp": {
         parameters: {
             query?: never;
@@ -1632,6 +1692,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/sumup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show the SumUp settings in force
+         * @description Whether paid sales are imported from SumUp, for which merchant account (its merchant code is the location ID), and how often Kishtin asks. The preview says exactly what is sent to SumUp. Turning it on needs the manager password.
+         */
+        get: operations["get-sumup"];
+        /**
+         * Save a new version of the SumUp settings
+         * @description Needs a manager password login or a manager API key, and a reason. A change that makes food safety less strict also needs plan_ref. Saved records are never re-graded.
+         */
+        put: operations["save-sumup"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/sumup/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every saved version of the SumUp settings, oldest first */
+        get: operations["sumup-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/sumup/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a change to the SumUp settings
+         * @description Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.
+         */
+        post: operations["preview-sumup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/system": {
         parameters: {
             query?: never;
@@ -1717,24 +1838,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/square": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Show whether order import from Square is on and working, recent till orders, and mappings */
-        get: operations["square-status"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/square/catalog": {
+    "/startup": {
         parameters: {
             query?: never;
             header?: never;
@@ -1742,11 +1846,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Read the catalog from Square, with how each entry maps to the kitchen (manager password)
-         * @description Sends Square only the access token. Suggestions match dishes and modifiers by name; nothing is saved until mappings are saved.
+         * Whether Kishtin starts by itself with this computer
+         * @description How Kishtin starts on the computer it runs on (Task Scheduler, a LaunchAgent or a systemd user service), and what that does not do.
          */
-        get: operations["square-catalog"];
-        put?: never;
+        get: operations["get-startup"];
+        /**
+         * Turn Kishtin starting with this computer on or off
+         * @description Changes the computer Kishtin runs on, as the user it runs as. Turning it off leaves this Kishtin running until it is stopped or the computer restarts. Noted in the activity log.
+         */
+        put: operations["set-startup"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1754,15 +1862,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/square/locations": {
+    "/tills/{till}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List the Square account's locations (sends Square the access token only) */
-        get: operations["square-locations"];
+        /** Show whether order import from a till is on and working, recent till orders, and mappings */
+        get: operations["till-status"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1771,7 +1879,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/square/mappings": {
+    "/tills/{till}/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the catalog from a till, with how each entry maps to the kitchen (manager password)
+         * @description Sends the till only its token and location. Suggestions match dishes and modifiers by name; nothing is saved until mappings are saved. SumUp has no product list in its API, so its catalog is the items sold in recent sales.
+         */
+        get: operations["till-catalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tills/{till}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a till account's locations; for SumUp, its merchant accounts (sends the till its token only) */
+        get: operations["till-locations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tills/{till}/mappings": {
         parameters: {
             query?: never;
             header?: never;
@@ -1783,7 +1928,7 @@ export interface paths {
          * Map till items to dishes and till modifiers to dish modifiers (manager password)
          * @description Mark an entry ignore for anything not for the kitchen, such as drinks. Open till orders with items that are now mapped get them added.
          */
-        put: operations["save-square-mappings"];
+        put: operations["save-till-mappings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1791,7 +1936,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/square/orders/{id}/versions": {
+    "/tills/{till}/orders/{id}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1799,7 +1944,7 @@ export interface paths {
             cookie?: never;
         };
         /** List every version of a till order Kishtin saw */
-        get: operations["square-order-versions"];
+        get: operations["till-order-versions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1808,7 +1953,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/square/sync": {
+    "/tills/{till}/sync": {
         parameters: {
             query?: never;
             header?: never;
@@ -1818,10 +1963,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Ask Square for new and changed orders now
-         * @description Kishtin also asks on its own while import is on. Orders are deduped on Square's order ID and version.
+         * Ask a till for new and changed orders now
+         * @description Kishtin also asks on its own while import is on. Orders are deduped on the till's order ID and version.
          */
-        post: operations["square-sync"];
+        post: operations["till-sync"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2248,7 +2393,7 @@ export interface components {
         };
         ConnectInput: {
             /** @enum {string} */
-            environment: "production" | "sandbox";
+            environment?: "production" | "sandbox";
             token: string;
         };
         ConnectResult: {
@@ -2707,6 +2852,22 @@ export interface components {
             item: components["schemas"]["NewItem"];
             reason?: string;
         };
+        JoinCode: {
+            code: string;
+            /** Format: date-time */
+            expires_at: string;
+            fingerprint?: string;
+            links: components["schemas"]["JoinLink"][];
+            name: string;
+        };
+        JoinCodeInBody: {
+            name: string;
+        };
+        JoinLink: {
+            address: string;
+            qr: string[];
+            url: string;
+        };
         KeysOutBody: {
             keys: components["schemas"]["APIKey"][];
         };
@@ -2837,7 +2998,7 @@ export interface components {
         MappingsBody: {
             mappings: components["schemas"]["Mapping"][];
         };
-        MappingsIn: {
+        MappingsInBody: {
             mappings: components["schemas"]["MappingInput"][];
         };
         MeOutBody: {
@@ -2952,6 +3113,14 @@ export interface components {
             sheet?: string;
             sheet_label?: string;
             title?: string;
+        };
+        PairInBody: {
+            code: string;
+        };
+        Paired: {
+            key: components["schemas"]["APIKey"];
+            name: string;
+            secret: string;
         };
         PaperCheck: {
             check?: components["schemas"]["Check"];
@@ -3122,6 +3291,16 @@ export interface components {
         };
         RecordsOutBody: {
             records: components["schemas"]["Record"][];
+        };
+        RecoverInBody: {
+            code: string;
+            name?: string;
+            password: string;
+        };
+        RecoveryResult: {
+            created: boolean;
+            promoted: boolean;
+            user: components["schemas"]["User"];
         };
         Result: {
             outcome: string;
@@ -3378,13 +3557,6 @@ export interface components {
             /** Format: int64 */
             p90_seconds: number;
         };
-        SquareStatus: {
-            connected: boolean;
-            mappings: components["schemas"]["Mapping"][];
-            recent: components["schemas"]["Imported"][];
-            settings: components["schemas"]["VersionedPOSSettings"];
-            state?: components["schemas"]["SyncState"];
-        };
         StaffEntry: {
             has_password: boolean;
             has_pin: boolean;
@@ -3394,6 +3566,16 @@ export interface components {
         };
         StaffOutBody: {
             staff: components["schemas"]["StaffEntry"][];
+        };
+        StartupInBody: {
+            on: boolean;
+        };
+        StartupStatus: {
+            method?: string;
+            note: string;
+            on: boolean;
+            supported: boolean;
+            where?: string;
         };
         Station: {
             active: boolean;
@@ -3507,6 +3689,14 @@ export interface components {
             updated_at: string;
             /** Format: int64 */
             version: number;
+        };
+        TillStatus: {
+            connected: boolean;
+            mappings: components["schemas"]["Mapping"][];
+            recent: components["schemas"]["Imported"][];
+            settings: components["schemas"]["VersionedPOSSettings"];
+            state?: components["schemas"]["SyncState"];
+            till: string;
         };
         TimeTemp: {
             /** Format: int64 */
@@ -3954,11 +4144,13 @@ export interface operations {
             };
         };
     };
-    "connect-square": {
+    "connect-till": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                till: "square" | "sumup";
+            };
             cookie?: never;
         };
         requestBody: {
@@ -3987,11 +4179,14 @@ export interface operations {
             };
         };
     };
-    "disconnect-square": {
+    "disconnect-till": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description The till: square or sumup. */
+                till: "square" | "sumup";
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -4002,6 +4197,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-join-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinCodeInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinCode"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "pair-device": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Paired"];
+                };
             };
             /** @description Error */
             default: {
@@ -5915,6 +6176,39 @@ export interface operations {
             };
         };
     };
+    "recover-manager": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoverInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "report-haccp": {
         parameters: {
             query?: {
@@ -6851,6 +7145,130 @@ export interface operations {
             };
         };
     };
+    "get-sumup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedPOSSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "save-sumup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangePOSSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedPOSSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "sumup-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryOutPOSSettingsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-sumup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangePOSSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsPreviewPOSSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-system": {
         parameters: {
             query?: never;
@@ -7037,7 +7455,7 @@ export interface operations {
             };
         };
     };
-    "square-status": {
+    "get-startup": {
         parameters: {
             query?: never;
             header?: never;
@@ -7052,7 +7470,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SquareStatus"];
+                    "application/json": components["schemas"]["StartupStatus"];
                 };
             };
             /** @description Error */
@@ -7066,11 +7484,79 @@ export interface operations {
             };
         };
     };
-    "square-catalog": {
+    "set-startup": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartupInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartupStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "till-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The till: square or sumup. */
+                till: "square" | "sumup";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TillStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "till-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The till: square or sumup. */
+                till: "square" | "sumup";
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -7095,11 +7581,14 @@ export interface operations {
             };
         };
     };
-    "square-locations": {
+    "till-locations": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description The till: square or sumup. */
+                till: "square" | "sumup";
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -7124,16 +7613,18 @@ export interface operations {
             };
         };
     };
-    "save-square-mappings": {
+    "save-till-mappings": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                till: "square" | "sumup";
+            };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MappingsIn"];
+                "application/json": components["schemas"]["MappingsInBody"];
             };
         };
         responses: {
@@ -7157,11 +7648,12 @@ export interface operations {
             };
         };
     };
-    "square-order-versions": {
+    "till-order-versions": {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                till: "square" | "sumup";
                 id: string;
             };
             cookie?: never;
@@ -7188,11 +7680,14 @@ export interface operations {
             };
         };
     };
-    "square-sync": {
+    "till-sync": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description The till: square or sumup. */
+                till: "square" | "sumup";
+            };
             cookie?: never;
         };
         requestBody?: never;

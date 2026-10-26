@@ -25,12 +25,16 @@ const (
 	ActivityHACCPEntered       = "haccp.entered"
 	ActivityStaffAnonymised    = "staff.anonymised"
 	ActivitySetup              = "setup"
+	ActivityDevicePaired       = "device.paired"
+	ActivityPasswordRecovered  = "password.recovered"
+	ActivityStartupChanged     = "startup.changed"
 )
 
 // ActivityKinds lists every activity kind.
 var ActivityKinds = []string{
 	ActivityLogin, ActivityLogout, ActivityScreenConnected, ActivityScreenDisconnected,
-	ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityStaffAnonymised, ActivitySetup,
+	ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityStaffAnonymised, ActivitySetup, ActivityDevicePaired,
+	ActivityPasswordRecovered, ActivityStartupChanged,
 }
 
 // How a HACCP record was entered, kept in the activity log.

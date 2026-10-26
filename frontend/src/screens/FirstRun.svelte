@@ -78,7 +78,7 @@
           <li><strong>Add your staff</strong> in Setup › Staff and access › Staff. Each gets a PIN for the kitchen tablets.</li>
           <li><strong>Add your menu</strong> in Setup › Kitchen › Menu: stations, equipment and dishes with their cook times.</li>
           <li><strong>Check your fridges and cleaning tasks</strong> in Setup › Food safety › Fridges and tasks.</li>
-          <li><strong>Connect tablets and phones</strong> in Setup › Staff and access › Device keys: make a key, then open its link on the tablet.</li>
+          <li><strong>Connect tablets and phones</strong> in Setup › Staff and access › Device keys: tap Connect a tablet and scan the QR code with the tablet.</li>
         </ol>
         <details>
           <summary>Key for scripts and the command line (most kitchens never need this)</summary>

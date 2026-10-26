@@ -26,6 +26,8 @@ const (
 	KindScheduler Kind = "scheduler"
 	// KindSquare is how Kishtin imports orders from Square.
 	KindSquare Kind = "square"
+	// KindSumUp is how Kishtin imports paid sales from SumUp.
+	KindSumUp Kind = "sumup"
 	// KindRecordBooks is the record book bundle in use and the restaurant's
 	// changes to its booklets.
 	KindRecordBooks Kind = "record_books"
@@ -35,7 +37,7 @@ const (
 )
 
 // Kinds lists every kind.
-var Kinds = []Kind{KindGuidance, KindRules, KindLists, KindSystem, KindScheduler, KindSquare, KindRecordBooks, KindPermissions}
+var Kinds = []Kind{KindGuidance, KindRules, KindLists, KindSystem, KindScheduler, KindSquare, KindSumUp, KindRecordBooks, KindPermissions}
 
 // Valid reports whether k is a known kind.
 func (k Kind) Valid() bool { return slices.Contains(Kinds, k) }

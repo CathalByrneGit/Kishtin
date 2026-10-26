@@ -45,6 +45,7 @@
   import { closeLog, logDrawer, openLog } from "./lib/logdrawer.svelte";
   import { initRouter, navigate, route } from "./lib/router.svelte";
   import { screen } from "./lib/screen.svelte";
+  import { join, takeJoinFromURL } from "./lib/join.svelte";
   import { endSession, session, takePairingFromURL } from "./lib/session.svelte";
   import KitchenShell from "./screens/KitchenShell.svelte";
   import Login from "./screens/Login.svelte";
@@ -62,7 +63,7 @@
   import MenuSetup from "./views/setup/Menu.svelte";
   import SchedulerSetup from "./views/setup/Scheduler.svelte";
   import ConnectionsSetup from "./views/setup/Connections.svelte";
-  import SquareSetup from "./views/setup/Square.svelte";
+  import TillSetup from "./views/setup/Till.svelte";
   import Records from "./views/Records.svelte";
   import Backups from "./views/setup/Backups.svelte";
   import Keys from "./views/setup/Keys.svelte";
@@ -134,6 +135,7 @@
     { path: "/setup/records", label: "HACCP records", section: "safety", view: "records", group: "Setup" },
     { path: "/setup/connections", label: "Connections", section: "connections", view: null, group: "Setup" },
     { path: "/setup/connections/square", label: "Square", section: "connections", view: null, group: "Setup / Connections", sub: true },
+    { path: "/setup/connections/sumup", label: "SumUp", section: "connections", view: null, group: "Setup / Connections", sub: true },
     { path: "/setup/staff", label: "Staff", section: "people", view: "staff", group: "Setup" },
     { path: "/setup/permissions", label: "Permissions", section: "people", view: "permissions", group: "Setup" },
     { path: "/setup/keys", label: "Device keys", section: "people", view: "keys", group: "Setup" },
@@ -168,6 +170,8 @@
   let paletteOpen = $state(false);
 
   takePairingFromURL();
+  const joinCode = takeJoinFromURL();
+  if (joinCode) void join(joinCode);
 
   const loggedIn = $derived(Boolean(session.deviceKey && session.token));
   const current = $derived(pages.find((p) => p.path === route.path) ?? null);
@@ -387,7 +391,9 @@
         {:else if route.path === "/setup/connections"}
           <ConnectionsSetup />
         {:else if route.path === "/setup/connections/square"}
-          <SquareSetup />
+          {#key "square"}<TillSetup till="square" />{/key}
+        {:else if route.path === "/setup/connections/sumup"}
+          {#key "sumup"}<TillSetup till="sumup" />{/key}
         {:else if route.path === "/today"}
           <Today />
         {:else if route.path === "/records"}

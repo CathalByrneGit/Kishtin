@@ -40,6 +40,9 @@ Things staff and screens do that are not HACCP records or order events:
 | `haccp.entered` | for each HACCP record: how it was entered (`form`, `voice`, `catch_up`, `paper`, `api`), when the check was done and when it was saved |
 | `staff.anonymised` | which leaver was anonymised, by whom, and how many entries changed |
 | `setup` | when Kishtin was set up, by which manager, and whether from the screens or `kishtind setup` |
+| `device.paired` | a tablet or phone paired by QR code: its name, its new device key, and the manager who made the code |
+| `password.recovered` | a manager's password set with `kishtind reset-password` on the Kishtin computer: whose, and whether they were made a manager or added to do it |
+| `startup.changed` | Kishtin set to start with the computer, or not, from the screens or `kishtin startup`: who, on or off, and how (Task Scheduler, LaunchAgent, systemd) |
 
 `kishtin activity --kind dish.sold_out`, or `GET /api/activity`. Head chef or manager (the "Exports, record books and the activity log" permission).
 
@@ -51,7 +54,7 @@ Recordings of spoken commands are **not** kept unless a manager turns it on: **S
 
 ## Square
 
-Every version of every till order Kishtin sees is kept, as Kishtin read it (lines, modifiers, ticket name, state), not only the latest. `kishtin square versions ORDER-ID`, `GET /api/square/orders/{id}/versions`. Card data never reaches Kishtin.
+Every version of every till order Kishtin sees is kept, as Kishtin read it (lines, modifiers, ticket name, state), not only the latest. The same for SumUp sales. `kishtin square versions ORDER-ID` or `kishtin sumup versions TRANSACTION-ID`, `GET /api/tills/{square|sumup}/orders/{id}/versions`. Card data never reaches Kishtin.
 
 ## Settings, limits and permissions
 

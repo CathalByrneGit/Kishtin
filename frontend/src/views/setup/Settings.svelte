@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Card, Notice, Spinner, TextInput, ThemeToggle, Toggle, getHighContrast, setHighContrast, showFlash } from "@kenn-io/kit-ui";
+  import { Button, Card, Chip, Notice, Spinner, TextInput, ThemeToggle, Toggle, getHighContrast, setHighContrast, showFlash } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
   import ManagerGate from "../../components/ManagerGate.svelte";
   import ScreenPicker from "../../components/ScreenPicker.svelte";
@@ -24,6 +24,42 @@
   let highContrast = $state(getHighContrast());
 
   const canEdit = $derived(can("settings.manage"));
+
+  // Starting with the Kishtin computer.
+  let startup = $state<Schemas["StartupStatus"] | null>(null);
+  let startupBusy = $state(false);
+  let startupError = $state("");
+
+  async function loadStartup() {
+    try {
+      startup = await api.startup();
+      startupError = "";
+    } catch (err) {
+      startupError = message(err);
+    }
+  }
+
+  // Permissions arrive after the page opens.
+  let startupAsked = false;
+  $effect(() => {
+    if (canEdit && !startupAsked) {
+      startupAsked = true;
+      void loadStartup();
+    }
+  });
+
+  async function setStartup(on: boolean) {
+    startupBusy = true;
+    try {
+      startup = await api.setStartup(on);
+      showFlash(on ? "Kishtin now starts with this computer" : "Kishtin no longer starts by itself", { tone: "success" });
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 10000 });
+      await loadStartup();
+    } finally {
+      startupBusy = false;
+    }
+  }
 
   function reset() {
     if (!system) return;
@@ -142,6 +178,37 @@
             {/if}
           </Card>
           <p class="muted small">The backup folder, listen address and TLS are set in <code>kishtin.toml</code> on the server.</p>
+        {/if}
+      </ManagerGate>
+
+      <h2 class="section-title">The Kishtin computer</h2>
+      <ManagerGate what="Starting with the computer" action="settings.manage">
+        {#if startup}
+          <Card padding="md">
+            <div class="stack">
+              <div class="row">
+                {#if !startup.supported}
+                  <Chip tone="neutral" uppercase={false}>Can't change here</Chip>
+                {:else if startup.on}
+                  <Chip tone="success" uppercase={false}>Starts by itself</Chip>
+                {:else}
+                  <Chip tone="warning" uppercase={false}>Started by hand</Chip>
+                {/if}
+              </div>
+              {#if startup.supported}
+                <Toggle checked={startup.on} label="Start Kishtin when this computer starts" disabled={startupBusy} onchange={(on) => void setStartup(on)} />
+              {/if}
+              <span>
+                {#if startup.on}{startup.note}{:else if startup.supported}Off: after the computer restarts, someone has to start Kishtin again by typing <code>kishtind</code>. Turning this on uses the computer's own start-up settings ({startup.method}).{:else}{startup.note}{/if}
+              </span>
+              {#if startup.on && startup.where}<span class="muted small">{startup.method}: <code>{startup.where}</code></span>{/if}
+              <span class="muted small">Turning it off leaves Kishtin running until it is stopped or the computer restarts.</span>
+            </div>
+          </Card>
+        {:else if startupError}
+          <Notice tone="error" message={startupError} />
+        {:else}
+          <Spinner />
         {/if}
       </ManagerGate>
     </div>

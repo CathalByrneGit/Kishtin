@@ -14,8 +14,9 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 - **Menu**: stations, equipment with how many units it holds, and dishes with cook, rest, plate and hold times, batch capacity, modifiers such as "well done +2 min", and 86 for sold out. See [docs/kitchen.md](docs/kitchen.md).
 - **Orders and the pass**: tables and takeaways with daily ticket numbers and an optional name (such as the guest's) shown as the heading; courses held until fired, and held again if nothing has started; items moved from waiting to cooking, resting, plating, ready and served; items changed after ordering (voided and replaced in one step); a course served together; expo overrides (new target time, urgent) logged with every other change in each order's history.
 - **Voice control**: push-to-talk on kitchen screens for firing, holding, starting, readying, voiding, 86ing and asking what is next, and for fridge, freezer, cooking, delivery, cooling, batch label and cleaning records, asking for any detail not said. Optional hands-free listening for "Kishtin", off by default on every device. Speech is recognised by a local whisper.cpp sidecar and replies spoken by a local Piper sidecar; no audio leaves the building. It asks when unsure, needs "confirm" for a HACCP fail, and logs every command. See [docs/voice.md](docs/voice.md).
-- **Connections**: Setup → Connections lists what Kishtin can connect to, what each sends, and its state. Square is the first: a manager connects it there with an access token, checked with Square and kept outside the database.
+- **Connections**: Setup → Connections lists what Kishtin can connect to, what each sends, and its state. Square and SumUp: a manager connects each there with a token, checked with the till company and kept outside the database.
 - **Orders from Square**: orders taken on the Square till come into the kitchen on their own, deduped on Square's order ID and version. Till items are mapped to dishes once; drinks are marked not for the kitchen. Changes on the till that would remove food are flagged to the pass, never voided automatically. Kishtin only reads from Square, never sees card data, and keeps working when Square is unreachable. See [docs/square.md](docs/square.md).
+- **Sales from SumUp**: sales paid on SumUp come into the kitchen as takeaways, mapped to dishes by item name. SumUp reports a sale only once it is paid, so this suits counter service and takeaways. Refunds are flagged to the pass, never voided automatically. See [docs/sumup.md](docs/sumup.md).
 - **Station tickets**: each station sees one ticket per order and course, with a button per item, a timer and status colour, the scheduler's reason one tap away, all-day counts per dish (with "start these together"), and recently done items to undo. The pass has all-day counts too.
 - **Cook scheduler**: backward scheduling within equipment capacity, with batching across tables, priorities and station buffers. It tells each station what to start and when, says why for every recommendation, and shows each course as on track, at risk or late. Its settings are versioned.
 - **HACCP log**: fridge, freezer, delivery, cook, reheat, cooling, hot holding, batch label and cleaning records, checked against FSAI limits. See [docs/haccp.md](docs/haccp.md).
@@ -28,7 +29,8 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 - **Record books**: official HACCP booklets filled in from the records for a month, with missed checks marked. Bundles per country (Ireland's FSAI Safe Catering booklets SC1 to SC9, and a general set for any country), which a manager can change in Setup › Food safety › HACCP records. A manager signs off each period, which fills the booklets' manager check line. Kishtin compares your copy of a booklet with its template, checks the publisher for new editions when asked, and brings in old paper pages from a photo. An optional local model can suggest columns and read photos. See [docs/record-books.md](docs/record-books.md).
 - **Backups** on a schedule. Each copy is verified and gets a `.sha256` file.
 - **Checks logged later**: any check can be logged with the time it was done and who did it, and **Catch up** lists the daily checks with no record so they can be filled in together. See [docs/haccp.md](docs/haccp.md#checks-logged-later).
-- **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts.
+- **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts. A forgotten manager password can be reset with `kishtind reset-password` on the Kishtin computer itself.
+- **Starts with the computer**: the installer offers it, and it can be turned on in Settings or with `kishtind startup on`. It uses Task Scheduler on Windows, a LaunchAgent on macOS and a systemd user service on Linux. See [docs/install.md](docs/install.md#start-with-the-computer).
 - **Reports**: pass times (share on time, fire to pass, waiting at the pass, why courses were late, dish times against set times) and HACCP checks (checks and cleaning done and missed, out-of-limit readings, each fridge's temperatures). See [docs/reports.md](docs/reports.md).
 - **Recording**: scheduler plans as they change, with why each course ran late; an activity log of sold-out dishes, logins, screens dropping off and how each HACCP record was entered; the device behind each action; every version of each till order; optional voice recordings. Leavers can be anonymised. See [docs/recording.md](docs/recording.md).
 - **Permissions**: a manager can give any role or named member of staff jobs such as signing off records, and choose whether a PIN is enough. See [docs/permissions.md](docs/permissions.md).
@@ -46,6 +48,8 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 
 ## Install and run
 
+Setting Kishtin up in a restaurant, and not technical? Start with **[Getting started](docs/getting-started.md)**: a step-by-step guide that also explains how Kishtin differs from cloud systems.
+
 On Windows, in PowerShell:
 
 ```powershell
@@ -58,7 +62,7 @@ On macOS or Linux, in Terminal:
 curl -fsSL https://github.com/cathalbyrnegit/kishtin/releases/latest/download/install.sh | sh
 ```
 
-Then run `kishtind` and open `http://127.0.0.1:8080/` in a browser on the same computer to set it up. The installer checks the download against the release's `SHA256SUMS` first. See [docs/install.md](docs/install.md) for updates, other options, and what it does not do yet.
+The installer offers to start Kishtin with the computer, and starts it. Otherwise run `kishtind`. Then open `http://127.0.0.1:8080/` in a browser on the same computer to set it up. The installer checks the download against the release's `SHA256SUMS` first. See [docs/install.md](docs/install.md) for updates, other options, and what it does not do yet.
 
 ### Build from source
 
@@ -105,7 +109,7 @@ The server only listens on the machine itself by default; see Configuration to s
 
 Data lives in `~/.kishtin/` by default (or `/var/lib/kishtin/`). Change it with `KISHTIN_DATA_DIR` or a `kishtin.toml`. See [kishtin.example.toml](kishtin.example.toml).
 
-The server only listens on loopback unless you configure TLS, or explicitly mark the network as trusted. Every API request needs an API key.
+Out of the box, Kishtin serves the Kishtin computer over plain HTTP on port 8080, and tablets on the restaurant's network over HTTPS on port 8443 with its own certificate, paired by QR code (see [docs/screens.md](docs/screens.md#connecting-a-tablet-or-phone)). Other devices get nothing over plain HTTP but the page that helps them install that certificate. Set `tablets = false` under `[server]` to keep Kishtin on this computer only. To serve plain HTTP more widely, configure your own TLS certificate, or explicitly mark the network as trusted. Every API request needs an API key.
 
 ## Development
 

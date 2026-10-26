@@ -92,8 +92,9 @@ jobs:
       - name: Install with install.sh
         if: runner.os != 'Windows'
         run: |
-          KISHTIN_RELEASE_URL="$PWD/downloads" KISHTIN_INSTALL_DIR="$RUNNER_TEMP/kishtin" sh scripts/install.sh
+          KISHTIN_STARTUP=no KISHTIN_RELEASE_URL="$PWD/downloads" KISHTIN_INSTALL_DIR="$RUNNER_TEMP/kishtin" sh scripts/install.sh
           "$RUNNER_TEMP/kishtin/kishtind" --version
+          "$RUNNER_TEMP/kishtin/kishtind" startup --json
           "$RUNNER_TEMP/kishtin/kishtin" --version
           "$RUNNER_TEMP/kishtin/kishtind" licenses > "$RUNNER_TEMP/licenses.txt"
           grep -q "Apache License" "$RUNNER_TEMP/licenses.txt"
@@ -104,6 +105,25 @@ jobs:
           $env:KISHTIN_RELEASE_URL = Join-Path $PWD 'downloads'
           $env:KISHTIN_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'kishtin'
           $env:KISHTIN_NO_MODIFY_PATH = '1'
+          $env:KISHTIN_STARTUP = 'no'
           ./scripts/install.ps1
-          & (Join-Path $env:KISHTIN_INSTALL_DIR 'kishtind.exe') --version
+          $exe = Join-Path $env:KISHTIN_INSTALL_DIR 'kishtind.exe'
+          & $exe --version
           & (Join-Path $env:KISHTIN_INSTALL_DIR 'kishtin.exe') --version
+      - name: Start with the computer (Task Scheduler)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'kishtin\kishtind.exe'
+          & $exe startup on
+          if ($LASTEXITCODE -ne 0) { throw "startup on failed" }
+          $task = schtasks /Query /TN Kishtin /XML | Out-String
+          if ($task -notmatch '<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>') { throw "the task would stop after 72 hours: $task" }
+          if (-not ((& $exe startup --json) | ConvertFrom-Json).on) { throw "startup does not report on" }
+          & $exe startup stop
+          & $exe startup off
+          schtasks /Query /TN Kishtin 2>$null
+          if ($LASTEXITCODE -eq 0) { throw "the task is still there after startup off" }
+          # schtasks failing to find the task is the pass; don't let its exit
+          # code end the step.
+          exit 0

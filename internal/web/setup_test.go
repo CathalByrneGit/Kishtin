@@ -151,7 +151,9 @@ func TestOnlySetupIsPublic(t *testing.T) {
 			}
 		}
 	}
-	assert.ElementsMatch(t, []string{"setup-status", "setup"}, public)
+	// recover-manager also needs the one-time code from the data folder,
+	// and only answers this computer.
+	assert.ElementsMatch(t, []string{"setup-status", "setup", "pair-device", "recover-manager"}, public)
 	// A blank install still needs a key for everything else.
 	for _, p := range []string{"/api/auth/staff", "/api/haccp/records", "/api/users"} {
 		assert.Equal(t, http.StatusUnauthorized, call(t, srv, http.MethodGet, p, "", false, nil).status, p)

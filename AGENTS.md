@@ -106,6 +106,7 @@ Follow docbank's dependency choices (github.com/kenn-io/docbank) so the stack st
 | PDF reading and processing (supplier invoices) | `github.com/pdfcpu/pdfcpu`; `github.com/klippa-app/go-pdfium` with `github.com/tetratelabs/wazero` for text and page images without CGO |
 | PDF output (inspection reports) | `github.com/go-pdf/fpdf` |
 | JSON Schema validation (API input, AI extraction output) | `github.com/santhosh-tekuri/jsonschema/v5` |
+| QR codes (pairing tablets) | `rsc.io/qr` |
 | Local MCP server for agents (later) | `github.com/modelcontextprotocol/go-sdk` |
 | Optional terminal UI for managers | `charm.land/bubbletea/v2`, `charm.land/bubbles/v2`, `charm.land/lipgloss/v2` |
 | Test assertions | `github.com/stretchr/testify` |
@@ -187,6 +188,8 @@ internal/voice/        command grammar, parsing, confirmations (no audio I/O)
 internal/speech/       client for the local speech-to-text / text-to-speech sidecar
 internal/ai/           client for an optional local model server (drafts only)
 internal/pdftext/      PDF text extraction without CGO (go-pdfium on wazero)
+internal/autostart/    starting kishtind with the computer: Task Scheduler, LaunchAgent, systemd user service
+internal/localtls/     Kishtin's own certificate authority and server certificates for tablets (no I/O beyond its folder)
 internal/books/        record book bundles, templates and page builders
 internal/analytics/    pure report calculations (pass times, HACCP checks); no I/O
 internal/integrations/ POS adapters, starting with Square (later)
@@ -432,7 +435,7 @@ make test-duckdb # DuckDB backend tests (CGO build)
 - Prefer the standard library, then the libraries in the Go libraries table. Ask before adding anything else, and explain what it replaces.
 - Kishtin is licensed under Apache 2.0 (`LICENSE`, `NOTICE`). Only add dependencies under licences compatible with it (MIT, BSD, ISC, Apache 2.0 and similar); never GPL or AGPL code. After any dependency change, `make generate` refreshes `internal/legal/licenses.txt`, the notices built into the programs.
 - Write a migration for every schema change, for every supported backend in the same change. Never edit a migration that has already shipped.
-- The CLI is a client of the server's HTTP API; it never opens the database directly while the server is running. The API always requires a key, binds to loopback by default, and needs a key plus TLS or a trusted network to listen more widely. (Pattern taken from docbank.)
+- The CLI is a client of the server's HTTP API; it never opens the database directly while the server is running. The API always requires a key, binds to loopback by default, and needs a key plus TLS or a trusted network to listen more widely. (Pattern taken from docbank.) Tablets are the one standing exception, and it keeps that rule: kishtind serves the network over HTTPS with its own local certificate authority (`internal/localtls`, limited by name constraints to local names and private addresses), and its plain-HTTP port answers other devices with only the join pages. Pairing needs a one-time code from a manager.
 - Work on feature branches. Never commit to or push `main`. Open pull requests and leave merging to a person. PR descriptions lead with what changed for the kitchen, with screenshots of real UI using synthetic data.
 - Don't document unbuilt features as if they exist. This file describes intent; feature docs describe what ships.
 - Every new feature gets a CLI command and API route alongside its UI, using the same internal function.

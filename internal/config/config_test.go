@@ -83,3 +83,73 @@ func TestValidate(t *testing.T) {
 	assert.Equal(t, "square", pos.Name())
 	assert.Equal(t, "environment", cfg.Square.TokenFrom)
 }
+
+func TestTablets(t *testing.T) {
+	t.Setenv("KISHTIN_DATA_DIR", "/tmp/kishtin-test")
+	cfg, err := Load(filepath.Join(t.TempDir(), "missing.toml"), false)
+	require.NoError(t, err)
+	assert.True(t, cfg.Server.Tablets, "on by default")
+	assert.Equal(t, ":8443", cfg.Server.TabletListen)
+	assert.True(t, cfg.LocalTLS())
+	assert.Equal(t, "/tmp/kishtin-test/tls", cfg.TLSDir())
+
+	t.Setenv("KISHTIN_TABLETS", "false")
+	cfg, err = Load(filepath.Join(t.TempDir(), "missing.toml"), false)
+	require.NoError(t, err)
+	assert.False(t, cfg.LocalTLS())
+	t.Setenv("KISHTIN_TABLETS", "maybe")
+	_, err = Load(filepath.Join(t.TempDir(), "missing.toml"), false)
+	assert.Error(t, err)
+	t.Setenv("KISHTIN_TABLETS", "")
+
+	cfg, err = Load(write(t, "[server]\ntablets = false\n"), true)
+	require.NoError(t, err)
+	assert.False(t, cfg.Server.Tablets)
+
+	cfg, err = Load(write(t, "[server]\nlisten = \"0.0.0.0:8443\"\ntls_cert = \"/etc/kishtin/cert.pem\"\ntls_key = \"/etc/kishtin/key.pem\"\n"), true)
+	require.NoError(t, err)
+	assert.False(t, cfg.LocalTLS(), "a certificate of its own replaces Kishtin's")
+
+	cfg, err = Load(write(t, "[server]\ntablet_addresses = [\"192.168.1.20\", \"10.0.0.5\"]\n"), true)
+	require.NoError(t, err)
+	assert.Equal(t, "192.168.1.20", cfg.TabletIPs()[0].String(), "named addresses replace the ones found")
+	assert.Len(t, cfg.TabletIPs(), 2)
+
+	for name, body := range map[string]string{
+		"bad address":    "[server]\ntablet_listen = \"8443\"\n",
+		"same port":      "[server]\nlisten = \"127.0.0.1:8443\"\n",
+		"public address": "[server]\ntablet_addresses = [\"8.8.8.8\"]\n",
+		"not an address": "[server]\ntablet_addresses = [\"kitchen\"]\n",
+	} {
+		_, err := Load(write(t, body), true)
+		assert.Error(t, err, name)
+	}
+}
+
+func TestExampleConfigLoads(t *testing.T) {
+	t.Setenv("KISHTIN_DATA_DIR", t.TempDir())
+	cfg, err := Load(filepath.Join("..", "..", "kishtin.example.toml"), true)
+	require.NoError(t, err)
+	assert.True(t, cfg.Server.Tablets)
+}
+
+func TestSumUpToken(t *testing.T) {
+	t.Setenv("KISHTIN_DATA_DIR", t.TempDir())
+	cfg, err := Load(filepath.Join(t.TempDir(), "missing.toml"), false)
+	require.NoError(t, err)
+	c, err := cfg.SumUpClient()
+	require.NoError(t, err)
+	assert.Nil(t, c, "not connected without a key")
+
+	cfg, err = Load(write(t, "[sumup]\ntoken = \"sup_sk_synthetic\"\n"), true)
+	require.NoError(t, err)
+	assert.Equal(t, "kishtin.toml", cfg.SumUp.TokenFrom)
+	t.Setenv("KISHTIN_SUMUP_TOKEN", "sup_sk_from_env")
+	cfg, err = Load(write(t, "[sumup]\ntoken = \"sup_sk_synthetic\"\n"), true)
+	require.NoError(t, err)
+	assert.Equal(t, "environment", cfg.SumUp.TokenFrom)
+	c, err = cfg.SumUpClient()
+	require.NoError(t, err)
+	require.NotNil(t, c)
+	assert.Equal(t, "sumup", c.Name())
+}

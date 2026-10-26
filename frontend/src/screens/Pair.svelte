@@ -4,6 +4,7 @@
   import { api, message, type Schemas } from "../lib/api";
   import { pairDevice, unpairDevice } from "../lib/session.svelte";
   import FirstRun from "./FirstRun.svelte";
+  import { joining } from "../lib/join.svelte";
 
   let key = $state("");
   let busy = $state(false);
@@ -41,11 +42,16 @@
     <h1>Kishtin</h1>
     <p class="muted">Kishtin, from <i>cistin</i>, Irish for kitchen.</p>
 
+    {#if joining.busy}
+      <Notice tone="info" title="Connecting this device…" message="Using the code from the QR code." />
+    {:else if joining.problem}
+      <Notice tone="error" title="Not connected" message={joining.problem} />
+    {/if}
     <Card title="Set up this device" padding="md">
       <form class="stack" onsubmit={pair}>
         <p>
-          This tablet or phone needs a device key before staff can log in. A manager makes one in Setup › Staff and access › Device
-          keys, then opens its pairing link on this device, or types the key here.
+          This tablet or phone needs to be connected before staff can log in. A manager opens Setup › Staff and access › Device keys,
+          taps <strong>Connect a tablet</strong>, and you scan the QR code with this device's camera. Or type a device key here.
         </p>
         <label class="field">
           <span>Device key</span>

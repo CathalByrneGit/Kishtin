@@ -7,6 +7,8 @@
 # KISHTIN_INSTALL_DIR  where to put the programs (default: ~/.local/bin)
 # KISHTIN_RELEASE_URL  a folder holding the archives and SHA256SUMS, for a
 #                      mirror or a local test (default: GitHub releases)
+# KISHTIN_STARTUP      yes or no: whether Kishtin starts by itself when the
+#                      computer starts (default: ask, or keep it on if it was)
 #
 # The archive is checked against SHA256SUMS before anything is installed,
 # and must hold kishtind and kishtin and nothing else.
@@ -84,6 +86,14 @@ got="$(sha256 "$tmp/$archive")"
 contents="$(tar -tzf "$tmp/$archive" | sed -e 's#^\./##' -e '/^$/d' | sort | tr '\n' ' ')"
 [ "$contents" = "kishtin kishtind " ] || fail "the archive holds something other than kishtind and kishtin ($contents). Nothing was installed."
 
+# A Kishtin the computer started is stopped while it is replaced, and
+# started again below; otherwise the old version would keep running.
+was_on=no
+if [ -x "$dir/kishtind" ] && "$dir/kishtind" startup --json 2>/dev/null | grep -q '"on":true'; then
+	was_on=yes
+	"$dir/kishtind" startup stop >/dev/null 2>&1 || true
+fi
+
 mkdir -p "$tmp/x" "$dir"
 tar -xzf "$tmp/$archive" -C "$tmp/x"
 for p in kishtind kishtin; do
@@ -100,4 +110,38 @@ case ":$PATH:" in
 	printf '\n%s is not on your PATH. To run kishtind by name, add this line to ~/.profile:\n  export PATH="%s:$PATH"\n' "$dir" "$dir"
 	;;
 esac
-printf '\nNext:\n  1. Start Kishtin:   %s\n  2. Open http://127.0.0.1:8080 in a browser on this computer to set it up.\n' "$run"
+
+startup="${KISHTIN_STARTUP:-}"
+if [ -z "$startup" ]; then
+	if [ "$was_on" = yes ]; then
+		startup=yes
+	elif (: </dev/tty) 2>/dev/null; then
+		printf '\nStart Kishtin by itself whenever this computer starts?\nRecommended, so nobody has to remember to start it after a restart. [Y/n] ' >/dev/tty
+		answer=
+		read -r answer </dev/tty || answer=n
+		case "$answer" in
+		[Nn]*) startup=no ;;
+		*) startup=yes ;;
+		esac
+	else
+		startup=no
+	fi
+fi
+started=no
+case "$startup" in
+[Yy]*)
+	printf '\n'
+	if "$dir/kishtind" startup on; then
+		started=yes
+	else
+		printf '\nKishtin could not set itself to start with this computer. Start it by hand as below.\n'
+	fi
+	;;
+esac
+
+if [ "$started" = yes ]; then
+	printf '\nNext: open http://127.0.0.1:8080 in a browser on this computer to set it up.\n'
+else
+	printf '\nNext:\n  1. Start Kishtin:   %s\n  2. Open http://127.0.0.1:8080 in a browser on this computer to set it up.\n' "$run"
+	printf '\nTo have Kishtin start by itself with this computer later: %s startup on\n' "$run"
+fi

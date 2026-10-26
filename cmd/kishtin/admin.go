@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/cathalbyrnegit/kishtin/internal/client"
+	"github.com/cathalbyrnegit/kishtin/internal/clock"
 )
 
 func num(f *float64) string {
@@ -408,7 +409,36 @@ func (c *cli) keysCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(list, create, revoke)
+	var joinName string
+	var invert bool
+	join := &cobra.Command{
+		Use: "join", Short: "Make a QR code that pairs a tablet or phone", Args: cobra.NoArgs,
+		Long: "join makes a one-time code, good for 15 minutes, and prints a QR code for it. Scan it with\n" +
+			"the tablet's camera, or open the link: the tablet installs Kishtin's certificate if it needs to,\n" +
+			"then pairs itself. Needs a manager.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			res, err := c.api.CreateJoinCode(cmd.Context(), &client.CreateJoinCodeRequestOptions{Body: &client.JoinCodeInBody{Name: joinName}})
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) {
+				fmt.Fprintf(w, "Scan this with %q, or open the link on it, by %s:\n\n", res.Name, res.ExpiresAt.In(clock.Dublin).Format("15:04"))
+				printQR(w, res.Links[0].Qr, invert)
+				fmt.Fprintf(w, "\n  %s\n", res.Links[0].URL)
+				for _, l := range res.Links[1:] {
+					fmt.Fprintf(w, "  %s  (another network this computer is on)\n", l.URL)
+				}
+				fmt.Fprintf(w, "\nCode: %s. It works once.\n", res.Code)
+				if res.Fingerprint != nil {
+					fmt.Fprintf(w, "Kishtin's certificate fingerprint (SHA-256), as the tablet shows it:\n  %s\n", *res.Fingerprint)
+				}
+			})
+		},
+	}
+	join.Flags().StringVar(&joinName, "name", "", "name for the tablet or phone, such as \"Pass tablet\"")
+	join.Flags().BoolVar(&invert, "invert", false, "draw the QR code for a terminal with a light background")
+
+	cmd.AddCommand(list, create, revoke, join)
 	return cmd
 }
 
@@ -449,4 +479,36 @@ func (c *cli) backupCmd() *cobra.Command {
 	}
 	cmd.AddCommand(now, list)
 	return cmd
+}
+
+// printQR draws a QR code with half-height blocks, two rows to a line, in a
+// four-module quiet zone. By default light modules are drawn, which scans on
+// a terminal with a dark background; invert draws the dark ones instead.
+func printQR(w io.Writer, rows []string, invert bool) {
+	const quiet = 4
+	size := len(rows)
+	dark := func(x, y int) bool {
+		if x < 0 || y < 0 || x >= size || y >= size {
+			return false
+		}
+		return rows[y][x] == '1'
+	}
+	for y := -quiet; y < size+quiet; y += 2 {
+		var b strings.Builder
+		b.WriteString("  ")
+		for x := -quiet; x < size+quiet; x++ {
+			top, bottom := dark(x, y) == invert, dark(x, y+1) == invert
+			switch {
+			case top && bottom:
+				b.WriteString("█")
+			case top:
+				b.WriteString("▀")
+			case bottom:
+				b.WriteString("▄")
+			default:
+				b.WriteString(" ")
+			}
+		}
+		fmt.Fprintln(w, b.String())
+	}
 }

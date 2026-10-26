@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 	"unicode"
@@ -120,6 +121,41 @@ func NewToken(prefix string) (token, hash string, err error) {
 	}
 	token = prefix + base64.RawURLEncoding.EncodeToString(buf)
 	return token, HashToken(token), nil
+}
+
+// codeAlphabet has letters and digits that are hard to mix up when read off
+// a screen: no 0/O, 1/I/L.
+const codeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+
+// NewCode returns a one-time code people can read and type: 12 characters
+// in groups of four, such as "K7PQ-M2XD-9RTA", about 59 bits.
+func NewCode() (string, error) {
+	var sb strings.Builder
+	for i := range 12 {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(codeAlphabet))))
+		if err != nil {
+			return "", fmt.Errorf("read random bytes: %w", err)
+		}
+		if i > 0 && i%4 == 0 {
+			sb.WriteByte('-')
+		}
+		sb.WriteByte(codeAlphabet[n.Int64()])
+	}
+	return sb.String(), nil
+}
+
+// NormalCode lets a code be typed in any case, with or without the dashes
+// and spaces.
+func NormalCode(c string) string {
+	return strings.Map(func(r rune) rune {
+		switch {
+		case r == '-' || r == ' ':
+			return -1
+		case r >= 'a' && r <= 'z':
+			return r - 'a' + 'A'
+		}
+		return r
+	}, c)
 }
 
 // HashToken returns the SHA-256 of a token as hex.

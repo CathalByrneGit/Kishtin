@@ -35,6 +35,11 @@ type Server struct {
 	// setupCode lets another device set up a new install; see SetSetupCode.
 	setupCode string
 	setupDone func()
+	// recoveryCode is the file kishtind reset-password leaves its one-time
+	// code in; see SetRecoveryCodeFile.
+	recoveryCode string
+	// tablets turns on the join pages; see SetTablets.
+	tablets *Tablets
 }
 
 type callerKey struct{}
@@ -80,6 +85,7 @@ func New(svc *service.Service, log *slog.Logger, ui fs.FS) (*Server, error) {
 	s.specJSON = spec
 	mux.HandleFunc("GET /api/openapi.json", s.serveSpec)
 	mux.HandleFunc("GET /api/events", s.serveEvents)
+	s.joinRoutes()
 	if ui != nil {
 		mux.HandleFunc("GET /", s.serveUI)
 	} else {
