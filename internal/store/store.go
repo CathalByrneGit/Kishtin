@@ -38,6 +38,7 @@ type Store interface {
 	Orders() OrderStore
 	Voice() VoiceStore
 	POS() POSStore
+	Activity() ActivityStore
 
 	// WithTx runs fn in one transaction. If fn returns an error the
 	// transaction is rolled back. Writes inside fn must use tx.
@@ -101,6 +102,19 @@ type UserStore interface {
 	GetUser(ctx context.Context, id string) (auth.User, error)
 	// ListUsers returns every user, ordered by name.
 	ListUsers(ctx context.Context) ([]auth.User, error)
+	// CountUserMentions counts the log entries that name a user.
+	CountUserMentions(ctx context.Context, userID string) (UserMentions, error)
+	// AnonymiseUser replaces a user's name with name in the order events,
+	// voice log and activity log. HACCP records are never changed.
+	AnonymiseUser(ctx context.Context, userID, name string) (UserMentions, error)
+}
+
+// UserMentions counts where a member of staff is named.
+type UserMentions struct {
+	OrderEvents  int64 `json:"order_events"`
+	VoiceLog     int64 `json:"voice_log"`
+	Activity     int64 `json:"activity"`
+	HACCPRecords int64 `json:"haccp_records"`
 }
 
 // AuthStore stores sessions and API keys.
@@ -229,6 +243,8 @@ type VoiceStore interface {
 	// ListVoiceLog returns entries before the given time (all when zero),
 	// newest first, at most limit of them.
 	ListVoiceLog(ctx context.Context, before time.Time, limit int) ([]voice.LogEntry, error)
+	// GetVoiceLog returns ErrNotFound for an unknown entry.
+	GetVoiceLog(ctx context.Context, id string) (voice.LogEntry, error)
 }
 
 // POSStore stores how Kishtin reads from a point-of-sale system: catalog
@@ -244,8 +260,70 @@ type POSStore interface {
 	SaveImported(ctx context.Context, o integrations.Imported) error
 	// ListImported returns the most recently seen orders first.
 	ListImported(ctx context.Context, pos string, limit int) ([]integrations.Imported, error)
+	// ListImportedVersions returns every version of a till order seen,
+	// oldest first. SaveImported keeps each new version.
+	ListImportedVersions(ctx context.Context, pos, externalID string) ([]ImportedVersion, error)
 
 	// GetPOSState returns ErrNotFound before the first poll.
 	GetPOSState(ctx context.Context, pos string) (integrations.SyncState, error)
 	SavePOSState(ctx context.Context, st integrations.SyncState) error
+}
+
+// ImportedVersion is one version of a till order as Kishtin saw it.
+type ImportedVersion struct {
+	Version int64                  `json:"version"`
+	SeenAt  time.Time              `json:"seen_at"`
+	Payload integrations.TillOrder `json:"payload"`
+}
+
+// Activity is something staff or a screen did that is not a HACCP record
+// or an order event: a dish sold out, a login, a screen dropping off, how
+// a HACCP record was entered.
+type Activity struct {
+	ID         string            `json:"id"`
+	At         time.Time         `json:"at"`
+	Kind       string            `json:"kind"`
+	UserID     string            `json:"user_id,omitempty"`
+	UserName   string            `json:"user_name,omitempty"`
+	DeviceID   string            `json:"device_id,omitempty"`
+	DeviceName string            `json:"device_name,omitempty"`
+	Subject    string            `json:"subject,omitempty"`
+	Detail     map[string]string `json:"detail"`
+}
+
+// ActivityFilter selects activity. Zero times leave that end open.
+type ActivityFilter struct {
+	From, To time.Time
+	Kinds    []string
+	// Limit caps the number of entries; 0 means no cap.
+	Limit int
+}
+
+// PlanSnapshot is the scheduler's plan at one moment, kept when it
+// changes.
+type PlanSnapshot struct {
+	ID              string    `json:"id"`
+	At              time.Time `json:"at"`
+	Trigger         string    `json:"trigger"`
+	Strategy        string    `json:"strategy"`
+	SettingsVersion string    `json:"settings_version"`
+	// Hash identifies the plan's content, without its time, so an
+	// unchanged plan is not kept twice.
+	Hash string          `json:"hash"`
+	Body json.RawMessage `json:"body"`
+}
+
+// ActivityStore stores the activity log and scheduler snapshots. Both are
+// append-only.
+type ActivityStore interface {
+	AppendActivity(ctx context.Context, a Activity) error
+	// ListActivity returns entries oldest first.
+	ListActivity(ctx context.Context, f ActivityFilter) ([]Activity, error)
+
+	AppendPlanSnapshot(ctx context.Context, p PlanSnapshot) error
+	// LastPlanSnapshot returns ErrNotFound when there is none.
+	LastPlanSnapshot(ctx context.Context) (PlanSnapshot, error)
+	// ListPlanSnapshots returns snapshots between from and to (zero leaves
+	// that end open), oldest first, at most limit (0 means no cap).
+	ListPlanSnapshots(ctx context.Context, from, to time.Time, limit int) ([]PlanSnapshot, error)
 }

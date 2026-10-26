@@ -346,9 +346,19 @@ func (s *Service) SetAvailability(ctx context.Context, p *auth.Principal, id str
 		if err != nil {
 			return mapStoreErr(err, "dish")
 		}
+		was := d.Available
 		d.Available, d.UpdatedAt = available, s.clk.Now()
 		if err := tx.Menu().UpdateDish(ctx, d); err != nil {
 			return err
+		}
+		if was != available {
+			kind := ActivitySoldOut
+			if available {
+				kind = ActivityBackOn
+			}
+			if err := s.note(ctx, tx, p, kind, d.ID, map[string]any{"dish": d.Name}); err != nil {
+				return err
+			}
 		}
 		out = d
 		return nil

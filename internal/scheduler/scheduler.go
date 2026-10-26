@@ -98,6 +98,21 @@ type Config struct {
 	SettingsVersion string
 }
 
+// Causes say, as a code, why a course is at risk or late, for analysis
+// after service. The reason says the same in words.
+const (
+	// CauseEquipmentFull: the equipment it needs is full.
+	CauseEquipmentFull = "equipment_full"
+	// CauseStartedLate: an item was not started by its latest start.
+	CauseStartedLate = "started_late"
+	// CauseCookingLong: an item already started will be ready late.
+	CauseCookingLong = "cooking_long"
+	// CauseWaitingAtPass: the course is ready and waiting too long at the pass.
+	CauseWaitingAtPass = "waiting_at_pass"
+	// CauseBusy: equipment is busy, with no single cause found.
+	CauseBusy = "busy"
+)
+
 // Course statuses, always shown as text plus colour.
 const (
 	StatusOnTrack = "on_track"
@@ -159,6 +174,9 @@ type CourseStatus struct {
 	PlannedReady time.Time `json:"planned_ready"`
 	Status       string    `json:"status"`
 	Reason       string    `json:"reason"`
+	// Cause is why the course is at risk or late, as a code; empty when it
+	// is on track or ready.
+	Cause string `json:"cause,omitempty"`
 }
 
 // ItemPlan is when one item should start and be ready.
@@ -928,6 +946,7 @@ func action(g *group, shift []time.Duration, causes []cause, cfg Config, now tim
 type cause struct {
 	text     string
 	together bool
+	code     string
 }
 
 // shiftCause says why a course had to move later: full equipment, a start
@@ -936,15 +955,15 @@ func shiftCause(worst *job, slow *Item, now time.Time, cfg Config, names map[str
 	switch {
 	case worst != nil && worst.waitedFor != nil:
 		w := worst.waitedFor
-		return cause{fmt.Sprintf("The %s is full until %s (%s in use).", strings.ToLower(names[w.equipment]), cfg.clock(w.until), w.inUse), true}
+		return cause{fmt.Sprintf("The %s is full until %s (%s in use).", strings.ToLower(names[w.equipment]), cfg.clock(w.until), w.inUse), true, CauseEquipmentFull}
 	case worst != nil && worst.latest0.Before(now):
-		return cause{fmt.Sprintf("%s should have started by %s.", worst.item.DishName, cfg.clock(worst.latest0)), false}
+		return cause{fmt.Sprintf("%s should have started by %s.", worst.item.DishName, cfg.clock(worst.latest0)), false, CauseStartedLate}
 	case slow != nil:
 		if end, ok := inProgressReady(*slow, now); ok {
-			return cause{fmt.Sprintf("The %s already started will be ready at %s.", strings.ToLower(slow.DishName), cfg.clock(end)), true}
+			return cause{fmt.Sprintf("The %s already started will be ready at %s.", strings.ToLower(slow.DishName), cfg.clock(end)), true, CauseCookingLong}
 		}
 	}
-	return cause{"Equipment is busy.", true}
+	return cause{"Equipment is busy.", true, CauseBusy}
 }
 
 func priorityText(c *Course, cfg Config) string {
@@ -1000,7 +1019,7 @@ func courseStatus(c *Course, ci int, why cause, jobs []*job, cfg Config, now tim
 	case allReady:
 		waited := now.Sub(firstReady)
 		if waited > cfg.MaxPassWait {
-			cs.Status = StatusLate
+			cs.Status, cs.Cause = StatusLate, CauseWaitingAtPass
 			cs.Reason = fmt.Sprintf("Ready at the pass for %s, longer than %s: serve now.", mins(waited), mins(cfg.MaxPassWait))
 		} else {
 			cs.Status = StatusReady
@@ -1012,12 +1031,14 @@ func courseStatus(c *Course, ci int, why cause, jobs []*job, cfg Config, now tim
 		if why.text != "" {
 			cs.Reason += " " + why.text
 		}
+		cs.Cause = why.code
 	case planned.After(c.Target.Add(slack)):
 		cs.Status = StatusAtRisk
 		cs.Reason = fmt.Sprintf("Due at %s; expected at %s.", cfg.clock(c.Target), cfg.clock(planned))
 		if why.text != "" {
 			cs.Reason += " " + why.text
 		}
+		cs.Cause = why.code
 	default:
 		cs.Status = StatusOnTrack
 		cs.Reason = fmt.Sprintf("On track for %s.", cfg.clock(c.Target))

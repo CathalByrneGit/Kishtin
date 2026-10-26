@@ -349,14 +349,14 @@ func (s *Store) UpdateItem(ctx context.Context, it orders.Item) error {
 func (s *Store) AppendEvent(ctx context.Context, e orders.Event) error {
 	return mapErr(s.w.InsertOrderEvent(ctx, sqlitedb.InsertOrderEventParams{
 		ID: e.ID, OrderID: e.OrderID, ItemID: e.ItemID, Course: string(e.Course), Kind: string(e.Kind),
-		FromVal: e.From, ToVal: e.To, Detail: e.Detail, At: us(e.At), ByUser: e.By, ByName: e.ByName,
+		FromVal: e.From, ToVal: e.To, Detail: e.Detail, At: us(e.At), ByUser: e.By, ByName: e.ByName, DeviceID: e.Device,
 	}))
 }
 
 func eventFromRow(r sqlitedb.OrderEvent) orders.Event {
 	return orders.Event{
 		ID: r.ID, OrderID: r.OrderID, ItemID: r.ItemID, Course: menu.Course(r.Course), Kind: orders.EventKind(r.Kind),
-		From: r.FromVal, To: r.ToVal, Detail: r.Detail, At: fromUS(r.At), By: r.ByUser, ByName: r.ByName,
+		From: r.FromVal, To: r.ToVal, Detail: r.Detail, At: fromUS(r.At), By: r.ByUser, ByName: r.ByName, Device: r.DeviceID,
 	}
 }
 

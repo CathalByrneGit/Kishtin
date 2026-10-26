@@ -56,6 +56,31 @@ func (q *Queries) GetPOSState(ctx context.Context, pos string) (PosState, error)
 	return i, err
 }
 
+const insertImportedVersion = `-- name: InsertImportedVersion :exec
+INSERT INTO pos_order_versions (pos, external_id, version, seen_at, payload)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (pos, external_id, version) DO NOTHING
+`
+
+type InsertImportedVersionParams struct {
+	Pos        string
+	ExternalID string
+	Version    int64
+	SeenAt     int64
+	Payload    string
+}
+
+func (q *Queries) InsertImportedVersion(ctx context.Context, arg InsertImportedVersionParams) error {
+	_, err := q.db.ExecContext(ctx, insertImportedVersion,
+		arg.Pos,
+		arg.ExternalID,
+		arg.Version,
+		arg.SeenAt,
+		arg.Payload,
+	)
+	return err
+}
+
 const listImported = `-- name: ListImported :many
 SELECT pos, external_id, version, state, order_id, label, added, unmapped, notices, payload, first_seen, last_seen FROM pos_orders WHERE pos = ? ORDER BY last_seen DESC, external_id LIMIT ?
 `
@@ -87,6 +112,44 @@ func (q *Queries) ListImported(ctx context.Context, arg ListImportedParams) ([]P
 			&i.Payload,
 			&i.FirstSeen,
 			&i.LastSeen,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listImportedVersions = `-- name: ListImportedVersions :many
+SELECT pos, external_id, version, seen_at, payload FROM pos_order_versions WHERE pos = ? AND external_id = ? ORDER BY version
+`
+
+type ListImportedVersionsParams struct {
+	Pos        string
+	ExternalID string
+}
+
+func (q *Queries) ListImportedVersions(ctx context.Context, arg ListImportedVersionsParams) ([]PosOrderVersion, error) {
+	rows, err := q.db.QueryContext(ctx, listImportedVersions, arg.Pos, arg.ExternalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PosOrderVersion
+	for rows.Next() {
+		var i PosOrderVersion
+		if err := rows.Scan(
+			&i.Pos,
+			&i.ExternalID,
+			&i.Version,
+			&i.SeenAt,
+			&i.Payload,
 		); err != nil {
 			return nil, err
 		}

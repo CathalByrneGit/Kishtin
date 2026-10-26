@@ -34,6 +34,10 @@ func NewDefaultClient(baseURL string, opts ...runtime.APIClientOption) (*Client,
 
 // ClientInterface is the interface for the API client.
 type ClientInterface interface {
+	// ListActivity List the activity log, oldest first
+	ListActivity(ctx context.Context, options *ListActivityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListActivityResponse, error)
+	ListActivityWithResponse(ctx context.Context, options *ListActivityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListActivityResp, error)
+
 	// ListActions List every action and who may take it by default
 	ListActions(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListActionsResponse, error)
 	ListActionsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListActionsResp, error)
@@ -213,6 +217,10 @@ type ClientInterface interface {
 	// ReplaceItem Replace an item with the right one: void it and add the new one in one step
 	ReplaceItem(ctx context.Context, options *ReplaceItemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReplaceItemResponse, error)
 	ReplaceItemWithResponse(ctx context.Context, options *ReplaceItemRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ReplaceItemResp, error)
+
+	// PlanSnapshots List the scheduler's plans as they changed
+	PlanSnapshots(ctx context.Context, options *PlanSnapshotsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PlanSnapshotsResponse, error)
+	PlanSnapshotsWithResponse(ctx context.Context, options *PlanSnapshotsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PlanSnapshotsResp, error)
 
 	// GetMenu Show stations, equipment and dishes
 	GetMenu(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResponse, error)
@@ -442,6 +450,10 @@ type ClientInterface interface {
 	SaveSquareMappings(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResponse, error)
 	SaveSquareMappingsWithResponse(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResp, error)
 
+	// SquareOrderVersions List every version of a till order Kishtin saw
+	SquareOrderVersions(ctx context.Context, options *SquareOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SquareOrderVersionsResponse, error)
+	SquareOrderVersionsWithResponse(ctx context.Context, options *SquareOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SquareOrderVersionsResp, error)
+
 	// SquareSync Ask Square for new and changed orders now
 	SquareSync(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResponse, error)
 	SquareSyncWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResp, error)
@@ -457,6 +469,14 @@ type ClientInterface interface {
 	// UpdateUser Change a staff member: name, role, PIN, password, or deactivate
 	UpdateUser(ctx context.Context, options *UpdateUserRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateUserResponse, error)
 	UpdateUserWithResponse(ctx context.Context, options *UpdateUserRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateUserResp, error)
+
+	// PreviewAnonymise Show what anonymising a leaver would change, without changing anything
+	PreviewAnonymise(ctx context.Context, options *PreviewAnonymiseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewAnonymiseResponse, error)
+	PreviewAnonymiseWithResponse(ctx context.Context, options *PreviewAnonymiseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewAnonymiseResp, error)
+
+	// AnonymiseUser Anonymise a leaver (manager password); cannot be undone
+	AnonymiseUser(ctx context.Context, options *AnonymiseUserRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AnonymiseUserResponse, error)
+	AnonymiseUserWithResponse(ctx context.Context, options *AnonymiseUserRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AnonymiseUserResp, error)
 
 	// VoiceStatus Show whether spoken commands and spoken replies are set up, and any question waiting for an answer
 	VoiceStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*VoiceStatusResponse, error)
@@ -474,9 +494,84 @@ type ClientInterface interface {
 	VoiceLog(ctx context.Context, options *VoiceLogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceLogResponse, error)
 	VoiceLogWithResponse(ctx context.Context, options *VoiceLogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceLogResp, error)
 
+	// VoiceRecording Play a kept voice recording (manager password)
+	VoiceRecording(ctx context.Context, options *VoiceRecordingRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceRecordingResponse, error)
+	VoiceRecordingWithResponse(ctx context.Context, options *VoiceRecordingRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceRecordingResp, error)
+
 	// VoiceSpeak Say a reply with the local text-to-speech sidecar; returns WAV audio
 	VoiceSpeak(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResponse, error)
 	VoiceSpeakWithResponse(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResp, error)
+}
+
+// ListActivity List the activity log, oldest first
+func (c *Client) ListActivity(ctx context.Context, options *ListActivityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListActivityResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"from":  {Style: "form", Explode: &[]bool{false}[0]},
+		"kind":  {Style: "form", Explode: &[]bool{false}[0]},
+		"limit": {Style: "form", Explode: &[]bool{false}[0]},
+		"to":    {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/activity",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ListActivityResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ListActivityErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ListActivityErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ListActivityResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ListActivityResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/activity")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
 }
 
 // ListActions List every action and who may take it by default
@@ -3262,6 +3357,76 @@ func (c *Client) ReplaceItem(ctx context.Context, options *ReplaceItemRequestOpt
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen/items/{id}/replace")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PlanSnapshots List the scheduler's plans as they changed
+func (c *Client) PlanSnapshots(ctx context.Context, options *PlanSnapshotsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PlanSnapshotsResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"from":  {Style: "form", Explode: &[]bool{false}[0]},
+		"limit": {Style: "form", Explode: &[]bool{false}[0]},
+		"to":    {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/kitchen/plans",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PlanSnapshotsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PlanSnapshotsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PlanSnapshotsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PlanSnapshotsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PlanSnapshotsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen/plans")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -6874,6 +7039,69 @@ func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMapp
 	return responseParser(ctx, resp)
 }
 
+// SquareOrderVersions List every version of a till order Kishtin saw
+func (c *Client) SquareOrderVersions(ctx context.Context, options *SquareOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SquareOrderVersionsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square/orders/{id}/versions",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareOrderVersionsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SquareOrderVersionsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SquareOrderVersionsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SquareOrderVersionsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SquareOrderVersionsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/orders/{id}/versions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // SquareSync Ask Square for new and changed orders now
 func (c *Client) SquareSync(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResponse, error) {
 	var err error
@@ -7120,6 +7348,132 @@ func (c *Client) UpdateUser(ctx context.Context, options *UpdateUserRequestOptio
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/users/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewAnonymise Show what anonymising a leaver would change, without changing anything
+func (c *Client) PreviewAnonymise(ctx context.Context, options *PreviewAnonymiseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewAnonymiseResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/users/{id}/anonymise",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewAnonymiseResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewAnonymiseErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewAnonymiseErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewAnonymiseResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewAnonymiseResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/users/{id}/anonymise")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// AnonymiseUser Anonymise a leaver (manager password); cannot be undone
+func (c *Client) AnonymiseUser(ctx context.Context, options *AnonymiseUserRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AnonymiseUserResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/users/{id}/anonymise",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*AnonymiseUserResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(AnonymiseUserErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "AnonymiseUserErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(AnonymiseUserResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "AnonymiseUserResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/users/{id}/anonymise")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -7389,6 +7743,69 @@ func (c *Client) VoiceLog(ctx context.Context, options *VoiceLogRequestOptions, 
 	return responseParser(ctx, resp)
 }
 
+// VoiceRecording Play a kept voice recording (manager password)
+func (c *Client) VoiceRecording(ctx context.Context, options *VoiceRecordingRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceRecordingResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/voice/log/{id}/audio",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*VoiceRecordingResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(VoiceRecordingErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "VoiceRecordingErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(VoiceRecordingResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "VoiceRecordingResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/log/{id}/audio")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // VoiceSpeak Say a reply with the local text-to-speech sidecar; returns WAV audio
 func (c *Client) VoiceSpeak(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResponse, error) {
 	var err error
@@ -7454,6 +7871,50 @@ func (c *Client) VoiceSpeak(ctx context.Context, options *VoiceSpeakRequestOptio
 }
 
 var _ ClientInterface = (*Client)(nil)
+
+// ListActivityRequestOptions is the options needed to make a request to ListActivity.
+type ListActivityRequestOptions struct {
+	Query *ListActivityQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ListActivityRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ListActivityRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *ListActivityRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ListActivityRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *ListActivityRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
 
 // LoginRequestOptions is the options needed to make a request to Login.
 type LoginRequestOptions struct {
@@ -8782,6 +9243,50 @@ func (o *ReplaceItemRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *ReplaceItemRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PlanSnapshotsRequestOptions is the options needed to make a request to PlanSnapshots.
+type PlanSnapshotsRequestOptions struct {
+	Query *PlanSnapshotsQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PlanSnapshotsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PlanSnapshotsRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PlanSnapshotsRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PlanSnapshotsRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *PlanSnapshotsRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -10494,6 +10999,50 @@ func (o *SaveSquareMappingsRequestOptions) GetHeader() (map[string]string, error
 	return nil, nil
 }
 
+// SquareOrderVersionsRequestOptions is the options needed to make a request to SquareOrderVersions.
+type SquareOrderVersionsRequestOptions struct {
+	PathParams *SquareOrderVersionsPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SquareOrderVersionsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SquareOrderVersionsRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *SquareOrderVersionsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SquareOrderVersionsRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *SquareOrderVersionsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // CreateUserRequestOptions is the options needed to make a request to CreateUser.
 type CreateUserRequestOptions struct {
 	Body *CreateUserBody
@@ -10588,6 +11137,94 @@ func (o *UpdateUserRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *UpdateUserRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewAnonymiseRequestOptions is the options needed to make a request to PreviewAnonymise.
+type PreviewAnonymiseRequestOptions struct {
+	PathParams *PreviewAnonymisePath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewAnonymiseRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewAnonymiseRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewAnonymiseRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewAnonymiseRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewAnonymiseRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// AnonymiseUserRequestOptions is the options needed to make a request to AnonymiseUser.
+type AnonymiseUserRequestOptions struct {
+	PathParams *AnonymiseUserPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *AnonymiseUserRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *AnonymiseUserRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *AnonymiseUserRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *AnonymiseUserRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *AnonymiseUserRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -10741,6 +11378,50 @@ func (o *VoiceLogRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// VoiceRecordingRequestOptions is the options needed to make a request to VoiceRecording.
+type VoiceRecordingRequestOptions struct {
+	PathParams *VoiceRecordingPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *VoiceRecordingRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *VoiceRecordingRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *VoiceRecordingRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *VoiceRecordingRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *VoiceRecordingRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // VoiceSpeakRequestOptions is the options needed to make a request to VoiceSpeak.
 type VoiceSpeakRequestOptions struct {
 	Body *VoiceSpeakBody
@@ -10783,6 +11464,67 @@ func (o *VoiceSpeakRequestOptions) GetBody() any {
 // GetHeader returns the headers as a map.
 func (o *VoiceSpeakRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
+}
+
+// ListActivity List the activity log, oldest first
+func (c *Client) ListActivityWithResponse(ctx context.Context, options *ListActivityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ListActivityResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/activity",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/activity")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ListActivityResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ListActivityResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListActivityResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ListActivityErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListActivityErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
 }
 
 // ListActions List every action and who may take it by default
@@ -13439,6 +14181,67 @@ func (c *Client) ReplaceItemWithResponse(ctx context.Context, options *ReplaceIt
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "ReplaceItemErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PlanSnapshots List the scheduler's plans as they changed
+func (c *Client) PlanSnapshotsWithResponse(ctx context.Context, options *PlanSnapshotsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PlanSnapshotsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/kitchen/plans",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/kitchen/plans")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PlanSnapshotsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PlanSnapshotsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PlanSnapshotsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PlanSnapshotsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PlanSnapshotsErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -16935,6 +17738,67 @@ func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *Sa
 	}
 }
 
+// SquareOrderVersions List every version of a till order Kishtin saw
+func (c *Client) SquareOrderVersionsWithResponse(ctx context.Context, options *SquareOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SquareOrderVersionsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/square/orders/{id}/versions",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/orders/{id}/versions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SquareOrderVersionsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SquareOrderVersionsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareOrderVersionsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SquareOrderVersionsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SquareOrderVersionsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // SquareSync Ask Square for new and changed orders now
 func (c *Client) SquareSyncWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResp, error) {
 	var err error
@@ -17170,6 +18034,128 @@ func (c *Client) UpdateUserWithResponse(ctx context.Context, options *UpdateUser
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "UpdateUserErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewAnonymise Show what anonymising a leaver would change, without changing anything
+func (c *Client) PreviewAnonymiseWithResponse(ctx context.Context, options *PreviewAnonymiseRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewAnonymiseResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/users/{id}/anonymise",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/users/{id}/anonymise")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewAnonymiseResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewAnonymiseResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewAnonymiseResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewAnonymiseErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewAnonymiseErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// AnonymiseUser Anonymise a leaver (manager password); cannot be undone
+func (c *Client) AnonymiseUserWithResponse(ctx context.Context, options *AnonymiseUserRequestOptions, reqEditors ...runtime.RequestEditorFn) (*AnonymiseUserResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/users/{id}/anonymise",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/users/{id}/anonymise")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &AnonymiseUserResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(AnonymiseUserResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "AnonymiseUserResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(AnonymiseUserErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "AnonymiseUserErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -17415,6 +18401,70 @@ func (c *Client) VoiceLogWithResponse(ctx context.Context, options *VoiceLogRequ
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "VoiceLogErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// VoiceRecording Play a kept voice recording (manager password)
+func (c *Client) VoiceRecordingWithResponse(ctx context.Context, options *VoiceRecordingRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceRecordingResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/voice/log/{id}/audio",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/voice/log/{id}/audio")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &VoiceRecordingResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(VoiceRecordingResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceRecordingResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		out.Headers200 = &VoiceRecordingResp200Headers{
+			ContentType: resp.Headers.Get("Content-Type"),
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(VoiceRecordingErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "VoiceRecordingErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -17940,12 +18990,44 @@ func (r RenameOrderPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(r))
 }
 
+type SquareOrderVersionsPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (s SquareOrderVersionsPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
 type UpdateUserPath struct {
 	ID string `json:"id" validate:"required"`
 }
 
 func (u UpdateUserPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(u))
+}
+
+type PreviewAnonymisePath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (p PreviewAnonymisePath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(p))
+}
+
+type AnonymiseUserPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (a AnonymiseUserPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
+type VoiceRecordingPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (v VoiceRecordingPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(v))
 }
 
 type LoginBody = LoginInBody
@@ -18049,6 +19131,24 @@ type UpdateUserBody = UserChange
 type VoiceAudioBody = runtime.File
 
 type VoiceSpeakBody = SpeakBody
+
+type ListActivityQuery struct {
+	// From Start: a date (2026-05-01, Dublin) or an RFC 3339 time. Empty: from the beginning.
+	From *string `json:"from,omitempty"`
+
+	// To End: a date (inclusive) or an RFC 3339 time (exclusive). Empty: up to now.
+	To *string `json:"to,omitempty"`
+
+	// Limit At most this many; 0 for the most allowed.
+	Limit *int64 `json:"limit,omitempty" validate:"omitempty,gte=0"`
+
+	// Kind Only these kinds, such as dish.sold_out or login.
+	Kind []string `json:"kind,omitempty"`
+}
+
+func (l ListActivityQuery) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(l))
+}
 
 type UploadFileQuery struct {
 	// Name Original file name.
@@ -18169,6 +19269,21 @@ func (p PreviewSignOffQuery) Validate() error {
 	return errors
 }
 
+type PlanSnapshotsQuery struct {
+	// From Start: a date (2026-05-01, Dublin) or an RFC 3339 time. Empty: from the beginning.
+	From *string `json:"from,omitempty"`
+
+	// To End: a date (inclusive) or an RFC 3339 time (exclusive). Empty: up to now.
+	To *string `json:"to,omitempty"`
+
+	// Limit At most this many; 0 for the most allowed.
+	Limit *int64 `json:"limit,omitempty" validate:"omitempty,gte=0"`
+}
+
+func (p PlanSnapshotsQuery) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(p))
+}
+
 type ListOrdersQuery struct {
 	// Date A day (YYYY-MM-DD, Dublin time). Leave out for open orders.
 	Date *string `json:"date,omitempty"`
@@ -18187,6 +19302,10 @@ type VoiceLogQuery struct {
 func (v VoiceLogQuery) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(v))
 }
+
+type ListActivityResponse = ActivityBody
+
+type ListActivityErrorResponse = ErrorModel
 
 type ListActionsResponse []ActionInfo
 
@@ -18359,6 +19478,10 @@ type MoveItemsErrorResponse = ErrorModel
 type ReplaceItemResponse = Order
 
 type ReplaceItemErrorResponse = ErrorModel
+
+type PlanSnapshotsResponse = SnapshotsBody
+
+type PlanSnapshotsErrorResponse = ErrorModel
 
 type GetMenuResponse = Setup
 
@@ -18588,6 +19711,10 @@ type SaveSquareMappingsResponse = MappingsBody
 
 type SaveSquareMappingsErrorResponse = ErrorModel
 
+type SquareOrderVersionsResponse = VersionsBody
+
+type SquareOrderVersionsErrorResponse = ErrorModel
+
 type SquareSyncResponse = SyncResult
 
 type SquareSyncErrorResponse = ErrorModel
@@ -18603,6 +19730,14 @@ type CreateUserErrorResponse = ErrorModel
 type UpdateUserResponse = User
 
 type UpdateUserErrorResponse = ErrorModel
+
+type PreviewAnonymiseResponse = AnonymisePreview
+
+type PreviewAnonymiseErrorResponse = ErrorModel
+
+type AnonymiseUserResponse = AnonymiseResult
+
+type AnonymiseUserErrorResponse = ErrorModel
 
 type VoiceStatusResponse = VoiceStatus
 
@@ -18620,9 +19755,21 @@ type VoiceLogResponse = VoiceLogBody
 
 type VoiceLogErrorResponse = ErrorModel
 
+type VoiceRecordingResponse = string
+
+type VoiceRecordingErrorResponse = ErrorModel
+
 type VoiceSpeakResponse = string
 
 type VoiceSpeakErrorResponse = ErrorModel
+
+type ListActivityResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ListActivityResponse
+	ApplicationProblemPlusJSONDefault *ListActivityErrorResponse
+}
 
 type ListActionsResp struct {
 	HTTPResponse                      *http.Response
@@ -19010,6 +20157,14 @@ type ReplaceItemResp struct {
 	StatusCode                        int
 	JSON200                           *ReplaceItemResponse
 	ApplicationProblemPlusJSONDefault *ReplaceItemErrorResponse
+}
+
+type PlanSnapshotsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PlanSnapshotsResponse
+	ApplicationProblemPlusJSONDefault *PlanSnapshotsErrorResponse
 }
 
 type GetMenuResp struct {
@@ -19468,6 +20623,14 @@ type SaveSquareMappingsResp struct {
 	ApplicationProblemPlusJSONDefault *SaveSquareMappingsErrorResponse
 }
 
+type SquareOrderVersionsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SquareOrderVersionsResponse
+	ApplicationProblemPlusJSONDefault *SquareOrderVersionsErrorResponse
+}
+
 type SquareSyncResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -19500,6 +20663,22 @@ type UpdateUserResp struct {
 	ApplicationProblemPlusJSONDefault *UpdateUserErrorResponse
 }
 
+type PreviewAnonymiseResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewAnonymiseResponse
+	ApplicationProblemPlusJSONDefault *PreviewAnonymiseErrorResponse
+}
+
+type AnonymiseUserResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *AnonymiseUserResponse
+	ApplicationProblemPlusJSONDefault *AnonymiseUserErrorResponse
+}
+
 type VoiceStatusResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -19530,6 +20709,19 @@ type VoiceLogResp struct {
 	StatusCode                        int
 	JSON200                           *VoiceLogResponse
 	ApplicationProblemPlusJSONDefault *VoiceLogErrorResponse
+}
+
+type VoiceRecordingResp200Headers struct {
+	ContentType string `header:"Content-Type"`
+}
+
+type VoiceRecordingResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *VoiceRecordingResponse
+	Headers200                        *VoiceRecordingResp200Headers
+	ApplicationProblemPlusJSONDefault *VoiceRecordingErrorResponse
 }
 
 type VoiceSpeakResp200Headers struct {
@@ -19604,6 +20796,44 @@ func (a ActionPreset) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(a))
 }
 
+type Activity struct {
+	At         time.Time         `json:"at" validate:"required"`
+	Detail     map[string]string `json:"detail"`
+	DeviceID   *string           `json:"device_id,omitempty"`
+	DeviceName *string           `json:"device_name,omitempty"`
+	ID         string            `json:"id" validate:"required"`
+	Kind       string            `json:"kind" validate:"required"`
+	Subject    *string           `json:"subject,omitempty"`
+	UserID     *string           `json:"user_id,omitempty"`
+	UserName   *string           `json:"user_name,omitempty"`
+}
+
+func (a Activity) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
+type ActivityBody struct {
+	Entries []Activity `json:"entries" validate:"required"`
+}
+
+func (a ActivityBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(a.Entries, "required"); err != nil {
+		errors = errors.Append("Entries", err)
+	}
+	for i, item := range a.Entries {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Entries[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type AddItemsBody struct {
 	Items []NewItem `json:"items" validate:"required"`
 }
@@ -19621,6 +20851,61 @@ func (a AddItemsBody) Validate() error {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("Items[%d]", i), err)
 			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type AnonymisePreview struct {
+	Mentions UserMentions `json:"mentions"`
+	Name     string       `json:"name" validate:"required"`
+	Notes    []string     `json:"notes" validate:"required"`
+	Problem  *string      `json:"problem,omitempty"`
+	User     User         `json:"user"`
+}
+
+func (a AnonymisePreview) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(a.Mentions).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Mentions", err)
+		}
+	}
+	if err := typesValidator.Var(a.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(a.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(a.User).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("User", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type AnonymiseResult struct {
+	Changed UserMentions `json:"changed"`
+	User    User         `json:"user"`
+}
+
+func (a AnonymiseResult) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(a.Changed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Changed", err)
+		}
+	}
+	if v, ok := any(a.User).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("User", err)
 		}
 	}
 	if len(errors) == 0 {
@@ -20408,6 +21693,7 @@ func (c Course) Validate() error {
 }
 
 type CourseStatus struct {
+	Cause        *string   `json:"cause,omitempty"`
 	Course       string    `json:"course" validate:"required"`
 	Label        string    `json:"label" validate:"required"`
 	OrderID      string    `json:"order_id" validate:"required"`
@@ -20679,6 +21965,7 @@ type Event struct {
 	ByName  string    `json:"by_name" validate:"required"`
 	Course  *string   `json:"course,omitempty"`
 	Detail  *string   `json:"detail,omitempty"`
+	Device  *string   `json:"device,omitempty"`
 	From    *string   `json:"from,omitempty"`
 	ID      string    `json:"id" validate:"required"`
 	ItemID  *string   `json:"item_id,omitempty"`
@@ -21059,6 +22346,28 @@ func (i Imported) Validate() error {
 	}
 	if err := typesValidator.Var(i.Unmapped, "required"); err != nil {
 		errors = errors.Append("Unmapped", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ImportedVersion struct {
+	Payload TillOrder `json:"payload"`
+	SeenAt  time.Time `json:"seen_at" validate:"required"`
+	Version int64     `json:"version"`
+}
+
+func (i ImportedVersion) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(i.Payload).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Payload", err)
+		}
+	}
+	if err := typesValidator.Var(i.SeenAt, "required"); err != nil {
+		errors = errors.Append("SeenAt", err)
 	}
 	if len(errors) == 0 {
 		return nil
@@ -21468,6 +22777,8 @@ func (l LocationsBody) Validate() error {
 
 type LogEntry struct {
 	At         time.Time `json:"at" validate:"required"`
+	AudioFile  *string   `json:"audio_file,omitempty"`
+	Device     *string   `json:"device,omitempty"`
 	ID         string    `json:"id" validate:"required"`
 	Intent     *string   `json:"intent,omitempty"`
 	Outcome    string    `json:"outcome" validate:"required"`
@@ -22145,6 +23456,43 @@ func (p Plan) Validate() error {
 	}
 	if err := typesValidator.Var(p.Strategy, "required"); err != nil {
 		errors = errors.Append("Strategy", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type PlanSnapshotView struct {
+	At              time.Time    `json:"at" validate:"required"`
+	ID              string       `json:"id" validate:"required"`
+	Plan            SnapshotPlan `json:"plan"`
+	SettingsVersion string       `json:"settings_version" validate:"required"`
+	Strategy        string       `json:"strategy" validate:"required"`
+	Trigger         string       `json:"trigger" validate:"required"`
+}
+
+func (p PlanSnapshotView) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.At, "required"); err != nil {
+		errors = errors.Append("At", err)
+	}
+	if err := typesValidator.Var(p.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if v, ok := any(p.Plan).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Plan", err)
+		}
+	}
+	if err := typesValidator.Var(p.SettingsVersion, "required"); err != nil {
+		errors = errors.Append("SettingsVersion", err)
+	}
+	if err := typesValidator.Var(p.Strategy, "required"); err != nil {
+		errors = errors.Append("Strategy", err)
+	}
+	if err := typesValidator.Var(p.Trigger, "required"); err != nil {
+		errors = errors.Append("Trigger", err)
 	}
 	if len(errors) == 0 {
 		return nil
@@ -23163,6 +24511,91 @@ func (s SlotToday) Validate() error {
 	return errors
 }
 
+type SnapshotPlan struct {
+	Courses  []CourseStatus    `json:"courses" validate:"required"`
+	Stations []SnapshotStation `json:"stations" validate:"required"`
+}
+
+func (s SnapshotPlan) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Courses, "required"); err != nil {
+		errors = errors.Append("Courses", err)
+	}
+	for i, item := range s.Courses {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Courses[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Stations, "required"); err != nil {
+		errors = errors.Append("Stations", err)
+	}
+	for i, item := range s.Stations {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Stations[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SnapshotStation struct {
+	Actions   []Action `json:"actions" validate:"required"`
+	Name      string   `json:"name" validate:"required"`
+	StationID string   `json:"station_id" validate:"required"`
+}
+
+func (s SnapshotStation) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Actions, "required"); err != nil {
+		errors = errors.Append("Actions", err)
+	}
+	for i, item := range s.Actions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Actions[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(s.Name, "required"); err != nil {
+		errors = errors.Append("Name", err)
+	}
+	if err := typesValidator.Var(s.StationID, "required"); err != nil {
+		errors = errors.Append("StationID", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SnapshotsBody struct {
+	Snapshots []PlanSnapshotView `json:"snapshots" validate:"required"`
+}
+
+func (s SnapshotsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Snapshots, "required"); err != nil {
+		errors = errors.Append("Snapshots", err)
+	}
+	for i, item := range s.Snapshots {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Snapshots[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type Source struct {
 	Published string `json:"published" validate:"required"`
 	Sha256    string `json:"sha256" validate:"required"`
@@ -23408,6 +24841,7 @@ type System struct {
 	MaxUploadMb           int64  `json:"max_upload_mb"`
 	PreviewRecords        int64  `json:"preview_records"`
 	RestaurantName        string `json:"restaurant_name" validate:"required"`
+	VoiceAudioDays        int64  `json:"voice_audio_days"`
 }
 
 func (s System) Validate() error {
@@ -23731,12 +25165,13 @@ type UrgentBody struct {
 }
 
 type User struct {
-	Active    bool      `json:"active"`
-	CreatedAt time.Time `json:"created_at" validate:"required"`
-	ID        string    `json:"id" validate:"required"`
-	Name      string    `json:"name" validate:"required"`
-	Role      string    `json:"role" validate:"required"`
-	UpdatedAt time.Time `json:"updated_at" validate:"required"`
+	Active       bool       `json:"active"`
+	AnonymisedAt *time.Time `json:"anonymised_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at" validate:"required"`
+	ID           string     `json:"id" validate:"required"`
+	Name         string     `json:"name" validate:"required"`
+	Role         string     `json:"role" validate:"required"`
+	UpdatedAt    time.Time  `json:"updated_at" validate:"required"`
 }
 
 func (u User) Validate() error {
@@ -23749,6 +25184,13 @@ type UserChange struct {
 	Password *string `json:"password,omitempty"`
 	Pin      *string `json:"pin,omitempty"`
 	Role     *string `json:"role,omitempty"`
+}
+
+type UserMentions struct {
+	Activity     int64 `json:"activity"`
+	HaccpRecords int64 `json:"haccp_records"`
+	OrderEvents  int64 `json:"order_events"`
+	VoiceLog     int64 `json:"voice_log"`
 }
 
 type UsersOutBody struct {
@@ -23985,6 +25427,28 @@ func (v VersionedSystem) Validate() error {
 	if v, ok := any(v.Version).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
 			errors = errors.Append("Version", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionsBody struct {
+	Versions []ImportedVersion `json:"versions" validate:"required"`
+}
+
+func (v VersionsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(v.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range v.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
 		}
 	}
 	if len(errors) == 0 {

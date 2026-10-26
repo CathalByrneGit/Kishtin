@@ -446,6 +446,7 @@ func (s *Store) UpdateUser(ctx context.Context, u auth.User) error {
 		PinHash:      u.PINHash,
 		PasswordHash: u.PasswordHash,
 		UpdatedAt:    us(u.UpdatedAt),
+		AnonymisedAt: nullTime(u.AnonymisedAt),
 		ID:           u.ID,
 	})
 	if err != nil {
@@ -467,6 +468,7 @@ func userFromRow(row sqlitedb.User) auth.User {
 		PasswordHash: row.PasswordHash,
 		CreatedAt:    fromUS(row.CreatedAt),
 		UpdatedAt:    fromUS(row.UpdatedAt),
+		AnonymisedAt: timePtr(row.AnonymisedAt),
 	}
 }
 

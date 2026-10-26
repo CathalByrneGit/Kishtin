@@ -43,7 +43,7 @@ func (s *Service) Authenticate(ctx context.Context, apiKey, sessionToken string)
 		if !u.Active {
 			return Caller{}, newErr(KindUnauthenticated, "the owner of this API key is deactivated")
 		}
-		c.Principal = &auth.Principal{User: u, Method: auth.MethodKey}
+		c.Principal = &auth.Principal{User: u, Method: auth.MethodKey, Device: key.ID, DeviceName: key.Name}
 	case auth.KeyDevice:
 		if sessionToken == "" {
 			return c, nil
@@ -65,7 +65,7 @@ func (s *Service) Authenticate(ctx context.Context, apiKey, sessionToken string)
 		if !u.Active {
 			return Caller{}, newErr(KindUnauthenticated, "this user is deactivated")
 		}
-		c.Principal = &auth.Principal{User: u, Method: se.Method}
+		c.Principal = &auth.Principal{User: u, Method: se.Method, Device: key.ID, DeviceName: key.Name}
 	default:
 		return Caller{}, newErr(KindUnauthenticated, "this API key is not valid")
 	}
@@ -151,16 +151,26 @@ func (s *Service) login(ctx context.Context, c Caller, userID, secret string, m 
 	if err := s.st.Auth().CreateSession(ctx, se); err != nil {
 		return LoginResult{}, fmt.Errorf("save session: %w", err)
 	}
+	p := &auth.Principal{User: u, Method: m, Device: c.Key.ID, DeviceName: c.Key.Name}
+	if err := s.note(ctx, s.st, p, ActivityLogin, u.ID, map[string]any{"method": string(m)}); err != nil {
+		return LoginResult{}, err
+	}
 	return LoginResult{Token: token, Session: se, User: u}, nil
 }
 
 // Logout ends a session. Ending a session that doesn't exist is not an
 // error.
-func (s *Service) Logout(ctx context.Context, sessionToken string) error {
+func (s *Service) Logout(ctx context.Context, c Caller, sessionToken string) error {
 	if sessionToken == "" {
 		return nil
 	}
-	return s.st.Auth().DeleteSession(ctx, auth.HashToken(sessionToken))
+	if err := s.st.Auth().DeleteSession(ctx, auth.HashToken(sessionToken)); err != nil {
+		return err
+	}
+	if c.Principal != nil {
+		return s.note(ctx, s.st, c.Principal, ActivityLogout, c.Principal.User.ID, nil)
+	}
+	return nil
 }
 
 // CleanSessions removes expired sessions.

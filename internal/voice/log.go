@@ -47,4 +47,9 @@ type LogEntry struct {
 	Reply string `json:"reply"`
 	// Ref is the order, record or dish the command acted on, if any.
 	Ref string `json:"ref,omitempty"`
+	// Device is the API key of the device it came from, when known.
+	Device string `json:"device,omitempty"`
+	// AudioFile is the kept recording, when the restaurant keeps them, until
+	// it is deleted after the days set in system settings.
+	AudioFile string `json:"audio_file,omitempty"`
 }

@@ -79,8 +79,8 @@ WHERE id = ?;
 SELECT * FROM order_items WHERE order_id = ? ORDER BY position;
 
 -- name: InsertOrderEvent :exec
-INSERT INTO order_events (id, order_id, item_id, course, kind, from_val, to_val, detail, at, by_user, by_name)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO order_events (id, order_id, item_id, course, kind, from_val, to_val, detail, at, by_user, by_name, device_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: ListOrderEvents :many
 SELECT * FROM order_events WHERE order_id = ? ORDER BY at, id;

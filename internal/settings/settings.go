@@ -55,12 +55,17 @@ type System struct {
 	MaxUploadMB int64 `json:"max_upload_mb"`
 	// PreviewRecords is how many recent records a limit preview re-scores.
 	PreviewRecords int `json:"preview_records"`
+	// VoiceAudioDays is how many days recordings of voice commands are kept
+	// on this machine, to check what was said and to test speech models on
+	// the kitchen's own voices. 0, the default, keeps none.
+	VoiceAudioDays int `json:"voice_audio_days"`
 }
 
 // Upper bounds for system settings.
 const (
 	MaxUploadMBLimit    = 100
 	PreviewRecordsLimit = 500
+	VoiceAudioDaysLimit = 365
 )
 
 // Validate checks the system settings.
@@ -83,6 +88,9 @@ func (s System) Validate() error {
 	}
 	if s.PreviewRecords < 1 || s.PreviewRecords > PreviewRecordsLimit {
 		errs = append(errs, fmt.Errorf("preview_records must be between 1 and %d", PreviewRecordsLimit))
+	}
+	if s.VoiceAudioDays < 0 || s.VoiceAudioDays > VoiceAudioDaysLimit {
+		errs = append(errs, fmt.Errorf("voice_audio_days must be between 0 (keep none) and %d", VoiceAudioDaysLimit))
 	}
 	return errors.Join(errs...)
 }

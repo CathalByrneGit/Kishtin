@@ -91,6 +91,9 @@ var policy = map[Action]rule{
 type Principal struct {
 	User   User
 	Method Method
+	// Device and DeviceName are the API key the request came through: a
+	// kitchen device, or a user key for the CLI and scripts.
+	Device, DeviceName string
 }
 
 // Decision explains whether an action is allowed.

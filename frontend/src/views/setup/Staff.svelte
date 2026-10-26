@@ -28,6 +28,32 @@
   let pin = $state("");
   let password = $state("");
 
+  // Anonymise a leaver
+  let anonymising = $state<Schemas["AnonymisePreview"] | null>(null);
+
+  async function previewAnonymise(u: User) {
+    try {
+      anonymising = await api.previewAnonymise(u.id);
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 6000 });
+    }
+  }
+
+  async function anonymise() {
+    if (!anonymising) return;
+    busy = true;
+    try {
+      const res = await api.anonymise(anonymising.user.id);
+      showFlash(`Anonymised: now ${res.user.name}`, { tone: "success" });
+      anonymising = null;
+      await load();
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 8000 });
+    } finally {
+      busy = false;
+    }
+  }
+
   // Reset PIN or password
   let resetting = $state<User | null>(null);
   let newPin = $state("");
@@ -142,15 +168,20 @@
                   value={u.role}
                   options={roleOptions}
                   title={`Role for ${u.name}`}
-                  disabled={busy || u.id === session.user?.id}
+                  disabled={busy || u.id === session.user?.id || Boolean(u.anonymised_at)}
                   onchange={(v) => update(u, { role: v }, `${u.name} is now ${ROLES[v] ?? v}`)}
                 />
               </td>
-              <td><Chip tone={u.active ? "success" : "muted"} uppercase={false}>{u.active ? "Active" : "Deactivated"}</Chip></td>
+              <td><Chip tone={u.active ? "success" : "muted"} uppercase={false}>{u.active ? "Active" : u.anonymised_at ? "Anonymised" : "Deactivated"}</Chip></td>
               <td class="end">
                 <div class="actions">
-                  <Button size="sm" label="Change PIN or password" disabled={busy} onclick={() => (resetting = u)} />
-                  {#if u.id !== session.user?.id}
+                  {#if !u.anonymised_at}
+                    <Button size="sm" label="Change PIN or password" disabled={busy} onclick={() => (resetting = u)} />
+                  {/if}
+                  {#if !u.active && !u.anonymised_at}
+                    <Button size="sm" label="Anonymise" disabled={busy} onclick={() => previewAnonymise(u)} />
+                  {/if}
+                  {#if u.id !== session.user?.id && !u.anonymised_at}
                     <Button
                       size="sm"
                       tone={u.active ? "danger" : "neutral"}
@@ -165,7 +196,7 @@
           {/each}
         </Table>
       </Card>
-      <p class="muted small">Staff are never deleted, because HACCP records name who logged them. Deactivate someone who has left.</p>
+      <p class="muted small">Staff are never deleted, because HACCP records name who logged them. Deactivate someone who has left; once deactivated, Anonymise replaces their name in the kitchen's other logs.</p>
     {/if}
   </ManagerGate>
 </div>
@@ -188,6 +219,25 @@
         <Button tone="success" surface="solid" label={busy ? "Adding…" : "Add staff"} disabled={busy || !canAdd} onclick={add} />
       </div>
     {/snippet}
+  </Modal>
+{/if}
+
+{#if anonymising}
+  <Modal title={`Anonymise ${anonymising.user.name}`} onclose={() => (anonymising = null)} maxWidth="560px">
+    <div class="stack">
+      {#if anonymising.problem}
+        <Notice tone="error" message={`${anonymising.user.name} cannot be anonymised: ${anonymising.problem}.`} />
+      {:else}
+        <Notice tone="warning" title="This cannot be undone" message={`${anonymising.user.name} will be called ${anonymising.name}.`} />
+      {/if}
+      <ul>
+        {#each anonymising.notes as n (n)}<li>{n}</li>{/each}
+      </ul>
+      <div class="row end">
+        <Button label="Cancel" onclick={() => (anonymising = null)} />
+        <Button tone="danger" surface="solid" label={busy ? "Anonymising…" : `Anonymise ${anonymising.user.name}`} disabled={busy || Boolean(anonymising.problem)} onclick={anonymise} />
+      </div>
+    </div>
   </Modal>
 {/if}
 

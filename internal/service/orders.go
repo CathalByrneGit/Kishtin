@@ -68,7 +68,7 @@ func (s *Service) dublinDay() time.Time {
 func (s *Service) orderChanged(id string) { s.publish(events.KindOrder, id) }
 
 func (s *Service) event(p *auth.Principal, o orders.Order, kind orders.EventKind) orders.Event {
-	return orders.Event{ID: newID(), OrderID: o.ID, Kind: kind, At: s.clk.Now(), By: p.User.ID, ByName: p.User.Name}
+	return orders.Event{ID: newID(), OrderID: o.ID, Kind: kind, At: s.clk.Now(), By: p.User.ID, ByName: p.User.Name, Device: p.Device}
 }
 
 // buildItems turns new items into order items, checking each dish is on

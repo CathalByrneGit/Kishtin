@@ -167,6 +167,6 @@ after reading the preview of what is sent to Square.`,
 			return c.emit(res, func(w io.Writer) { printLocations(w, res.Locations) })
 		},
 	}
-	cmd.AddCommand(status, catalog, mapCmd, sync, locations)
+	cmd.AddCommand(status, catalog, mapCmd, sync, locations, c.squareVersionsCmd())
 	return cmd
 }

@@ -29,3 +29,11 @@ SELECT * FROM pos_state WHERE pos = ?;
 INSERT INTO pos_state (pos, since, last_poll_at, last_ok_at, last_error) VALUES (?, ?, ?, ?, ?)
 ON CONFLICT (pos) DO UPDATE SET
     since = excluded.since, last_poll_at = excluded.last_poll_at, last_ok_at = excluded.last_ok_at, last_error = excluded.last_error;
+
+-- name: InsertImportedVersion :exec
+INSERT INTO pos_order_versions (pos, external_id, version, seen_at, payload)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (pos, external_id, version) DO NOTHING;
+
+-- name: ListImportedVersions :many
+SELECT * FROM pos_order_versions WHERE pos = ? AND external_id = ? ORDER BY version;

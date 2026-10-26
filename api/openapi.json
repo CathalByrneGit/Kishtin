@@ -168,6 +168,64 @@
         ],
         "type": "object"
       },
+      "Activity": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "detail": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "device_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "user_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "kind",
+          "detail"
+        ],
+        "type": "object"
+      },
+      "ActivityBody": {
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/Activity"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "type": "object"
+      },
       "AddItemsBody": {
         "additionalProperties": false,
         "properties": {
@@ -181,6 +239,52 @@
         },
         "required": [
           "items"
+        ],
+        "type": "object"
+      },
+      "AnonymisePreview": {
+        "additionalProperties": false,
+        "properties": {
+          "mentions": {
+            "$ref": "#/components/schemas/UserMentions"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "problem": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "user",
+          "name",
+          "mentions",
+          "notes"
+        ],
+        "type": "object"
+      },
+      "AnonymiseResult": {
+        "additionalProperties": false,
+        "properties": {
+          "changed": {
+            "$ref": "#/components/schemas/UserMentions"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "user",
+          "changed"
         ],
         "type": "object"
       },
@@ -1106,6 +1210,9 @@
       "CourseStatus": {
         "additionalProperties": false,
         "properties": {
+          "cause": {
+            "type": "string"
+          },
           "course": {
             "type": "string"
           },
@@ -1532,6 +1639,9 @@
           "detail": {
             "type": "string"
           },
+          "device": {
+            "type": "string"
+          },
           "from": {
             "type": "string"
           },
@@ -1952,6 +2062,28 @@
           "payload",
           "first_seen",
           "last_seen"
+        ],
+        "type": "object"
+      },
+      "ImportedVersion": {
+        "additionalProperties": false,
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/TillOrder"
+          },
+          "seen_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "seen_at",
+          "payload"
         ],
         "type": "object"
       },
@@ -2392,6 +2524,12 @@
         "properties": {
           "at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "audio_file": {
+            "type": "string"
+          },
+          "device": {
             "type": "string"
           },
           "id": {
@@ -3130,6 +3268,39 @@
           "stations",
           "courses",
           "items"
+        ],
+        "type": "object"
+      },
+      "PlanSnapshotView": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/SnapshotPlan"
+          },
+          "settings_version": {
+            "type": "string"
+          },
+          "strategy": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "trigger",
+          "strategy",
+          "settings_version",
+          "plan"
         ],
         "type": "object"
       },
@@ -4371,6 +4542,66 @@
         ],
         "type": "object"
       },
+      "SnapshotPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/CourseStatus"
+            },
+            "type": "array"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/SnapshotStation"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "stations",
+          "courses"
+        ],
+        "type": "object"
+      },
+      "SnapshotStation": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "station_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "station_id",
+          "name",
+          "actions"
+        ],
+        "type": "object"
+      },
+      "SnapshotsBody": {
+        "additionalProperties": false,
+        "properties": {
+          "snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/PlanSnapshotView"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "snapshots"
+        ],
+        "type": "object"
+      },
       "Source": {
         "additionalProperties": false,
         "properties": {
@@ -4707,6 +4938,10 @@
           },
           "restaurant_name": {
             "type": "string"
+          },
+          "voice_audio_days": {
+            "format": "int64",
+            "type": "integer"
           }
         },
         "required": [
@@ -4714,7 +4949,8 @@
           "backup_interval_minutes",
           "backup_keep",
           "max_upload_mb",
-          "preview_records"
+          "preview_records",
+          "voice_audio_days"
         ],
         "type": "object"
       },
@@ -5088,6 +5324,10 @@
           "active": {
             "type": "boolean"
           },
+          "anonymised_at": {
+            "format": "date-time",
+            "type": "string"
+          },
           "created_at": {
             "format": "date-time",
             "type": "string"
@@ -5135,6 +5375,34 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UserMentions": {
+        "additionalProperties": false,
+        "properties": {
+          "activity": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "haccp_records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_events": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "voice_log": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "order_events",
+          "voice_log",
+          "activity",
+          "haccp_records"
+        ],
         "type": "object"
       },
       "UsersOutBody": {
@@ -5345,6 +5613,21 @@
         ],
         "type": "object"
       },
+      "VersionsBody": {
+        "additionalProperties": false,
+        "properties": {
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/ImportedVersion"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "versions"
+        ],
+        "type": "object"
+      },
       "VoiceCommandBody": {
         "additionalProperties": false,
         "properties": {
@@ -5460,6 +5743,85 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/activity": {
+      "get": {
+        "description": "Dishes sold out and back on, logins and logouts, screens connecting and dropping off, how each HACCP record was entered, and leavers anonymised. Each entry names the person and device.",
+        "operationId": "list-activity",
+        "parameters": [
+          {
+            "description": "Start: a date (2026-05-01, Dublin) or an RFC 3339 time. Empty: from the beginning.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "Start: a date (2026-05-01, Dublin) or an RFC 3339 time. Empty: from the beginning.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End: a date (inclusive) or an RFC 3339 time (exclusive). Empty: up to now.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "End: a date (inclusive) or an RFC 3339 time (exclusive). Empty: up to now.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "At most this many; 0 for the most allowed.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "description": "At most this many; 0 for the most allowed.",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only these kinds, such as dish.sold_out or login.",
+            "explode": false,
+            "in": "query",
+            "name": "kind",
+            "schema": {
+              "description": "Only these kinds, such as dish.sold_out or login.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the activity log, oldest first",
+        "tags": [
+          "Activity"
+        ]
+      }
+    },
     "/auth/actions": {
       "get": {
         "description": "The actions permissions are set for, in screen order, with Kishtin's default roles and whether a PIN is enough. Fixed actions are always managers with a password.",
@@ -7486,6 +7848,72 @@
           }
         },
         "summary": "Replace an item with the right one: void it and add the new one in one step",
+        "tags": [
+          "Kitchen"
+        ]
+      }
+    },
+    "/kitchen/plans": {
+      "get": {
+        "description": "A snapshot is kept each time the plan changes: each station's recommendations and each fired course's status, with the reason and, for a course at risk or late, its cause (equipment_full, started_late, cooking_long, waiting_at_pass, busy). Head chef or manager.",
+        "operationId": "plan-snapshots",
+        "parameters": [
+          {
+            "description": "Start: a date (2026-05-01, Dublin) or an RFC 3339 time. Empty: from the beginning.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "Start: a date (2026-05-01, Dublin) or an RFC 3339 time. Empty: from the beginning.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End: a date (inclusive) or an RFC 3339 time (exclusive). Empty: up to now.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "End: a date (inclusive) or an RFC 3339 time (exclusive). Empty: up to now.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "At most this many; 0 for the most allowed.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "description": "At most this many; 0 for the most allowed.",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotsBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the scheduler's plans as they changed",
         "tags": [
           "Kitchen"
         ]
@@ -9812,6 +10240,47 @@
         ]
       }
     },
+    "/square/orders/{id}/versions": {
+      "get": {
+        "operationId": "square-order-versions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionsBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List every version of a till order Kishtin saw",
+        "tags": [
+          "Square"
+        ]
+      }
+    },
     "/square/sync": {
       "post": {
         "description": "Kishtin also asks on its own while import is on. Orders are deduped on Square's order ID and version.",
@@ -9960,6 +10429,87 @@
           }
         },
         "summary": "Change a staff member: name, role, PIN, password, or deactivate",
+        "tags": [
+          "Staff"
+        ]
+      }
+    },
+    "/users/{id}/anonymise": {
+      "get": {
+        "operationId": "preview-anonymise",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnonymisePreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show what anonymising a leaver would change, without changing anything",
+        "tags": [
+          "Staff"
+        ]
+      },
+      "post": {
+        "description": "Replaces a deactivated member of staff's name with \"Former staff N\" in order events, the voice log, the activity log and the staff list, removes their PIN and password and revokes their API keys. HACCP records keep their name.",
+        "operationId": "anonymise-user",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnonymiseResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Anonymise a leaver (manager password); cannot be undone",
         "tags": [
           "Staff"
         ]
@@ -10144,6 +10694,56 @@
           }
         },
         "summary": "List recent voice commands: what was heard, what it was taken to mean, and what happened",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/voice/log/{id}/audio": {
+      "get": {
+        "description": "Recordings are kept only when system settings say to (voice_audio_days), and deleted after that many days.",
+        "operationId": "voice-recording",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "contentEncoding": "base64",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Play a kept voice recording (manager password)",
         "tags": [
           "Voice"
         ]

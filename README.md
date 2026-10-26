@@ -29,6 +29,7 @@ Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; t
 - **Backups** on a schedule. Each copy is verified and gets a `.sha256` file.
 - **Checks logged later**: any check can be logged with the time it was done and who did it, and **Catch up** lists the daily checks with no record so they can be filled in together. See [docs/haccp.md](docs/haccp.md#checks-logged-later).
 - **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts.
+- **Recording**: scheduler plans as they change, with why each course ran late; an activity log of sold-out dishes, logins, screens dropping off and how each HACCP record was entered; the device behind each action; every version of each till order; optional voice recordings. Leavers can be anonymised. See [docs/recording.md](docs/recording.md).
 - **Permissions**: a manager can give any role or named member of staff jobs such as signing off records, and choose whether a PIN is enough. See [docs/permissions.md](docs/permissions.md).
 - **HTTP API** (OpenAPI spec in [api/openapi.json](api/openapi.json)) and the **`kishtin` CLI**, which uses the API.
 

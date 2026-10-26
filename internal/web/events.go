@@ -17,7 +17,8 @@ var pingEvery = 20 * time.Second
 // refetch what they show.
 func (s *Server) serveEvents(w http.ResponseWriter, r *http.Request) {
 	key, session := bearer(r.Header.Get("Authorization")), r.Header.Get(SessionHeader)
-	if _, err := s.svc.Authenticate(r.Context(), key, session); err != nil {
+	c, err := s.svc.Authenticate(r.Context(), key, session)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -47,6 +48,8 @@ func (s *Server) serveEvents(w http.ResponseWriter, r *http.Request) {
 	if !send("event: ready\ndata: {}\n\n") {
 		return
 	}
+	// Screens connecting and dropping off are kept in the activity log.
+	defer s.svc.ScreenConnected(r.Context(), c)()
 	ping := time.NewTicker(pingEvery)
 	defer ping.Stop()
 	for {

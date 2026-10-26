@@ -129,7 +129,9 @@ func open(ctx context.Context, cfg config.Config) (*app, error) {
 		Store:       st,
 		Files:       fs,
 		System:      cfg.SystemSettings(),
-		Events:      events.NewHub(),
+		// Kept voice recordings, when system settings say to keep them.
+		VoiceAudioDir: filepath.Join(cfg.DataDir, "voice-audio"),
+		Events:        events.NewHub(),
 		Backups: service.BackupConfig{
 			Dir:  cfg.Backup.Dir,
 			Open: func(ctx context.Context, path string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, path) },
@@ -189,6 +191,7 @@ func serve(ctx context.Context, cfgPath string) error {
 
 	go a.svc.RunBackups(ctx, log)
 	go a.svc.RunSquare(ctx, log)
+	go a.svc.RunPlanRecorder(ctx, log)
 	go cleanSessions(ctx, a.svc, log)
 
 	errc := make(chan error, 1)

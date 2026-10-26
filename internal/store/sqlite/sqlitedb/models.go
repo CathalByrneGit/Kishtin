@@ -8,6 +8,18 @@ import (
 	"database/sql"
 )
 
+type Activity struct {
+	ID         string
+	At         int64
+	Kind       string
+	UserID     string
+	UserName   string
+	DeviceID   string
+	DeviceName string
+	Subject    string
+	Detail     string
+}
+
 type ApiKey struct {
 	ID        string
 	Kind      string
@@ -117,17 +129,18 @@ type OrderCourse struct {
 }
 
 type OrderEvent struct {
-	ID      string
-	OrderID string
-	ItemID  string
-	Course  string
-	Kind    string
-	FromVal string
-	ToVal   string
-	Detail  string
-	At      int64
-	ByUser  string
-	ByName  string
+	ID       string
+	OrderID  string
+	ItemID   string
+	Course   string
+	Kind     string
+	FromVal  string
+	ToVal    string
+	Detail   string
+	At       int64
+	ByUser   string
+	ByName   string
+	DeviceID string
 }
 
 type OrderItem struct {
@@ -155,6 +168,16 @@ type OrderItem struct {
 	VoidReason    string
 }
 
+type PlanSnapshot struct {
+	ID              string
+	At              int64
+	Trigger         string
+	Strategy        string
+	SettingsVersion string
+	Hash            string
+	Body            string
+}
+
 type PosMapping struct {
 	Pos        string
 	ExternalID string
@@ -180,6 +203,14 @@ type PosOrder struct {
 	Payload    string
 	FirstSeen  int64
 	LastSeen   int64
+}
+
+type PosOrderVersion struct {
+	Pos        string
+	ExternalID string
+	Version    int64
+	SeenAt     int64
+	Payload    string
 }
 
 type PosState struct {
@@ -227,6 +258,7 @@ type User struct {
 	PasswordHash string
 	CreatedAt    int64
 	UpdatedAt    int64
+	AnonymisedAt sql.NullInt64
 }
 
 type VoiceLog struct {
@@ -240,4 +272,6 @@ type VoiceLog struct {
 	Outcome    string
 	Reply      string
 	Ref        string
+	DeviceID   string
+	AudioFile  string
 }

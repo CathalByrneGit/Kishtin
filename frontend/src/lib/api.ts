@@ -215,6 +215,8 @@ export const api = {
   },
 
   users: () => json<Schemas["UsersOutBody"]>("GET", "/users"),
+  previewAnonymise: (id: string) => json<Schemas["AnonymisePreview"]>("GET", `/users/${encodeURIComponent(id)}/anonymise`),
+  anonymise: (id: string) => json<Schemas["AnonymiseResult"]>("POST", `/users/${encodeURIComponent(id)}/anonymise`),
   createUser: (body: Schemas["NewUser"]) => json<Schemas["User"]>("POST", "/users", { body }),
   updateUser: (id: string, body: Schemas["UserChange"]) =>
     json<Schemas["User"]>("PATCH", `/users/${encodeURIComponent(id)}`, { body }),

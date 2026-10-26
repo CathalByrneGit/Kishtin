@@ -42,6 +42,9 @@ func Run(t *testing.T, newStore Factory) {
 		"Settings":                testSettings,
 		"VoiceLog":                testVoiceLog,
 		"POS":                     testPOS,
+		"Activity":                testActivity,
+		"ImportedVersions":        testImportedVersions,
+		"AnonymiseUser":           testAnonymiseUser,
 	}
 	for name, fn := range kitchenTests() {
 		tests[name] = fn
@@ -429,9 +432,9 @@ func testFiles(t *testing.T, s store.Store) {
 // expose a way to change or remove HACCP records or limit versions.
 func testNoMutationMethods(t *testing.T, s store.Store) {
 	h := s.HACCP()
-	for _, v := range []any{h, s.Files(), s.Settings()} {
+	for _, v := range []any{h, s.Files(), s.Settings(), s.Activity()} {
 		typ := reflect.TypeOf(v)
-		for _, name := range []string{"UpdateRecord", "DeleteRecord", "UpdateLimitVersion", "DeleteLimitVersion", "DeleteFile", "UpdateSettings", "DeleteSettings"} {
+		for _, name := range []string{"UpdateRecord", "DeleteRecord", "UpdateLimitVersion", "DeleteLimitVersion", "DeleteFile", "UpdateSettings", "DeleteSettings", "UpdateActivity", "DeleteActivity", "DeletePlanSnapshot"} {
 			_, has := typ.MethodByName(name)
 			assert.False(t, has, "the store must not have %s", name)
 		}

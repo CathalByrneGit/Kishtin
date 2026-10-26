@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the activity log, oldest first
+         * @description Dishes sold out and back on, logins and logouts, screens connecting and dropping off, how each HACCP record was entered, and leavers anonymised. Each entry names the person and device.
+         */
+        get: operations["list-activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/actions": {
         parameters: {
             query?: never;
@@ -760,6 +780,26 @@ export interface paths {
          * @description The new item joins the same course and goes straight to its station if the course is fired. Front of house can replace items in a held course; once fired, the head chef or a manager.
          */
         post: operations["replace-item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kitchen/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the scheduler's plans as they changed
+         * @description A snapshot is kept each time the plan changes: each station's recommendations and each fired course's status, with the reason and, for a course at risk or late, its cause (equipment_full, started_late, cooking_long, waiting_at_pass, busy). Head chef or manager.
+         */
+        get: operations["plan-snapshots"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1687,6 +1727,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/square/orders/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every version of a till order Kishtin saw */
+        get: operations["square-order-versions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/square/sync": {
         parameters: {
             query?: never;
@@ -1740,6 +1797,27 @@ export interface paths {
         head?: never;
         /** Change a staff member: name, role, PIN, password, or deactivate */
         patch: operations["update-user"];
+        trace?: never;
+    };
+    "/users/{id}/anonymise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show what anonymising a leaver would change, without changing anything */
+        get: operations["preview-anonymise"];
+        put?: never;
+        /**
+         * Anonymise a leaver (manager password); cannot be undone
+         * @description Replaces a deactivated member of staff's name with "Former staff N" in order events, the voice log, the activity log and the staff list, removes their PIN and password and revokes their API keys. HACCP records keep their name.
+         */
+        post: operations["anonymise-user"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/voice": {
@@ -1816,6 +1894,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/voice/log/{id}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Play a kept voice recording (manager password)
+         * @description Recordings are kept only when system settings say to (voice_audio_days), and deleted after that many days.
+         */
+        get: operations["voice-recording"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/voice/speak": {
         parameters: {
             query?: never;
@@ -1880,8 +1978,36 @@ export interface components {
             text: string;
             type: string;
         };
+        Activity: {
+            /** Format: date-time */
+            at: string;
+            detail: {
+                [key: string]: string;
+            };
+            device_id?: string;
+            device_name?: string;
+            id: string;
+            kind: string;
+            subject?: string;
+            user_id?: string;
+            user_name?: string;
+        };
+        ActivityBody: {
+            entries: components["schemas"]["Activity"][];
+        };
         AddItemsBody: {
             items: components["schemas"]["NewItem"][];
+        };
+        AnonymisePreview: {
+            mentions: components["schemas"]["UserMentions"];
+            name: string;
+            notes: string[];
+            problem?: string;
+            user: components["schemas"]["User"];
+        };
+        AnonymiseResult: {
+            changed: components["schemas"]["UserMentions"];
+            user: components["schemas"]["User"];
         };
         Answer: {
             action?: string;
@@ -2127,6 +2253,7 @@ export interface components {
             urgent?: boolean;
         };
         CourseStatus: {
+            cause?: string;
             course: string;
             label: string;
             order_id: string;
@@ -2274,6 +2401,7 @@ export interface components {
             by_name: string;
             course?: string;
             detail?: string;
+            device?: string;
             from?: string;
             id: string;
             item_id?: string;
@@ -2375,6 +2503,13 @@ export interface components {
             pos: string;
             state: string;
             unmapped: string[];
+            /** Format: int64 */
+            version: number;
+        };
+        ImportedVersion: {
+            payload: components["schemas"]["TillOrder"];
+            /** Format: date-time */
+            seen_at: string;
             /** Format: int64 */
             version: number;
         };
@@ -2496,6 +2631,8 @@ export interface components {
         LogEntry: {
             /** Format: date-time */
             at: string;
+            audio_file?: string;
+            device?: string;
             id: string;
             intent?: string;
             outcome: string;
@@ -2687,6 +2824,15 @@ export interface components {
             settings_version: string;
             stations: components["schemas"]["StationPlan"][];
             strategy: string;
+        };
+        PlanSnapshotView: {
+            /** Format: date-time */
+            at: string;
+            id: string;
+            plan: components["schemas"]["SnapshotPlan"];
+            settings_version: string;
+            strategy: string;
+            trigger: string;
         };
         Progress: {
             dish_name: string;
@@ -3008,6 +3154,18 @@ export interface components {
             status: string;
             until?: string;
         };
+        SnapshotPlan: {
+            courses: components["schemas"]["CourseStatus"][];
+            stations: components["schemas"]["SnapshotStation"][];
+        };
+        SnapshotStation: {
+            actions: components["schemas"]["Action"][];
+            name: string;
+            station_id: string;
+        };
+        SnapshotsBody: {
+            snapshots: components["schemas"]["PlanSnapshotView"][];
+        };
         Source: {
             published: string;
             sha256: string;
@@ -3101,6 +3259,8 @@ export interface components {
             /** Format: int64 */
             preview_records: number;
             restaurant_name: string;
+            /** Format: int64 */
+            voice_audio_days: number;
         };
         TargetBody: {
             reason?: string;
@@ -3202,6 +3362,8 @@ export interface components {
         User: {
             active: boolean;
             /** Format: date-time */
+            anonymised_at?: string;
+            /** Format: date-time */
             created_at: string;
             id: string;
             name: string;
@@ -3215,6 +3377,16 @@ export interface components {
             password?: string;
             pin?: string;
             role?: string;
+        };
+        UserMentions: {
+            /** Format: int64 */
+            activity: number;
+            /** Format: int64 */
+            haccp_records: number;
+            /** Format: int64 */
+            order_events: number;
+            /** Format: int64 */
+            voice_log: number;
         };
         UsersOutBody: {
             users: components["schemas"]["User"][];
@@ -3267,6 +3439,9 @@ export interface components {
             value: components["schemas"]["System"];
             version: components["schemas"]["SettingsVersion"];
         };
+        VersionsBody: {
+            versions: components["schemas"]["ImportedVersion"][];
+        };
         VoiceCommandBody: {
             text: string;
         };
@@ -3298,6 +3473,44 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "list-activity": {
+        parameters: {
+            query?: {
+                /** @description Start: a date (2026-05-01, Dublin) or an RFC 3339 time. Empty: from the beginning. */
+                from?: string;
+                /** @description End: a date (inclusive) or an RFC 3339 time (exclusive). Empty: up to now. */
+                to?: string;
+                /** @description At most this many; 0 for the most allowed. */
+                limit?: number;
+                /** @description Only these kinds, such as dish.sold_out or login. */
+                kind?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-actions": {
         parameters: {
             query?: never;
@@ -4746,6 +4959,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "plan-snapshots": {
+        parameters: {
+            query?: {
+                /** @description Start: a date (2026-05-01, Dublin) or an RFC 3339 time. Empty: from the beginning. */
+                from?: string;
+                /** @description End: a date (inclusive) or an RFC 3339 time (exclusive). Empty: up to now. */
+                to?: string;
+                /** @description At most this many; 0 for the most allowed. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnapshotsBody"];
                 };
             };
             /** @description Error */
@@ -6571,6 +6820,37 @@ export interface operations {
             };
         };
     };
+    "square-order-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "square-sync": {
         parameters: {
             query?: never;
@@ -6684,6 +6964,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["User"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-anonymise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnonymisePreview"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "anonymise-user": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnonymiseResult"];
                 };
             };
             /** @description Error */
@@ -6817,6 +7159,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VoiceLogBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "voice-recording": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Content-Type"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
             /** @description Error */

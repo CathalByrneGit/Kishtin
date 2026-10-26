@@ -344,7 +344,7 @@ func (c *cli) staffCmd() *cobra.Command {
 	update.Flags().BoolVar(&deactivate, "deactivate", false, "deactivate: they can no longer log in")
 	update.Flags().BoolVar(&activate, "activate", false, "reactivate")
 
-	cmd.AddCommand(list, add, update)
+	cmd.AddCommand(list, add, update, c.anonymiseCmd())
 	return cmd
 }
 

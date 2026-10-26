@@ -552,3 +552,19 @@ func (s *Service) RunSquare(ctx context.Context, log *slog.Logger) {
 		}
 	}
 }
+
+// SquareOrderVersions lists every version of a till order Kishtin saw,
+// oldest first, as Kishtin read it: its lines, modifiers and state.
+func (s *Service) SquareOrderVersions(ctx context.Context, p *auth.Principal, externalID string) ([]store.ImportedVersion, error) {
+	if err := s.allow(p, auth.ActManageSettings); err != nil {
+		return nil, err
+	}
+	vs, err := s.st.POS().ListImportedVersions(ctx, posSquare, externalID)
+	if err != nil {
+		return nil, err
+	}
+	if len(vs) == 0 {
+		return nil, newErr(KindNotFound, "no till order %s has been seen", externalID)
+	}
+	return vs, nil
+}

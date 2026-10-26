@@ -57,13 +57,13 @@ func TestCan(t *testing.T) {
 		allow  bool
 		needPW bool
 	}{
-		{"cook logs haccp", Principal{cook, MethodPIN}, ActLogHACCP, true, false},
-		{"cook cannot export", Principal{cook, MethodPIN}, ActExportHACCP, false, false},
-		{"manager PIN cannot change limits", Principal{mgr, MethodPIN}, ActManageLimits, false, true},
-		{"manager password changes limits", Principal{mgr, MethodPassword}, ActManageLimits, true, false},
-		{"manager key changes limits", Principal{mgr, MethodKey}, ActManageLimits, true, false},
-		{"deactivated manager", Principal{User{Role: RoleManager}, MethodPassword}, ActLogHACCP, false, false},
-		{"unknown action", Principal{mgr, MethodPassword}, Action("nope"), false, false},
+		{"cook logs haccp", Principal{User: cook, Method: MethodPIN}, ActLogHACCP, true, false},
+		{"cook cannot export", Principal{User: cook, Method: MethodPIN}, ActExportHACCP, false, false},
+		{"manager PIN cannot change limits", Principal{User: mgr, Method: MethodPIN}, ActManageLimits, false, true},
+		{"manager password changes limits", Principal{User: mgr, Method: MethodPassword}, ActManageLimits, true, false},
+		{"manager key changes limits", Principal{User: mgr, Method: MethodKey}, ActManageLimits, true, false},
+		{"deactivated manager", Principal{User: User{Role: RoleManager}, Method: MethodPassword}, ActLogHACCP, false, false},
+		{"unknown action", Principal{User: mgr, Method: MethodPassword}, Action("nope"), false, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

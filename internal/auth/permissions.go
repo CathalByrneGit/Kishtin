@@ -65,7 +65,7 @@ var actionInfo = []struct {
 	{ActLogSignedOff, "HACCP", "Add or correct records in a period already signed off"},
 	{ActInspect, "HACCP", "Log hygiene inspections and training, import paper pages"},
 	{ActSignOff, "HACCP", "Sign off records"},
-	{ActExportHACCP, "HACCP", "Exports and record books"},
+	{ActExportHACCP, "HACCP", "Exports, record books and the activity log"},
 	{ActFitness, "HACCP", "Fitness to work"},
 	{ActViewKitchen, "Kitchen", "See the pass, stations and orders"},
 	{ActTakeOrders, "Kitchen", "Take orders"},

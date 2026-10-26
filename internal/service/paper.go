@@ -172,6 +172,7 @@ func (s *Service) ImportPaper(ctx context.Context, p *auth.Principal, in PaperIm
 	if len(in.Rows) == 0 || len(in.Rows) > maxPaperRows {
 		return nil, newErr(KindInvalid, "send 1 to %d rows", maxPaperRows)
 	}
+	ctx = withSource(ctx, SourcePaper)
 	return s.saveRows(ctx, p, in.Rows, func(tx store.Store, nr *NewRecord) error {
 		_, err := s.checkPaperRow(ctx, tx, p, file, nr)
 		return err

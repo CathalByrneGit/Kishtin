@@ -211,6 +211,7 @@ func (s *Service) SaveCatchUp(ctx context.Context, p *auth.Principal, in CatchUp
 	if err := s.allowCatchUp(p, in); err != nil {
 		return nil, err
 	}
+	ctx = withSource(ctx, SourceCatchUp)
 	return s.saveRows(ctx, p, in.Rows, func(tx store.Store, nr *NewRecord) error {
 		_, err := s.checkCatchUpRow(ctx, tx, p, nr)
 		return err

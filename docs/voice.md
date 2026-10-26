@@ -11,7 +11,7 @@ Nowhere outside the building.
 - The browser records while the button is held and sends the audio to the Kishtin server on the kitchen network.
 - The server passes it to a **speech-to-text sidecar** (a [whisper.cpp](https://github.com/ggml-org/whisper.cpp) server) running on the same machine or the kitchen network. Kishtin refuses to use a sidecar address outside the local network.
 - Replies are spoken by a **text-to-speech sidecar** (a [Piper](https://github.com/OHF-Voice/piper1-gpl) HTTP server), on the same terms.
-- The audio is not stored. The transcript is, in the voice log, with what it was taken to mean and what happened.
+- The audio is not stored, unless a manager sets **Keep recordings of voice commands** in Settings; then it is kept on the server for that many days and deleted after. See [recording.md](recording.md#voice). The transcript is always kept, in the voice log, with what it was taken to mean, what happened and the device.
 
 Without a text-to-speech sidecar, a device speaks replies with a voice built into the device, but only one that runs on the device itself (some browser voices send text to the cloud, and those are never used). Each device can turn spoken replies off on the Voice page.
 

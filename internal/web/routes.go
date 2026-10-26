@@ -27,6 +27,7 @@ func (s *Server) routes() {
 	s.signOffRoutes()
 	s.copyRoutes()
 	s.catchUpRoutes()
+	s.recordingRoutes()
 	s.limitRoutes()
 	s.fileRoutes()
 	s.settingsRoutes()
@@ -117,7 +118,7 @@ func (s *Server) authRoutes() {
 	}, wrap(s, func(ctx context.Context, in *struct {
 		Session string `header:"X-Kishtin-Session"`
 	}) (*empty, error) {
-		return &empty{}, s.svc.Logout(ctx, in.Session)
+		return &empty{}, s.svc.Logout(ctx, caller(ctx), in.Session)
 	}))
 
 	huma.Register(s.api, huma.Operation{

@@ -149,7 +149,9 @@ func (s *Service) VoiceStatus(_ context.Context, p *auth.Principal) (VoiceStatus
 }
 
 // VoiceAudio transcribes push-to-talk audio with the local speech-to-text
-// sidecar, then runs the command. The audio is not stored.
+// sidecar, then runs the command. The audio is kept on this machine only
+// when system settings say to keep recordings, and only for a command that
+// is logged: speech ignored in hands-free mode is never kept.
 //
 // In hands-free mode the phrase must start with a wake word ("Kishtin,
 // fire table 4"). Anything else is ignored: not acted on, not logged and
@@ -198,7 +200,7 @@ func (s *Service) VoiceAudio(ctx context.Context, p *auth.Principal, audio []byt
 			return VoiceReply{Outcome: voice.OutcomeIgnored}, nil
 		}
 	}
-	return s.voiceCommand(ctx, p, text, voice.SourceSpoken, v)
+	return s.voiceCommand(ctx, p, text, voice.SourceSpoken, v, audio, contentType)
 }
 
 // VoiceSpeak turns a reply into speech with the local text-to-speech
@@ -233,7 +235,7 @@ func (s *Service) VoiceCommand(ctx context.Context, p *auth.Principal, text stri
 	if err != nil {
 		return VoiceReply{}, err
 	}
-	return s.voiceCommand(ctx, p, text, voice.SourceTyped, v)
+	return s.voiceCommand(ctx, p, text, voice.SourceTyped, v, nil, "")
 }
 
 // VoiceLog lists recent voice commands, newest first.
@@ -318,16 +320,19 @@ func prompt(v voice.Vocab) string {
 	return out
 }
 
-func (s *Service) voiceCommand(ctx context.Context, p *auth.Principal, text string, src voice.Source, v voice.Vocab) (VoiceReply, error) {
+func (s *Service) voiceCommand(ctx context.Context, p *auth.Principal, text string, src voice.Source, v voice.Vocab, audio []byte, contentType string) (VoiceReply, error) {
 	text = strings.TrimSpace(text)
-	reply, err := s.answer(ctx, p, text, v)
+	reply, err := s.answer(withSource(ctx, SourceVoice), p, text, v)
 	if err != nil {
 		return VoiceReply{}, err
 	}
 	reply.Heard = text
 	entry := voice.LogEntry{
 		ID: newID(), At: s.clk.Now(), UserID: p.User.ID, UserName: p.User.Name, Source: src,
-		Transcript: text, Intent: reply.Intent, Outcome: reply.Outcome, Reply: reply.Say, Ref: reply.Ref,
+		Transcript: text, Intent: reply.Intent, Outcome: reply.Outcome, Reply: reply.Say, Ref: reply.Ref, Device: p.Device,
+	}
+	if entry.AudioFile, err = s.keepAudio(ctx, entry.ID, audio, contentType); err != nil {
+		return VoiceReply{}, err
 	}
 	if err := s.st.Voice().AppendVoiceLog(ctx, entry); err != nil {
 		return VoiceReply{}, fmt.Errorf("log voice command: %w", err)

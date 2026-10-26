@@ -121,6 +121,6 @@ func (c *cli) voiceCmd() *cobra.Command {
 		},
 	}
 	log.Flags().Int64Var(&limit, "limit", 50, "how many, newest first")
-	cmd.AddCommand(status, log)
+	cmd.AddCommand(status, log, c.recordingCmd())
 	return cmd
 }

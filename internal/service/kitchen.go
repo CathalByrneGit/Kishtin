@@ -68,25 +68,31 @@ func (s *Service) Kitchen(ctx context.Context, p *auth.Principal) (KitchenView, 
 	}
 	var view KitchenView
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
-		setup, err := menuSetup(ctx, tx)
-		if err != nil {
-			return err
-		}
-		open, err := tx.Orders().ListOrders(ctx, store.OrderFilter{OpenOnly: true})
-		if err != nil {
-			return err
-		}
-		set, err := s.Scheduler().current(ctx, tx)
-		if err != nil {
-			return err
-		}
-		now := s.clk.Now()
-		cfg := set.Value.Config(set.Version.ID, clock.Dublin)
-		view = KitchenView{
-			At: now, Orders: open, Stations: setup.Stations, ReplanSeconds: set.Value.ReplanSeconds,
-			Plan: scheduler.PlanKitchen(schedulerState(setup, open), cfg, now),
-		}
-		return nil
+		var err error
+		view, err = s.kitchenNow(ctx, tx)
+		return err
 	})
 	return view, err
+}
+
+// kitchenNow reads open orders and plans them, through st.
+func (s *Service) kitchenNow(ctx context.Context, st store.Store) (KitchenView, error) {
+	setup, err := menuSetup(ctx, st)
+	if err != nil {
+		return KitchenView{}, err
+	}
+	open, err := st.Orders().ListOrders(ctx, store.OrderFilter{OpenOnly: true})
+	if err != nil {
+		return KitchenView{}, err
+	}
+	set, err := s.Scheduler().current(ctx, st)
+	if err != nil {
+		return KitchenView{}, err
+	}
+	now := s.clk.Now()
+	cfg := set.Value.Config(set.Version.ID, clock.Dublin)
+	return KitchenView{
+		At: now, Orders: open, Stations: setup.Stations, ReplanSeconds: set.Value.ReplanSeconds,
+		Plan: scheduler.PlanKitchen(schedulerState(setup, open), cfg, now),
+	}, nil
 }

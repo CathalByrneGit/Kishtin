@@ -17,6 +17,7 @@
   let keep = $state("");
   let upload = $state("");
   let previewN = $state("");
+  let voiceDays = $state("");
 
   let review = $state<{ preview: Preview; value: Schemas["System"] } | null>(null);
   let saving = $state(false);
@@ -32,6 +33,7 @@
     keep = String(v.backup_keep);
     upload = String(v.max_upload_mb);
     previewN = String(v.preview_records);
+    voiceDays = String(v.voice_audio_days);
   }
 
   async function load() {
@@ -57,8 +59,9 @@
     const k = whole(keep);
     const u = whole(upload);
     const p = whole(previewN);
-    if (i === null || k === null || u === null || p === null) return "Every number must be a whole number.";
-    return { restaurant_name: name.trim(), backup_interval_minutes: i, backup_keep: k, max_upload_mb: u, preview_records: p };
+    const vd = whole(voiceDays);
+    if (i === null || k === null || u === null || p === null || vd === null) return "Every number must be a whole number.";
+    return { restaurant_name: name.trim(), backup_interval_minutes: i, backup_keep: k, max_upload_mb: u, preview_records: p, voice_audio_days: vd };
   });
   const dirty = $derived(system !== null && typeof draft !== "string" && JSON.stringify(draft) !== JSON.stringify(system.value));
 
@@ -124,6 +127,10 @@
               <label class="field">
                 <span>Records a limit preview re-scores (1–500)</span>
                 <TextInput bind:value={previewN} disabled={!canEdit} />
+              </label>
+              <label class="field">
+                <span>Keep recordings of voice commands (days, 0–365; 0 keeps none)</span>
+                <TextInput bind:value={voiceDays} disabled={!canEdit} />
               </label>
             </div>
             {#if typeof draft === "string"}<Notice tone="error" message={draft} />{/if}

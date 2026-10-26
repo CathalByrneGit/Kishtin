@@ -39,7 +39,7 @@ Managers can always take every action, so nobody can lock the managers out.
 | Add or correct records in a period already signed off | managers, password |
 | Log hygiene inspections and training, import paper pages | head chefs, PIN |
 | Sign off records | managers, password |
-| Exports and record books | head chefs, PIN |
+| Exports, record books and the activity log | head chefs, PIN |
 | See the pass, stations and orders | everyone, PIN |
 | Take orders | front of house and head chefs, PIN |
 | Run the pass: fire, serve and void | head chefs, PIN |

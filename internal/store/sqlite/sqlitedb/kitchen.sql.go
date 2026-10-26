@@ -239,22 +239,23 @@ func (q *Queries) InsertOrder(ctx context.Context, arg InsertOrderParams) error 
 }
 
 const insertOrderEvent = `-- name: InsertOrderEvent :exec
-INSERT INTO order_events (id, order_id, item_id, course, kind, from_val, to_val, detail, at, by_user, by_name)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO order_events (id, order_id, item_id, course, kind, from_val, to_val, detail, at, by_user, by_name, device_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertOrderEventParams struct {
-	ID      string
-	OrderID string
-	ItemID  string
-	Course  string
-	Kind    string
-	FromVal string
-	ToVal   string
-	Detail  string
-	At      int64
-	ByUser  string
-	ByName  string
+	ID       string
+	OrderID  string
+	ItemID   string
+	Course   string
+	Kind     string
+	FromVal  string
+	ToVal    string
+	Detail   string
+	At       int64
+	ByUser   string
+	ByName   string
+	DeviceID string
 }
 
 func (q *Queries) InsertOrderEvent(ctx context.Context, arg InsertOrderEventParams) error {
@@ -270,6 +271,7 @@ func (q *Queries) InsertOrderEvent(ctx context.Context, arg InsertOrderEventPara
 		arg.At,
 		arg.ByUser,
 		arg.ByName,
+		arg.DeviceID,
 	)
 	return err
 }
@@ -417,7 +419,7 @@ func (q *Queries) ListEquipment(ctx context.Context) ([]Equipment, error) {
 }
 
 const listItemEventsBetween = `-- name: ListItemEventsBetween :many
-SELECT id, order_id, item_id, course, kind, from_val, to_val, detail, at, by_user, by_name FROM order_events WHERE kind = 'item_state' AND at >= ? AND at < ? ORDER BY at, id
+SELECT id, order_id, item_id, course, kind, from_val, to_val, detail, at, by_user, by_name, device_id FROM order_events WHERE kind = 'item_state' AND at >= ? AND at < ? ORDER BY at, id
 `
 
 type ListItemEventsBetweenParams struct {
@@ -446,6 +448,7 @@ func (q *Queries) ListItemEventsBetween(ctx context.Context, arg ListItemEventsB
 			&i.At,
 			&i.ByUser,
 			&i.ByName,
+			&i.DeviceID,
 		); err != nil {
 			return nil, err
 		}
@@ -551,7 +554,7 @@ func (q *Queries) ListOpenOrders(ctx context.Context) ([]Order, error) {
 }
 
 const listOrderEvents = `-- name: ListOrderEvents :many
-SELECT id, order_id, item_id, course, kind, from_val, to_val, detail, at, by_user, by_name FROM order_events WHERE order_id = ? ORDER BY at, id
+SELECT id, order_id, item_id, course, kind, from_val, to_val, detail, at, by_user, by_name, device_id FROM order_events WHERE order_id = ? ORDER BY at, id
 `
 
 func (q *Queries) ListOrderEvents(ctx context.Context, orderID string) ([]OrderEvent, error) {
@@ -575,6 +578,7 @@ func (q *Queries) ListOrderEvents(ctx context.Context, orderID string) ([]OrderE
 			&i.At,
 			&i.ByUser,
 			&i.ByName,
+			&i.DeviceID,
 		); err != nil {
 			return nil, err
 		}

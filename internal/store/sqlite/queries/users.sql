@@ -4,7 +4,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: UpdateUser :execrows
 UPDATE users
-SET name = ?, role = ?, active = ?, pin_hash = ?, password_hash = ?, updated_at = ?
+SET name = ?, role = ?, active = ?, pin_hash = ?, password_hash = ?, updated_at = ?, anonymised_at = ?
 WHERE id = ?;
 
 -- name: GetUser :one

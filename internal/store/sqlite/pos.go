@@ -97,10 +97,32 @@ func (s *Store) SaveImported(ctx context.Context, o integrations.Imported) error
 	if err != nil {
 		return err
 	}
-	return mapErr(s.w.UpsertImported(ctx, sqlitedb.UpsertImportedParams{
+	if err := s.w.UpsertImported(ctx, sqlitedb.UpsertImportedParams{
 		Pos: o.POS, ExternalID: o.ExternalID, Version: o.Version, State: string(o.State), OrderID: o.OrderID, Label: o.Label,
 		Added: added, Unmapped: unmapped, Notices: notices, Payload: payload, FirstSeen: us(o.FirstSeen), LastSeen: us(o.LastSeen),
+	}); err != nil {
+		return mapErr(err)
+	}
+	// Keep every version seen, not only the latest.
+	return mapErr(s.w.InsertImportedVersion(ctx, sqlitedb.InsertImportedVersionParams{
+		Pos: o.POS, ExternalID: o.ExternalID, Version: o.Version, SeenAt: us(o.LastSeen), Payload: payload,
 	}))
+}
+
+func (s *Store) ListImportedVersions(ctx context.Context, pos, externalID string) ([]store.ImportedVersion, error) {
+	rows, err := s.r.ListImportedVersions(ctx, sqlitedb.ListImportedVersionsParams{Pos: pos, ExternalID: externalID})
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	out := make([]store.ImportedVersion, 0, len(rows))
+	for _, r := range rows {
+		v := store.ImportedVersion{Version: r.Version, SeenAt: fromUS(r.SeenAt)}
+		if err := json.Unmarshal([]byte(r.Payload), &v.Payload); err != nil {
+			return nil, fmt.Errorf("decode version %d of till order %s: %w", r.Version, externalID, err)
+		}
+		out = append(out, v)
+	}
+	return out, nil
 }
 
 func (s *Store) ListImported(ctx context.Context, pos string, limit int) ([]integrations.Imported, error) {

@@ -7,10 +7,11 @@ package sqlitedb
 
 import (
 	"context"
+	"database/sql"
 )
 
 const getUser = `-- name: GetUser :one
-SELECT id, name, role, active, pin_hash, password_hash, created_at, updated_at FROM users WHERE id = ?
+SELECT id, name, role, active, pin_hash, password_hash, created_at, updated_at, anonymised_at FROM users WHERE id = ?
 `
 
 func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
@@ -25,6 +26,7 @@ func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AnonymisedAt,
 	)
 	return i, err
 }
@@ -60,7 +62,7 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) error {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, role, active, pin_hash, password_hash, created_at, updated_at FROM users ORDER BY name COLLATE NOCASE, id
+SELECT id, name, role, active, pin_hash, password_hash, created_at, updated_at, anonymised_at FROM users ORDER BY name COLLATE NOCASE, id
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -81,6 +83,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.PasswordHash,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AnonymisedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -97,7 +100,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 
 const updateUser = `-- name: UpdateUser :execrows
 UPDATE users
-SET name = ?, role = ?, active = ?, pin_hash = ?, password_hash = ?, updated_at = ?
+SET name = ?, role = ?, active = ?, pin_hash = ?, password_hash = ?, updated_at = ?, anonymised_at = ?
 WHERE id = ?
 `
 
@@ -108,6 +111,7 @@ type UpdateUserParams struct {
 	PinHash      string
 	PasswordHash string
 	UpdatedAt    int64
+	AnonymisedAt sql.NullInt64
 	ID           string
 }
 
@@ -119,6 +123,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (int64, 
 		arg.PinHash,
 		arg.PasswordHash,
 		arg.UpdatedAt,
+		arg.AnonymisedAt,
 		arg.ID,
 	)
 	if err != nil {

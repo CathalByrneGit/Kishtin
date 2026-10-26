@@ -51,6 +51,9 @@ type User struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 	PINHash      string    `json:"-"`
 	PasswordHash string    `json:"-"`
+	// AnonymisedAt is when a leaver's name was replaced in the kitchen's
+	// logs. Their HACCP records keep the name they were logged under.
+	AnonymisedAt *time.Time `json:"anonymised_at,omitempty"`
 }
 
 // Method is how a principal proved who they are.

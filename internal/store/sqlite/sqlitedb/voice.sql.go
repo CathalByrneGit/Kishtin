@@ -9,9 +9,33 @@ import (
 	"context"
 )
 
+const getVoiceLog = `-- name: GetVoiceLog :one
+SELECT id, at, user_id, user_name, source, transcript, intent, outcome, reply, ref, device_id, audio_file FROM voice_log WHERE id = ?
+`
+
+func (q *Queries) GetVoiceLog(ctx context.Context, id string) (VoiceLog, error) {
+	row := q.db.QueryRowContext(ctx, getVoiceLog, id)
+	var i VoiceLog
+	err := row.Scan(
+		&i.ID,
+		&i.At,
+		&i.UserID,
+		&i.UserName,
+		&i.Source,
+		&i.Transcript,
+		&i.Intent,
+		&i.Outcome,
+		&i.Reply,
+		&i.Ref,
+		&i.DeviceID,
+		&i.AudioFile,
+	)
+	return i, err
+}
+
 const insertVoiceLog = `-- name: InsertVoiceLog :exec
-INSERT INTO voice_log (id, at, user_id, user_name, source, transcript, intent, outcome, reply, ref)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO voice_log (id, at, user_id, user_name, source, transcript, intent, outcome, reply, ref, device_id, audio_file)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertVoiceLogParams struct {
@@ -25,6 +49,8 @@ type InsertVoiceLogParams struct {
 	Outcome    string
 	Reply      string
 	Ref        string
+	DeviceID   string
+	AudioFile  string
 }
 
 func (q *Queries) InsertVoiceLog(ctx context.Context, arg InsertVoiceLogParams) error {
@@ -39,12 +65,14 @@ func (q *Queries) InsertVoiceLog(ctx context.Context, arg InsertVoiceLogParams) 
 		arg.Outcome,
 		arg.Reply,
 		arg.Ref,
+		arg.DeviceID,
+		arg.AudioFile,
 	)
 	return err
 }
 
 const listVoiceLog = `-- name: ListVoiceLog :many
-SELECT id, at, user_id, user_name, source, transcript, intent, outcome, reply, ref FROM voice_log WHERE at < ? ORDER BY at DESC, id DESC LIMIT ?
+SELECT id, at, user_id, user_name, source, transcript, intent, outcome, reply, ref, device_id, audio_file FROM voice_log WHERE at < ? ORDER BY at DESC, id DESC LIMIT ?
 `
 
 type ListVoiceLogParams struct {
@@ -72,6 +100,8 @@ func (q *Queries) ListVoiceLog(ctx context.Context, arg ListVoiceLogParams) ([]V
 			&i.Outcome,
 			&i.Reply,
 			&i.Ref,
+			&i.DeviceID,
+			&i.AudioFile,
 		); err != nil {
 			return nil, err
 		}

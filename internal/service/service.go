@@ -91,6 +91,10 @@ type Service struct {
 	newSquare func(environment, token string) (integrations.POSAdapter, error)
 	ai        *ai.Client
 	fetch     func(ctx context.Context, url string) ([]byte, error)
+	// voiceAudioDir is where kept voice recordings go; empty keeps none.
+	voiceAudioDir string
+	// lastPlan is the hash of the last plan snapshot kept.
+	lastPlan atomic.Pointer[string]
 	// perms caches the permissions in force. Init loads them and saving a
 	// change replaces them.
 	perms atomic.Pointer[auth.Permissions]
@@ -126,6 +130,9 @@ type Options struct {
 	// Fetch downloads a public URL, for checking record book editions.
 	// Nil uses a plain HTTP client.
 	Fetch func(ctx context.Context, url string) ([]byte, error)
+	// VoiceAudioDir is where recordings of voice commands are kept, when
+	// system settings say to keep them. Empty keeps none.
+	VoiceAudioDir string
 }
 
 // DefaultSystem returns the system settings used when none are configured.
@@ -148,7 +155,7 @@ func New(o Options) *Service {
 		wake = voice.DefaultWakeWords
 	}
 	return &Service{wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech, pos: o.POS,
-		posSource: o.POSSource, creds: o.Credentials, newSquare: o.NewSquare, ai: o.AI, fetch: o.Fetch}
+		posSource: o.POSSource, creds: o.Credentials, newSquare: o.NewSquare, ai: o.AI, fetch: o.Fetch, voiceAudioDir: o.VoiceAudioDir}
 }
 
 // Events returns the hub that change notices are published to.

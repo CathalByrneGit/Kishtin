@@ -137,8 +137,17 @@ func (s *Service) System() *Group[settings.System] {
 		normalize:  func(v settings.System) settings.System { return v },
 		validate:   settings.System.Validate,
 		lessStrict: func(_, _ settings.System) []string { return nil },
-		notes: func(context.Context, *Service, store.Store, settings.System, settings.System) ([]string, error) {
-			return []string{"The backup folder, listen address and TLS stay in kishtin.toml."}, nil
+		notes: func(_ context.Context, _ *Service, _ store.Store, cur, next settings.System) ([]string, error) {
+			notes := []string{"The backup folder, listen address and TLS stay in kishtin.toml."}
+			switch {
+			case next.VoiceAudioDays > 0 && cur.VoiceAudioDays == 0:
+				notes = append(notes, fmt.Sprintf("Spoken voice commands will be recorded and kept on this machine for %d days, then deleted. Recordings never leave the building, and only managers with a password can play them. Tell staff, and add it to your privacy notice.", next.VoiceAudioDays))
+			case next.VoiceAudioDays == 0 && cur.VoiceAudioDays > 0:
+				notes = append(notes, "Voice commands will no longer be recorded, and kept recordings will be deleted within the hour.")
+			case next.VoiceAudioDays < cur.VoiceAudioDays:
+				notes = append(notes, fmt.Sprintf("Recordings older than %d days will be deleted within the hour.", next.VoiceAudioDays))
+			}
+			return notes, nil
 		},
 		edit: auth.ActManageSettings,
 	}}

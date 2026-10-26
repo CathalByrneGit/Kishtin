@@ -318,7 +318,8 @@ v1 default algorithm, `backward` (backward scheduling with capacity):
 
 Requirements:
 
-- Every recommendation carries a human-readable reason.
+- Every recommendation carries a human-readable reason. A course at risk or late also carries a cause code (`equipment_full`, `started_late`, `cooking_long`, `waiting_at_pass`, `busy`).
+- The server keeps a snapshot of the plan each time it changes (`plan_snapshots`), with the strategy and settings version, so services can be analysed afterwards.
 - The expo can override any recommendation. Overrides are logged and the plan is recomputed.
 - Re-plan on every event (new order, fire, start, finish, void) and on a timer every 15 seconds.
 - Learned timings: after enough records, replace configured cook times with a smoothed average of actual times (for example an exponentially weighted moving average). Show both values in the menu screen so a manager can see and reset them.
@@ -426,7 +427,7 @@ make test-duckdb # DuckDB backend tests (CGO build)
 - Never handle raw card data.
 - Never send audio, transcripts or kitchen data to a cloud service. Speech and AI run locally.
 - Any new action must work by touch as well as by voice.
-- Keep personal data to a minimum (staff names and PINs only) to stay within GDPR obligations. Fitness to work records keep only the outcome (who, when, why, fit or not, action), never symptoms or answers, and only managers with a password can log or see them.
+- Keep personal data to a minimum (staff names and PINs only) to stay within GDPR obligations. Operational logs (order events, voice log, activity) name staff, so a leaver can be anonymised; HACCP records keep names. List anything new Kishtin records in `docs/recording.md`. Fitness to work records keep only the outcome (who, when, why, fit or not, action), never symptoms or answers, and only managers with a password can log or see them.
 - Prefer the standard library, then the libraries in the Go libraries table. Ask before adding anything else, and explain what it replaces.
 - Write a migration for every schema change, for every supported backend in the same change. Never edit a migration that has already shipped.
 - The CLI is a client of the server's HTTP API; it never opens the database directly while the server is running. The API always requires a key, binds to loopback by default, and needs a key plus TLS or a trusted network to listen more widely. (Pattern taken from docbank.)

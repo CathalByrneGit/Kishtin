@@ -258,6 +258,9 @@ func (s *Service) appendRecord(ctx context.Context, tx store.Store, p *auth.Prin
 	if err := tx.HACCP().AppendRecord(ctx, saved); err != nil {
 		return haccp.Record{}, fmt.Errorf("save record: %w", err)
 	}
+	if err := s.noteEntered(ctx, tx, p, saved); err != nil {
+		return haccp.Record{}, err
+	}
 	return saved, nil
 }
 

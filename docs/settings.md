@@ -102,6 +102,7 @@ Dishes are not listed yet; they come with the menu (roadmap stage 2).
 | `backup_keep` | 28 | How many backups to keep. 0 keeps every backup. |
 | `max_upload_mb` | 15 | Largest docket or invoice file accepted (1–100). |
 | `preview_records` | 50 | How many recent records a limit preview re-scores (1–500). |
+| `voice_audio_days` | 0 | How many days recordings of spoken voice commands are kept on the server, then deleted (0–365). 0 keeps none. See [recording.md](recording.md#voice). |
 
 Until you save a change, these come from `kishtin.toml` (`[backup] interval` and `keep`, `[files] max_size_mb`). Once saved, the saved version wins. Changes take effect without a restart.
 

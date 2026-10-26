@@ -51,7 +51,8 @@
       "target": "2026-05-01T17:58:00Z",
       "planned_ready": "2026-05-01T18:03:00Z",
       "status": "late",
-      "reason": "Due at 18:58; expected at the pass at 19:03. Salad should have started by 18:55."
+      "reason": "Due at 18:58; expected at the pass at 19:03. Salad should have started by 18:55.",
+      "cause": "started_late"
     }
   ],
   "items": [

@@ -380,4 +380,6 @@ type Event struct {
 	At     time.Time `json:"at"`
 	By     string    `json:"by"`
 	ByName string    `json:"by_name"`
+	// Device is the API key of the device it came from, when known.
+	Device string `json:"device,omitempty"`
 }
