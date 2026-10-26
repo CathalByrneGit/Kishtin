@@ -124,7 +124,11 @@ func open(ctx context.Context, cfg config.Config, serving bool) (*app, error) {
 	if err != nil {
 		return fail(err)
 	}
-	pos, err := cfg.SquareClient()
+	sq, err := cfg.SquareClient()
+	if err != nil {
+		return fail(err)
+	}
+	su, err := cfg.SumUpClient()
 	if err != nil {
 		return fail(err)
 	}
@@ -142,11 +146,12 @@ func open(ctx context.Context, cfg config.Config, serving bool) (*app, error) {
 		}
 	}
 	svc := service.New(service.Options{
-		Tablets:     tablets,
-		POS:         pos,
-		POSSource:   cfg.Square.TokenFrom,
+		Tablets: tablets,
+		Tills: map[string]service.TillConnection{
+			service.TillSquare: {Adapter: sq, Source: cfg.Square.TokenFrom, New: cfg.NewSquare},
+			service.TillSumUp:  {Adapter: su, Source: cfg.SumUp.TokenFrom, New: cfg.NewSumUp},
+		},
 		Credentials: &integrations.CredentialStore{Dir: cfg.CredentialsDir()},
-		NewSquare:   cfg.NewSquare,
 		Speech:      sp,
 		WakeWords:   cfg.Speech.WakeWords,
 		AI:          model,
@@ -232,7 +237,7 @@ func serve(ctx context.Context, cfgPath string) error {
 	}
 
 	go a.svc.RunBackups(ctx, log)
-	go a.svc.RunSquare(ctx, log)
+	go a.svc.RunTills(ctx, log)
 	go a.svc.RunPlanRecorder(ctx, log)
 	go cleanSessions(ctx, a.svc, log)
 

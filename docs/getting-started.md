@@ -25,7 +25,7 @@ What this means day to day:
 - **No internet, no problem.** A broken router line or a power cut at the phone exchange doesn't stop service. Tablets keep talking to the Kishtin computer over your Wi-Fi.
 - **You are in charge of the computer.** If it is switched off, Kishtin is off. If its disk fails, your records go with it unless you copied the backups somewhere else. This guide shows how.
 
-Kishtin does not take payments. Card payments stay on your Square till and terminal.
+Kishtin does not take payments. Card payments stay on your Square or SumUp till and card reader.
 
 ## What you need
 
@@ -158,4 +158,4 @@ On each tablet, open the menu (☰) at the top right, or **Settings › This dev
 - [Install](install.md): updating, other options, and what isn't built yet.
 - [HACCP log](haccp.md) and [Record books](record-books.md): checks, exports, and the FSAI booklets.
 - [Voice](voice.md): setting up hands-free voice commands.
-- [Orders from Square](square.md): bringing in till orders.
+- [Orders from Square](square.md) and [Sales from SumUp](sumup.md): bringing in till orders.

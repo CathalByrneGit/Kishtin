@@ -80,19 +80,16 @@ type Service struct {
 	voice  voiceState
 	// wakeWords start a hands-free voice command.
 	wakeWords []string
-	// pos is the Square adapter; nil when Square is not connected. posMu
-	// guards it, because a manager can connect Square while the server
-	// runs.
+	// pos holds each till's connection, by till ID: its adapter (nil when
+	// not connected), where its token came from ("environment" or
+	// "kishtin.toml", fixed while the server runs, or "saved" on the
+	// screens) and how to make one. posMu guards it, because a manager can
+	// connect a till while the server runs.
 	posMu sync.RWMutex
-	pos   integrations.POSAdapter
-	// posSource is where the Square token came from: "environment" or
-	// "kishtin.toml" (fixed while the server runs), or "saved" (connected
-	// on the screens).
-	posSource string
-	creds     *integrations.CredentialStore
-	newSquare func(environment, token string) (integrations.POSAdapter, error)
-	ai        *ai.Client
-	fetch     func(ctx context.Context, url string) ([]byte, error)
+	pos   map[string]TillConnection
+	creds *integrations.CredentialStore
+	ai    *ai.Client
+	fetch func(ctx context.Context, url string) ([]byte, error)
 	// voiceAudioDir is where kept voice recordings go; empty keeps none.
 	voiceAudioDir string
 	// lastPlan is the hash of the last plan snapshot kept.
@@ -119,12 +116,16 @@ type Options struct {
 	WakeWords []string
 	// POS reads orders from Square, when the token is set in the
 	// environment or kishtin.toml; POSSource says which. It cannot be
-	// changed on the screens.
+	// changed on the screens. Shorthand for Tills["square"].
 	POS       integrations.POSAdapter
 	POSSource string
+	// Tills are the tills Kishtin can import from, by till ID (square,
+	// sumup), with any adapter set up from the environment or kishtin.toml.
+	Tills map[string]TillConnection
 	// Credentials keeps tokens saved on the screens, outside the database.
 	Credentials *integrations.CredentialStore
-	// NewSquare makes a Square client for a saved token.
+	// NewSquare makes a Square client for a saved token. Shorthand for
+	// Tills["square"].New.
 	NewSquare func(environment, token string) (integrations.POSAdapter, error)
 	// AI is an optional local model that reads copies of record books and
 	// photos of paper pages. Nil leaves those suggestions off.
@@ -159,8 +160,20 @@ func New(o Options) *Service {
 	if len(wake) == 0 {
 		wake = voice.DefaultWakeWords
 	}
-	return &Service{wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech, pos: o.POS,
-		posSource: o.POSSource, creds: o.Credentials, newSquare: o.NewSquare, ai: o.AI, fetch: o.Fetch, voiceAudioDir: o.VoiceAudioDir, tablets: o.Tablets}
+	pos := map[string]TillConnection{}
+	for id, c := range o.Tills {
+		pos[id] = c
+	}
+	sq := pos[TillSquare]
+	if o.POS != nil {
+		sq.Adapter, sq.Source = o.POS, o.POSSource
+	}
+	if o.NewSquare != nil {
+		sq.New = o.NewSquare
+	}
+	pos[TillSquare] = sq
+	return &Service{pos: pos, wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech,
+		creds: o.Credentials, ai: o.AI, fetch: o.Fetch, voiceAudioDir: o.VoiceAudioDir, tablets: o.Tablets}
 }
 
 // Events returns the hub that change notices are published to.
@@ -171,14 +184,14 @@ func (s *Service) publish(kind, id string) { s.events.Publish(events.Event{Kind:
 // Init stores the built-in FSAI default limit versions and the built-in
 // guidance, rules and lists if they are missing.
 func (s *Service) Init(ctx context.Context) error {
-	if err := s.loadSavedSquare(); err != nil {
+	if err := s.loadSavedTills(); err != nil {
 		return err
 	}
 	if err := s.loadPermissions(ctx); err != nil {
 		return err
 	}
 	return s.st.WithTx(ctx, func(tx store.Store) error {
-		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed, s.Square().seed, s.RecordBookSettings().seed, s.Permissions().seed} {
+		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed, s.Square().seed, s.SumUp().seed, s.RecordBookSettings().seed, s.Permissions().seed} {
 			if err := seed(ctx, tx); err != nil {
 				return err
 			}

@@ -14,7 +14,7 @@ import (
 func (c *cli) connectorsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connectors",
-		Short: "What Kishtin can connect to (Square), and connecting it",
+		Short: "What Kishtin can connect to (Square, SumUp), and connecting it",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			res, err := c.api.ListConnectors(cmd.Context())
 			if err != nil {
@@ -43,19 +43,21 @@ func (c *cli) connectorsCmd() *cobra.Command {
 	}
 	var env, tokenFile string
 	connect := &cobra.Command{
-		Use:   "connect square --token-file FILE",
-		Short: "Connect Square with an access token, read from a file or standard input (-)",
-		Long: `Connect Square. The token is read from a file, or from standard input
+		Use:   "connect square|sumup --token-file FILE",
+		Short: "Connect a till with its token (a Square access token or a SumUp API key), read from a file or standard input (-)",
+		Long: `Connect a till. The token is read from a file, or from standard input
 with --token-file -, never from the command line, so it does not end up in
-shell history. Kishtin sends it to Square to check it, and saves it only if
-Square accepts it, in a file only the server can read (not the database).`,
+shell history. Kishtin sends it to the till to check it, and saves it only if
+the till accepts it, in a file only the server can read (not the database).
+A SumUp API key comes from SumUp's dashboard: Settings, For Developers,
+Toolkit, API Keys.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if args[0] != "square" {
-				return fmt.Errorf("no connector %q: Kishtin connects to square", args[0])
+			name, err := tillName(args[0])
+			if err != nil {
+				return err
 			}
 			var raw []byte
-			var err error
 			switch tokenFile {
 			case "":
 				return fmt.Errorf("give the token with --token-file FILE, or --token-file - to read it from standard input")
@@ -67,31 +69,34 @@ Square accepts it, in a file only the server can read (not the database).`,
 			if err != nil {
 				return err
 			}
-			res, err := c.api.ConnectSquare(cmd.Context(), &client.ConnectSquareRequestOptions{Body: &client.ConnectInput{
-				Environment: client.ConnectInputEnvironment(env), Token: strings.TrimSpace(string(raw)),
-			}})
+			environment := client.ConnectInputEnvironment(env)
+			res, err := c.api.ConnectTill(cmd.Context(), &client.ConnectTillRequestOptions{
+				PathParams: &client.ConnectTillPath{Till: client.ConnectTillPathTill(args[0])},
+				Body:       &client.ConnectTillBody{Environment: &environment, Token: strings.TrimSpace(string(raw))},
+			})
 			if err != nil {
 				return apiErr(err)
 			}
 			return c.emit(res, func(w io.Writer) {
-				fmt.Fprintf(w, "Connected to Square (%s).\n", env)
+				fmt.Fprintf(w, "Connected to %s (%s).\n", name, env)
 				printLocations(w, res.Locations)
-				fmt.Fprintln(w, "Next: map till items with kishtin square catalog and map, then turn import on with kishtin settings set square.")
+				fmt.Fprintf(w, "Next: map till items with kishtin %s catalog and map, then turn import on with kishtin settings set %s.\n", args[0], args[0])
 			})
 		},
 	}
-	connect.Flags().StringVar(&env, "environment", "production", "production or sandbox")
-	connect.Flags().StringVar(&tokenFile, "token-file", "", "file holding the access token, or - for standard input")
+	connect.Flags().StringVar(&env, "environment", "production", "production, or sandbox for Square")
+	connect.Flags().StringVar(&tokenFile, "token-file", "", "file holding the token, or - for standard input")
 	disconnect := &cobra.Command{
-		Use: "disconnect square", Short: "Disconnect Square and delete the saved token (turn import off first)", Args: cobra.ExactArgs(1),
+		Use: "disconnect square|sumup", Short: "Disconnect a till and delete its saved token (turn import off first)", Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if args[0] != "square" {
-				return fmt.Errorf("no connector %q: Kishtin connects to square", args[0])
+			name, err := tillName(args[0])
+			if err != nil {
+				return err
 			}
-			if _, err := c.api.DisconnectSquare(cmd.Context()); err != nil {
+			if _, err := c.api.DisconnectTill(cmd.Context(), &client.DisconnectTillRequestOptions{PathParams: &client.DisconnectTillPath{Till: client.DisconnectTillPathTill(args[0])}}); err != nil {
 				return apiErr(err)
 			}
-			fmt.Fprintln(c.out, "Disconnected from Square. The saved token is deleted.")
+			fmt.Fprintf(c.out, "Disconnected from %s. The saved token is deleted.\n", name)
 			return nil
 		},
 	}
@@ -109,4 +114,15 @@ func printLocations(w io.Writer, locs []client.Location) {
 		rows = append(rows, []string{l.Name, l.ID, state})
 	}
 	table(w, "LOCATION\tID\tSTATE", rows)
+}
+
+// tillName checks a till's connector ID and names it.
+func tillName(id string) (string, error) {
+	switch id {
+	case "square":
+		return "Square", nil
+	case "sumup":
+		return "SumUp", nil
+	}
+	return "", fmt.Errorf("no connector %q: Kishtin connects to square and sumup", id)
 }

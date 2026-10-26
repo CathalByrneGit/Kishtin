@@ -180,7 +180,7 @@ func (s POSSettings) Validate() error {
 		return errors.New("poll_seconds must be between 2 and 300")
 	}
 	if s.Enabled && s.LocationID == "" {
-		return errors.New("set the location ID before turning order import on")
+		return errors.New("choose the location to import from (for SumUp, the merchant account) before turning import on")
 	}
 	return nil
 }

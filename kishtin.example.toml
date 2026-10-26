@@ -85,3 +85,11 @@ max_size_mb = 15
 # environment = "production"   # or "sandbox"
 # token = ""
 # timeout = "15s"
+
+[sumup]
+# Paid sales from SumUp. Connect on the screens (Setup, Connections) with an
+# API key from SumUp's dashboard, or set it here or in the environment
+# (KISHTIN_SUMUP_TOKEN). SumUp reports a sale only once it is paid.
+# See docs/sumup.md.
+# token = ""
+# timeout = "15s"

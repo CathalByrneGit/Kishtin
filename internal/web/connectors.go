@@ -18,6 +18,11 @@ type locationsBody struct {
 	Locations []integrations.Location `json:"locations"`
 }
 
+type connectIn struct {
+	Till string `path:"till" enum:"square,sumup"`
+	Body service.ConnectInput
+}
+
 func (s *Server) connectorRoutes() {
 	tags := []string{"Connections"}
 	huma.Register(s.api, huma.Operation{
@@ -28,24 +33,19 @@ func (s *Server) connectorRoutes() {
 		return reply(connectorsBody{Connectors: list}, err)
 	}))
 	huma.Register(s.api, huma.Operation{
-		OperationID: "connect-square", Method: http.MethodPut, Path: "/connectors/square", Tags: tags,
-		Summary:     "Connect Square with an access token (manager password)",
-		Description: "Kishtin checks the token by asking Square for the account's locations, and saves it only if Square accepts it. It is kept in a file only the server can read, outside the database, so it is never in a backup or export. Not possible when the token is set in the environment or kishtin.toml.",
-	}, wrap(s, func(ctx context.Context, in *out[service.ConnectInput]) (*out[service.ConnectResult], error) {
-		return reply(s.svc.ConnectSquare(ctx, principal(ctx), in.Body))
+		OperationID: "connect-till", Method: http.MethodPut, Path: "/connectors/{till}", Tags: tags,
+		Summary: "Connect a till with its token: a Square access token or a SumUp API key (manager password)",
+		Description: "Kishtin checks the token by asking the till for the account's locations, and saves it only if the till accepts it. " +
+			"It is kept in a file only the server can read, outside the database, so it is never in a backup or export. " +
+			"Not possible when the token is set in the environment or kishtin.toml. SumUp has only the production environment.",
+	}, wrap(s, func(ctx context.Context, in *connectIn) (*out[service.ConnectResult], error) {
+		return reply(s.svc.ConnectTill(ctx, principal(ctx), in.Till, in.Body))
 	}))
 	huma.Register(s.api, huma.Operation{
-		OperationID: "disconnect-square", Method: http.MethodDelete, Path: "/connectors/square", Tags: tags,
-		Summary:       "Disconnect Square and delete the saved token (manager password); turn order import off first",
+		OperationID: "disconnect-till", Method: http.MethodDelete, Path: "/connectors/{till}", Tags: tags,
+		Summary:       "Disconnect a till and delete its saved token (manager password); turn order import off first",
 		DefaultStatus: http.StatusNoContent,
-	}, wrap(s, func(ctx context.Context, _ *struct{}) (*struct{}, error) {
-		return nil, s.svc.DisconnectSquare(ctx, principal(ctx))
-	}))
-	huma.Register(s.api, huma.Operation{
-		OperationID: "square-locations", Method: http.MethodGet, Path: "/square/locations", Tags: []string{"Square"},
-		Summary: "List the Square account's locations (sends Square the access token only)",
-	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[locationsBody], error) {
-		list, err := s.svc.SquareLocations(ctx, principal(ctx))
-		return reply(locationsBody{Locations: list}, err)
+	}, wrap(s, func(ctx context.Context, in *tillIn) (*struct{}, error) {
+		return nil, s.svc.DisconnectTill(ctx, principal(ctx), in.Till)
 	}))
 }

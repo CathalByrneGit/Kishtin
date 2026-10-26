@@ -132,3 +132,24 @@ func TestExampleConfigLoads(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, cfg.Server.Tablets)
 }
+
+func TestSumUpToken(t *testing.T) {
+	t.Setenv("KISHTIN_DATA_DIR", t.TempDir())
+	cfg, err := Load(filepath.Join(t.TempDir(), "missing.toml"), false)
+	require.NoError(t, err)
+	c, err := cfg.SumUpClient()
+	require.NoError(t, err)
+	assert.Nil(t, c, "not connected without a key")
+
+	cfg, err = Load(write(t, "[sumup]\ntoken = \"sup_sk_synthetic\"\n"), true)
+	require.NoError(t, err)
+	assert.Equal(t, "kishtin.toml", cfg.SumUp.TokenFrom)
+	t.Setenv("KISHTIN_SUMUP_TOKEN", "sup_sk_from_env")
+	cfg, err = Load(write(t, "[sumup]\ntoken = \"sup_sk_synthetic\"\n"), true)
+	require.NoError(t, err)
+	assert.Equal(t, "environment", cfg.SumUp.TokenFrom)
+	c, err = cfg.SumUpClient()
+	require.NoError(t, err)
+	require.NotNil(t, c)
+	assert.Equal(t, "sumup", c.Name())
+}

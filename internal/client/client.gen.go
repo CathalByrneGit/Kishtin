@@ -70,13 +70,13 @@ type ClientInterface interface {
 	ListConnectors(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResponse, error)
 	ListConnectorsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResp, error)
 
-	// DisconnectSquare Disconnect Square and delete the saved token (manager password); turn order import off first
-	DisconnectSquare(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*struct{}, error)
-	DisconnectSquareWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*DisconnectSquareResp, error)
+	// DisconnectTill Disconnect a till and delete its saved token (manager password); turn order import off first
+	DisconnectTill(ctx context.Context, options *DisconnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*struct{}, error)
+	DisconnectTillWithResponse(ctx context.Context, options *DisconnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*DisconnectTillResp, error)
 
-	// ConnectSquare Connect Square with an access token (manager password)
-	ConnectSquare(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResponse, error)
-	ConnectSquareWithResponse(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResp, error)
+	// ConnectTill Connect a till with its token: a Square access token or a SumUp API key (manager password)
+	ConnectTill(ctx context.Context, options *ConnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectTillResponse, error)
+	ConnectTillWithResponse(ctx context.Context, options *ConnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectTillResp, error)
 
 	// CreateJoinCode Make a QR code that pairs a tablet or phone
 	CreateJoinCode(ctx context.Context, options *CreateJoinCodeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateJoinCodeResponse, error)
@@ -434,6 +434,22 @@ type ClientInterface interface {
 	PreviewSquare(ctx context.Context, options *PreviewSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSquareResponse, error)
 	PreviewSquareWithResponse(ctx context.Context, options *PreviewSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSquareResp, error)
 
+	// GetSumup Show the SumUp settings in force
+	GetSumup(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSumupResponse, error)
+	GetSumupWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSumupResp, error)
+
+	// SaveSumup Save a new version of the SumUp settings
+	SaveSumup(ctx context.Context, options *SaveSumupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSumupResponse, error)
+	SaveSumupWithResponse(ctx context.Context, options *SaveSumupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSumupResp, error)
+
+	// SumupHistory List every saved version of the SumUp settings, oldest first
+	SumupHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SumupHistoryResponse, error)
+	SumupHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SumupHistoryResp, error)
+
+	// PreviewSumup Preview a change to the SumUp settings
+	PreviewSumup(ctx context.Context, options *PreviewSumupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSumupResponse, error)
+	PreviewSumupWithResponse(ctx context.Context, options *PreviewSumupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSumupResp, error)
+
 	// GetSystem Show the system settings in force
 	GetSystem(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResponse, error)
 	GetSystemWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResp, error)
@@ -458,29 +474,29 @@ type ClientInterface interface {
 	Setup(ctx context.Context, options *SetupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetupResponse, error)
 	SetupWithResponse(ctx context.Context, options *SetupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetupResp, error)
 
-	// SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
-	SquareStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResponse, error)
-	SquareStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResp, error)
+	// TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
+	TillStatus(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResponse, error)
+	TillStatusWithResponse(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResp, error)
 
-	// SquareCatalog Read the catalog from Square, with how each entry maps to the kitchen (manager password)
-	SquareCatalog(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResponse, error)
-	SquareCatalogWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResp, error)
+	// TillCatalog Read the catalog from a till, with how each entry maps to the kitchen (manager password)
+	TillCatalog(ctx context.Context, options *TillCatalogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillCatalogResponse, error)
+	TillCatalogWithResponse(ctx context.Context, options *TillCatalogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillCatalogResp, error)
 
-	// SquareLocations List the Square account's locations (sends Square the access token only)
-	SquareLocations(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareLocationsResponse, error)
-	SquareLocationsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareLocationsResp, error)
+	// TillLocations List a till account's locations; for SumUp, its merchant accounts (sends the till its token only)
+	TillLocations(ctx context.Context, options *TillLocationsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillLocationsResponse, error)
+	TillLocationsWithResponse(ctx context.Context, options *TillLocationsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillLocationsResp, error)
 
-	// SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
-	SaveSquareMappings(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResponse, error)
-	SaveSquareMappingsWithResponse(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResp, error)
+	// SaveTillMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
+	SaveTillMappings(ctx context.Context, options *SaveTillMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveTillMappingsResponse, error)
+	SaveTillMappingsWithResponse(ctx context.Context, options *SaveTillMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveTillMappingsResp, error)
 
-	// SquareOrderVersions List every version of a till order Kishtin saw
-	SquareOrderVersions(ctx context.Context, options *SquareOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SquareOrderVersionsResponse, error)
-	SquareOrderVersionsWithResponse(ctx context.Context, options *SquareOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SquareOrderVersionsResp, error)
+	// TillOrderVersions List every version of a till order Kishtin saw
+	TillOrderVersions(ctx context.Context, options *TillOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillOrderVersionsResponse, error)
+	TillOrderVersionsWithResponse(ctx context.Context, options *TillOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillOrderVersionsResp, error)
 
-	// SquareSync Ask Square for new and changed orders now
-	SquareSync(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResponse, error)
-	SquareSyncWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResp, error)
+	// TillSync Ask a till for new and changed orders now
+	TillSync(ctx context.Context, options *TillSyncRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillSyncResponse, error)
+	TillSyncWithResponse(ctx context.Context, options *TillSyncRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillSyncResp, error)
 
 	// ListUsers List staff, including deactivated staff
 	ListUsers(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListUsersResponse, error)
@@ -1082,12 +1098,13 @@ func (c *Client) ListConnectors(ctx context.Context, reqEditors ...runtime.Reque
 	return responseParser(ctx, resp)
 }
 
-// DisconnectSquare Disconnect Square and delete the saved token (manager password); turn order import off first
-func (c *Client) DisconnectSquare(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*struct{}, error) {
+// DisconnectTill Disconnect a till and delete its saved token (manager password); turn order import off first
+func (c *Client) DisconnectTill(ctx context.Context, options *DisconnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*struct{}, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/connectors/square",
+		RequestURL: c.apiClient.GetBaseURL() + "/connectors/{till}",
 		Method:     "DELETE",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -1098,7 +1115,7 @@ func (c *Client) DisconnectSquare(ctx context.Context, reqEditors ...runtime.Req
 	responseParser := func(ctx context.Context, resp *runtime.Response) (*struct{}, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 204 {
-			target := new(DisconnectSquareErrorResponse)
+			target := new(DisconnectTillErrorResponse)
 			// Handle empty error response body gracefully - skip unmarshal if no content
 			if len(bodyBytes) > 0 {
 				if err = json.Unmarshal(bodyBytes, target); err != nil {
@@ -1106,7 +1123,7 @@ func (c *Client) DisconnectSquare(ctx context.Context, reqEditors ...runtime.Req
 						StatusCode:    resp.StatusCode,
 						ContentType:   resp.Headers.Get("Content-Type"),
 						ContentLength: len(bodyBytes),
-						TargetType:    "DisconnectSquareErrorResponse",
+						TargetType:    "DisconnectTillErrorResponse",
 						Body:          bodyBytes,
 						Err:           err,
 					}
@@ -1122,18 +1139,18 @@ func (c *Client) DisconnectSquare(ctx context.Context, reqEditors ...runtime.Req
 		return nil, nil
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/{till}")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 	return responseParser(ctx, resp)
 }
 
-// ConnectSquare Connect Square with an access token (manager password)
-func (c *Client) ConnectSquare(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResponse, error) {
+// ConnectTill Connect a till with its token: a Square access token or a SumUp API key (manager password)
+func (c *Client) ConnectTill(ctx context.Context, options *ConnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectTillResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL:  c.apiClient.GetBaseURL() + "/connectors/square",
+		RequestURL:  c.apiClient.GetBaseURL() + "/connectors/{till}",
 		Method:      "PUT",
 		Options:     options,
 		ContentType: "application/json",
@@ -1144,10 +1161,10 @@ func (c *Client) ConnectSquare(ctx context.Context, options *ConnectSquareReques
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	responseParser := func(ctx context.Context, resp *runtime.Response) (*ConnectSquareResponse, error) {
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ConnectTillResponse, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 200 {
-			target := new(ConnectSquareErrorResponse)
+			target := new(ConnectTillErrorResponse)
 			// Handle empty error response body gracefully - skip unmarshal if no content
 			if len(bodyBytes) > 0 {
 				if err = json.Unmarshal(bodyBytes, target); err != nil {
@@ -1155,7 +1172,7 @@ func (c *Client) ConnectSquare(ctx context.Context, options *ConnectSquareReques
 						StatusCode:    resp.StatusCode,
 						ContentType:   resp.Headers.Get("Content-Type"),
 						ContentLength: len(bodyBytes),
-						TargetType:    "ConnectSquareErrorResponse",
+						TargetType:    "ConnectTillErrorResponse",
 						Body:          bodyBytes,
 						Err:           err,
 					}
@@ -1168,7 +1185,7 @@ func (c *Client) ConnectSquare(ctx context.Context, options *ConnectSquareReques
 			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
 				runtime.WithStatusCode(resp.StatusCode))
 		}
-		target := new(ConnectSquareResponse)
+		target := new(ConnectTillResponse)
 		// Handle empty response body gracefully
 		if len(bodyBytes) == 0 {
 			return target, nil
@@ -1178,7 +1195,7 @@ func (c *Client) ConnectSquare(ctx context.Context, options *ConnectSquareReques
 				StatusCode:    resp.StatusCode,
 				ContentType:   resp.Headers.Get("Content-Type"),
 				ContentLength: len(bodyBytes),
-				TargetType:    "ConnectSquareResponse",
+				TargetType:    "ConnectTillResponse",
 				Body:          bodyBytes,
 				Err:           err,
 			}
@@ -1186,7 +1203,7 @@ func (c *Client) ConnectSquare(ctx context.Context, options *ConnectSquareReques
 		return target, nil
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/{till}")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -6827,6 +6844,258 @@ func (c *Client) PreviewSquare(ctx context.Context, options *PreviewSquareReques
 	return responseParser(ctx, resp)
 }
 
+// GetSumup Show the SumUp settings in force
+func (c *Client) GetSumup(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSumupResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/sumup",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetSumupResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetSumupErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetSumupErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetSumupResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetSumupResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/sumup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveSumup Save a new version of the SumUp settings
+func (c *Client) SaveSumup(ctx context.Context, options *SaveSumupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSumupResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/sumup",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveSumupResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SaveSumupErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveSumupErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveSumupResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveSumupResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/sumup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SumupHistory List every saved version of the SumUp settings, oldest first
+func (c *Client) SumupHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SumupHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/sumup/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SumupHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SumupHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SumupHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SumupHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SumupHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/sumup/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewSumup Preview a change to the SumUp settings
+func (c *Client) PreviewSumup(ctx context.Context, options *PreviewSumupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSumupResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/sumup/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewSumupResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewSumupErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewSumupErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewSumupResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewSumupResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/sumup/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // GetSystem Show the system settings in force
 func (c *Client) GetSystem(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResponse, error) {
 	var err error
@@ -7205,12 +7474,13 @@ func (c *Client) Setup(ctx context.Context, options *SetupRequestOptions, reqEdi
 	return responseParser(ctx, resp)
 }
 
-// SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
-func (c *Client) SquareStatus(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResponse, error) {
+// TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
+func (c *Client) TillStatus(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}",
 		Method:     "GET",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -7218,10 +7488,10 @@ func (c *Client) SquareStatus(ctx context.Context, reqEditors ...runtime.Request
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareStatusResponse, error) {
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*TillStatusResponse, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 200 {
-			target := new(SquareStatusErrorResponse)
+			target := new(TillStatusErrorResponse)
 			// Handle empty error response body gracefully - skip unmarshal if no content
 			if len(bodyBytes) > 0 {
 				if err = json.Unmarshal(bodyBytes, target); err != nil {
@@ -7229,7 +7499,7 @@ func (c *Client) SquareStatus(ctx context.Context, reqEditors ...runtime.Request
 						StatusCode:    resp.StatusCode,
 						ContentType:   resp.Headers.Get("Content-Type"),
 						ContentLength: len(bodyBytes),
-						TargetType:    "SquareStatusErrorResponse",
+						TargetType:    "TillStatusErrorResponse",
 						Body:          bodyBytes,
 						Err:           err,
 					}
@@ -7242,7 +7512,7 @@ func (c *Client) SquareStatus(ctx context.Context, reqEditors ...runtime.Request
 			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
 				runtime.WithStatusCode(resp.StatusCode))
 		}
-		target := new(SquareStatusResponse)
+		target := new(TillStatusResponse)
 		// Handle empty response body gracefully
 		if len(bodyBytes) == 0 {
 			return target, nil
@@ -7252,7 +7522,7 @@ func (c *Client) SquareStatus(ctx context.Context, reqEditors ...runtime.Request
 				StatusCode:    resp.StatusCode,
 				ContentType:   resp.Headers.Get("Content-Type"),
 				ContentLength: len(bodyBytes),
-				TargetType:    "SquareStatusResponse",
+				TargetType:    "TillStatusResponse",
 				Body:          bodyBytes,
 				Err:           err,
 			}
@@ -7260,19 +7530,20 @@ func (c *Client) SquareStatus(ctx context.Context, reqEditors ...runtime.Request
 		return target, nil
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 	return responseParser(ctx, resp)
 }
 
-// SquareCatalog Read the catalog from Square, with how each entry maps to the kitchen (manager password)
-func (c *Client) SquareCatalog(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResponse, error) {
+// TillCatalog Read the catalog from a till, with how each entry maps to the kitchen (manager password)
+func (c *Client) TillCatalog(ctx context.Context, options *TillCatalogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillCatalogResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square/catalog",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}/catalog",
 		Method:     "GET",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -7280,10 +7551,10 @@ func (c *Client) SquareCatalog(ctx context.Context, reqEditors ...runtime.Reques
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareCatalogResponse, error) {
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*TillCatalogResponse, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 200 {
-			target := new(SquareCatalogErrorResponse)
+			target := new(TillCatalogErrorResponse)
 			// Handle empty error response body gracefully - skip unmarshal if no content
 			if len(bodyBytes) > 0 {
 				if err = json.Unmarshal(bodyBytes, target); err != nil {
@@ -7291,7 +7562,7 @@ func (c *Client) SquareCatalog(ctx context.Context, reqEditors ...runtime.Reques
 						StatusCode:    resp.StatusCode,
 						ContentType:   resp.Headers.Get("Content-Type"),
 						ContentLength: len(bodyBytes),
-						TargetType:    "SquareCatalogErrorResponse",
+						TargetType:    "TillCatalogErrorResponse",
 						Body:          bodyBytes,
 						Err:           err,
 					}
@@ -7304,7 +7575,7 @@ func (c *Client) SquareCatalog(ctx context.Context, reqEditors ...runtime.Reques
 			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
 				runtime.WithStatusCode(resp.StatusCode))
 		}
-		target := new(SquareCatalogResponse)
+		target := new(TillCatalogResponse)
 		// Handle empty response body gracefully
 		if len(bodyBytes) == 0 {
 			return target, nil
@@ -7314,7 +7585,7 @@ func (c *Client) SquareCatalog(ctx context.Context, reqEditors ...runtime.Reques
 				StatusCode:    resp.StatusCode,
 				ContentType:   resp.Headers.Get("Content-Type"),
 				ContentLength: len(bodyBytes),
-				TargetType:    "SquareCatalogResponse",
+				TargetType:    "TillCatalogResponse",
 				Body:          bodyBytes,
 				Err:           err,
 			}
@@ -7322,19 +7593,20 @@ func (c *Client) SquareCatalog(ctx context.Context, reqEditors ...runtime.Reques
 		return target, nil
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/catalog")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/catalog")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 	return responseParser(ctx, resp)
 }
 
-// SquareLocations List the Square account's locations (sends Square the access token only)
-func (c *Client) SquareLocations(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareLocationsResponse, error) {
+// TillLocations List a till account's locations; for SumUp, its merchant accounts (sends the till its token only)
+func (c *Client) TillLocations(ctx context.Context, options *TillLocationsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillLocationsResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square/locations",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}/locations",
 		Method:     "GET",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -7342,10 +7614,10 @@ func (c *Client) SquareLocations(ctx context.Context, reqEditors ...runtime.Requ
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareLocationsResponse, error) {
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*TillLocationsResponse, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 200 {
-			target := new(SquareLocationsErrorResponse)
+			target := new(TillLocationsErrorResponse)
 			// Handle empty error response body gracefully - skip unmarshal if no content
 			if len(bodyBytes) > 0 {
 				if err = json.Unmarshal(bodyBytes, target); err != nil {
@@ -7353,7 +7625,7 @@ func (c *Client) SquareLocations(ctx context.Context, reqEditors ...runtime.Requ
 						StatusCode:    resp.StatusCode,
 						ContentType:   resp.Headers.Get("Content-Type"),
 						ContentLength: len(bodyBytes),
-						TargetType:    "SquareLocationsErrorResponse",
+						TargetType:    "TillLocationsErrorResponse",
 						Body:          bodyBytes,
 						Err:           err,
 					}
@@ -7366,7 +7638,7 @@ func (c *Client) SquareLocations(ctx context.Context, reqEditors ...runtime.Requ
 			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
 				runtime.WithStatusCode(resp.StatusCode))
 		}
-		target := new(SquareLocationsResponse)
+		target := new(TillLocationsResponse)
 		// Handle empty response body gracefully
 		if len(bodyBytes) == 0 {
 			return target, nil
@@ -7376,7 +7648,7 @@ func (c *Client) SquareLocations(ctx context.Context, reqEditors ...runtime.Requ
 				StatusCode:    resp.StatusCode,
 				ContentType:   resp.Headers.Get("Content-Type"),
 				ContentLength: len(bodyBytes),
-				TargetType:    "SquareLocationsResponse",
+				TargetType:    "TillLocationsResponse",
 				Body:          bodyBytes,
 				Err:           err,
 			}
@@ -7384,18 +7656,18 @@ func (c *Client) SquareLocations(ctx context.Context, reqEditors ...runtime.Requ
 		return target, nil
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/locations")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/locations")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 	return responseParser(ctx, resp)
 }
 
-// SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
-func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResponse, error) {
+// SaveTillMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
+func (c *Client) SaveTillMappings(ctx context.Context, options *SaveTillMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveTillMappingsResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL:  c.apiClient.GetBaseURL() + "/square/mappings",
+		RequestURL:  c.apiClient.GetBaseURL() + "/tills/{till}/mappings",
 		Method:      "PUT",
 		Options:     options,
 		ContentType: "application/json",
@@ -7406,10 +7678,10 @@ func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMapp
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveSquareMappingsResponse, error) {
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveTillMappingsResponse, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 200 {
-			target := new(SaveSquareMappingsErrorResponse)
+			target := new(SaveTillMappingsErrorResponse)
 			// Handle empty error response body gracefully - skip unmarshal if no content
 			if len(bodyBytes) > 0 {
 				if err = json.Unmarshal(bodyBytes, target); err != nil {
@@ -7417,7 +7689,7 @@ func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMapp
 						StatusCode:    resp.StatusCode,
 						ContentType:   resp.Headers.Get("Content-Type"),
 						ContentLength: len(bodyBytes),
-						TargetType:    "SaveSquareMappingsErrorResponse",
+						TargetType:    "SaveTillMappingsErrorResponse",
 						Body:          bodyBytes,
 						Err:           err,
 					}
@@ -7430,7 +7702,7 @@ func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMapp
 			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
 				runtime.WithStatusCode(resp.StatusCode))
 		}
-		target := new(SaveSquareMappingsResponse)
+		target := new(SaveTillMappingsResponse)
 		// Handle empty response body gracefully
 		if len(bodyBytes) == 0 {
 			return target, nil
@@ -7440,7 +7712,7 @@ func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMapp
 				StatusCode:    resp.StatusCode,
 				ContentType:   resp.Headers.Get("Content-Type"),
 				ContentLength: len(bodyBytes),
-				TargetType:    "SaveSquareMappingsResponse",
+				TargetType:    "SaveTillMappingsResponse",
 				Body:          bodyBytes,
 				Err:           err,
 			}
@@ -7448,18 +7720,18 @@ func (c *Client) SaveSquareMappings(ctx context.Context, options *SaveSquareMapp
 		return target, nil
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/mappings")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/mappings")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 	return responseParser(ctx, resp)
 }
 
-// SquareOrderVersions List every version of a till order Kishtin saw
-func (c *Client) SquareOrderVersions(ctx context.Context, options *SquareOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SquareOrderVersionsResponse, error) {
+// TillOrderVersions List every version of a till order Kishtin saw
+func (c *Client) TillOrderVersions(ctx context.Context, options *TillOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillOrderVersionsResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square/orders/{id}/versions",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}/orders/{id}/versions",
 		Method:     "GET",
 		Options:    options,
 	}
@@ -7469,10 +7741,10 @@ func (c *Client) SquareOrderVersions(ctx context.Context, options *SquareOrderVe
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareOrderVersionsResponse, error) {
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*TillOrderVersionsResponse, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 200 {
-			target := new(SquareOrderVersionsErrorResponse)
+			target := new(TillOrderVersionsErrorResponse)
 			// Handle empty error response body gracefully - skip unmarshal if no content
 			if len(bodyBytes) > 0 {
 				if err = json.Unmarshal(bodyBytes, target); err != nil {
@@ -7480,7 +7752,7 @@ func (c *Client) SquareOrderVersions(ctx context.Context, options *SquareOrderVe
 						StatusCode:    resp.StatusCode,
 						ContentType:   resp.Headers.Get("Content-Type"),
 						ContentLength: len(bodyBytes),
-						TargetType:    "SquareOrderVersionsErrorResponse",
+						TargetType:    "TillOrderVersionsErrorResponse",
 						Body:          bodyBytes,
 						Err:           err,
 					}
@@ -7493,7 +7765,7 @@ func (c *Client) SquareOrderVersions(ctx context.Context, options *SquareOrderVe
 			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
 				runtime.WithStatusCode(resp.StatusCode))
 		}
-		target := new(SquareOrderVersionsResponse)
+		target := new(TillOrderVersionsResponse)
 		// Handle empty response body gracefully
 		if len(bodyBytes) == 0 {
 			return target, nil
@@ -7503,7 +7775,7 @@ func (c *Client) SquareOrderVersions(ctx context.Context, options *SquareOrderVe
 				StatusCode:    resp.StatusCode,
 				ContentType:   resp.Headers.Get("Content-Type"),
 				ContentLength: len(bodyBytes),
-				TargetType:    "SquareOrderVersionsResponse",
+				TargetType:    "TillOrderVersionsResponse",
 				Body:          bodyBytes,
 				Err:           err,
 			}
@@ -7511,19 +7783,20 @@ func (c *Client) SquareOrderVersions(ctx context.Context, options *SquareOrderVe
 		return target, nil
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/orders/{id}/versions")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/orders/{id}/versions")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 	return responseParser(ctx, resp)
 }
 
-// SquareSync Ask Square for new and changed orders now
-func (c *Client) SquareSync(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResponse, error) {
+// TillSync Ask a till for new and changed orders now
+func (c *Client) TillSync(ctx context.Context, options *TillSyncRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillSyncResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square/sync",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}/sync",
 		Method:     "POST",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -7531,10 +7804,10 @@ func (c *Client) SquareSync(ctx context.Context, reqEditors ...runtime.RequestEd
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	responseParser := func(ctx context.Context, resp *runtime.Response) (*SquareSyncResponse, error) {
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*TillSyncResponse, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 200 {
-			target := new(SquareSyncErrorResponse)
+			target := new(TillSyncErrorResponse)
 			// Handle empty error response body gracefully - skip unmarshal if no content
 			if len(bodyBytes) > 0 {
 				if err = json.Unmarshal(bodyBytes, target); err != nil {
@@ -7542,7 +7815,7 @@ func (c *Client) SquareSync(ctx context.Context, reqEditors ...runtime.RequestEd
 						StatusCode:    resp.StatusCode,
 						ContentType:   resp.Headers.Get("Content-Type"),
 						ContentLength: len(bodyBytes),
-						TargetType:    "SquareSyncErrorResponse",
+						TargetType:    "TillSyncErrorResponse",
 						Body:          bodyBytes,
 						Err:           err,
 					}
@@ -7555,7 +7828,7 @@ func (c *Client) SquareSync(ctx context.Context, reqEditors ...runtime.RequestEd
 			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
 				runtime.WithStatusCode(resp.StatusCode))
 		}
-		target := new(SquareSyncResponse)
+		target := new(TillSyncResponse)
 		// Handle empty response body gracefully
 		if len(bodyBytes) == 0 {
 			return target, nil
@@ -7565,7 +7838,7 @@ func (c *Client) SquareSync(ctx context.Context, reqEditors ...runtime.RequestEd
 				StatusCode:    resp.StatusCode,
 				ContentType:   resp.Headers.Get("Content-Type"),
 				ContentLength: len(bodyBytes),
-				TargetType:    "SquareSyncResponse",
+				TargetType:    "TillSyncResponse",
 				Body:          bodyBytes,
 				Err:           err,
 			}
@@ -7573,7 +7846,7 @@ func (c *Client) SquareSync(ctx context.Context, reqEditors ...runtime.RequestEd
 		return target, nil
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/sync")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/sync")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -8420,15 +8693,68 @@ func (o *LogoutRequestOptions) GetHeader() (map[string]string, error) {
 	return runtime.AsMap[string](o.Header)
 }
 
-// ConnectSquareRequestOptions is the options needed to make a request to ConnectSquare.
-type ConnectSquareRequestOptions struct {
-	Body *ConnectSquareBody
+// DisconnectTillRequestOptions is the options needed to make a request to DisconnectTill.
+type DisconnectTillRequestOptions struct {
+	PathParams *DisconnectTillPath
 }
 
 // Validate validates all the fields in the options.
 // Use it if fields validation was not run.
-func (o *ConnectSquareRequestOptions) Validate() error {
+func (o *DisconnectTillRequestOptions) Validate() error {
 	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *DisconnectTillRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *DisconnectTillRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *DisconnectTillRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *DisconnectTillRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// ConnectTillRequestOptions is the options needed to make a request to ConnectTill.
+type ConnectTillRequestOptions struct {
+	PathParams *ConnectTillPath
+	Body       *ConnectTillBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ConnectTillRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
 
 	if o.Body != nil {
 		if v, ok := any(o.Body).(runtime.Validator); ok {
@@ -8445,22 +8771,22 @@ func (o *ConnectSquareRequestOptions) Validate() error {
 }
 
 // GetPathParams returns the path params as a map.
-func (o *ConnectSquareRequestOptions) GetPathParams() (map[string]any, error) {
-	return nil, nil
+func (o *ConnectTillRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
 }
 
 // GetQuery returns the query params as a map.
-func (o *ConnectSquareRequestOptions) GetQuery() (map[string]any, error) {
+func (o *ConnectTillRequestOptions) GetQuery() (map[string]any, error) {
 	return nil, nil
 }
 
 // GetBody returns the payload in any type that can be marshalled to JSON by the client.
-func (o *ConnectSquareRequestOptions) GetBody() any {
+func (o *ConnectTillRequestOptions) GetBody() any {
 	return o.Body
 }
 
 // GetHeader returns the headers as a map.
-func (o *ConnectSquareRequestOptions) GetHeader() (map[string]string, error) {
+func (o *ConnectTillRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -11459,6 +11785,94 @@ func (o *PreviewSquareRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// SaveSumupRequestOptions is the options needed to make a request to SaveSumup.
+type SaveSumupRequestOptions struct {
+	Body *SaveSumupBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveSumupRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveSumupRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveSumupRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveSumupRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveSumupRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewSumupRequestOptions is the options needed to make a request to PreviewSumup.
+type PreviewSumupRequestOptions struct {
+	Body *PreviewSumupBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewSumupRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewSumupRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewSumupRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewSumupRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewSumupRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // SaveSystemRequestOptions is the options needed to make a request to SaveSystem.
 type SaveSystemRequestOptions struct {
 	Body *SaveSystemBody
@@ -11591,58 +12005,14 @@ func (o *SetupRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
-// SaveSquareMappingsRequestOptions is the options needed to make a request to SaveSquareMappings.
-type SaveSquareMappingsRequestOptions struct {
-	Body *SaveSquareMappingsBody
+// TillStatusRequestOptions is the options needed to make a request to TillStatus.
+type TillStatusRequestOptions struct {
+	PathParams *TillStatusPath
 }
 
 // Validate validates all the fields in the options.
 // Use it if fields validation was not run.
-func (o *SaveSquareMappingsRequestOptions) Validate() error {
-	var errors runtime.ValidationErrors
-
-	if o.Body != nil {
-		if v, ok := any(o.Body).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				errors = errors.Append("Body", err)
-			}
-		}
-	}
-	if len(errors) == 0 {
-		return nil
-	}
-
-	return errors
-}
-
-// GetPathParams returns the path params as a map.
-func (o *SaveSquareMappingsRequestOptions) GetPathParams() (map[string]any, error) {
-	return nil, nil
-}
-
-// GetQuery returns the query params as a map.
-func (o *SaveSquareMappingsRequestOptions) GetQuery() (map[string]any, error) {
-	return nil, nil
-}
-
-// GetBody returns the payload in any type that can be marshalled to JSON by the client.
-func (o *SaveSquareMappingsRequestOptions) GetBody() any {
-	return o.Body
-}
-
-// GetHeader returns the headers as a map.
-func (o *SaveSquareMappingsRequestOptions) GetHeader() (map[string]string, error) {
-	return nil, nil
-}
-
-// SquareOrderVersionsRequestOptions is the options needed to make a request to SquareOrderVersions.
-type SquareOrderVersionsRequestOptions struct {
-	PathParams *SquareOrderVersionsPath
-}
-
-// Validate validates all the fields in the options.
-// Use it if fields validation was not run.
-func (o *SquareOrderVersionsRequestOptions) Validate() error {
+func (o *TillStatusRequestOptions) Validate() error {
 	var errors runtime.ValidationErrors
 
 	if o.PathParams != nil {
@@ -11660,22 +12030,251 @@ func (o *SquareOrderVersionsRequestOptions) Validate() error {
 }
 
 // GetPathParams returns the path params as a map.
-func (o *SquareOrderVersionsRequestOptions) GetPathParams() (map[string]any, error) {
+func (o *TillStatusRequestOptions) GetPathParams() (map[string]any, error) {
 	return runtime.AsMap[any](o.PathParams)
 }
 
 // GetQuery returns the query params as a map.
-func (o *SquareOrderVersionsRequestOptions) GetQuery() (map[string]any, error) {
+func (o *TillStatusRequestOptions) GetQuery() (map[string]any, error) {
 	return nil, nil
 }
 
 // GetBody returns the payload in any type that can be marshalled to JSON by the client.
-func (o *SquareOrderVersionsRequestOptions) GetBody() any {
+func (o *TillStatusRequestOptions) GetBody() any {
 	return nil
 }
 
 // GetHeader returns the headers as a map.
-func (o *SquareOrderVersionsRequestOptions) GetHeader() (map[string]string, error) {
+func (o *TillStatusRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// TillCatalogRequestOptions is the options needed to make a request to TillCatalog.
+type TillCatalogRequestOptions struct {
+	PathParams *TillCatalogPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *TillCatalogRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *TillCatalogRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *TillCatalogRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *TillCatalogRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *TillCatalogRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// TillLocationsRequestOptions is the options needed to make a request to TillLocations.
+type TillLocationsRequestOptions struct {
+	PathParams *TillLocationsPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *TillLocationsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *TillLocationsRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *TillLocationsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *TillLocationsRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *TillLocationsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SaveTillMappingsRequestOptions is the options needed to make a request to SaveTillMappings.
+type SaveTillMappingsRequestOptions struct {
+	PathParams *SaveTillMappingsPath
+	Body       *SaveTillMappingsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveTillMappingsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveTillMappingsRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveTillMappingsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveTillMappingsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveTillMappingsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// TillOrderVersionsRequestOptions is the options needed to make a request to TillOrderVersions.
+type TillOrderVersionsRequestOptions struct {
+	PathParams *TillOrderVersionsPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *TillOrderVersionsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *TillOrderVersionsRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *TillOrderVersionsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *TillOrderVersionsRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *TillOrderVersionsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// TillSyncRequestOptions is the options needed to make a request to TillSync.
+type TillSyncRequestOptions struct {
+	PathParams *TillSyncPath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *TillSyncRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *TillSyncRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *TillSyncRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *TillSyncRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *TillSyncRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -12632,12 +13231,13 @@ func (c *Client) ListConnectorsWithResponse(ctx context.Context, reqEditors ...r
 	}
 }
 
-// DisconnectSquare Disconnect Square and delete the saved token (manager password); turn order import off first
-func (c *Client) DisconnectSquareWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*DisconnectSquareResp, error) {
+// DisconnectTill Disconnect a till and delete its saved token (manager password); turn order import off first
+func (c *Client) DisconnectTillWithResponse(ctx context.Context, options *DisconnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*DisconnectTillResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/connectors/square",
+		RequestURL: c.apiClient.GetBaseURL() + "/connectors/{till}",
 		Method:     "DELETE",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -12645,12 +13245,12 @@ func (c *Client) DisconnectSquareWithResponse(ctx context.Context, reqEditors ..
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/{till}")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 
-	out := &DisconnectSquareResp{
+	out := &DisconnectTillResp{
 		HTTPResponse: resp.Raw,
 		Body:         resp.Content,
 		StatusCode:   resp.StatusCode,
@@ -12660,7 +13260,7 @@ func (c *Client) DisconnectSquareWithResponse(ctx context.Context, reqEditors ..
 	case 204:
 		return out, nil
 	default:
-		out.ApplicationProblemPlusJSONDefault = new(DisconnectSquareErrorResponse)
+		out.ApplicationProblemPlusJSONDefault = new(DisconnectTillErrorResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
@@ -12668,7 +13268,7 @@ func (c *Client) DisconnectSquareWithResponse(ctx context.Context, reqEditors ..
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "DisconnectSquareErrorResponse",
+					TargetType:    "DisconnectTillErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -12678,11 +13278,11 @@ func (c *Client) DisconnectSquareWithResponse(ctx context.Context, reqEditors ..
 	}
 }
 
-// ConnectSquare Connect Square with an access token (manager password)
-func (c *Client) ConnectSquareWithResponse(ctx context.Context, options *ConnectSquareRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectSquareResp, error) {
+// ConnectTill Connect a till with its token: a Square access token or a SumUp API key (manager password)
+func (c *Client) ConnectTillWithResponse(ctx context.Context, options *ConnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectTillResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL:  c.apiClient.GetBaseURL() + "/connectors/square",
+		RequestURL:  c.apiClient.GetBaseURL() + "/connectors/{till}",
 		Method:      "PUT",
 		Options:     options,
 		ContentType: "application/json",
@@ -12693,12 +13293,12 @@ func (c *Client) ConnectSquareWithResponse(ctx context.Context, options *Connect
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/square")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/{till}")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 
-	out := &ConnectSquareResp{
+	out := &ConnectTillResp{
 		HTTPResponse: resp.Raw,
 		Body:         resp.Content,
 		StatusCode:   resp.StatusCode,
@@ -12706,7 +13306,7 @@ func (c *Client) ConnectSquareWithResponse(ctx context.Context, options *Connect
 
 	switch resp.StatusCode {
 	case 200:
-		out.JSON200 = new(ConnectSquareResponse)
+		out.JSON200 = new(ConnectTillResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
@@ -12714,7 +13314,7 @@ func (c *Client) ConnectSquareWithResponse(ctx context.Context, options *Connect
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "ConnectSquareResponse",
+					TargetType:    "ConnectTillResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -12722,7 +13322,7 @@ func (c *Client) ConnectSquareWithResponse(ctx context.Context, options *Connect
 		}
 		return out, nil
 	default:
-		out.ApplicationProblemPlusJSONDefault = new(ConnectSquareErrorResponse)
+		out.ApplicationProblemPlusJSONDefault = new(ConnectTillErrorResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
@@ -12730,7 +13330,7 @@ func (c *Client) ConnectSquareWithResponse(ctx context.Context, options *Connect
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "ConnectSquareErrorResponse",
+					TargetType:    "ConnectTillErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18134,6 +18734,250 @@ func (c *Client) PreviewSquareWithResponse(ctx context.Context, options *Preview
 	}
 }
 
+// GetSumup Show the SumUp settings in force
+func (c *Client) GetSumupWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSumupResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/sumup",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/sumup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetSumupResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetSumupResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSumupResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetSumupErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSumupErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveSumup Save a new version of the SumUp settings
+func (c *Client) SaveSumupWithResponse(ctx context.Context, options *SaveSumupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSumupResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/sumup",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/sumup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveSumupResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SaveSumupResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSumupResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveSumupErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveSumupErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SumupHistory List every saved version of the SumUp settings, oldest first
+func (c *Client) SumupHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SumupHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/sumup/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/sumup/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SumupHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SumupHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SumupHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SumupHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SumupHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewSumup Preview a change to the SumUp settings
+func (c *Client) PreviewSumupWithResponse(ctx context.Context, options *PreviewSumupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewSumupResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/sumup/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/sumup/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewSumupResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewSumupResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSumupResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewSumupErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewSumupErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetSystem Show the system settings in force
 func (c *Client) GetSystemWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSystemResp, error) {
 	var err error
@@ -18500,12 +19344,13 @@ func (c *Client) SetupWithResponse(ctx context.Context, options *SetupRequestOpt
 	}
 }
 
-// SquareStatus Show whether order import from Square is on and working, recent till orders, and mappings
-func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareStatusResp, error) {
+// TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
+func (c *Client) TillStatusWithResponse(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}",
 		Method:     "GET",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -18513,12 +19358,12 @@ func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...run
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 
-	out := &SquareStatusResp{
+	out := &TillStatusResp{
 		HTTPResponse: resp.Raw,
 		Body:         resp.Content,
 		StatusCode:   resp.StatusCode,
@@ -18526,7 +19371,7 @@ func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...run
 
 	switch resp.StatusCode {
 	case 200:
-		out.JSON200 = new(SquareStatusResponse)
+		out.JSON200 = new(TillStatusResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
@@ -18534,7 +19379,7 @@ func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...run
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareStatusResponse",
+					TargetType:    "TillStatusResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18542,7 +19387,7 @@ func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...run
 		}
 		return out, nil
 	default:
-		out.ApplicationProblemPlusJSONDefault = new(SquareStatusErrorResponse)
+		out.ApplicationProblemPlusJSONDefault = new(TillStatusErrorResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
@@ -18550,7 +19395,7 @@ func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...run
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareStatusErrorResponse",
+					TargetType:    "TillStatusErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18560,12 +19405,13 @@ func (c *Client) SquareStatusWithResponse(ctx context.Context, reqEditors ...run
 	}
 }
 
-// SquareCatalog Read the catalog from Square, with how each entry maps to the kitchen (manager password)
-func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareCatalogResp, error) {
+// TillCatalog Read the catalog from a till, with how each entry maps to the kitchen (manager password)
+func (c *Client) TillCatalogWithResponse(ctx context.Context, options *TillCatalogRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillCatalogResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square/catalog",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}/catalog",
 		Method:     "GET",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -18573,12 +19419,12 @@ func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...ru
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/catalog")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/catalog")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 
-	out := &SquareCatalogResp{
+	out := &TillCatalogResp{
 		HTTPResponse: resp.Raw,
 		Body:         resp.Content,
 		StatusCode:   resp.StatusCode,
@@ -18586,7 +19432,7 @@ func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...ru
 
 	switch resp.StatusCode {
 	case 200:
-		out.JSON200 = new(SquareCatalogResponse)
+		out.JSON200 = new(TillCatalogResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
@@ -18594,7 +19440,7 @@ func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...ru
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareCatalogResponse",
+					TargetType:    "TillCatalogResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18602,7 +19448,7 @@ func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...ru
 		}
 		return out, nil
 	default:
-		out.ApplicationProblemPlusJSONDefault = new(SquareCatalogErrorResponse)
+		out.ApplicationProblemPlusJSONDefault = new(TillCatalogErrorResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
@@ -18610,7 +19456,7 @@ func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...ru
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareCatalogErrorResponse",
+					TargetType:    "TillCatalogErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18620,12 +19466,13 @@ func (c *Client) SquareCatalogWithResponse(ctx context.Context, reqEditors ...ru
 	}
 }
 
-// SquareLocations List the Square account's locations (sends Square the access token only)
-func (c *Client) SquareLocationsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareLocationsResp, error) {
+// TillLocations List a till account's locations; for SumUp, its merchant accounts (sends the till its token only)
+func (c *Client) TillLocationsWithResponse(ctx context.Context, options *TillLocationsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillLocationsResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square/locations",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}/locations",
 		Method:     "GET",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -18633,12 +19480,12 @@ func (c *Client) SquareLocationsWithResponse(ctx context.Context, reqEditors ...
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/locations")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/locations")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 
-	out := &SquareLocationsResp{
+	out := &TillLocationsResp{
 		HTTPResponse: resp.Raw,
 		Body:         resp.Content,
 		StatusCode:   resp.StatusCode,
@@ -18646,7 +19493,7 @@ func (c *Client) SquareLocationsWithResponse(ctx context.Context, reqEditors ...
 
 	switch resp.StatusCode {
 	case 200:
-		out.JSON200 = new(SquareLocationsResponse)
+		out.JSON200 = new(TillLocationsResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
@@ -18654,7 +19501,7 @@ func (c *Client) SquareLocationsWithResponse(ctx context.Context, reqEditors ...
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareLocationsResponse",
+					TargetType:    "TillLocationsResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18662,7 +19509,7 @@ func (c *Client) SquareLocationsWithResponse(ctx context.Context, reqEditors ...
 		}
 		return out, nil
 	default:
-		out.ApplicationProblemPlusJSONDefault = new(SquareLocationsErrorResponse)
+		out.ApplicationProblemPlusJSONDefault = new(TillLocationsErrorResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
@@ -18670,7 +19517,7 @@ func (c *Client) SquareLocationsWithResponse(ctx context.Context, reqEditors ...
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareLocationsErrorResponse",
+					TargetType:    "TillLocationsErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18680,11 +19527,11 @@ func (c *Client) SquareLocationsWithResponse(ctx context.Context, reqEditors ...
 	}
 }
 
-// SaveSquareMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
-func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *SaveSquareMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveSquareMappingsResp, error) {
+// SaveTillMappings Map till items to dishes and till modifiers to dish modifiers (manager password)
+func (c *Client) SaveTillMappingsWithResponse(ctx context.Context, options *SaveTillMappingsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveTillMappingsResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL:  c.apiClient.GetBaseURL() + "/square/mappings",
+		RequestURL:  c.apiClient.GetBaseURL() + "/tills/{till}/mappings",
 		Method:      "PUT",
 		Options:     options,
 		ContentType: "application/json",
@@ -18695,12 +19542,12 @@ func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *Sa
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/mappings")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/mappings")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 
-	out := &SaveSquareMappingsResp{
+	out := &SaveTillMappingsResp{
 		HTTPResponse: resp.Raw,
 		Body:         resp.Content,
 		StatusCode:   resp.StatusCode,
@@ -18708,7 +19555,7 @@ func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *Sa
 
 	switch resp.StatusCode {
 	case 200:
-		out.JSON200 = new(SaveSquareMappingsResponse)
+		out.JSON200 = new(SaveTillMappingsResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
@@ -18716,7 +19563,7 @@ func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *Sa
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SaveSquareMappingsResponse",
+					TargetType:    "SaveTillMappingsResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18724,7 +19571,7 @@ func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *Sa
 		}
 		return out, nil
 	default:
-		out.ApplicationProblemPlusJSONDefault = new(SaveSquareMappingsErrorResponse)
+		out.ApplicationProblemPlusJSONDefault = new(SaveTillMappingsErrorResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
@@ -18732,7 +19579,7 @@ func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *Sa
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SaveSquareMappingsErrorResponse",
+					TargetType:    "SaveTillMappingsErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18742,11 +19589,11 @@ func (c *Client) SaveSquareMappingsWithResponse(ctx context.Context, options *Sa
 	}
 }
 
-// SquareOrderVersions List every version of a till order Kishtin saw
-func (c *Client) SquareOrderVersionsWithResponse(ctx context.Context, options *SquareOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SquareOrderVersionsResp, error) {
+// TillOrderVersions List every version of a till order Kishtin saw
+func (c *Client) TillOrderVersionsWithResponse(ctx context.Context, options *TillOrderVersionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillOrderVersionsResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square/orders/{id}/versions",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}/orders/{id}/versions",
 		Method:     "GET",
 		Options:    options,
 	}
@@ -18756,12 +19603,12 @@ func (c *Client) SquareOrderVersionsWithResponse(ctx context.Context, options *S
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/orders/{id}/versions")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/orders/{id}/versions")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 
-	out := &SquareOrderVersionsResp{
+	out := &TillOrderVersionsResp{
 		HTTPResponse: resp.Raw,
 		Body:         resp.Content,
 		StatusCode:   resp.StatusCode,
@@ -18769,7 +19616,7 @@ func (c *Client) SquareOrderVersionsWithResponse(ctx context.Context, options *S
 
 	switch resp.StatusCode {
 	case 200:
-		out.JSON200 = new(SquareOrderVersionsResponse)
+		out.JSON200 = new(TillOrderVersionsResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
@@ -18777,7 +19624,7 @@ func (c *Client) SquareOrderVersionsWithResponse(ctx context.Context, options *S
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareOrderVersionsResponse",
+					TargetType:    "TillOrderVersionsResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18785,7 +19632,7 @@ func (c *Client) SquareOrderVersionsWithResponse(ctx context.Context, options *S
 		}
 		return out, nil
 	default:
-		out.ApplicationProblemPlusJSONDefault = new(SquareOrderVersionsErrorResponse)
+		out.ApplicationProblemPlusJSONDefault = new(TillOrderVersionsErrorResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
@@ -18793,7 +19640,7 @@ func (c *Client) SquareOrderVersionsWithResponse(ctx context.Context, options *S
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareOrderVersionsErrorResponse",
+					TargetType:    "TillOrderVersionsErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18803,12 +19650,13 @@ func (c *Client) SquareOrderVersionsWithResponse(ctx context.Context, options *S
 	}
 }
 
-// SquareSync Ask Square for new and changed orders now
-func (c *Client) SquareSyncWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*SquareSyncResp, error) {
+// TillSync Ask a till for new and changed orders now
+func (c *Client) TillSyncWithResponse(ctx context.Context, options *TillSyncRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillSyncResp, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
-		RequestURL: c.apiClient.GetBaseURL() + "/square/sync",
+		RequestURL: c.apiClient.GetBaseURL() + "/tills/{till}/sync",
 		Method:     "POST",
+		Options:    options,
 	}
 
 	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
@@ -18816,12 +19664,12 @@ func (c *Client) SquareSyncWithResponse(ctx context.Context, reqEditors ...runti
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/square/sync")
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/tills/{till}/sync")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
 
-	out := &SquareSyncResp{
+	out := &TillSyncResp{
 		HTTPResponse: resp.Raw,
 		Body:         resp.Content,
 		StatusCode:   resp.StatusCode,
@@ -18829,7 +19677,7 @@ func (c *Client) SquareSyncWithResponse(ctx context.Context, reqEditors ...runti
 
 	switch resp.StatusCode {
 	case 200:
-		out.JSON200 = new(SquareSyncResponse)
+		out.JSON200 = new(TillSyncResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
@@ -18837,7 +19685,7 @@ func (c *Client) SquareSyncWithResponse(ctx context.Context, reqEditors ...runti
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareSyncResponse",
+					TargetType:    "TillSyncResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -18845,7 +19693,7 @@ func (c *Client) SquareSyncWithResponse(ctx context.Context, reqEditors ...runti
 		}
 		return out, nil
 	default:
-		out.ApplicationProblemPlusJSONDefault = new(SquareSyncErrorResponse)
+		out.ApplicationProblemPlusJSONDefault = new(TillSyncErrorResponse)
 		bodyBytes := resp.Content
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
@@ -18853,7 +19701,7 @@ func (c *Client) SquareSyncWithResponse(ctx context.Context, reqEditors ...runti
 					StatusCode:    resp.StatusCode,
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
-					TargetType:    "SquareSyncErrorResponse",
+					TargetType:    "TillSyncErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -19611,6 +20459,41 @@ func (n NewOrderKind) Validate() error {
 	}
 }
 
+// DisconnectTillPathTill The till: square or sumup.
+type DisconnectTillPathTill string
+
+const (
+	Square DisconnectTillPathTill = "square"
+	Sumup  DisconnectTillPathTill = "sumup"
+)
+
+// Validate checks if the DisconnectTillPathTill value is valid
+func (d DisconnectTillPathTill) Validate() error {
+	switch d {
+	case Square, Sumup:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid DisconnectTillPathTill value, got: %v", d))
+	}
+}
+
+type ConnectTillPathTill string
+
+const (
+	ConnectTillPathTillSquare ConnectTillPathTill = "square"
+	ConnectTillPathTillSumup  ConnectTillPathTill = "sumup"
+)
+
+// Validate checks if the ConnectTillPathTill value is valid
+func (c ConnectTillPathTill) Validate() error {
+	switch c {
+	case ConnectTillPathTillSquare, ConnectTillPathTillSumup:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid ConnectTillPathTill value, got: %v", c))
+	}
+}
+
 type FireCoursePathCourse string
 
 const (
@@ -19719,6 +20602,112 @@ func (s SetCourseUrgentPathCourse) Validate() error {
 	}
 }
 
+// TillStatusPathTill The till: square or sumup.
+type TillStatusPathTill string
+
+const (
+	TillStatusPathTillSquare TillStatusPathTill = "square"
+	TillStatusPathTillSumup  TillStatusPathTill = "sumup"
+)
+
+// Validate checks if the TillStatusPathTill value is valid
+func (t TillStatusPathTill) Validate() error {
+	switch t {
+	case TillStatusPathTillSquare, TillStatusPathTillSumup:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid TillStatusPathTill value, got: %v", t))
+	}
+}
+
+// TillCatalogPathTill The till: square or sumup.
+type TillCatalogPathTill string
+
+const (
+	TillCatalogPathTillSquare TillCatalogPathTill = "square"
+	TillCatalogPathTillSumup  TillCatalogPathTill = "sumup"
+)
+
+// Validate checks if the TillCatalogPathTill value is valid
+func (t TillCatalogPathTill) Validate() error {
+	switch t {
+	case TillCatalogPathTillSquare, TillCatalogPathTillSumup:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid TillCatalogPathTill value, got: %v", t))
+	}
+}
+
+// TillLocationsPathTill The till: square or sumup.
+type TillLocationsPathTill string
+
+const (
+	TillLocationsPathTillSquare TillLocationsPathTill = "square"
+	TillLocationsPathTillSumup  TillLocationsPathTill = "sumup"
+)
+
+// Validate checks if the TillLocationsPathTill value is valid
+func (t TillLocationsPathTill) Validate() error {
+	switch t {
+	case TillLocationsPathTillSquare, TillLocationsPathTillSumup:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid TillLocationsPathTill value, got: %v", t))
+	}
+}
+
+type SaveTillMappingsPathTill string
+
+const (
+	SaveTillMappingsPathTillSquare SaveTillMappingsPathTill = "square"
+	SaveTillMappingsPathTillSumup  SaveTillMappingsPathTill = "sumup"
+)
+
+// Validate checks if the SaveTillMappingsPathTill value is valid
+func (s SaveTillMappingsPathTill) Validate() error {
+	switch s {
+	case SaveTillMappingsPathTillSquare, SaveTillMappingsPathTillSumup:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid SaveTillMappingsPathTill value, got: %v", s))
+	}
+}
+
+type TillOrderVersionsPathTill string
+
+const (
+	TillOrderVersionsPathTillSquare TillOrderVersionsPathTill = "square"
+	TillOrderVersionsPathTillSumup  TillOrderVersionsPathTill = "sumup"
+)
+
+// Validate checks if the TillOrderVersionsPathTill value is valid
+func (t TillOrderVersionsPathTill) Validate() error {
+	switch t {
+	case TillOrderVersionsPathTillSquare, TillOrderVersionsPathTillSumup:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid TillOrderVersionsPathTill value, got: %v", t))
+	}
+}
+
+// TillSyncPathTill The till: square or sumup.
+type TillSyncPathTill string
+
+const (
+	TillSyncPathTillSquare TillSyncPathTill = "square"
+	TillSyncPathTillSumup  TillSyncPathTill = "sumup"
+)
+
+// Validate checks if the TillSyncPathTill value is valid
+func (t TillSyncPathTill) Validate() error {
+	switch t {
+	case TillSyncPathTillSquare, TillSyncPathTillSumup:
+		return nil
+	default:
+		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid TillSyncPathTill value, got: %v", t))
+	}
+}
+
 type LogoutHeaders struct {
 	XKishtinSession *string `json:"X-Kishtin-Session,omitempty"`
 }
@@ -19726,6 +20715,41 @@ type LogoutHeaders struct {
 type VoiceAudioHeaders struct {
 	// ContentType The recording's type, such as audio/webm or audio/wav.
 	ContentType *string `json:"Content-Type,omitempty"`
+}
+
+type DisconnectTillPath struct {
+	// Till The till: square or sumup.
+	Till DisconnectTillPathTill `json:"till" validate:"required"`
+}
+
+func (d DisconnectTillPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(d.Till).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Till", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ConnectTillPath struct {
+	Till ConnectTillPathTill `json:"till" validate:"required"`
+}
+
+func (c ConnectTillPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(c.Till).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Till", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type GetFilePath struct {
@@ -19994,12 +21018,114 @@ func (r RenameOrderPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(r))
 }
 
-type SquareOrderVersionsPath struct {
-	ID string `json:"id" validate:"required"`
+type TillStatusPath struct {
+	// Till The till: square or sumup.
+	Till TillStatusPathTill `json:"till" validate:"required"`
 }
 
-func (s SquareOrderVersionsPath) Validate() error {
-	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+func (t TillStatusPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(t.Till).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Till", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type TillCatalogPath struct {
+	// Till The till: square or sumup.
+	Till TillCatalogPathTill `json:"till" validate:"required"`
+}
+
+func (t TillCatalogPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(t.Till).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Till", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type TillLocationsPath struct {
+	// Till The till: square or sumup.
+	Till TillLocationsPathTill `json:"till" validate:"required"`
+}
+
+func (t TillLocationsPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(t.Till).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Till", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SaveTillMappingsPath struct {
+	Till SaveTillMappingsPathTill `json:"till" validate:"required"`
+}
+
+func (s SaveTillMappingsPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(s.Till).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Till", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type TillOrderVersionsPath struct {
+	Till TillOrderVersionsPathTill `json:"till" validate:"required"`
+	ID   string                    `json:"id" validate:"required"`
+}
+
+func (t TillOrderVersionsPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(t.Till).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Till", err)
+		}
+	}
+	if err := typesValidator.Var(t.ID, "required"); err != nil {
+		errors = errors.Append("ID", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type TillSyncPath struct {
+	// Till The till: square or sumup.
+	Till TillSyncPathTill `json:"till" validate:"required"`
+}
+
+func (t TillSyncPath) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(t.Till).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Till", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type UpdateUserPath struct {
@@ -20036,7 +21162,7 @@ func (v VoiceRecordingPath) Validate() error {
 
 type LoginBody = LoginInBody
 
-type ConnectSquareBody = ConnectInput
+type ConnectTillBody = ConnectInput
 
 type CreateJoinCodeBody = JoinCodeInBody
 
@@ -20126,13 +21252,17 @@ type SaveSquareBody = SettingsChangePOSSettings
 
 type PreviewSquareBody = SettingsChangePOSSettings
 
+type SaveSumupBody = SettingsChangePOSSettings
+
+type PreviewSumupBody = SettingsChangePOSSettings
+
 type SaveSystemBody = SettingsChangeSystem
 
 type PreviewSystemBody = SettingsChangeSystem
 
 type SetupBody = SetupInBody
 
-type SaveSquareMappingsBody = MappingsIn
+type SaveTillMappingsBody = MappingsInBody
 
 type CreateUserBody = NewUser
 
@@ -20363,11 +21493,11 @@ type ListConnectorsResponse = ConnectorsBody
 
 type ListConnectorsErrorResponse = ErrorModel
 
-type DisconnectSquareErrorResponse = ErrorModel
+type DisconnectTillErrorResponse = ErrorModel
 
-type ConnectSquareResponse = ConnectResult
+type ConnectTillResponse = ConnectResult
 
-type ConnectSquareErrorResponse = ErrorModel
+type ConnectTillErrorResponse = ErrorModel
 
 type CreateJoinCodeResponse = JoinCode
 
@@ -20721,6 +21851,22 @@ type PreviewSquareResponse = SettingsPreviewPOSSettings
 
 type PreviewSquareErrorResponse = ErrorModel
 
+type GetSumupResponse = VersionedPOSSettings
+
+type GetSumupErrorResponse = ErrorModel
+
+type SaveSumupResponse = VersionedPOSSettings
+
+type SaveSumupErrorResponse = ErrorModel
+
+type SumupHistoryResponse = HistoryOutPOSSettingsBody
+
+type SumupHistoryErrorResponse = ErrorModel
+
+type PreviewSumupResponse = SettingsPreviewPOSSettings
+
+type PreviewSumupErrorResponse = ErrorModel
+
 type GetSystemResponse = VersionedSystem
 
 type GetSystemErrorResponse = ErrorModel
@@ -20745,29 +21891,29 @@ type SetupResponse = FirstRunResult
 
 type SetupErrorResponse = ErrorModel
 
-type SquareStatusResponse = SquareStatus
+type TillStatusResponse = TillStatus
 
-type SquareStatusErrorResponse = ErrorModel
+type TillStatusErrorResponse = ErrorModel
 
-type SquareCatalogResponse = CatalogBody
+type TillCatalogResponse = CatalogBody
 
-type SquareCatalogErrorResponse = ErrorModel
+type TillCatalogErrorResponse = ErrorModel
 
-type SquareLocationsResponse = LocationsBody
+type TillLocationsResponse = LocationsBody
 
-type SquareLocationsErrorResponse = ErrorModel
+type TillLocationsErrorResponse = ErrorModel
 
-type SaveSquareMappingsResponse = MappingsBody
+type SaveTillMappingsResponse = MappingsBody
 
-type SaveSquareMappingsErrorResponse = ErrorModel
+type SaveTillMappingsErrorResponse = ErrorModel
 
-type SquareOrderVersionsResponse = VersionsBody
+type TillOrderVersionsResponse = VersionsBody
 
-type SquareOrderVersionsErrorResponse = ErrorModel
+type TillOrderVersionsErrorResponse = ErrorModel
 
-type SquareSyncResponse = SyncResult
+type TillSyncResponse = SyncResult
 
-type SquareSyncErrorResponse = ErrorModel
+type TillSyncErrorResponse = ErrorModel
 
 type ListUsersResponse = UsersOutBody
 
@@ -20884,19 +22030,19 @@ type ListConnectorsResp struct {
 	ApplicationProblemPlusJSONDefault *ListConnectorsErrorResponse
 }
 
-type DisconnectSquareResp struct {
+type DisconnectTillResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
-	ApplicationProblemPlusJSONDefault *DisconnectSquareErrorResponse
+	ApplicationProblemPlusJSONDefault *DisconnectTillErrorResponse
 }
 
-type ConnectSquareResp struct {
+type ConnectTillResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
-	JSON200                           *ConnectSquareResponse
-	ApplicationProblemPlusJSONDefault *ConnectSquareErrorResponse
+	JSON200                           *ConnectTillResponse
+	ApplicationProblemPlusJSONDefault *ConnectTillErrorResponse
 }
 
 type CreateJoinCodeResp struct {
@@ -21641,6 +22787,38 @@ type PreviewSquareResp struct {
 	ApplicationProblemPlusJSONDefault *PreviewSquareErrorResponse
 }
 
+type GetSumupResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetSumupResponse
+	ApplicationProblemPlusJSONDefault *GetSumupErrorResponse
+}
+
+type SaveSumupResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SaveSumupResponse
+	ApplicationProblemPlusJSONDefault *SaveSumupErrorResponse
+}
+
+type SumupHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SumupHistoryResponse
+	ApplicationProblemPlusJSONDefault *SumupHistoryErrorResponse
+}
+
+type PreviewSumupResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewSumupResponse
+	ApplicationProblemPlusJSONDefault *PreviewSumupErrorResponse
+}
+
 type GetSystemResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -21689,52 +22867,52 @@ type SetupResp struct {
 	ApplicationProblemPlusJSONDefault *SetupErrorResponse
 }
 
-type SquareStatusResp struct {
+type TillStatusResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
-	JSON200                           *SquareStatusResponse
-	ApplicationProblemPlusJSONDefault *SquareStatusErrorResponse
+	JSON200                           *TillStatusResponse
+	ApplicationProblemPlusJSONDefault *TillStatusErrorResponse
 }
 
-type SquareCatalogResp struct {
+type TillCatalogResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
-	JSON200                           *SquareCatalogResponse
-	ApplicationProblemPlusJSONDefault *SquareCatalogErrorResponse
+	JSON200                           *TillCatalogResponse
+	ApplicationProblemPlusJSONDefault *TillCatalogErrorResponse
 }
 
-type SquareLocationsResp struct {
+type TillLocationsResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
-	JSON200                           *SquareLocationsResponse
-	ApplicationProblemPlusJSONDefault *SquareLocationsErrorResponse
+	JSON200                           *TillLocationsResponse
+	ApplicationProblemPlusJSONDefault *TillLocationsErrorResponse
 }
 
-type SaveSquareMappingsResp struct {
+type SaveTillMappingsResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
-	JSON200                           *SaveSquareMappingsResponse
-	ApplicationProblemPlusJSONDefault *SaveSquareMappingsErrorResponse
+	JSON200                           *SaveTillMappingsResponse
+	ApplicationProblemPlusJSONDefault *SaveTillMappingsErrorResponse
 }
 
-type SquareOrderVersionsResp struct {
+type TillOrderVersionsResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
-	JSON200                           *SquareOrderVersionsResponse
-	ApplicationProblemPlusJSONDefault *SquareOrderVersionsErrorResponse
+	JSON200                           *TillOrderVersionsResponse
+	ApplicationProblemPlusJSONDefault *TillOrderVersionsErrorResponse
 }
 
-type SquareSyncResp struct {
+type TillSyncResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
 	StatusCode                        int
-	JSON200                           *SquareSyncResponse
-	ApplicationProblemPlusJSONDefault *SquareSyncErrorResponse
+	JSON200                           *TillSyncResponse
+	ApplicationProblemPlusJSONDefault *TillSyncErrorResponse
 }
 
 type ListUsersResp struct {
@@ -22597,15 +23775,17 @@ func (c Column) Validate() error {
 }
 
 type ConnectInput struct {
-	Environment ConnectInputEnvironment `json:"environment" validate:"required"`
-	Token       string                  `json:"token" validate:"required,max=1000,min=1"`
+	Environment *ConnectInputEnvironment `json:"environment,omitempty"`
+	Token       string                   `json:"token" validate:"required,max=1000,min=1"`
 }
 
 func (c ConnectInput) Validate() error {
 	var errors runtime.ValidationErrors
-	if v, ok := any(c.Environment).(runtime.Validator); ok {
-		if err := v.Validate(); err != nil {
-			errors = errors.Append("Environment", err)
+	if c.Environment != nil {
+		if v, ok := any(c.Environment).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Environment", err)
+			}
 		}
 	}
 	if err := typesValidator.Var(c.Token, "required,max=1000,min=1"); err != nil {
@@ -24275,11 +25455,11 @@ func (m MappingsBody) Validate() error {
 	return errors
 }
 
-type MappingsIn struct {
+type MappingsInBody struct {
 	Mappings []MappingInput `json:"mappings" validate:"required"`
 }
 
-func (m MappingsIn) Validate() error {
+func (m MappingsInBody) Validate() error {
 	var errors runtime.ValidationErrors
 	if err := typesValidator.Var(m.Mappings, "required"); err != nil {
 		errors = errors.Append("Mappings", err)
@@ -26149,54 +27329,6 @@ type Spread struct {
 	P90Seconds    int64 `json:"p90_seconds"`
 }
 
-type SquareStatus struct {
-	Connected bool                 `json:"connected"`
-	Mappings  []Mapping            `json:"mappings" validate:"required"`
-	Recent    []Imported           `json:"recent" validate:"required"`
-	Settings  VersionedPOSSettings `json:"settings"`
-	State     *SyncState           `json:"state,omitempty"`
-}
-
-func (s SquareStatus) Validate() error {
-	var errors runtime.ValidationErrors
-	if err := typesValidator.Var(s.Mappings, "required"); err != nil {
-		errors = errors.Append("Mappings", err)
-	}
-	for i, item := range s.Mappings {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				errors = errors.Append(fmt.Sprintf("Mappings[%d]", i), err)
-			}
-		}
-	}
-	if err := typesValidator.Var(s.Recent, "required"); err != nil {
-		errors = errors.Append("Recent", err)
-	}
-	for i, item := range s.Recent {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				errors = errors.Append(fmt.Sprintf("Recent[%d]", i), err)
-			}
-		}
-	}
-	if v, ok := any(s.Settings).(runtime.Validator); ok {
-		if err := v.Validate(); err != nil {
-			errors = errors.Append("Settings", err)
-		}
-	}
-	if s.State != nil {
-		if v, ok := any(s.State).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				errors = errors.Append("State", err)
-			}
-		}
-	}
-	if len(errors) == 0 {
-		return nil
-	}
-	return errors
-}
-
 type StaffEntry struct {
 	HasPassword bool   `json:"has_password"`
 	HasPin      bool   `json:"has_pin"`
@@ -26514,6 +27646,58 @@ func (t TillOrder) Validate() error {
 	}
 	if err := typesValidator.Var(t.UpdatedAt, "required"); err != nil {
 		errors = errors.Append("UpdatedAt", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type TillStatus struct {
+	Connected bool                 `json:"connected"`
+	Mappings  []Mapping            `json:"mappings" validate:"required"`
+	Recent    []Imported           `json:"recent" validate:"required"`
+	Settings  VersionedPOSSettings `json:"settings"`
+	State     *SyncState           `json:"state,omitempty"`
+	Till      string               `json:"till" validate:"required"`
+}
+
+func (t TillStatus) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(t.Mappings, "required"); err != nil {
+		errors = errors.Append("Mappings", err)
+	}
+	for i, item := range t.Mappings {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Mappings[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.Recent, "required"); err != nil {
+		errors = errors.Append("Recent", err)
+	}
+	for i, item := range t.Recent {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Recent[%d]", i), err)
+			}
+		}
+	}
+	if v, ok := any(t.Settings).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Settings", err)
+		}
+	}
+	if t.State != nil {
+		if v, ok := any(t.State).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("State", err)
+			}
+		}
+	}
+	if err := typesValidator.Var(t.Till, "required"); err != nil {
+		errors = errors.Append("Till", err)
 	}
 	if len(errors) == 0 {
 		return nil

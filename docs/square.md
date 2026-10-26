@@ -45,7 +45,7 @@ Connect from a device that reaches the server over HTTPS, or on the server itsel
 
 ## The Connections page
 
-**Setup → Connections** lists what Kishtin can connect to (Square, for now): what each does, exactly what it sends, whether it is connected and in use, when it last worked and the last problem. **Set up** or **Open** goes to its page.
+**Setup → Connections** lists what Kishtin can connect to (Square and [SumUp](sumup.md)): what each does, exactly what it sends, whether it is connected and in use, when it last worked and the last problem. **Set up** or **Open** goes to its page.
 
 ![Connections](screenshots/connections.png)
 
@@ -80,7 +80,7 @@ kishtin settings set square -f square.json --reason "Go live"
 
 The token is read from a file or standard input, never from the command line, so it does not end up in shell history.
 
-API: `GET /api/connectors`, `PUT` and `DELETE /api/connectors/square`, `GET /api/square/locations`, `GET /api/square`, `GET /api/square/catalog`, `PUT /api/square/mappings`, `POST /api/square/sync`, and `/api/settings/square` for the setting.
+API: `GET /api/connectors`, `PUT` and `DELETE /api/connectors/square`, `GET /api/tills/square/locations`, `GET /api/tills/square`, `GET /api/tills/square/catalog`, `PUT /api/tills/square/mappings`, `POST /api/tills/square/sync`, and `/api/settings/square` for the setting.
 
 ## What it does not do yet
 

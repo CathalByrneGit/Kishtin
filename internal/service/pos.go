@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v7"
@@ -16,57 +17,58 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/integrations"
 	"github.com/cathalbyrnegit/kishtin/internal/menu"
 	"github.com/cathalbyrnegit/kishtin/internal/orders"
-	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
 
-const posSquare = "square"
-
-// squareUser is who imported orders are entered by, in order histories.
-var squareUser = auth.User{ID: "pos:square", Name: "Square", Role: auth.RoleFrontOfHouse, Active: true}
-
 // Square is how Kishtin imports orders from Square: whether it is on, the
-// location, and how often it asks. Turning it on is a manager's audited
-// consent to the requests described in the preview.
-func (s *Service) Square() *Group[integrations.POSSettings] {
+// location, and how often it asks.
+func (s *Service) Square() *Group[integrations.POSSettings] { return s.tillGroup(tills[0]) }
+
+// SumUp is how Kishtin imports paid sales from SumUp: whether it is on,
+// the merchant account, and how often it asks.
+func (s *Service) SumUp() *Group[integrations.POSSettings] { return s.tillGroup(tills[1]) }
+
+// tillGroup is a till's import settings. Turning import on is a manager's
+// audited consent to the requests described in the preview.
+func (s *Service) tillGroup(t till) *Group[integrations.POSSettings] {
 	return &Group[integrations.POSSettings]{s: s, spec: groupSpec[integrations.POSSettings]{
-		kind:       settings.KindSquare,
-		builtinID:  "builtin-square-v1",
+		kind:       t.kind,
+		builtinID:  t.builtin,
 		seeded:     true,
 		builtin:    func(*Service) integrations.POSSettings { return integrations.DefaultPOSSettings() },
 		normalize:  integrations.POSSettings.Normalize,
 		validate:   integrations.POSSettings.Validate,
 		lessStrict: func(_, _ integrations.POSSettings) []string { return nil },
-		notes:      squareNotes,
+		notes:      tillNotes(t),
 		edit:       auth.ActManageSettings,
 	}}
 }
 
-// squareNotes says exactly what turning import on sends, before it is
-// saved.
-func squareNotes(_ context.Context, s *Service, _ store.Store, cur, next integrations.POSSettings) ([]string, error) {
-	var out []string
-	switch {
-	case next.Enabled && !cur.Enabled:
-		out = append(out,
-			fmt.Sprintf("Every %d seconds Kishtin will send Square the access token, the location ID (%s) and the time of the last order change it has seen, to ask for new and changed orders.", next.PollSeconds, next.LocationID),
-			"Square sends back those orders: tickets, items, modifiers, notes and pickup names. Nothing about the kitchen, staff or HACCP records is sent to Square.",
-			"Orders changed on the till from the moment this is saved are imported. Earlier orders are not.",
-			"Imported courses are held until the pass fires them. Items not mapped to a dish are listed, not cooked.")
-	case !next.Enabled && cur.Enabled:
-		out = append(out, "Kishtin stops asking Square for orders. Orders already imported stay as they are.")
-	case next.Enabled:
-		out = append(out, fmt.Sprintf("Kishtin keeps asking Square for orders every %d seconds.", next.PollSeconds))
+// tillNotes says exactly what turning import on sends, before it is saved.
+func tillNotes(t till) func(context.Context, *Service, store.Store, integrations.POSSettings, integrations.POSSettings) ([]string, error) {
+	return func(_ context.Context, s *Service, _ store.Store, cur, next integrations.POSSettings) ([]string, error) {
+		var out []string
+		switch {
+		case next.Enabled && !cur.Enabled:
+			out = append(out, t.sends(next), t.returns, t.startsAt,
+				"Imported courses are held until the pass fires them. Items not mapped to a dish are listed, not cooked.")
+		case !next.Enabled && cur.Enabled:
+			out = append(out, fmt.Sprintf("Kishtin stops asking %s for orders. Orders already imported stay as they are.", t.name))
+		case next.Enabled:
+			out = append(out, fmt.Sprintf("Kishtin keeps asking %s for orders every %d seconds.", t.name, next.PollSeconds))
+		}
+		if s.adapter(t.id) == nil {
+			out = append(out, fmt.Sprintf("%s is not connected yet, so nothing will be imported until a manager connects it.", t.name))
+		}
+		return out, nil
 	}
-	if s.square() == nil {
-		out = append(out, "Square is not connected yet, so nothing will be imported until a manager connects it.")
-	}
-	return out, nil
 }
 
-// SquareStatus is how order import from Square stands.
-type SquareStatus struct {
-	// Connected is set when the server has a Square access token.
+// TillStatus is how order import from a till stands.
+type TillStatus struct {
+	// Till is the till's connector ID: square or sumup.
+	Till string `json:"till"`
+	// Connected is set when the server has a token for the till.
 	Connected bool                                `json:"connected"`
 	Settings  Versioned[integrations.POSSettings] `json:"settings"`
 	State     *integrations.SyncState             `json:"state,omitempty"`
@@ -75,27 +77,31 @@ type SquareStatus struct {
 	Mappings []integrations.Mapping  `json:"mappings"`
 }
 
-// SquareStatus shows whether import is on, when it last worked, and the
+// TillStatus shows whether import is on, when it last worked, and the
 // most recent till orders with anything the pass must check.
-func (s *Service) SquareStatus(ctx context.Context, p *auth.Principal) (SquareStatus, error) {
+func (s *Service) TillStatus(ctx context.Context, p *auth.Principal, id string) (TillStatus, error) {
 	if err := s.allow(p, auth.ActViewKitchen); err != nil {
-		return SquareStatus{}, err
+		return TillStatus{}, err
 	}
-	set, err := s.Square().current(ctx, s.st)
+	t, err := tillByID(id)
 	if err != nil {
-		return SquareStatus{}, err
+		return TillStatus{}, err
 	}
-	out := SquareStatus{Connected: s.square() != nil, Settings: set}
-	if st, err := s.st.POS().GetPOSState(ctx, posSquare); err == nil {
+	set, err := s.tillGroup(t).current(ctx, s.st)
+	if err != nil {
+		return TillStatus{}, err
+	}
+	out := TillStatus{Till: t.id, Connected: s.adapter(t.id) != nil, Settings: set}
+	if st, err := s.st.POS().GetPOSState(ctx, t.id); err == nil {
 		out.State = &st
 	} else if !errors.Is(err, store.ErrNotFound) {
-		return SquareStatus{}, err
+		return TillStatus{}, err
 	}
-	if out.Recent, err = s.st.POS().ListImported(ctx, posSquare, 50); err != nil {
-		return SquareStatus{}, err
+	if out.Recent, err = s.st.POS().ListImported(ctx, t.id, 50); err != nil {
+		return TillStatus{}, err
 	}
-	if out.Mappings, err = s.st.POS().ListMappings(ctx, posSquare); err != nil {
-		return SquareStatus{}, err
+	if out.Mappings, err = s.st.POS().ListMappings(ctx, t.id); err != nil {
+		return TillStatus{}, err
 	}
 	return out, nil
 }
@@ -111,18 +117,24 @@ type CatalogRow struct {
 	Suggested string `json:"suggested,omitempty"`
 }
 
-// SquareCatalog reads the catalog from Square, with the saved mappings and
-// suggestions by name. It sends Square only the access token. A manager
-// asks for it from the Square page, after reading what is sent.
-func (s *Service) SquareCatalog(ctx context.Context, p *auth.Principal) ([]CatalogRow, error) {
+// TillCatalog reads the catalog from a till, with the saved mappings and
+// suggestions by name. It sends the till only its token and location. A
+// manager asks for it from the till's page, after reading what is sent.
+// SumUp has no product list in its API, so its catalog is the items sold
+// in recent sales.
+func (s *Service) TillCatalog(ctx context.Context, p *auth.Principal, id string) ([]CatalogRow, error) {
 	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return nil, err
 	}
-	pos := s.square()
-	if pos == nil {
-		return nil, newErr(KindConflict, "Square is not connected. A manager connects it on Setup, Connections, Square.")
+	t, err := tillByID(id)
+	if err != nil {
+		return nil, err
 	}
-	set, err := s.Square().current(ctx, s.st)
+	pos := s.adapter(t.id)
+	if pos == nil {
+		return nil, notConnected(t)
+	}
+	set, err := s.tillGroup(t).current(ctx, s.st)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +142,7 @@ func (s *Service) SquareCatalog(ctx context.Context, p *auth.Principal) ([]Catal
 	if err != nil {
 		return nil, newErr(KindConflict, "Could not read the catalog: %s", err)
 	}
-	maps, err := s.st.POS().ListMappings(ctx, posSquare)
+	maps, err := s.st.POS().ListMappings(ctx, t.id)
 	if err != nil {
 		return nil, err
 	}
@@ -194,23 +206,27 @@ type MappingInput struct {
 	Ignore bool `json:"ignore,omitempty"`
 }
 
-// SaveSquareMappings saves how till items and modifiers map to the kitchen.
+// SaveTillMappings saves how till items and modifiers map to the kitchen.
 // Open till orders with items that are now mapped get those items added.
-func (s *Service) SaveSquareMappings(ctx context.Context, p *auth.Principal, in []MappingInput) ([]integrations.Mapping, error) {
+func (s *Service) SaveTillMappings(ctx context.Context, p *auth.Principal, id string, in []MappingInput) ([]integrations.Mapping, error) {
 	if err := s.allow(p, auth.ActManageMenu); err != nil {
+		return nil, err
+	}
+	t, err := tillByID(id)
+	if err != nil {
 		return nil, err
 	}
 	if len(in) == 0 {
 		return nil, newErr(KindInvalid, "send at least one mapping")
 	}
-	err := s.st.WithTx(ctx, func(tx store.Store) error {
+	err = s.st.WithTx(ctx, func(tx store.Store) error {
 		setup, err := menuSetup(ctx, tx)
 		if err != nil {
 			return err
 		}
 		for _, mi := range in {
 			m := integrations.Mapping{
-				POS: posSquare, ExternalID: strings.TrimSpace(mi.ExternalID), Kind: mi.Kind, Name: strings.TrimSpace(mi.Name),
+				POS: t.id, ExternalID: strings.TrimSpace(mi.ExternalID), Kind: mi.Kind, Name: strings.TrimSpace(mi.Name),
 				DishID: mi.DishID, Modifier: strings.TrimSpace(mi.Modifier), Ignore: mi.Ignore,
 				UpdatedAt: s.clk.Now(), UpdatedBy: p.User.ID,
 			}
@@ -245,19 +261,19 @@ func (s *Service) SaveSquareMappings(ctx context.Context, p *auth.Principal, in 
 		return nil, err
 	}
 	// Items waiting for a mapping go to the kitchen now.
-	imported, err := s.st.POS().ListImported(ctx, posSquare, 200)
+	imported, err := s.st.POS().ListImported(ctx, t.id, 200)
 	if err != nil {
 		return nil, err
 	}
 	for _, o := range imported {
 		if len(o.Unmapped) > 0 && o.State == integrations.OrderOpen {
-			if _, err := s.importOrder(ctx, o.Payload, true); err != nil {
+			if _, err := s.importOrder(ctx, t, o.Payload, true); err != nil {
 				return nil, err
 			}
 		}
 	}
 	s.publish(events.KindOrder, "")
-	return s.st.POS().ListMappings(ctx, posSquare)
+	return s.st.POS().ListMappings(ctx, t.id)
 }
 
 // SyncResult says what one poll did.
@@ -271,35 +287,39 @@ type SyncResult struct {
 	Skipped int `json:"skipped"`
 }
 
-// SyncSquareNow polls Square once, for the Sync now button.
-func (s *Service) SyncSquareNow(ctx context.Context, p *auth.Principal) (SyncResult, error) {
+// SyncTillNow polls a till once, for the Sync now button.
+func (s *Service) SyncTillNow(ctx context.Context, p *auth.Principal, id string) (SyncResult, error) {
 	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return SyncResult{}, err
 	}
-	return s.SyncSquare(ctx)
+	return s.SyncTill(ctx, id)
 }
 
-// SyncSquare asks Square for orders changed since the last poll and enters
-// them. If Square cannot be reached it records why and changes nothing;
+// SyncTill asks a till for orders changed since the last poll and enters
+// them. If the till cannot be reached it records why and changes nothing;
 // the next poll asks from the same point, so no order is missed. Orders
-// are deduped on Square's order ID and version.
-func (s *Service) SyncSquare(ctx context.Context) (SyncResult, error) {
+// are deduped on the till's order ID and version.
+func (s *Service) SyncTill(ctx context.Context, id string) (SyncResult, error) {
 	var res SyncResult
-	set, err := s.Square().current(ctx, s.st)
+	t, err := tillByID(id)
+	if err != nil {
+		return res, err
+	}
+	set, err := s.tillGroup(t).current(ctx, s.st)
 	if err != nil {
 		return res, err
 	}
 	if !set.Value.Enabled {
-		return res, newErr(KindConflict, "Order import from Square is off. A manager turns it on on the Square page.")
+		return res, newErr(KindConflict, "Order import from %s is off. A manager turns it on on the %s page.", t.name, t.name)
 	}
-	pos := s.square()
+	pos := s.adapter(t.id)
 	if pos == nil {
-		return res, newErr(KindConflict, "Square is not connected. A manager connects it on Setup, Connections, Square.")
+		return res, notConnected(t)
 	}
-	st, err := s.st.POS().GetPOSState(ctx, posSquare)
+	st, err := s.st.POS().GetPOSState(ctx, t.id)
 	if errors.Is(err, store.ErrNotFound) {
 		// Import starts from when it was turned on.
-		st = integrations.SyncState{POS: posSquare, Since: set.Version.CreatedAt}
+		st = integrations.SyncState{POS: t.id, Since: set.Version.CreatedAt}
 	} else if err != nil {
 		return res, err
 	}
@@ -312,11 +332,11 @@ func (s *Service) SyncSquare(ctx context.Context) (SyncResult, error) {
 			return res, serr
 		}
 		s.publish(events.KindOrder, "")
-		return res, newErr(KindConflict, "Could not reach Square: %s. Orders can still be entered by hand; import carries on from the same point when Square answers.", err)
+		return res, newErr(KindConflict, "Could not reach %s: %s. Orders can still be entered by hand; import carries on from the same point when %s answers.", t.name, err, t.name)
 	}
 	for _, o := range list {
 		res.Seen++
-		outcome, err := s.importOrder(ctx, o, false)
+		outcome, err := s.importOrder(ctx, t, o, false)
 		if err != nil {
 			st.LastError = fmt.Sprintf("order %s: %s", o.ID, err)
 			_ = s.st.POS().SavePOSState(ctx, st)
@@ -357,8 +377,8 @@ const (
 // importOrder enters a till order, or the part of it that is new since it
 // was last seen. force imports again at the same version, after a mapping
 // change.
-func (s *Service) importOrder(ctx context.Context, o integrations.TillOrder, force bool) (importOutcome, error) {
-	prev, err := s.st.POS().GetImported(ctx, posSquare, o.ID)
+func (s *Service) importOrder(ctx context.Context, t till, o integrations.TillOrder, force bool) (importOutcome, error) {
+	prev, err := s.st.POS().GetImported(ctx, t.id, o.ID)
 	found := err == nil
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		return importSkipped, err
@@ -369,9 +389,9 @@ func (s *Service) importOrder(ctx context.Context, o integrations.TillOrder, for
 	now := s.clk.Now()
 	rec := prev
 	if !found {
-		rec = integrations.Imported{POS: posSquare, ExternalID: o.ID, Added: map[string]int{}, FirstSeen: now}
+		rec = integrations.Imported{POS: t.id, ExternalID: o.ID, Added: map[string]int{}, FirstSeen: now}
 	}
-	maps, err := s.st.POS().ListMappings(ctx, posSquare)
+	maps, err := s.st.POS().ListMappings(ctx, t.id)
 	if err != nil {
 		return importSkipped, err
 	}
@@ -421,7 +441,7 @@ func (s *Service) importOrder(ctx context.Context, o integrations.TillOrder, for
 	}
 
 	outcome := importSkipped
-	p := &auth.Principal{User: squareUser, Method: auth.MethodKey}
+	p := &auth.Principal{User: t.user(), Method: auth.MethodKey}
 	if len(items) > 0 {
 		var kitchen *orders.Order
 		if rec.OrderID != "" {
@@ -435,7 +455,7 @@ func (s *Service) importOrder(ctx context.Context, o integrations.TillOrder, for
 			if ticket.Takeaway {
 				no.Kind, no.Table, no.Name = orders.KindTakeaway, "", truncate(ticket.Name, 40)
 			}
-			no.Notes = truncate(squareNote(ticket.Unmapped), 500)
+			no.Notes = truncate(tillNote(t, ticket.Unmapped), 500)
 			created, err := s.CreateOrder(ctx, p, no)
 			if err != nil {
 				return importSkipped, fmt.Errorf("enter till order %s: %w", o.ID, err)
@@ -461,7 +481,7 @@ func (s *Service) importOrder(ctx context.Context, o integrations.TillOrder, for
 	// Tell the pass: the notices go on the kitchen order's notes and
 	// history, where the pass sees them.
 	if len(notices) > 0 && rec.OrderID != "" {
-		if err := s.noteOrder(ctx, p, rec.OrderID, notices); err != nil {
+		if err := s.noteOrder(ctx, t, p, rec.OrderID, notices); err != nil {
 			return importSkipped, err
 		}
 		if outcome == importSkipped {
@@ -478,13 +498,13 @@ func (s *Service) importOrder(ctx context.Context, o integrations.TillOrder, for
 }
 
 // noteOrder adds till notices to a kitchen order's notes and history.
-func (s *Service) noteOrder(ctx context.Context, p *auth.Principal, orderID string, notices []string) error {
+func (s *Service) noteOrder(ctx context.Context, t till, p *auth.Principal, orderID string, notices []string) error {
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
 		o, err := tx.Orders().GetOrder(ctx, orderID)
 		if err != nil {
 			return err
 		}
-		o.Notes = truncate(strings.TrimSpace(o.Notes+"\nSquare: "+strings.Join(notices, " ")), 500)
+		o.Notes = truncate(strings.TrimSpace(o.Notes+"\n"+t.name+": "+strings.Join(notices, " ")), 500)
 		if err := tx.Orders().UpdateOrder(ctx, o); err != nil {
 			return err
 		}
@@ -503,12 +523,12 @@ func (s *Service) noteOrder(ctx context.Context, p *auth.Principal, orderID stri
 	return err
 }
 
-// squareNote tells the kitchen about till items it does not know yet.
-func squareNote(unmapped []string) string {
+// tillNote tells the kitchen about till items it does not know yet.
+func tillNote(t till, unmapped []string) string {
 	if len(unmapped) == 0 {
 		return ""
 	}
-	return "From Square, not on the kitchen menu yet: " + strings.Join(unmapped, ", ") + "."
+	return "From " + t.name + ", not on the kitchen menu yet: " + strings.Join(unmapped, ", ") + "."
 }
 
 func dishName(setup menu.Setup, id string) string {
@@ -525,23 +545,37 @@ func truncate(s string, n int) string {
 	return s
 }
 
-// RunSquare polls Square for orders while import is on, until ctx ends.
-// Failures back off up to two minutes and are shown on the Square page.
-func (s *Service) RunSquare(ctx context.Context, log *slog.Logger) {
+// RunTills polls each till for orders while its import is on, until ctx
+// ends.
+func (s *Service) RunTills(ctx context.Context, log *slog.Logger) {
+	var wg sync.WaitGroup
+	for _, t := range tills {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s.runTill(ctx, t, log)
+		}()
+	}
+	wg.Wait()
+}
+
+// runTill polls one till. Failures back off up to two minutes and are
+// shown on the till's page.
+func (s *Service) runTill(ctx context.Context, t till, log *slog.Logger) {
 	b := backoff.NewExponentialBackOff()
 	b.InitialInterval, b.MaxInterval = 5*time.Second, 2*time.Minute
 	for {
 		wait := 15 * time.Second
-		set, err := s.Square().current(ctx, s.st)
-		if err == nil && set.Value.Enabled && s.square() != nil {
+		set, err := s.tillGroup(t).current(ctx, s.st)
+		if err == nil && set.Value.Enabled && s.adapter(t.id) != nil {
 			wait = time.Duration(set.Value.PollSeconds) * time.Second
-			if res, err := s.SyncSquare(ctx); err != nil {
+			if res, err := s.SyncTill(ctx, t.id); err != nil {
 				wait = b.NextBackOff()
-				log.Warn("square sync", "err", err, "retry_in", wait)
+				log.Warn(t.id+" sync", "err", err, "retry_in", wait)
 			} else {
 				b.Reset()
 				if res.Created+res.Updated > 0 {
-					log.Info("square sync", "created", res.Created, "updated", res.Updated)
+					log.Info(t.id+" sync", "created", res.Created, "updated", res.Updated)
 				}
 			}
 		}
@@ -553,13 +587,17 @@ func (s *Service) RunSquare(ctx context.Context, log *slog.Logger) {
 	}
 }
 
-// SquareOrderVersions lists every version of a till order Kishtin saw,
+// TillOrderVersions lists every version of a till order Kishtin saw,
 // oldest first, as Kishtin read it: its lines, modifiers and state.
-func (s *Service) SquareOrderVersions(ctx context.Context, p *auth.Principal, externalID string) ([]store.ImportedVersion, error) {
+func (s *Service) TillOrderVersions(ctx context.Context, p *auth.Principal, id, externalID string) ([]store.ImportedVersion, error) {
 	if err := s.allow(p, auth.ActManageSettings); err != nil {
 		return nil, err
 	}
-	vs, err := s.st.POS().ListImportedVersions(ctx, posSquare, externalID)
+	t, err := tillByID(id)
+	if err != nil {
+		return nil, err
+	}
+	vs, err := s.st.POS().ListImportedVersions(ctx, t.id, externalID)
 	if err != nil {
 		return nil, err
 	}

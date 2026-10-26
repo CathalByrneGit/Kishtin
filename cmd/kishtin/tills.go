@@ -10,18 +10,19 @@ import (
 	"github.com/cathalbyrnegit/kishtin/internal/client"
 )
 
-func (c *cli) squareCmd() *cobra.Command {
+// tillCmd is the command for one till: kishtin square or kishtin sumup.
+func (c *cli) tillCmd(id, name, short, extra string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "square",
-		Short: "Orders from Square: status, catalog mapping and sync",
-		Long: `Orders from Square. A manager turns import on with
-  kishtin settings set square -f square.json --reason "..."
-after reading the preview of what is sent to Square.`,
+		Use:   id,
+		Short: short,
+		Long: fmt.Sprintf(`%s. A manager turns import on with
+  kishtin settings set %s -f %s.json --reason "..."
+after reading the preview of what is sent to %s.%s`, short, id, id, name, extra),
 	}
 	status := &cobra.Command{
 		Use: "status", Short: "Show whether import is on and working, and recent till orders", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			res, err := c.api.SquareStatus(cmd.Context())
+			res, err := c.api.TillStatus(cmd.Context(), &client.TillStatusRequestOptions{PathParams: &client.TillStatusPath{Till: client.TillStatusPathTill(id)}})
 			if err != nil {
 				return apiErr(err)
 			}
@@ -29,11 +30,11 @@ after reading the preview of what is sent to Square.`,
 				set := res.Settings.Value
 				switch {
 				case !res.Connected:
-					fmt.Fprintln(w, "Square: not connected (kishtin connectors connect square --token-file FILE)")
+					fmt.Fprintf(w, "%s: not connected (kishtin connectors connect %s --token-file FILE)\n", name, id)
 				case set.Enabled:
-					fmt.Fprintf(w, "Square: importing orders for location %s every %ds\n", set.LocationID, set.PollSeconds)
+					fmt.Fprintf(w, "%s: importing orders for location %s every %ds\n", name, set.LocationID, set.PollSeconds)
 				default:
-					fmt.Fprintln(w, "Square: connected, import is off")
+					fmt.Fprintf(w, "%s: connected, import is off\n", name)
 				}
 				if st := res.State; st != nil {
 					if st.LastOkAt != nil {
@@ -58,9 +59,9 @@ after reading the preview of what is sent to Square.`,
 		},
 	}
 	catalog := &cobra.Command{
-		Use: "catalog", Short: "Read the catalog from Square with each entry's mapping (sends Square the access token)", Args: cobra.NoArgs,
+		Use: "catalog", Short: fmt.Sprintf("Read the catalog from %s with each entry's mapping (sends %s its token)", name, name), Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			res, err := c.api.SquareCatalog(cmd.Context())
+			res, err := c.api.TillCatalog(cmd.Context(), &client.TillCatalogRequestOptions{PathParams: &client.TillCatalogPath{Till: client.TillCatalogPathTill(id)}})
 			if err != nil {
 				return apiErr(err)
 			}
@@ -103,7 +104,7 @@ after reading the preview of what is sent to Square.`,
 		Use: "map ID --dish NAME | --modifier NAME | --ignore", Short: "Map a till item to a dish, or a till modifier to a dish modifier", Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cat, err := c.api.SquareCatalog(ctx)
+			cat, err := c.api.TillCatalog(ctx, &client.TillCatalogRequestOptions{PathParams: &client.TillCatalogPath{Till: client.TillCatalogPathTill(id)}})
 			if err != nil {
 				return apiErr(err)
 			}
@@ -114,7 +115,7 @@ after reading the preview of what is sent to Square.`,
 				}
 			}
 			if entry == nil {
-				return fmt.Errorf("no catalog entry %q on Square: see kishtin square catalog", args[0])
+				return fmt.Errorf("no catalog entry %q on %s: see kishtin %s catalog", args[0], name, id)
 			}
 			in := client.MappingInput{ExternalID: entry.Entry.ID, Kind: client.MappingInputKind(entry.Entry.Kind), Name: entry.Label}
 			switch {
@@ -135,7 +136,10 @@ after reading the preview of what is sent to Square.`,
 			default:
 				return fmt.Errorf("say what it is: --dish NAME, --modifier NAME, or --ignore")
 			}
-			res, err := c.api.SaveSquareMappings(ctx, &client.SaveSquareMappingsRequestOptions{Body: &client.MappingsIn{Mappings: []client.MappingInput{in}}})
+			res, err := c.api.SaveTillMappings(ctx, &client.SaveTillMappingsRequestOptions{
+				PathParams: &client.SaveTillMappingsPath{Till: client.SaveTillMappingsPathTill(id)},
+				Body:       &client.SaveTillMappingsBody{Mappings: []client.MappingInput{in}},
+			})
 			if err != nil {
 				return apiErr(err)
 			}
@@ -146,9 +150,9 @@ after reading the preview of what is sent to Square.`,
 	mapCmd.Flags().StringVar(&modifier, "modifier", "", "the dish modifier this till modifier means")
 	mapCmd.Flags().BoolVar(&ignore, "ignore", false, "not for the kitchen, such as drinks")
 	sync := &cobra.Command{
-		Use: "sync", Short: "Ask Square for new and changed orders now", Args: cobra.NoArgs,
+		Use: "sync", Short: fmt.Sprintf("Ask %s for new and changed orders now", name), Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			res, err := c.api.SquareSync(cmd.Context())
+			res, err := c.api.TillSync(cmd.Context(), &client.TillSyncRequestOptions{PathParams: &client.TillSyncPath{Till: client.TillSyncPathTill(id)}})
 			if err != nil {
 				return apiErr(err)
 			}
@@ -158,15 +162,15 @@ after reading the preview of what is sent to Square.`,
 		},
 	}
 	locations := &cobra.Command{
-		Use: "locations", Short: "List the Square account's locations and their IDs", Args: cobra.NoArgs,
+		Use: "locations", Short: fmt.Sprintf("List the %s account's locations and their IDs", name), Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			res, err := c.api.SquareLocations(cmd.Context())
+			res, err := c.api.TillLocations(cmd.Context(), &client.TillLocationsRequestOptions{PathParams: &client.TillLocationsPath{Till: client.TillLocationsPathTill(id)}})
 			if err != nil {
 				return apiErr(err)
 			}
 			return c.emit(res, func(w io.Writer) { printLocations(w, res.Locations) })
 		},
 	}
-	cmd.AddCommand(status, catalog, mapCmd, sync, locations, c.squareVersionsCmd())
+	cmd.AddCommand(status, catalog, mapCmd, sync, locations, c.tillVersionsCmd(id))
 	return cmd
 }

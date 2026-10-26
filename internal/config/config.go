@@ -17,6 +17,7 @@ import (
 
 	"github.com/cathalbyrnegit/kishtin/internal/integrations"
 	"github.com/cathalbyrnegit/kishtin/internal/integrations/square"
+	"github.com/cathalbyrnegit/kishtin/internal/integrations/sumup"
 	"github.com/cathalbyrnegit/kishtin/internal/localtls"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
 	"github.com/cathalbyrnegit/kishtin/internal/speech"
@@ -32,6 +33,7 @@ type Config struct {
 	Files   Files  `toml:"files"`
 	Speech  Speech `toml:"speech"`
 	Square  Square `toml:"square"`
+	SumUp   SumUp  `toml:"sumup"`
 	AI      AI     `toml:"ai"`
 	// RestaurantName is the starting restaurant name for the screens.
 	RestaurantName string `toml:"restaurant_name"`
@@ -119,6 +121,21 @@ type Square struct {
 	TokenFrom string `toml:"-"`
 }
 
+// SumUp is how Kishtin reads paid sales from SumUp.
+type SumUp struct {
+	// Environment is "production", or a URL for testing against a local
+	// stand-in.
+	Environment string `toml:"environment"`
+	// Token is an API key from SumUp's dashboard. KISHTIN_SUMUP_TOKEN
+	// overrides it. Without either, a manager can connect SumUp on the
+	// screens instead.
+	Token   string   `toml:"token"`
+	Timeout Duration `toml:"timeout"`
+	// TokenFrom says where Token came from: "environment" or
+	// "kishtin.toml".
+	TokenFrom string `toml:"-"`
+}
+
 // Duration is a time.Duration written as a string such as "6h".
 type Duration struct{ time.Duration }
 
@@ -157,6 +174,7 @@ func Default() Config {
 		Files:   Files{MaxSizeMB: 15},
 		Speech:  Speech{Timeout: Duration{20 * time.Second}},
 		Square:  Square{Environment: "production", Timeout: Duration{15 * time.Second}},
+		SumUp:   SumUp{Environment: "production", Timeout: Duration{15 * time.Second}},
 		AI:      AI{Timeout: Duration{2 * time.Minute}},
 	}
 }
@@ -201,6 +219,12 @@ func Load(path string, mustExist bool) (Config, error) {
 	}
 	if v := os.Getenv("KISHTIN_SQUARE_TOKEN"); v != "" {
 		cfg.Square.Token, cfg.Square.TokenFrom = v, "environment"
+	}
+	if cfg.SumUp.Token != "" {
+		cfg.SumUp.TokenFrom = "kishtin.toml"
+	}
+	if v := os.Getenv("KISHTIN_SUMUP_TOKEN"); v != "" {
+		cfg.SumUp.Token, cfg.SumUp.TokenFrom = v, "environment"
 	}
 	if v := os.Getenv("KISHTIN_STT_URL"); v != "" {
 		cfg.Speech.STTURL = v
@@ -275,6 +299,27 @@ func (c Config) NewSquare(environment, token string) (integrations.POSAdapter, e
 		return nil, errors.New("square.timeout must be positive, such as \"15s\"")
 	}
 	return square.New(environment, token, c.Square.Timeout.Duration)
+}
+
+// SumUpClient returns the SumUp client, or nil when no token is set.
+func (c Config) SumUpClient() (integrations.POSAdapter, error) {
+	if c.SumUp.Token == "" {
+		return nil, nil
+	}
+	return c.NewSumUp(c.SumUp.Environment, c.SumUp.Token)
+}
+
+// NewSumUp makes a SumUp client for an API key, with the configured
+// timeout. It is used for keys saved on the screens too. When
+// sumup.environment is a URL (a local stand-in for testing), it is used.
+func (c Config) NewSumUp(environment, token string) (integrations.POSAdapter, error) {
+	if strings.HasPrefix(c.SumUp.Environment, "http://") || strings.HasPrefix(c.SumUp.Environment, "https://") {
+		environment = c.SumUp.Environment
+	}
+	if c.SumUp.Timeout.Duration <= 0 {
+		return nil, errors.New("sumup.timeout must be positive, such as \"15s\"")
+	}
+	return sumup.New(environment, token, c.SumUp.Timeout.Duration)
 }
 
 // CredentialsDir holds connector tokens saved on the screens: outside the
@@ -359,6 +404,9 @@ func (c Config) Validate() error {
 		return err
 	}
 	if _, err := c.SquareClient(); err != nil {
+		return err
+	}
+	if _, err := c.SumUpClient(); err != nil {
 		return err
 	}
 	if err := c.SystemSettings().Validate(); err != nil {

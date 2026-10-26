@@ -52,7 +52,7 @@ Recordings of spoken commands are **not** kept unless a manager turns it on: **S
 
 ## Square
 
-Every version of every till order Kishtin sees is kept, as Kishtin read it (lines, modifiers, ticket name, state), not only the latest. `kishtin square versions ORDER-ID`, `GET /api/square/orders/{id}/versions`. Card data never reaches Kishtin.
+Every version of every till order Kishtin sees is kept, as Kishtin read it (lines, modifiers, ticket name, state), not only the latest. The same for SumUp sales. `kishtin square versions ORDER-ID` or `kishtin sumup versions TRANSACTION-ID`, `GET /api/tills/{square|sumup}/orders/{id}/versions`. Card data never reaches Kishtin.
 
 ## Settings, limits and permissions
 
