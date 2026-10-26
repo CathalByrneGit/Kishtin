@@ -124,3 +124,6 @@ jobs:
           & $exe startup off
           schtasks /Query /TN Kishtin 2>$null
           if ($LASTEXITCODE -eq 0) { throw "the task is still there after startup off" }
+          # schtasks failing to find the task is the pass; don't let its exit
+          # code end the step.
+          exit 0
