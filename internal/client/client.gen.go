@@ -34,6 +34,10 @@ func NewDefaultClient(baseURL string, opts ...runtime.APIClientOption) (*Client,
 
 // ClientInterface is the interface for the API client.
 type ClientInterface interface {
+	// ListActions List every action and who may take it by default
+	ListActions(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListActionsResponse, error)
+	ListActionsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListActionsResp, error)
+
 	// Login Log in on a kitchen device
 	Login(ctx context.Context, options *LoginRequestOptions, reqEditors ...runtime.RequestEditorFn) (*LoginResponse, error)
 	LoginWithResponse(ctx context.Context, options *LoginRequestOptions, reqEditors ...runtime.RequestEditorFn) (*LoginResp, error)
@@ -97,6 +101,18 @@ type ClientInterface interface {
 	// SuggestColumns Ask the local model to read a copy's columns (manager password)
 	SuggestColumns(ctx context.Context, options *SuggestColumnsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SuggestColumnsResponse, error)
 	SuggestColumnsWithResponse(ctx context.Context, options *SuggestColumnsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SuggestColumnsResp, error)
+
+	// CatchUpGaps List the daily checks with no record in a period
+	CatchUpGaps(ctx context.Context, options *CatchUpGapsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CatchUpGapsResponse, error)
+	CatchUpGapsWithResponse(ctx context.Context, options *CatchUpGapsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CatchUpGapsResp, error)
+
+	// SaveCatchUp Save rows of checks done earlier, all or none
+	SaveCatchUp(ctx context.Context, options *SaveCatchUpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveCatchUpResponse, error)
+	SaveCatchUpWithResponse(ctx context.Context, options *SaveCatchUpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveCatchUpResp, error)
+
+	// PreviewCatchUp Check rows of checks done earlier, without saving
+	PreviewCatchUp(ctx context.Context, options *PreviewCatchUpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewCatchUpResponse, error)
+	PreviewCatchUpWithResponse(ctx context.Context, options *PreviewCatchUpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewCatchUpResp, error)
 
 	// CheckRecord Check a reading without saving it
 	CheckRecord(ctx context.Context, options *CheckRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CheckRecordResponse, error)
@@ -314,6 +330,22 @@ type ClientInterface interface {
 	PreviewLists(ctx context.Context, options *PreviewListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewListsResponse, error)
 	PreviewListsWithResponse(ctx context.Context, options *PreviewListsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewListsResp, error)
 
+	// GetPermissions Show the permissions in force
+	GetPermissions(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetPermissionsResponse, error)
+	GetPermissionsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetPermissionsResp, error)
+
+	// SavePermissions Save a new version of the permissions
+	SavePermissions(ctx context.Context, options *SavePermissionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SavePermissionsResponse, error)
+	SavePermissionsWithResponse(ctx context.Context, options *SavePermissionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SavePermissionsResp, error)
+
+	// PermissionsHistory List every saved version of the permissions, oldest first
+	PermissionsHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*PermissionsHistoryResponse, error)
+	PermissionsHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*PermissionsHistoryResp, error)
+
+	// PreviewPermissions Preview a change to the permissions
+	PreviewPermissions(ctx context.Context, options *PreviewPermissionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewPermissionsResponse, error)
+	PreviewPermissionsWithResponse(ctx context.Context, options *PreviewPermissionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewPermissionsResp, error)
+
 	// GetRecordBooks Show the record book settings in force
 	GetRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRecordBooksResponse, error)
 	GetRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRecordBooksResp, error)
@@ -445,6 +477,68 @@ type ClientInterface interface {
 	// VoiceSpeak Say a reply with the local text-to-speech sidecar; returns WAV audio
 	VoiceSpeak(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResponse, error)
 	VoiceSpeakWithResponse(ctx context.Context, options *VoiceSpeakRequestOptions, reqEditors ...runtime.RequestEditorFn) (*VoiceSpeakResp, error)
+}
+
+// ListActions List every action and who may take it by default
+func (c *Client) ListActions(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListActionsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/auth/actions",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ListActionsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ListActionsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ListActionsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ListActionsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ListActionsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/auth/actions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
 }
 
 // Login Log in on a kitchen device
@@ -1418,6 +1512,203 @@ func (c *Client) SuggestColumns(ctx context.Context, options *SuggestColumnsRequ
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/books/{book}/suggest")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// CatchUpGaps List the daily checks with no record in a period
+func (c *Client) CatchUpGaps(ctx context.Context, options *CatchUpGapsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CatchUpGapsResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"from": {Style: "form", Explode: &[]bool{false}[0]},
+		"to":   {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/haccp/catch-up",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CatchUpGapsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(CatchUpGapsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "CatchUpGapsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(CatchUpGapsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "CatchUpGapsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/catch-up")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SaveCatchUp Save rows of checks done earlier, all or none
+func (c *Client) SaveCatchUp(ctx context.Context, options *SaveCatchUpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveCatchUpResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/catch-up",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SaveCatchUpResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 201 {
+			target := new(SaveCatchUpErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SaveCatchUpErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SaveCatchUpResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SaveCatchUpResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/catch-up")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewCatchUp Check rows of checks done earlier, without saving
+func (c *Client) PreviewCatchUp(ctx context.Context, options *PreviewCatchUpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewCatchUpResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/catch-up/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewCatchUpResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewCatchUpErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewCatchUpErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewCatchUpResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewCatchUpResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/catch-up/preview")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -4821,6 +5112,258 @@ func (c *Client) PreviewLists(ctx context.Context, options *PreviewListsRequestO
 	return responseParser(ctx, resp)
 }
 
+// GetPermissions Show the permissions in force
+func (c *Client) GetPermissions(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetPermissionsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/permissions",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetPermissionsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetPermissionsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetPermissionsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetPermissionsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetPermissionsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/permissions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// SavePermissions Save a new version of the permissions
+func (c *Client) SavePermissions(ctx context.Context, options *SavePermissionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SavePermissionsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/permissions",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*SavePermissionsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(SavePermissionsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "SavePermissionsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(SavePermissionsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "SavePermissionsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/permissions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PermissionsHistory List every saved version of the permissions, oldest first
+func (c *Client) PermissionsHistory(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*PermissionsHistoryResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/permissions/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PermissionsHistoryResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PermissionsHistoryErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PermissionsHistoryErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PermissionsHistoryResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PermissionsHistoryResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/permissions/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewPermissions Preview a change to the permissions
+func (c *Client) PreviewPermissions(ctx context.Context, options *PreviewPermissionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewPermissionsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/permissions/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewPermissionsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewPermissionsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewPermissionsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewPermissionsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewPermissionsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/permissions/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // GetRecordBooks Show the record book settings in force
 func (c *Client) GetRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRecordBooksResponse, error) {
 	var err error
@@ -7353,6 +7896,138 @@ func (o *SuggestColumnsRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// CatchUpGapsRequestOptions is the options needed to make a request to CatchUpGaps.
+type CatchUpGapsRequestOptions struct {
+	Query *CatchUpGapsQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *CatchUpGapsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *CatchUpGapsRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *CatchUpGapsRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *CatchUpGapsRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *CatchUpGapsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// SaveCatchUpRequestOptions is the options needed to make a request to SaveCatchUp.
+type SaveCatchUpRequestOptions struct {
+	Body *SaveCatchUpBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SaveCatchUpRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SaveCatchUpRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SaveCatchUpRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SaveCatchUpRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SaveCatchUpRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewCatchUpRequestOptions is the options needed to make a request to PreviewCatchUp.
+type PreviewCatchUpRequestOptions struct {
+	Body *PreviewCatchUpBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewCatchUpRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewCatchUpRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewCatchUpRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewCatchUpRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewCatchUpRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // CheckRecordRequestOptions is the options needed to make a request to CheckRecord.
 type CheckRecordRequestOptions struct {
 	Body *CheckRecordBody
@@ -9247,6 +9922,94 @@ func (o *PreviewListsRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// SavePermissionsRequestOptions is the options needed to make a request to SavePermissions.
+type SavePermissionsRequestOptions struct {
+	Body *SavePermissionsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *SavePermissionsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *SavePermissionsRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *SavePermissionsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *SavePermissionsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *SavePermissionsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// PreviewPermissionsRequestOptions is the options needed to make a request to PreviewPermissions.
+type PreviewPermissionsRequestOptions struct {
+	Body *PreviewPermissionsBody
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *PreviewPermissionsRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.Body != nil {
+		if v, ok := any(o.Body).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Body", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *PreviewPermissionsRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *PreviewPermissionsRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *PreviewPermissionsRequestOptions) GetBody() any {
+	return o.Body
+}
+
+// GetHeader returns the headers as a map.
+func (o *PreviewPermissionsRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // SaveRecordBooksRequestOptions is the options needed to make a request to SaveRecordBooks.
 type SaveRecordBooksRequestOptions struct {
 	Body *SaveRecordBooksBody
@@ -10020,6 +10783,66 @@ func (o *VoiceSpeakRequestOptions) GetBody() any {
 // GetHeader returns the headers as a map.
 func (o *VoiceSpeakRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
+}
+
+// ListActions List every action and who may take it by default
+func (c *Client) ListActionsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListActionsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/auth/actions",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/auth/actions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ListActionsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ListActionsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListActionsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ListActionsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListActionsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
 }
 
 // Login Log in on a kitchen device
@@ -10938,6 +11761,191 @@ func (c *Client) SuggestColumnsWithResponse(ctx context.Context, options *Sugges
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "SuggestColumnsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// CatchUpGaps List the daily checks with no record in a period
+func (c *Client) CatchUpGapsWithResponse(ctx context.Context, options *CatchUpGapsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CatchUpGapsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/catch-up",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/catch-up")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &CatchUpGapsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(CatchUpGapsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CatchUpGapsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(CatchUpGapsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "CatchUpGapsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SaveCatchUp Save rows of checks done earlier, all or none
+func (c *Client) SaveCatchUpWithResponse(ctx context.Context, options *SaveCatchUpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SaveCatchUpResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/catch-up",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/catch-up")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SaveCatchUpResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 201:
+		out.JSON201 = new(SaveCatchUpResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON201); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveCatchUpResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SaveCatchUpErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SaveCatchUpErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewCatchUp Check rows of checks done earlier, without saving
+func (c *Client) PreviewCatchUpWithResponse(ctx context.Context, options *PreviewCatchUpRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewCatchUpResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/haccp/catch-up/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/catch-up/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewCatchUpResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewCatchUpResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewCatchUpResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewCatchUpErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewCatchUpErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -14221,6 +15229,250 @@ func (c *Client) PreviewListsWithResponse(ctx context.Context, options *PreviewL
 	}
 }
 
+// GetPermissions Show the permissions in force
+func (c *Client) GetPermissionsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetPermissionsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/permissions",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/permissions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetPermissionsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetPermissionsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetPermissionsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetPermissionsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetPermissionsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// SavePermissions Save a new version of the permissions
+func (c *Client) SavePermissionsWithResponse(ctx context.Context, options *SavePermissionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SavePermissionsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/permissions",
+		Method:      "PUT",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/permissions")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &SavePermissionsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(SavePermissionsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SavePermissionsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(SavePermissionsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "SavePermissionsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PermissionsHistory List every saved version of the permissions, oldest first
+func (c *Client) PermissionsHistoryWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*PermissionsHistoryResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/settings/permissions/history",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/permissions/history")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PermissionsHistoryResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PermissionsHistoryResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PermissionsHistoryResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PermissionsHistoryErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PermissionsHistoryErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// PreviewPermissions Preview a change to the permissions
+func (c *Client) PreviewPermissionsWithResponse(ctx context.Context, options *PreviewPermissionsRequestOptions, reqEditors ...runtime.RequestEditorFn) (*PreviewPermissionsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:  c.apiClient.GetBaseURL() + "/settings/permissions/preview",
+		Method:      "POST",
+		Options:     options,
+		ContentType: "application/json",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/settings/permissions/preview")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewPermissionsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewPermissionsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewPermissionsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewPermissionsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewPermissionsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // GetRecordBooks Show the record book settings in force
 func (c *Client) GetRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetRecordBooksResp, error) {
 	var err error
@@ -16706,6 +17958,10 @@ type CompareCopyBody = FileBody
 
 type SuggestColumnsBody = FileBody
 
+type SaveCatchUpBody = CatchUpInput
+
+type PreviewCatchUpBody = CatchUpInput
+
 type CheckRecordBody = NewRecord
 
 type CreateLimitBody = NewLimit
@@ -16759,6 +18015,10 @@ type PreviewGuidanceBody = SettingsChangeGuidance
 type SaveListsBody = SettingsChangeLists
 
 type PreviewListsBody = SettingsChangeLists
+
+type SavePermissionsBody = SettingsChangePermissions
+
+type PreviewPermissionsBody = SettingsChangePermissions
 
 type SaveRecordBooksBody = SettingsChangeRecordBookSettings
 
@@ -16825,6 +18085,14 @@ func (e ExportRecordBookQuery) Validate() error {
 		return nil
 	}
 	return errors
+}
+
+type CatchUpGapsQuery struct {
+	// From First day, YYYY-MM-DD (Dublin). Default: 13 days before the last day.
+	From *string `json:"from,omitempty"`
+
+	// To Last day, YYYY-MM-DD (Dublin). Default: today.
+	To *string `json:"to,omitempty"`
 }
 
 type ExportRecordsQuery struct {
@@ -16920,6 +18188,10 @@ func (v VoiceLogQuery) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(v))
 }
 
+type ListActionsResponse []ActionInfo
+
+type ListActionsErrorResponse = ErrorModel
+
 type LoginResponse = LoginResult
 
 type LoginErrorResponse = ErrorModel
@@ -16977,6 +18249,18 @@ type ExportRecordBookErrorResponse = ErrorModel
 type SuggestColumnsResponse = Suggestion
 
 type SuggestColumnsErrorResponse = ErrorModel
+
+type CatchUpGapsResponse = CatchUp
+
+type CatchUpGapsErrorResponse = ErrorModel
+
+type SaveCatchUpResponse = PaperSavedBody
+
+type SaveCatchUpErrorResponse = ErrorModel
+
+type PreviewCatchUpResponse = PaperChecksBody
+
+type PreviewCatchUpErrorResponse = ErrorModel
 
 type CheckRecordResponse = Check
 
@@ -17192,6 +18476,22 @@ type PreviewListsResponse = SettingsPreviewLists
 
 type PreviewListsErrorResponse = ErrorModel
 
+type GetPermissionsResponse = VersionedPermissions
+
+type GetPermissionsErrorResponse = ErrorModel
+
+type SavePermissionsResponse = VersionedPermissions
+
+type SavePermissionsErrorResponse = ErrorModel
+
+type PermissionsHistoryResponse = HistoryOutPermissionsBody
+
+type PermissionsHistoryErrorResponse = ErrorModel
+
+type PreviewPermissionsResponse = SettingsPreviewPermissions
+
+type PreviewPermissionsErrorResponse = ErrorModel
+
 type GetRecordBooksResponse = VersionedRecordBookSettings
 
 type GetRecordBooksErrorResponse = ErrorModel
@@ -17324,6 +18624,14 @@ type VoiceSpeakResponse = string
 
 type VoiceSpeakErrorResponse = ErrorModel
 
+type ListActionsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ListActionsResponse
+	ApplicationProblemPlusJSONDefault *ListActionsErrorResponse
+}
+
 type LoginResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -17455,6 +18763,30 @@ type SuggestColumnsResp struct {
 	StatusCode                        int
 	JSON200                           *SuggestColumnsResponse
 	ApplicationProblemPlusJSONDefault *SuggestColumnsErrorResponse
+}
+
+type CatchUpGapsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *CatchUpGapsResponse
+	ApplicationProblemPlusJSONDefault *CatchUpGapsErrorResponse
+}
+
+type SaveCatchUpResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON201                           *SaveCatchUpResponse
+	ApplicationProblemPlusJSONDefault *SaveCatchUpErrorResponse
+}
+
+type PreviewCatchUpResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewCatchUpResponse
+	ApplicationProblemPlusJSONDefault *PreviewCatchUpErrorResponse
 }
 
 type CheckRecordResp struct {
@@ -17912,6 +19244,38 @@ type PreviewListsResp struct {
 	ApplicationProblemPlusJSONDefault *PreviewListsErrorResponse
 }
 
+type GetPermissionsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetPermissionsResponse
+	ApplicationProblemPlusJSONDefault *GetPermissionsErrorResponse
+}
+
+type SavePermissionsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *SavePermissionsResponse
+	ApplicationProblemPlusJSONDefault *SavePermissionsErrorResponse
+}
+
+type PermissionsHistoryResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PermissionsHistoryResponse
+	ApplicationProblemPlusJSONDefault *PermissionsHistoryErrorResponse
+}
+
+type PreviewPermissionsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewPermissionsResponse
+	ApplicationProblemPlusJSONDefault *PreviewPermissionsErrorResponse
+}
+
 type GetRecordBooksResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -18214,6 +19578,20 @@ type Action struct {
 }
 
 func (a Action) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
+type ActionInfo struct {
+	Action string   `json:"action" validate:"required"`
+	Fixed  *bool    `json:"fixed,omitempty"`
+	Group  string   `json:"group" validate:"required"`
+	Label  string   `json:"label" validate:"required"`
+	Pin    bool     `json:"pin"`
+	Roles  []string `json:"roles" validate:"required"`
+	Why    *string  `json:"why,omitempty"`
+}
+
+func (a ActionInfo) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(a))
 }
 
@@ -18619,6 +19997,74 @@ func (c CatalogRow) Validate() error {
 		if v, ok := any(c.Mapping).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append("Mapping", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type CatchUp struct {
+	From  string       `json:"from" validate:"required"`
+	Gaps  []CatchUpGap `json:"gaps" validate:"required"`
+	Since *string      `json:"since,omitempty"`
+	To    string       `json:"to" validate:"required"`
+}
+
+func (c CatchUp) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.From, "required"); err != nil {
+		errors = errors.Append("From", err)
+	}
+	if err := typesValidator.Var(c.Gaps, "required"); err != nil {
+		errors = errors.Append("Gaps", err)
+	}
+	for i, item := range c.Gaps {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Gaps[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(c.To, "required"); err != nil {
+		errors = errors.Append("To", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type CatchUpGap struct {
+	Area      *string `json:"area,omitempty"`
+	Check     *string `json:"check,omitempty"`
+	Date      string  `json:"date" validate:"required"`
+	SignedOff *bool   `json:"signed_off,omitempty"`
+	Task      *string `json:"task,omitempty"`
+	Time      *string `json:"time,omitempty"`
+	Type      string  `json:"type" validate:"required"`
+	Unit      *string `json:"unit,omitempty"`
+}
+
+func (c CatchUpGap) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type CatchUpInput struct {
+	Rows []NewRecord `json:"rows" validate:"required"`
+}
+
+func (c CatchUpInput) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Rows, "required"); err != nil {
+		errors = errors.Append("Rows", err)
+	}
+	for i, item := range c.Rows {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Rows[%d]", i), err)
 			}
 		}
 	}
@@ -19316,6 +20762,17 @@ func (g Gap) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(g))
 }
 
+type Grant struct {
+	Action string   `json:"action" validate:"required"`
+	Pin    *bool    `json:"pin,omitempty"`
+	Roles  []string `json:"roles" validate:"required"`
+	Users  []string `json:"users,omitempty"`
+}
+
+func (g Grant) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(g))
+}
+
 type Guidance struct {
 	Checks []GuidanceCheck `json:"checks" validate:"required"`
 	Name   string          `json:"name" validate:"required"`
@@ -19426,6 +20883,28 @@ type HistoryOutPOSSettingsBody struct {
 }
 
 func (h HistoryOutPOSSettingsBody) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(h.Versions, "required"); err != nil {
+		errors = errors.Append("Versions", err)
+	}
+	for i, item := range h.Versions {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Versions[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type HistoryOutPermissionsBody struct {
+	Versions []VersionedPermissions `json:"versions" validate:"required"`
+}
+
+func (h HistoryOutPermissionsBody) Validate() error {
 	var errors runtime.ValidationErrors
 	if err := typesValidator.Var(h.Versions, "required"); err != nil {
 		errors = errors.Append("Versions", err)
@@ -20133,9 +21612,10 @@ func (m MappingsIn) Validate() error {
 }
 
 type MeOutBody struct {
-	Key    APIKey  `json:"key"`
-	Method *string `json:"method,omitempty"`
-	User   *User   `json:"user,omitempty"`
+	Can    map[string]string `json:"can"`
+	Key    APIKey            `json:"key"`
+	Method *string           `json:"method,omitempty"`
+	User   *User             `json:"user,omitempty"`
 }
 
 func (m MeOutBody) Validate() error {
@@ -20585,6 +22065,28 @@ func (p PaperSavedBody) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("Records[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type Permissions struct {
+	Grants []Grant `json:"grants" validate:"required"`
+}
+
+func (p Permissions) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(p.Grants, "required"); err != nil {
+		errors = errors.Append("Grants", err)
+	}
+	for i, item := range p.Grants {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Grants[%d]", i), err)
 			}
 		}
 	}
@@ -21093,6 +22595,28 @@ func (s SettingsChangePOSSettings) Validate() error {
 	return errors
 }
 
+type SettingsChangePermissions struct {
+	PlanRef *string     `json:"plan_ref,omitempty"`
+	Reason  string      `json:"reason" validate:"required"`
+	Value   Permissions `json:"value"`
+}
+
+func (s SettingsChangePermissions) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Reason, "required"); err != nil {
+		errors = errors.Append("Reason", err)
+	}
+	if v, ok := any(s.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type SettingsChangeRecordBookSettings struct {
 	PlanRef *string            `json:"plan_ref,omitempty"`
 	Reason  string             `json:"reason" validate:"required"`
@@ -21257,6 +22781,39 @@ type SettingsPreviewPOSSettings struct {
 }
 
 func (s SettingsPreviewPOSSettings) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Changes, "required"); err != nil {
+		errors = errors.Append("Changes", err)
+	}
+	if v, ok := any(s.Current).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Current", err)
+		}
+	}
+	if err := typesValidator.Var(s.Notes, "required"); err != nil {
+		errors = errors.Append("Notes", err)
+	}
+	if v, ok := any(s.Proposed).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Proposed", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type SettingsPreviewPermissions struct {
+	Changes    []string             `json:"changes" validate:"required"`
+	Current    VersionedPermissions `json:"current"`
+	LessStrict []string             `json:"less_strict,omitempty"`
+	Notes      []string             `json:"notes" validate:"required"`
+	Problem    *string              `json:"problem,omitempty"`
+	Proposed   Permissions          `json:"proposed"`
+}
+
+func (s SettingsPreviewPermissions) Validate() error {
 	var errors runtime.ValidationErrors
 	if err := typesValidator.Var(s.Changes, "required"); err != nil {
 		errors = errors.Append("Changes", err)
@@ -22299,6 +23856,30 @@ type VersionedPOSSettings struct {
 }
 
 func (v VersionedPOSSettings) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(v.Value).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Value", err)
+		}
+	}
+	if v, ok := any(v.Version).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Version", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type VersionedPermissions struct {
+	Builtin bool            `json:"builtin"`
+	Value   Permissions     `json:"value"`
+	Version SettingsVersion `json:"version"`
+}
+
+func (v VersionedPermissions) Validate() error {
 	var errors runtime.ValidationErrors
 	if v, ok := any(v.Value).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {

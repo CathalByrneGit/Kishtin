@@ -19,7 +19,7 @@
   let { big = false, station: locked = null }: Props = $props();
 
   const feed = kitchenFeed();
-  const cook = $derived(canWorkStation(session.user?.role));
+  const cook = $derived(canWorkStation());
   let busy = $state<string | null>(null);
   /** the dish picked in the all-day strip, to show on its own */
   let only = $state<string | null>(null);

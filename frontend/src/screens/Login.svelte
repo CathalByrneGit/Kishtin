@@ -7,13 +7,13 @@
   import { startSession, unpairDevice } from "../lib/session.svelte";
 
   interface Props {
-    /** only list managers, for a manager password login */
-    managersOnly?: boolean;
+    /** only list staff with a password, for a password login */
+    passwordOnly?: boolean;
     /** start with the password form */
     password?: boolean;
     onloggedin?: () => void;
   }
-  let { managersOnly = false, password: usePassword = false, onloggedin }: Props = $props();
+  let { passwordOnly = false, password: usePassword = false, onloggedin }: Props = $props();
 
   let staff = $state<Schemas["StaffEntry"][] | null>(null);
   let picked = $state<Schemas["StaffEntry"] | null>(null);
@@ -30,7 +30,7 @@
   async function load() {
     try {
       const all = (await api.staff()).staff;
-      staff = managersOnly ? all.filter((s) => s.role === "manager" && s.has_password) : all;
+      staff = passwordOnly ? all.filter((s) => s.has_password) : all;
     } catch (err) {
       error = message(err);
       staff = [];
@@ -77,7 +77,7 @@
 
 <div class="page kitchen">
   {#if !picked}
-    <h1>{managersOnly ? "Manager login" : "Who is logging in?"}</h1>
+    <h1>{passwordOnly ? "Password login" : "Who is logging in?"}</h1>
     {#if staff === null}
       <Spinner />
     {:else if staff.length === 0 && !error}
@@ -90,7 +90,7 @@
       </div>
     {/if}
     {#if error}<Notice tone="error" message={error} />{/if}
-    {#if !managersOnly}
+    {#if !passwordOnly}
       <div class="footer">
         <Button label="Unpair this device" onclick={unpairDevice} />
       </div>

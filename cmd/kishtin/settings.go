@@ -170,10 +170,28 @@ func (c *cli) settingsGroups() map[string]settingsOps {
 				return result(c.api.SaveRecordBooks(ctx, &client.SaveRecordBooksRequestOptions{Body: body}))
 			},
 		},
+		"permissions": {
+			get:     func(ctx context.Context) (any, error) { return result(c.api.GetPermissions(ctx)) },
+			history: func(ctx context.Context) (any, error) { return result(c.api.PermissionsHistory(ctx)) },
+			preview: func(ctx context.Context, b []byte) (any, error) {
+				body, err := decodeInto[client.SettingsChangePermissions](b)
+				if err != nil {
+					return nil, err
+				}
+				return result(c.api.PreviewPermissions(ctx, &client.PreviewPermissionsRequestOptions{Body: body}))
+			},
+			save: func(ctx context.Context, b []byte) (any, error) {
+				body, err := decodeInto[client.SettingsChangePermissions](b)
+				if err != nil {
+					return nil, err
+				}
+				return result(c.api.SavePermissions(ctx, &client.SavePermissionsRequestOptions{Body: body}))
+			},
+		},
 	}
 }
 
-var settingsKinds = []string{"guidance", "rules", "lists", "system", "scheduler", "square", "record_books"}
+var settingsKinds = []string{"guidance", "rules", "lists", "system", "scheduler", "square", "record_books", "permissions"}
 
 // versioned is the JSON shape of a settings version with its value.
 type versioned struct {
@@ -329,62 +347,7 @@ func (c *cli) settingsCmd() *cobra.Command {
 			if !json.Valid(raw) {
 				return fmt.Errorf("%s is not valid JSON", file)
 			}
-			body, err := json.Marshal(map[string]any{"value": json.RawMessage(raw), "reason": reason, "plan_ref": planRef})
-			if err != nil {
-				return err
-			}
-
-			res, err := ops.preview(cmd.Context(), body)
-			if err != nil {
-				return err
-			}
-			pv, err := roundTrip[struct {
-				Changes    []string `json:"changes"`
-				LessStrict []string `json:"less_strict"`
-				Notes      []string `json:"notes"`
-				Problem    string   `json:"problem"`
-			}](res)
-			if err != nil {
-				return err
-			}
-			if c.asJSON && !yes {
-				return c.emit(res, nil)
-			}
-			w := c.errOut
-			if len(pv.Changes) > 0 {
-				fmt.Fprintln(w, "Changes:")
-				for _, ch := range pv.Changes {
-					fmt.Fprintln(w, "  "+ch)
-				}
-			}
-			for _, ls := range pv.LessStrict {
-				fmt.Fprintln(w, "WARNING: less strict: "+ls)
-			}
-			for _, n := range slices.Compact(pv.Notes) {
-				fmt.Fprintln(w, n)
-			}
-			if pv.Problem != "" {
-				return fmt.Errorf("cannot save: %s", pv.Problem)
-			}
-			if !yes {
-				ok, err := confirm(c.in, w, "Save these settings?")
-				if err != nil {
-					return err
-				}
-				if !ok {
-					fmt.Fprintln(w, "Not saved.")
-					return nil
-				}
-			}
-			saved, err := ops.save(cmd.Context(), body)
-			if err != nil {
-				return err
-			}
-			v, err := roundTrip[versioned](saved)
-			if err != nil {
-				return err
-			}
-			return c.emit(saved, func(out io.Writer) { fmt.Fprintf(out, "Saved %s version %s.\n", args[0], v.Version.ID) })
+			return c.saveSettings(cmd.Context(), args[0], ops, raw, reason, planRef, yes)
 		},
 	}
 	set.Flags().StringVarP(&file, "file", "f", "", "JSON file with the new value, or - for standard input")
@@ -394,4 +357,65 @@ func (c *cli) settingsCmd() *cobra.Command {
 
 	cmd.AddCommand(show, history, set)
 	return cmd
+}
+
+// saveSettings previews a new value for a settings group, shows what
+// would change, asks (unless yes) and saves it.
+func (c *cli) saveSettings(ctx context.Context, group string, ops settingsOps, raw []byte, reason, planRef string, yes bool) error {
+	body, err := json.Marshal(map[string]any{"value": json.RawMessage(raw), "reason": reason, "plan_ref": planRef})
+	if err != nil {
+		return err
+	}
+
+	res, err := ops.preview(ctx, body)
+	if err != nil {
+		return err
+	}
+	pv, err := roundTrip[struct {
+		Changes    []string `json:"changes"`
+		LessStrict []string `json:"less_strict"`
+		Notes      []string `json:"notes"`
+		Problem    string   `json:"problem"`
+	}](res)
+	if err != nil {
+		return err
+	}
+	if c.asJSON && !yes {
+		return c.emit(res, nil)
+	}
+	w := c.errOut
+	if len(pv.Changes) > 0 {
+		fmt.Fprintln(w, "Changes:")
+		for _, ch := range pv.Changes {
+			fmt.Fprintln(w, "  "+ch)
+		}
+	}
+	for _, ls := range pv.LessStrict {
+		fmt.Fprintln(w, "WARNING: less strict: "+ls)
+	}
+	for _, n := range slices.Compact(pv.Notes) {
+		fmt.Fprintln(w, n)
+	}
+	if pv.Problem != "" {
+		return fmt.Errorf("cannot save: %s", pv.Problem)
+	}
+	if !yes {
+		ok, err := confirm(c.in, w, "Save these settings?")
+		if err != nil {
+			return err
+		}
+		if !ok {
+			fmt.Fprintln(w, "Not saved.")
+			return nil
+		}
+	}
+	saved, err := ops.save(ctx, body)
+	if err != nil {
+		return err
+	}
+	v, err := roundTrip[versioned](saved)
+	if err != nil {
+		return err
+	}
+	return c.emit(saved, func(out io.Writer) { fmt.Fprintf(out, "Saved %s version %s.\n", group, v.Version.ID) })
 }

@@ -20,7 +20,7 @@ type Limits struct {
 
 // ListLimits returns every limit version and the current ones.
 func (s *Service) ListLimits(ctx context.Context, p *auth.Principal) (Limits, error) {
-	if err := allow(p, auth.ActViewHACCP); err != nil {
+	if err := s.allow(p, auth.ActViewHACCP); err != nil {
 		return Limits{}, err
 	}
 	history, err := s.st.HACCP().ListLimitVersions(ctx)
@@ -149,7 +149,7 @@ func (s *Service) buildLimit(ctx context.Context, st store.Store, p *auth.Princi
 // PreviewLimit shows how recent records would have scored under a proposed
 // limit, and anything that stops it being saved.
 func (s *Service) PreviewLimit(ctx context.Context, p *auth.Principal, nl NewLimit) (LimitPreview, error) {
-	if err := allow(p, auth.ActManageLimits); err != nil {
+	if err := s.allow(p, auth.ActManageLimits); err != nil {
 		return LimitPreview{}, err
 	}
 	lv, pv, problem, err := s.buildLimit(ctx, s.st, p, "(preview)", nl)
@@ -224,7 +224,7 @@ func recordTypesFor(c haccp.CheckType) []haccp.RecordType {
 // CreateLimit saves a new limit version. It supersedes the current version
 // for the same check and scope, if there is one.
 func (s *Service) CreateLimit(ctx context.Context, p *auth.Principal, nl NewLimit) (haccp.LimitVersion, error) {
-	if err := allow(p, auth.ActManageLimits); err != nil {
+	if err := s.allow(p, auth.ActManageLimits); err != nil {
 		return haccp.LimitVersion{}, err
 	}
 	var saved haccp.LimitVersion

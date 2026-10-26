@@ -103,6 +103,8 @@ Choose a type: Fridge / freezer, Delivery, Cook / reheat, Cooling, Hot holding, 
 - **Cooling**: enter when cooking finished and when the food went into the fridge (**Now** fills in the time). A fridge time earlier than the cooking time counts as over midnight. If more than 2 hours passed, enter the core temperature at 2.5 hours.
 - **Batch label**: the use-by date is the made-on date plus the shelf life in days (5 by default).
 
+**When was this done?** › **Earlier** logs a check done earlier, with its date and time and, if it was someone else, who did it. When correcting a record, the correction keeps the original's time unless you choose **A different time**.
+
 If the result is not a pass, a corrective action is required. Pick a quick-pick action or write your own. **Save record** stays off until there is a result and, if needed, an action.
 
 ## Records
@@ -124,6 +126,14 @@ Select a record to open its details panel:
 ## Record books
 
 Head chefs and managers only. Choose a month, check each booklet's missed checks and preview, then download the PDF. See [record-books.md](record-books.md).
+
+## Catch up
+
+![Catch up](screenshots/catch-up.png)
+
+Every fridge and freezer check and cleaning task that was due and has no record, a card per day, by default for the last 14 days (choose **From** and **To** for up to 62). Type the temperature, or tick **Done** for a cleaning task, and the time it was done; the time starts at the start of the check's window. **Done by** names who did them, if not you. Leave checks that were not done blank: Kishtin never fills them in.
+
+**Check entries** shows each result. A reading out of limit needs the corrective action that was taken. **Save** adds every entry, or none if any cannot be saved. A day already signed off is marked; adding to it needs permission (Setup › Permissions).
 
 ## Paper import
 
@@ -156,7 +166,7 @@ It runs when you open the page, and again with **Check again**. If something doe
 
 ## Setup
 
-Everyone can see **Menu**, **Scheduler**, **Fridges and tasks** and **Limits and rules**. Changing them, and opening **Staff**, **Device keys** and **Backups** at all, needs a manager logged in with their password. Use **Manager login** on the page. That logs this device in as the manager for 30 minutes.
+Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and rules** and **Permissions**. Changing them, and opening **Staff**, **Device keys** and **Backups** at all, needs a manager logged in with their password, unless a manager has given that job to others in **Permissions**. Use **Password login** on the page. That logs this device in with a password for 30 minutes.
 
 - **Menu**: a card per station with its equipment and how many each holds, and every dish in a sortable table with its course, station, equipment and capacity, cook time, total time, how long it can wait, and status (Available, 86, off the menu). **Add station**, **Add equipment**, **Add dish** and **Edit** need the manager password. The dish form takes times in minutes or minutes:seconds, the food category from the HACCP lists, and modifiers with their extra cook minutes. **86** and **Back on** are open to head chefs, line cooks and managers.
 - **Connections**: what Kishtin can connect to (Square, for now), what each sends, and whether it is connected and in use. **Set up** opens the connector's page. **Square** has its setup in three steps: connect the account (paste the access token, checked with Square before it is saved), map till items to dishes, and turn import on (with a review of exactly what is sent to Square); then recent till orders with anything to check. See [square.md](square.md).
@@ -168,6 +178,7 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks** and **Limits and
   - A reason is always needed. A HACCP plan reference is needed when the limit is less strict than your guidance.
   - The food-safety rules are toggles, reviewed the same way.
   - The reference guidance is changed with `kishtin settings set guidance`.
+- **Permissions**: who may do what, per action: the roles and named staff allowed, and whether a PIN is enough. Managers may always do everything; staff, keys, permissions and fitness to work stay managers only. See [permissions.md](permissions.md).
 - **Staff**: add staff with a role and a PIN (managers also get a password of at least 10 characters), change roles, change a PIN or password, and deactivate or reactivate. Staff are never deleted, because records name who logged them.
 - **Device keys**: make device keys and staff keys for the CLI. The key and pairing link are shown once. You can revoke a key.
 - **Backups**: the latest backup, the schedule, and every backup on the server with its record count, size, verify result and chain head. **Back up now** makes one straight away.

@@ -66,6 +66,8 @@ type groupSpec[T any] struct {
 	// field-by-field list.
 	changes func(cur, next T) []string
 	edit    auth.Action
+	// saved, when set, runs after a change is saved.
+	saved func(ctx context.Context, s *Service) error
 }
 
 // Group is a versioned settings group: reference guidance, food-safety
@@ -265,7 +267,7 @@ func (g *Group[T]) current(ctx context.Context, st store.Store) (Versioned[T], e
 
 // Current returns the settings in force. Any staff member can read them.
 func (g *Group[T]) Current(ctx context.Context, p *auth.Principal) (Versioned[T], error) {
-	if err := allow(p, auth.ActViewHACCP); err != nil {
+	if err := g.s.allow(p, auth.ActViewHACCP); err != nil {
 		return Versioned[T]{}, err
 	}
 	return g.current(ctx, g.s.st)
@@ -273,7 +275,7 @@ func (g *Group[T]) Current(ctx context.Context, p *auth.Principal) (Versioned[T]
 
 // History returns every saved version, oldest first.
 func (g *Group[T]) History(ctx context.Context, p *auth.Principal) ([]Versioned[T], error) {
-	if err := allow(p, auth.ActViewHACCP); err != nil {
+	if err := g.s.allow(p, auth.ActViewHACCP); err != nil {
 		return nil, err
 	}
 	versions, err := g.s.st.Settings().ListSettings(ctx, g.spec.kind)
@@ -327,7 +329,7 @@ func (g *Group[T]) check(ctx context.Context, st store.Store, ch SettingsChange[
 
 // Preview shows what a change would do without saving it.
 func (g *Group[T]) Preview(ctx context.Context, p *auth.Principal, ch SettingsChange[T]) (SettingsPreview[T], error) {
-	if err := allow(p, g.spec.edit); err != nil {
+	if err := g.s.allow(p, g.spec.edit); err != nil {
 		return SettingsPreview[T]{}, err
 	}
 	return g.check(ctx, g.s.st, ch)
@@ -336,7 +338,7 @@ func (g *Group[T]) Preview(ctx context.Context, p *auth.Principal, ch SettingsCh
 // Save stores a change as a new version. It refuses anything Preview
 // reports as a problem.
 func (g *Group[T]) Save(ctx context.Context, p *auth.Principal, ch SettingsChange[T]) (Versioned[T], error) {
-	if err := allow(p, g.spec.edit); err != nil {
+	if err := g.s.allow(p, g.spec.edit); err != nil {
 		return Versioned[T]{}, err
 	}
 	var out Versioned[T]
@@ -368,10 +370,16 @@ func (g *Group[T]) Save(ctx context.Context, p *auth.Principal, ch SettingsChang
 		out = Versioned[T]{Version: v, Value: pv.Proposed}
 		return nil
 	})
-	if err == nil {
-		g.s.publish(events.KindSettings, string(g.spec.kind))
+	if err != nil {
+		return out, err
 	}
-	return out, err
+	if g.spec.saved != nil {
+		if err := g.spec.saved(ctx, g.s); err != nil {
+			return out, err
+		}
+	}
+	g.s.publish(events.KindSettings, string(g.spec.kind))
+	return out, nil
 }
 
 // guidanceNotes lists current limits whose standing against the guidance

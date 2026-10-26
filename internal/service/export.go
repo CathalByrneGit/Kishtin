@@ -31,10 +31,11 @@ var recordColumns = []string{
 	"logged_by", "logged_by_name", "subject", "temp_c", "outcome",
 	"outcome_reason", "corrective_action", "limit_version_id", "limit_scope", "rules_version_id",
 	"corrects", "correction_reason", "reading_json", "prev_hash", "hash",
+	"done_at_utc", "done_at_dublin",
 }
 
-// exportRecords lists the records an export covers, oldest first. A zero
-// From or To leaves that end of the range open.
+// exportRecords lists the records an export covers, by when each check was
+// done, oldest first. A zero From or To leaves that end of the range open.
 func (s *Service) exportRecords(ctx context.Context, q RecordQuery) ([]haccp.Record, error) {
 	if !q.From.IsZero() && !q.To.IsZero() && !q.To.After(q.From) {
 		return nil, newErr(KindInvalid, "choose a date range with the end after the start")
@@ -49,7 +50,7 @@ func (s *Service) exportRecords(ctx context.Context, q RecordQuery) ([]haccp.Rec
 			return nil, newErr(KindInvalid, "unknown outcome %q", o)
 		}
 	}
-	return s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: q.From, To: q.To, Types: q.Types, Outcomes: q.Outcomes})
+	return s.st.HACCP().ListRecords(ctx, store.RecordFilter{DoneFrom: q.From, DoneTo: q.To, ByDone: true, Types: q.Types, Outcomes: q.Outcomes})
 }
 
 // ExportRecordsCSV writes the records matching q as CSV for an inspection,
@@ -57,7 +58,7 @@ func (s *Service) exportRecords(ctx context.Context, q RecordQuery) ([]haccp.Rec
 // chain head so a copy of the export can be checked against the live
 // system later.
 func (s *Service) ExportRecordsCSV(ctx context.Context, p *auth.Principal, q RecordQuery, w io.Writer) (ExportSummary, error) {
-	if err := allow(p, auth.ActExportHACCP); err != nil {
+	if err := s.allow(p, auth.ActExportHACCP); err != nil {
 		return ExportSummary{}, err
 	}
 	sum := ExportSummary{From: q.From, To: q.To}
@@ -65,7 +66,7 @@ func (s *Service) ExportRecordsCSV(ctx context.Context, p *auth.Principal, q Rec
 	if err != nil {
 		return sum, err
 	}
-	recs = visible(p, recs)
+	recs = s.visible(p, recs)
 	rep, err := s.verifyStore(ctx, s.st, false)
 	if err != nil {
 		return sum, err
@@ -97,6 +98,7 @@ func (s *Service) ExportRecordsCSV(ctx context.Context, p *auth.Principal, q Rec
 			r.LoggedBy, cell(r.LoggedByName), cell(subject(r)), temp, string(r.Outcome),
 			cell(r.OutcomeReason), cell(r.CorrectiveAction), r.LimitVersionID, cell(scope), r.RulesVersionID,
 			r.Corrects, cell(r.CorrectionReason), cell(string(reading)), r.PrevHash, r.Hash,
+			r.TakenAt().UTC().Format(time.RFC3339Nano), r.TakenAt().In(clock.Dublin).Format("2006-01-02 15:04:05"),
 		}
 		if err := cw.Write(row); err != nil {
 			return sum, fmt.Errorf("write CSV: %w", err)
@@ -119,7 +121,7 @@ var limitColumns = []string{
 // ExportLimitsCSV writes the full limit history as CSV, to go with a
 // records export.
 func (s *Service) ExportLimitsCSV(ctx context.Context, p *auth.Principal, w io.Writer) error {
-	if err := allow(p, auth.ActExportHACCP); err != nil {
+	if err := s.allow(p, auth.ActExportHACCP); err != nil {
 		return err
 	}
 	history, err := s.st.HACCP().ListLimitVersions(ctx)

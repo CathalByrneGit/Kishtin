@@ -9,7 +9,7 @@
   import { dublinDate, dublinTime, shortDate } from "../../lib/format";
   import { CHECK_LABELS, limitWords } from "../../lib/labels";
   import { onChange } from "../../lib/live.svelte";
-  import { isManagerPassword } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
 
   type LV = Schemas["LimitVersion"];
 
@@ -26,7 +26,7 @@
   let review = $state<Preview | null>(null);
   let saving = $state(false);
 
-  const canEdit = $derived(isManagerPassword());
+  const canEdit = $derived(can("haccp.limits"));
 
   async function load() {
     try {
@@ -141,7 +141,7 @@
     </div>
   </header>
 
-  <ManagerGate what="Limits" viewable>
+  <ManagerGate what="Limits" action="haccp.limits" viewable>
     {#if error}<Notice tone="error" message={error} />{/if}
 
     {#if !limits || !rules || !guidance}

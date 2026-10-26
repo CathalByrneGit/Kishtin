@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { can, canWithPassword } from "../lib/can.svelte";
   import { Button, Card, Chip, MetricCard, Modal, Notice, SelectDropdown, Spinner, Table, showFlash } from "@kenn-io/kit-ui";
   import { Eye, FileText, PenLine } from "@lucide/svelte";
   import SignOffModal from "../components/SignOffModal.svelte";
   import Login from "../screens/Login.svelte";
   import { title } from "../lib/labels";
-  import { isManagerPassword } from "../lib/session.svelte";
   import { onMount, tick } from "svelte";
   import { api, download, message, type Schemas } from "../lib/api";
   import { cellText, gapsByDate, headerGroups, monthLabel, recentMonths } from "../lib/books";
@@ -28,7 +28,7 @@
   // Bumped after a sign-off, so the booklets fill in again with it.
   let version = $state(0);
 
-  const canExport = $derived(session.user?.role === "manager" || session.user?.role === "head_chef");
+  const canExport = $derived(can("haccp.export"));
 
   function loadSignStatus() {
     api
@@ -105,7 +105,7 @@
 
   /** locked is a booklet this login may not open: fitness to work is for a manager with a password. */
   function locked(t: Template): boolean {
-    return t.builder === "fitness" && !isManagerPassword();
+    return t.builder === "fitness" && !can("haccp.fitness");
   }
 
   const shown = $derived((info?.booklets ?? []).filter((b) => !b.off));
@@ -152,9 +152,11 @@
           <span class="small muted">A sign-off fills the manager or supervisor check line of every record book.</span>
         </div>
         <div class="stack end">
-          <Button tone="info" surface="solid" label="Sign off records" disabled={!isManagerPassword()} onclick={() => (signing = true)}><PenLine size={16} /></Button>
-          {#if !isManagerPassword()}
-            <Button size="sm" label="Manager login to sign" onclick={() => (managerLogin = true)} />
+          <Button tone="info" surface="solid" label="Sign off records" disabled={!can("haccp.sign_off")} onclick={() => (signing = true)}><PenLine size={16} /></Button>
+          {#if !can("haccp.sign_off") && canWithPassword("haccp.sign_off")}
+            <Button size="sm" label="Log in with a password to sign" onclick={() => (managerLogin = true)} />
+          {:else if !can("haccp.sign_off")}
+            <span class="small muted">A manager signs off, or can allow you in Setup › Permissions.</span>
           {/if}
         </div>
       </div>
@@ -303,9 +305,9 @@
 {/if}
 
 {#if managerLogin}
-  <Modal title="Manager login" onclose={() => (managerLogin = false)} maxWidth="520px">
-    <p class="muted">This device will be logged in as the manager for 30 minutes.</p>
-    <Login managersOnly password onloggedin={() => (managerLogin = false)} />
+  <Modal title="Password login" onclose={() => (managerLogin = false)} maxWidth="520px">
+    <p class="muted">This device will be logged in with a password for 30 minutes.</p>
+    <Login passwordOnly password onloggedin={() => (managerLogin = false)} />
   </Modal>
 {/if}
 

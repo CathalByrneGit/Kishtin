@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { can, canWithPassword } from "../lib/can.svelte";
   import { Button, Card, Checkbox, Chip, EmptyState, MetricCard, Notice, Spinner, Table, TableHeaderCell, showFlash, type ChipTone } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
   import { api, message, type Schemas, type Today } from "../lib/api";
   import { dublinTime, longDate, temp } from "../lib/format";
-  import { details, limitText, outcomeStyle, title, typeLabel } from "../lib/labels";
+  import { details, doneAt, doneBy, limitText, outcomeStyle, title, typeLabel } from "../lib/labels";
   import { onChange } from "../lib/live.svelte";
   import { openLog } from "../lib/logdrawer.svelte";
   import { navigate } from "../lib/router.svelte";
@@ -83,7 +84,7 @@
   {#if !today}
     {#if !error}<Spinner />{/if}
   {:else}
-    {#if today.sign_off.unsigned_days >= SIGN_OFF_DAYS && (session.user?.role === "manager" || session.user?.role === "head_chef") && today.sign_off.unsigned_from}
+    {#if today.sign_off.unsigned_days >= SIGN_OFF_DAYS && canWithPassword("haccp.sign_off") && today.sign_off.unsigned_from}
       <Notice
         tone="warning"
         title="Records not signed off"
@@ -164,11 +165,11 @@
                         <Chip
                           tone={c.tone}
                           uppercase={false}
-                          title={s.record ? `Logged ${dublinTime(s.record.logged_at)} by ${s.record.logged_by_name}` : `From ${s.from}${s.until ? ` until ${s.until}` : ""}`}
+                          title={s.record ? `Done ${dublinTime(doneAt(s.record))} by ${doneBy(s.record)}` : `From ${s.from}${s.until ? ` until ${s.until}` : ""}`}
                         >
                           <span class="num">{c.label}</span>
                         </Chip>
-                        {#if s.record}<span class="muted small num"> {dublinTime(s.record.logged_at)}</span>{/if}
+                        {#if s.record}<span class="muted small num"> {dublinTime(doneAt(s.record))}</span>{/if}
                       {:else}
                         <span class="muted">–</span>
                       {/if}
@@ -198,7 +199,7 @@
                   }}
                 />
                 {#if c.record}
-                  <span class="muted small"><span class="num">{dublinTime(c.record.logged_at)}</span> · {c.record.logged_by_name}</span>
+                  <span class="muted small"><span class="num">{dublinTime(doneAt(c.record))}</span> · {doneBy(c.record)}</span>
                 {/if}
               </li>
             {:else}
@@ -225,7 +226,7 @@
               {#each today.needs_attention as r (r.id)}
                 {@const o = outcomeStyle(r.outcome)}
                 <tr>
-                  <td class="num">{dublinTime(r.logged_at)}</td>
+                  <td class="num">{dublinTime(doneAt(r))}</td>
                   <td><Chip tone={o.tone} uppercase={false}>{o.label}</Chip></td>
                   <td><a href={`/records?id=${r.id}`}>{title(r)}</a>&nbsp;<span class="muted">· {r.logged_by_name}</span></td>
                   <td>{r.outcome_reason}</td>

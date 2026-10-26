@@ -4,7 +4,7 @@
   import ManagerGate from "../../components/ManagerGate.svelte";
   import { api, message, type Schemas } from "../../lib/api";
   import { dublinDate, dublinTime, shortDate } from "../../lib/format";
-  import { isManagerPassword } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
 
   let backups = $state<Schemas["Backup"][] | null>(null);
   let system = $state<Schemas["System"] | null>(null);
@@ -23,7 +23,7 @@
   }
 
   $effect(() => {
-    if (isManagerPassword()) void load();
+    if (can("backup")) void load();
   });
 
   async function backupNow() {
@@ -56,12 +56,12 @@
         on this server. Copy them, and the <code>files/</code> folder of dockets, somewhere else yourself.
       </p>
     </div>
-    {#if isManagerPassword()}
+    {#if can("backup")}
       <Button tone="info" surface="solid" label={busy ? "Backing up…" : "Back up now"} disabled={busy} onclick={backupNow}><Archive size={16} /></Button>
     {/if}
   </header>
 
-  <ManagerGate what="Backups">
+  <ManagerGate what="Backups" action="backup">
     {#if error}<Notice tone="error" message={error} />{/if}
     {#if backups === null}
       {#if !error}<Spinner />{/if}

@@ -15,7 +15,7 @@
   import RecordDetails from "../components/RecordDetails.svelte";
   import { api, message, type HaccpRecord, type RecordFilter } from "../lib/api";
   import { addDays, dublinDate, dublinTime, shortDate } from "../lib/format";
-  import { details, outcomeStyle, title, TYPE_LABELS, typeLabel } from "../lib/labels";
+  import { details, doneAt, outcomeStyle, title, TYPE_LABELS, typeLabel } from "../lib/labels";
   import { onChange } from "../lib/live.svelte";
   import { param, setParam } from "../lib/router.svelte";
 
@@ -63,7 +63,7 @@
   const sorter = new TableSort<HaccpRecord>(
     {
       seq: (r) => r.seq,
-      time: (r) => r.logged_at,
+      time: (r) => doneAt(r),
       type: (r) => typeLabel(r.type),
       record: (r) => title(r).toLowerCase(),
       result: (r) => ({ fail: 0, borderline: 1, pass: 2 })[r.outcome] ?? 3,
@@ -170,7 +170,7 @@
             <tr class="clickable" class:selected={r.id === selectedId} onclick={() => select(r)}>
               <td class="num muted">{r.seq}</td>
               <td class="num nowrap">
-                {shortDate(dublinDate(new Date(r.logged_at)))}, {dublinTime(r.logged_at)}
+                {shortDate(dublinDate(new Date(doneAt(r))))}, {dublinTime(doneAt(r))}
               </td>
               <td>{typeLabel(r.type)}</td>
               <td>

@@ -16,7 +16,7 @@ import (
 // UploadFile stores an attachment, such as a docket photo, and returns its
 // metadata. Attach it to a delivery record with its SHA-256.
 func (s *Service) UploadFile(ctx context.Context, p *auth.Principal, r io.Reader, name string) (store.FileMeta, error) {
-	if err := allow(p, auth.ActLogHACCP); err != nil {
+	if err := s.allow(p, auth.ActLogHACCP); err != nil {
 		return store.FileMeta{}, err
 	}
 	sys, err := s.System().current(ctx, s.st)
@@ -53,7 +53,7 @@ func cleanName(name string) string {
 
 // OpenFile opens an attachment for reading.
 func (s *Service) OpenFile(ctx context.Context, p *auth.Principal, sha string) (store.FileMeta, *os.File, error) {
-	if err := allow(p, auth.ActViewHACCP); err != nil {
+	if err := s.allow(p, auth.ActViewHACCP); err != nil {
 		return store.FileMeta{}, nil, err
 	}
 	sha = strings.ToLower(sha)

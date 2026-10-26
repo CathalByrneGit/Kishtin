@@ -4,7 +4,7 @@
   import { api, message, type HaccpRecord, type Schemas } from "../lib/api";
   import { gapsByDate } from "../lib/books";
   import { dublinDate, dublinTime, longDate } from "../lib/format";
-  import { details, title } from "../lib/labels";
+  import { details, doneAt, doneBy, title } from "../lib/labels";
 
   interface Props {
     onsigned: (r: HaccpRecord) => void;
@@ -91,7 +91,7 @@
           <strong>Readings without a corrective action</strong>
           <ul>
             {#each preview.without_action as r (r.id)}
-              <li>{longDate(dublinDate(new Date(r.logged_at)))} {dublinTime(r.logged_at)}: {title(r)}, {details(r)} ({r.outcome === "fail" ? "Fail" : "Check"}), by {r.logged_by_name}</li>
+              <li>{longDate(dublinDate(new Date(doneAt(r))))} {dublinTime(doneAt(r))}: {title(r)}, {details(r)} ({r.outcome === "fail" ? "Fail" : "Check"}), by {doneBy(r)}</li>
             {/each}
           </ul>
         </div>

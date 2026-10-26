@@ -125,8 +125,6 @@ export function readingRows(r: { type: string; reading: Reading }): [string, str
     if (v !== undefined && v !== null && v !== "") rows.push([label, v]);
   };
   const yes = (b: boolean | undefined | null) => (b === undefined || b === null ? undefined : b ? "Yes" : "No");
-  if (rd.taken_at) add("Check done", `${longDate(dublinDate(new Date(rd.taken_at)))} ${dublinTime(rd.taken_at)} (transcribed from paper)`);
-  add("Signed on paper", rd.signed_by);
   if (rd.period_from && rd.period_to) add("Period", `${longDate(rd.period_from)} to ${longDate(rd.period_to)}`);
   if (rd.review) add("When signed", reviewText(rd.review));
   add("Unit", rd.unit);
@@ -196,4 +194,15 @@ export function limitWords(l: LimitShape): string {
     );
   }
   return parts.join(", ");
+}
+
+/** doneAt is when a record's check was done: the time given when it was
+ * logged, or else when it was logged. */
+export function doneAt(r: { logged_at: string; reading: { taken_at?: string | null } }): string {
+  return r.reading.taken_at ?? r.logged_at;
+}
+
+/** doneBy is who did a record's check: the name given, or else who logged it. */
+export function doneBy(r: { logged_by_name: string; reading: { signed_by?: string | null } }): string {
+  return r.reading.signed_by || r.logged_by_name;
 }

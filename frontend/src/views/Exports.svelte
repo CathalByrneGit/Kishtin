@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { can, canWithPassword } from "../lib/can.svelte";
   import {
     Button,
     Card,
@@ -31,7 +32,7 @@
   let busy = $state<string | null>(null);
   let last = $state<(Omit<ExportResult, "blob"> & { kind: string }) | null>(null);
 
-  const canExport = $derived(session.user?.role === "manager" || session.user?.role === "head_chef");
+  const canExport = $derived(can("haccp.export"));
   const badRange = $derived(!everything && from > to);
 
   const filter = $derived.by((): RecordFilter => {

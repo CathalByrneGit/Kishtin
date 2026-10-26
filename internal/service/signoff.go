@@ -159,7 +159,7 @@ func (s *Service) previewSignOff(ctx context.Context, st store.Store, in SignOff
 // out-of-limit readings, readings without a corrective action and missed
 // checks. Nothing is saved.
 func (s *Service) PreviewSignOff(ctx context.Context, p *auth.Principal, in SignOffInput) (SignOffPreview, error) {
-	if err := allow(p, auth.ActExportHACCP); err != nil {
+	if err := s.allow(p, auth.ActExportHACCP); err != nil {
 		return SignOffPreview{}, err
 	}
 	return s.previewSignOff(ctx, s.st, in)
@@ -170,7 +170,7 @@ func (s *Service) PreviewSignOff(ctx context.Context, p *auth.Principal, in Sign
 // at that moment. A period with missed checks or readings without a
 // corrective action needs a note.
 func (s *Service) SignOff(ctx context.Context, p *auth.Principal, in SignOffInput) (haccp.Record, error) {
-	if err := allow(p, auth.ActSignOff); err != nil {
+	if err := s.allow(p, auth.ActSignOff); err != nil {
 		return haccp.Record{}, err
 	}
 	var saved haccp.Record

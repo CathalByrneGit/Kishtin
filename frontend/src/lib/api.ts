@@ -158,6 +158,15 @@ export const api = {
   previewPaper: (body: Schemas["PaperImport"]) => json<Schemas["PaperChecksBody"]>("POST", "/haccp/paper/preview", { body }),
   importPaper: (body: Schemas["PaperImport"]) => json<Schemas["PaperSavedBody"]>("POST", "/haccp/paper", { body }),
   readPaper: (file: string) => json<Schemas["PaperDraft"]>("POST", "/haccp/paper/read", { body: { file } }),
+  catchUp: (from?: string, to?: string) => json<Schemas["CatchUp"]>("GET", "/haccp/catch-up", { query: { from, to } }),
+  previewCatchUp: (body: Schemas["CatchUpInput"]) => json<Schemas["PaperChecksBody"]>("POST", "/haccp/catch-up/preview", { body }),
+  saveCatchUp: (body: Schemas["CatchUpInput"]) => json<Schemas["PaperSavedBody"]>("POST", "/haccp/catch-up", { body }),
+  actions: () => json<Schemas["ActionInfo"][]>("GET", "/auth/actions"),
+  permissions: () => json<Schemas["VersionedPermissions"]>("GET", "/settings/permissions"),
+  permissionsHistory: () => json<Schemas["HistoryOutPermissionsBody"]>("GET", "/settings/permissions/history"),
+  previewPermissions: (body: Schemas["SettingsChangePermissions"]) =>
+    json<Schemas["SettingsPreviewPermissions"]>("POST", "/settings/permissions/preview", { body }),
+  savePermissions: (body: Schemas["SettingsChangePermissions"]) => json<Schemas["VersionedPermissions"]>("PUT", "/settings/permissions", { body }),
   recordBookSettings: () => json<Schemas["VersionedRecordBookSettings"]>("GET", "/settings/record_books"),
   previewRecordBookSettings: (body: Schemas["SettingsChangeRecordBookSettings"]) =>
     json<Schemas["SettingsPreviewRecordBookSettings"]>("POST", "/settings/record_books/preview", { body }),

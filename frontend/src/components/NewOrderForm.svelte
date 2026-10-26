@@ -28,7 +28,7 @@
   let fire = $state<Course[]>([]);
   let sending = $state(false);
 
-  const expo = $derived(canRunPass(session.user?.role));
+  const expo = $derived(canRunPass());
 
   async function loadMenu() {
     try {

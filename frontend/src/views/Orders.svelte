@@ -25,7 +25,7 @@
   let list = $state<Order[] | null>(null);
   let error = $state("");
 
-  const takes = $derived(canTakeOrders(session.user?.role));
+  const takes = $derived(canTakeOrders());
   const selected = $derived(param("id"));
 
   async function loadOrders() {

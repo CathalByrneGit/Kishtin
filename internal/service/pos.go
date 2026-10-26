@@ -78,7 +78,7 @@ type SquareStatus struct {
 // SquareStatus shows whether import is on, when it last worked, and the
 // most recent till orders with anything the pass must check.
 func (s *Service) SquareStatus(ctx context.Context, p *auth.Principal) (SquareStatus, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return SquareStatus{}, err
 	}
 	set, err := s.Square().current(ctx, s.st)
@@ -115,7 +115,7 @@ type CatalogRow struct {
 // suggestions by name. It sends Square only the access token. A manager
 // asks for it from the Square page, after reading what is sent.
 func (s *Service) SquareCatalog(ctx context.Context, p *auth.Principal) ([]CatalogRow, error) {
-	if err := allow(p, auth.ActManageMenu); err != nil {
+	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return nil, err
 	}
 	pos := s.square()
@@ -197,7 +197,7 @@ type MappingInput struct {
 // SaveSquareMappings saves how till items and modifiers map to the kitchen.
 // Open till orders with items that are now mapped get those items added.
 func (s *Service) SaveSquareMappings(ctx context.Context, p *auth.Principal, in []MappingInput) ([]integrations.Mapping, error) {
-	if err := allow(p, auth.ActManageMenu); err != nil {
+	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return nil, err
 	}
 	if len(in) == 0 {
@@ -273,7 +273,7 @@ type SyncResult struct {
 
 // SyncSquareNow polls Square once, for the Sync now button.
 func (s *Service) SyncSquareNow(ctx context.Context, p *auth.Principal) (SyncResult, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return SyncResult{}, err
 	}
 	return s.SyncSquare(ctx)

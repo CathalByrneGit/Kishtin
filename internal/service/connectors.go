@@ -64,7 +64,7 @@ type ConnectorStatus struct {
 
 // Connectors lists what Kishtin can connect to, and how each stands.
 func (s *Service) Connectors(ctx context.Context, p *auth.Principal) ([]ConnectorStatus, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return nil, err
 	}
 	out := make([]ConnectorStatus, 0, len(integrations.Connectors))
@@ -115,7 +115,7 @@ type ConnectResult struct {
 // never in a backup or export. A token set in the environment or
 // kishtin.toml cannot be changed here.
 func (s *Service) ConnectSquare(ctx context.Context, p *auth.Principal, in ConnectInput) (ConnectResult, error) {
-	if err := allow(p, auth.ActManageSettings); err != nil {
+	if err := s.allow(p, auth.ActManageSettings); err != nil {
 		return ConnectResult{}, err
 	}
 	if err := s.lockedSquare(); err != nil {
@@ -156,7 +156,7 @@ func (s *Service) ConnectSquare(ctx context.Context, p *auth.Principal, in Conne
 // DisconnectSquare removes a token saved on the screens. Order import must
 // be turned off first, so it is never left on with nothing to import from.
 func (s *Service) DisconnectSquare(ctx context.Context, p *auth.Principal) error {
-	if err := allow(p, auth.ActManageSettings); err != nil {
+	if err := s.allow(p, auth.ActManageSettings); err != nil {
 		return err
 	}
 	if err := s.lockedSquare(); err != nil {
@@ -198,7 +198,7 @@ func (s *Service) lockedSquare() error {
 // SquareLocations lists the Square account's locations. It sends Square
 // the access token only.
 func (s *Service) SquareLocations(ctx context.Context, p *auth.Principal) ([]integrations.Location, error) {
-	if err := allow(p, auth.ActManageSettings); err != nil {
+	if err := s.allow(p, auth.ActManageSettings); err != nil {
 		return nil, err
 	}
 	pos := s.square()

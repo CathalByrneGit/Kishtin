@@ -138,7 +138,7 @@ func (v *voiceState) peek(user string, now time.Time) (pending, bool) {
 // VoiceStatus says which speech sidecars are set up, and what is waiting
 // for an answer.
 func (s *Service) VoiceStatus(_ context.Context, p *auth.Principal) (VoiceStatus, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return VoiceStatus{}, err
 	}
 	st := VoiceStatus{Listen: s.speech.CanListen(), Speak: s.speech.CanSpeak(), WakeWords: s.wakeWords}
@@ -157,7 +157,7 @@ func (s *Service) VoiceStatus(_ context.Context, p *auth.Principal) (VoiceStatus
 // command. Answers to questions need the wake word too, so a "confirm"
 // said across the kitchen does nothing.
 func (s *Service) VoiceAudio(ctx context.Context, p *auth.Principal, audio []byte, contentType string, handsFree bool) (VoiceReply, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return VoiceReply{}, err
 	}
 	if !s.speech.CanListen() {
@@ -204,7 +204,7 @@ func (s *Service) VoiceAudio(ctx context.Context, p *auth.Principal, audio []byt
 // VoiceSpeak turns a reply into speech with the local text-to-speech
 // sidecar and returns WAV audio.
 func (s *Service) VoiceSpeak(ctx context.Context, p *auth.Principal, text string) ([]byte, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return nil, err
 	}
 	text = strings.TrimSpace(text)
@@ -223,7 +223,7 @@ func (s *Service) VoiceSpeak(ctx context.Context, p *auth.Principal, text string
 
 // VoiceCommand runs a typed command through the same grammar as speech.
 func (s *Service) VoiceCommand(ctx context.Context, p *auth.Principal, text string) (VoiceReply, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return VoiceReply{}, err
 	}
 	if len([]rune(text)) > 300 {
@@ -238,7 +238,7 @@ func (s *Service) VoiceCommand(ctx context.Context, p *auth.Principal, text stri
 
 // VoiceLog lists recent voice commands, newest first.
 func (s *Service) VoiceLog(ctx context.Context, p *auth.Principal, limit int) ([]voice.LogEntry, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return nil, err
 	}
 	if limit <= 0 || limit > 500 {

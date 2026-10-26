@@ -6,7 +6,8 @@
   import ReviewChanges, { type Preview } from "../../components/ReviewChanges.svelte";
   import { api, message, type Schemas } from "../../lib/api";
   import { onChange } from "../../lib/live.svelte";
-  import { isManagerPassword, session, unpairDevice } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
+  import { session, unpairDevice } from "../../lib/session.svelte";
 
   let system = $state<Schemas["VersionedSystem"] | null>(null);
   let error = $state("");
@@ -21,7 +22,7 @@
   let saving = $state(false);
   let highContrast = $state(getHighContrast());
 
-  const canEdit = $derived(isManagerPassword());
+  const canEdit = $derived(can("settings.manage"));
 
   function reset() {
     if (!system) return;
@@ -97,7 +98,7 @@
   <div class="grid">
     <div class="stack">
       <h2 class="section-title">Restaurant</h2>
-      <ManagerGate what="Restaurant settings" viewable>
+      <ManagerGate what="Restaurant settings" action="settings.manage" viewable>
         {#if error}<Notice tone="error" message={error} />{/if}
         {#if !system}
           {#if !error}<Spinner />{/if}
@@ -155,7 +156,7 @@
               setHighContrast(on);
             }}
           />
-          <span class="muted">Logged in as {session.user?.name}{session.method === "password" ? " with the manager password" : " with a PIN"}.</span>
+          <span class="muted">Logged in as {session.user?.name}{session.method === "password" ? " with a password" : " with a PIN"}.</span>
           <div>
             <Button tone="danger" label="Unpair this device" onclick={unpairDevice} />
           </div>

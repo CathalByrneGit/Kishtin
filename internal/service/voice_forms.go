@@ -224,7 +224,7 @@ func cookedAt(c voice.Cooked, now time.Time) (time.Time, error) {
 // voiceVoid works out which items to void, then asks why, then asks for
 // "confirm void". Nothing is voided until then.
 func (s *Service) voiceVoid(ctx context.Context, p *auth.Principal, c voice.Command) (VoiceReply, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return refused(c.Intent, err)
 	}
 	if len(c.ItemIDs) == 0 {

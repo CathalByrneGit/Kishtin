@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/google/uuid"
 
@@ -90,6 +91,9 @@ type Service struct {
 	newSquare func(environment, token string) (integrations.POSAdapter, error)
 	ai        *ai.Client
 	fetch     func(ctx context.Context, url string) ([]byte, error)
+	// perms caches the permissions in force. Init loads them and saving a
+	// change replaces them.
+	perms atomic.Pointer[auth.Permissions]
 }
 
 // Options configures a Service.
@@ -158,8 +162,11 @@ func (s *Service) Init(ctx context.Context) error {
 	if err := s.loadSavedSquare(); err != nil {
 		return err
 	}
+	if err := s.loadPermissions(ctx); err != nil {
+		return err
+	}
 	return s.st.WithTx(ctx, func(tx store.Store) error {
-		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed, s.Square().seed, s.RecordBookSettings().seed} {
+		for _, seed := range []func(context.Context, store.Store) error{s.Guidance().seed, s.Rules().seed, s.Lists().seed, s.Scheduler().seed, s.Square().seed, s.RecordBookSettings().seed, s.Permissions().seed} {
 			if err := seed(ctx, tx); err != nil {
 				return err
 			}
@@ -180,12 +187,13 @@ func (s *Service) Init(ctx context.Context) error {
 	})
 }
 
-// allow checks that p may take action a.
-func allow(p *auth.Principal, a auth.Action) error {
+// allow checks that p may take action a, under the restaurant's
+// permissions.
+func (s *Service) allow(p *auth.Principal, a auth.Action) error {
 	if p == nil {
 		return newErr(KindUnauthenticated, "log in first")
 	}
-	d := auth.Can(*p, a)
+	d := s.permissions().Can(*p, a)
 	if !d.Allowed {
 		return &Error{Kind: KindForbidden, Msg: d.Reason, NeedPassword: d.NeedPassword}
 	}

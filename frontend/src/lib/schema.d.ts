@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/auth/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List every action and who may take it by default
+         * @description The actions permissions are set for, in screen order, with Kishtin's default roles and whether a PIN is enough. Fixed actions are always managers with a password.
+         */
+        get: operations["list-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -265,6 +285,50 @@ export interface paths {
          * @description Needs [ai] url in kishtin.toml: a model server on this machine or the local network. The result is a draft to review and save in Setup › HACCP records; nothing is saved.
          */
         post: operations["suggest-columns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/catch-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the daily checks with no record in a period
+         * @description Fridge and freezer checks and cleaning tasks that were due and have no record, from the first day records were kept, at most 62 days. Fill them in with POST /haccp/catch-up.
+         */
+        get: operations["catch-up-gaps"];
+        put?: never;
+        /**
+         * Save rows of checks done earlier, all or none
+         * @description Each record keeps when the check was done (reading.taken_at) and, if given, who did it (reading.signed_by). Results are checked against the limits in force now.
+         */
+        post: operations["save-catch-up"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/haccp/catch-up/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check rows of checks done earlier, without saving
+         * @description Each row needs reading.taken_at: when the check was done.
+         */
+        post: operations["preview-catch-up"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1183,6 +1247,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show the permissions in force
+         * @description Who may do what, where it differs from Kishtin's defaults: per action, the roles and named staff allowed, and whether a PIN is enough. Managers may always do everything. Staff, API keys, permissions and fitness to work are always managers with a password. See GET /api/auth/actions.
+         */
+        get: operations["get-permissions"];
+        /**
+         * Save a new version of the permissions
+         * @description Needs a manager password login or a manager API key, and a reason. A change that makes food safety less strict also needs plan_ref. Saved records are never re-graded.
+         */
+        put: operations["save-permissions"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/permissions/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every saved version of the permissions, oldest first */
+        get: operations["permissions-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/permissions/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a change to the permissions
+         * @description Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.
+         */
+        post: operations["preview-permissions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/record_books": {
         parameters: {
             query?: never;
@@ -1742,6 +1867,15 @@ export interface components {
             station_id: string;
             text: string;
         };
+        ActionInfo: {
+            action: string;
+            fixed?: boolean;
+            group: string;
+            label: string;
+            pin: boolean;
+            roles: string[];
+            why?: string;
+        };
         ActionPreset: {
             text: string;
             type: string;
@@ -1851,6 +1985,25 @@ export interface components {
             label: string;
             mapping?: components["schemas"]["Mapping"];
             suggested?: string;
+        };
+        CatchUp: {
+            from: string;
+            gaps: components["schemas"]["CatchUpGap"][];
+            since?: string;
+            to: string;
+        };
+        CatchUpGap: {
+            area?: string;
+            check?: string;
+            date: string;
+            signed_off?: boolean;
+            task?: string;
+            time?: string;
+            type: string;
+            unit?: string;
+        };
+        CatchUpInput: {
+            rows: components["schemas"]["NewRecord"][];
         };
         Cell: {
             flag?: string;
@@ -2157,6 +2310,12 @@ export interface components {
             date: string;
             unit: string;
         };
+        Grant: {
+            action: string;
+            pin?: boolean;
+            roles: string[];
+            users?: string[];
+        };
         Guidance: {
             checks: components["schemas"]["GuidanceCheck"][];
             name: string;
@@ -2181,6 +2340,9 @@ export interface components {
         };
         HistoryOutPOSSettingsBody: {
             versions: components["schemas"]["VersionedPOSSettings"][];
+        };
+        HistoryOutPermissionsBody: {
+            versions: components["schemas"]["VersionedPermissions"][];
         };
         HistoryOutRecordBookSettingsBody: {
             versions: components["schemas"]["VersionedRecordBookSettings"][];
@@ -2382,6 +2544,9 @@ export interface components {
             mappings: components["schemas"]["MappingInput"][];
         };
         MeOutBody: {
+            can: {
+                [key: string]: string;
+            };
             key: components["schemas"]["APIKey"];
             method?: string;
             user?: components["schemas"]["User"];
@@ -2510,6 +2675,9 @@ export interface components {
         };
         PaperSavedBody: {
             records: components["schemas"]["Record"][];
+        };
+        Permissions: {
+            grants: components["schemas"]["Grant"][];
         };
         Plan: {
             /** Format: date-time */
@@ -2697,6 +2865,11 @@ export interface components {
             reason: string;
             value: components["schemas"]["POSSettings"];
         };
+        SettingsChangePermissions: {
+            plan_ref?: string;
+            reason: string;
+            value: components["schemas"]["Permissions"];
+        };
         SettingsChangeRecordBookSettings: {
             plan_ref?: string;
             reason: string;
@@ -2740,6 +2913,14 @@ export interface components {
             notes: string[];
             problem?: string;
             proposed: components["schemas"]["POSSettings"];
+        };
+        SettingsPreviewPermissions: {
+            changes: string[];
+            current: components["schemas"]["VersionedPermissions"];
+            less_strict?: string[];
+            notes: string[];
+            problem?: string;
+            proposed: components["schemas"]["Permissions"];
         };
         SettingsPreviewRecordBookSettings: {
             changes: string[];
@@ -3061,6 +3242,11 @@ export interface components {
             value: components["schemas"]["POSSettings"];
             version: components["schemas"]["SettingsVersion"];
         };
+        VersionedPermissions: {
+            builtin: boolean;
+            value: components["schemas"]["Permissions"];
+            version: components["schemas"]["SettingsVersion"];
+        };
         VersionedRecordBookSettings: {
             builtin: boolean;
             value: components["schemas"]["RecordBookSettings"];
@@ -3112,6 +3298,35 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "list-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionInfo"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -3607,6 +3822,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Suggestion"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "catch-up-gaps": {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD (Dublin). Default: 13 days before the last day. */
+                from?: string;
+                /** @description Last day, YYYY-MM-DD (Dublin). Default: today. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatchUp"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "save-catch-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatchUpInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperSavedBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-catch-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatchUpInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperChecksBody"];
                 };
             };
             /** @description Error */
@@ -5379,6 +5694,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsPreviewLists"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedPermissions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "save-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangePermissions"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionedPermissions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "permissions-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryOutPermissionsBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChangePermissions"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsPreviewPermissions"];
                 };
             };
             /** @description Error */

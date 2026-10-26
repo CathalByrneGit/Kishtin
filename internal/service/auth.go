@@ -261,7 +261,7 @@ func (s *Service) Setup(ctx context.Context, nu NewUser) (SetupResult, error) {
 
 // CreateUser adds a staff member.
 func (s *Service) CreateUser(ctx context.Context, p *auth.Principal, nu NewUser) (auth.User, error) {
-	if err := allow(p, auth.ActManageUsers); err != nil {
+	if err := s.allow(p, auth.ActManageUsers); err != nil {
 		return auth.User{}, err
 	}
 	u, err := s.buildUser(nu)
@@ -287,7 +287,7 @@ type UserChange struct {
 
 // UpdateUser changes a staff member.
 func (s *Service) UpdateUser(ctx context.Context, p *auth.Principal, id string, ch UserChange) (auth.User, error) {
-	if err := allow(p, auth.ActManageUsers); err != nil {
+	if err := s.allow(p, auth.ActManageUsers); err != nil {
 		return auth.User{}, err
 	}
 	var out auth.User
@@ -343,7 +343,7 @@ func (s *Service) UpdateUser(ctx context.Context, p *auth.Principal, id string, 
 
 // ListUsers lists every staff member, including deactivated ones.
 func (s *Service) ListUsers(ctx context.Context, p *auth.Principal) ([]auth.User, error) {
-	if err := allow(p, auth.ActManageUsers); err != nil {
+	if err := s.allow(p, auth.ActManageUsers); err != nil {
 		return nil, err
 	}
 	return s.st.Users().ListUsers(ctx)
@@ -358,7 +358,7 @@ type NewKeyResult struct {
 // CreateKey creates a device key or a user key. A user key for another
 // user needs that user to exist and be active.
 func (s *Service) CreateKey(ctx context.Context, p *auth.Principal, kind auth.KeyKind, name, userID string) (NewKeyResult, error) {
-	if err := allow(p, auth.ActManageKeys); err != nil {
+	if err := s.allow(p, auth.ActManageKeys); err != nil {
 		return NewKeyResult{}, err
 	}
 	name = strings.TrimSpace(name)
@@ -408,7 +408,7 @@ func (s *Service) newKey(ctx context.Context, tx store.Store, kind auth.KeyKind,
 
 // ListKeys lists API keys, including revoked ones.
 func (s *Service) ListKeys(ctx context.Context, p *auth.Principal) ([]auth.APIKey, error) {
-	if err := allow(p, auth.ActManageKeys); err != nil {
+	if err := s.allow(p, auth.ActManageKeys); err != nil {
 		return nil, err
 	}
 	return s.st.Auth().ListAPIKeys(ctx)
@@ -416,7 +416,7 @@ func (s *Service) ListKeys(ctx context.Context, p *auth.Principal) ([]auth.APIKe
 
 // RevokeKey revokes an API key.
 func (s *Service) RevokeKey(ctx context.Context, p *auth.Principal, id string) error {
-	if err := allow(p, auth.ActManageKeys); err != nil {
+	if err := s.allow(p, auth.ActManageKeys); err != nil {
 		return err
 	}
 	if err := s.st.Auth().RevokeAPIKey(ctx, id, s.clk.Now()); err != nil {

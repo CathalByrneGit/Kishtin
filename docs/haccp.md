@@ -34,6 +34,20 @@ Temperatures are compared to 0.1°C. A reading exactly on the limit passes. Frid
 
 A **fail** always needs a corrective action before it can be saved. A **borderline** record needs one too, unless the food-safety rules say otherwise (see [settings.md](settings.md#food-safety-rules)). Each record stores the rules version that applied. Check a reading first, without saving, with `kishtin haccp log … --dry-run` or `POST /api/haccp/check`.
 
+## Checks logged later
+
+Kitchens do not always log a check the moment it is done. Any record can say when its check was done and who did it:
+
+- On the log form, **When was this done?** › **Earlier** takes a date and time, and **Done by** a name if it was someone else.
+- **Catch up** (HACCP › Catch up) lists the daily checks with no record (fridge and freezer checks and cleaning tasks), by day, from the first day records were kept. Fill in the ones that were done, with the time, and save them together. See [screens.md](screens.md#catch-up).
+- From the command line: `kishtin haccp log fridge --unit "Walk-in fridge" --temp 3.4 --at "2026-10-20 09:00" --done-by Liam`, and `kishtin haccp catch-up`.
+
+A record logged later is treated like any other. It shows at the time the check was done in Today, Records, record books, exports and the inspection pack, with the name given. There is no late marker. Its result uses the limits in force when it is saved, like every record. It goes on the end of the hash chain, so the record keeps when it was saved and by whom, as evidence; the record's details show this under Evidence, and the CSV export has both times.
+
+A time in the future is refused. Whether staff may log checks done earlier, and whether they may add to a period already signed off, are set in Setup › Permissions; see [permissions.md](permissions.md). By default anyone may log checks done earlier, and adding to a signed-off period needs a manager with a password.
+
+A correction keeps the time of the record it corrects, unless it gives a different time.
+
 Records brought in from paper keep the photo of the page, when the check was done and the name written on the paper. See [record-books.md](record-books.md#bringing-in-paper-records).
 
 ## Records cannot be changed

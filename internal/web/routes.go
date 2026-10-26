@@ -26,6 +26,7 @@ func (s *Server) routes() {
 	s.bookRoutes()
 	s.signOffRoutes()
 	s.copyRoutes()
+	s.catchUpRoutes()
 	s.limitRoutes()
 	s.fileRoutes()
 	s.settingsRoutes()
@@ -61,7 +62,14 @@ type meOut struct {
 		User   *auth.User  `json:"user,omitempty"`
 		Method auth.Method `json:"method,omitempty"`
 		Key    auth.APIKey `json:"key"`
+		// Can lists what this request may do: yes, password (after a
+		// password login) or no. The server checks every action again.
+		Can map[auth.Action]service.Allowed `json:"can"`
 	}
+}
+
+type actionsOut struct {
+	Body []auth.ActionInfo
 }
 
 type empty struct{}
@@ -123,7 +131,20 @@ func (s *Server) authRoutes() {
 			u := c.Principal.User
 			out.Body.User, out.Body.Method = &u, c.Principal.Method
 		}
+		out.Body.Can = s.svc.Can(c.Principal)
 		return out, nil
+	}))
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "list-actions", Method: http.MethodGet, Path: "/auth/actions", Tags: []string{"Auth"},
+		Summary:     "List every action and who may take it by default",
+		Description: "The actions permissions are set for, in screen order, with Kishtin's default roles and whether a PIN is enough. Fixed actions are always managers with a password.",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*actionsOut, error) {
+		a, err := s.svc.PermissionActions(caller(ctx).Principal)
+		if err != nil {
+			return nil, err
+		}
+		return &actionsOut{Body: a}, nil
 	}))
 }
 

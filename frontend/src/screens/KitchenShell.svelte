@@ -48,7 +48,7 @@
     [
       { id: "today" as Tab, label: "Today", icon: House },
       { id: "log" as Tab, label: "Log check", icon: ClipboardPlus },
-      ...(canTakeOrders(session.user?.role) ? [{ id: "order" as Tab, label: "New order", icon: ReceiptText }] : []),
+      ...(canTakeOrders() ? [{ id: "order" as Tab, label: "New order", icon: ReceiptText }] : []),
       { id: "pass" as Tab, label: "Pass", icon: ChefHat },
     ],
   );

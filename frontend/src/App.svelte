@@ -23,6 +23,8 @@
     ClipboardPlus,
     CookingPot,
     BookMarked,
+    CalendarClock,
+    ShieldUser,
     ClipboardCheck,
     ScanText,
     BookOpen,
@@ -59,6 +61,8 @@
   import Books from "./views/Books.svelte";
   import Inspection from "./views/Inspection.svelte";
   import Paper from "./views/Paper.svelte";
+  import CatchUp from "./views/CatchUp.svelte";
+  import PermissionsSetup from "./views/setup/Permissions.svelte";
   import OrdersView from "./views/Orders.svelte";
   import Pass from "./views/Pass.svelte";
   import Stations from "./views/Stations.svelte";
@@ -95,6 +99,7 @@
     { path: "/voice", label: "Voice", section: "voice", view: null, group: "Service" },
     { path: "/today", label: "Today", section: "today", view: null, group: "HACCP" },
     { path: "/records", label: "Records", section: "records", view: null, group: "HACCP" },
+    { path: "/catch-up", label: "Catch up", section: "catch-up", view: null, group: "HACCP" },
     { path: "/books", label: "Record books", section: "books", view: null, group: "HACCP" },
     { path: "/inspection", label: "Inspection", section: "inspection", view: null, group: "HACCP" },
     { path: "/paper", label: "Paper import", section: "paper", view: null, group: "HACCP" },
@@ -108,6 +113,7 @@
     { path: "/setup/limits", label: "Limits and rules", section: "setup", view: "limits", group: "Setup" },
     { path: "/setup/records", label: "HACCP records", section: "setup", view: "records", group: "Setup" },
     { path: "/setup/staff", label: "Staff", section: "setup", view: "staff", group: "Setup" },
+    { path: "/setup/permissions", label: "Permissions", section: "setup", view: "permissions", group: "Setup" },
     { path: "/setup/keys", label: "Device keys", section: "setup", view: "keys", group: "Setup" },
     { path: "/setup/backups", label: "Backups", section: "setup", view: "backups", group: "Setup" },
     { path: "/setup/settings", label: "Settings", section: "settings", view: null, group: "This device" },
@@ -121,6 +127,7 @@
     limits: SlidersHorizontal,
     records: BookMarked,
     staff: Users,
+    permissions: ShieldUser,
     keys: KeyRound,
     backups: Archive,
   };
@@ -140,6 +147,7 @@
       sections: [
         { id: "today", label: "Today", href: "/today", icon: House, viewRuns: [] },
         { id: "records", label: "Records", href: "/records", icon: List, viewRuns: [] },
+        { id: "catch-up", label: "Catch up", href: "/catch-up", icon: CalendarClock, viewRuns: [] },
         { id: "books", label: "Record books", href: "/books", icon: BookOpen, viewRuns: [] },
         { id: "inspection", label: "Inspection", href: "/inspection", icon: ClipboardCheck, viewRuns: [] },
         { id: "paper", label: "Paper import", href: "/paper", icon: ScanText, viewRuns: [] },
@@ -312,7 +320,7 @@
           {#if !rail}
             <div class="who">
               <strong>{session.user?.name}</strong>
-              <span class="muted">{session.method === "password" ? "Manager password" : "PIN"} login</span>
+              <span class="muted">{session.method === "password" ? "Password" : "PIN"} login</span>
             </div>
           {/if}
           <ThemeToggle size={rail ? "md" : "sm"} />
@@ -381,6 +389,10 @@
           <Today />
         {:else if route.path === "/records"}
           <Records />
+        {:else if route.path === "/catch-up"}
+          <CatchUp />
+        {:else if route.path === "/setup/permissions"}
+          <PermissionsSetup />
         {:else if route.path === "/paper"}
           <Paper />
         {:else if route.path === "/inspection"}

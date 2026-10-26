@@ -4,7 +4,7 @@
   import ManagerGate from "../../components/ManagerGate.svelte";
   import { api, message, type Schemas } from "../../lib/api";
   import { dublinDate, dublinTime, shortDate } from "../../lib/format";
-  import { isManagerPassword } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
 
   type Key = Schemas["APIKey"];
 
@@ -34,7 +34,7 @@
   }
 
   $effect(() => {
-    if (isManagerPassword()) void load();
+    if (can("keys.manage")) void load();
   });
 
   const userName = (id: string | undefined) => users.find((u) => u.id === id)?.name ?? id ?? "";
@@ -83,12 +83,12 @@
         <code>kishtin</code> CLI or a script act as one person.
       </p>
     </div>
-    {#if isManagerPassword()}
+    {#if can("keys.manage")}
       <Button tone="info" surface="solid" label="New key" onclick={() => (creating = true)}><Plus size={16} /></Button>
     {/if}
   </header>
 
-  <ManagerGate what="Device keys">
+  <ManagerGate what="Device keys" action="keys.manage">
     {#if error}<Notice tone="error" message={error} />{/if}
     {#if keys === null}
       {#if !error}<Spinner />{/if}

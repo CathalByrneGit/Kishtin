@@ -3,6 +3,7 @@
 // ticks every second for countdowns. Call kitchenFeed() while a component
 // is being set up.
 
+import { can } from "./can.svelte";
 import { api, message, type KitchenView } from "./api";
 import { onChange } from "./live.svelte";
 
@@ -58,17 +59,17 @@ export function kitchenFeed(): KitchenFeed {
   };
 }
 
-/** canRunPass reports whether a role fires, serves and voids. */
-export function canRunPass(role: string | undefined): boolean {
-  return role === "head_chef" || role === "manager";
+/** canRunPass reports whether the logged-in staff member fires, serves and voids. */
+export function canRunPass(): boolean {
+  return can("orders.pass");
 }
 
-/** canWorkStation reports whether a role marks items started and done. */
-export function canWorkStation(role: string | undefined): boolean {
-  return role === "line_cook" || role === "head_chef" || role === "manager";
+/** canWorkStation reports whether they mark items started and done. */
+export function canWorkStation(): boolean {
+  return can("orders.station");
 }
 
-/** canTakeOrders reports whether a role enters orders. */
-export function canTakeOrders(role: string | undefined): boolean {
-  return role === "front_of_house" || role === "head_chef" || role === "manager";
+/** canTakeOrders reports whether they enter orders. */
+export function canTakeOrders(): boolean {
+  return can("orders.take");
 }

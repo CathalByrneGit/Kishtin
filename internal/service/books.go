@@ -125,7 +125,7 @@ func (s *Service) recordBooks(ctx context.Context) (RecordBooks, error) {
 // RecordBooks lists the record books in use, with the booklets Kishtin
 // cannot fill yet and why.
 func (s *Service) RecordBooks(ctx context.Context, p *auth.Principal) (RecordBooks, error) {
-	if err := allow(p, auth.ActExportHACCP); err != nil {
+	if err := s.allow(p, auth.ActExportHACCP); err != nil {
 		return RecordBooks{}, err
 	}
 	return s.recordBooks(ctx)
@@ -134,7 +134,7 @@ func (s *Service) RecordBooks(ctx context.Context, p *auth.Principal) (RecordBoo
 // RecordBook fills in a record book (by ID or code, such as "SC2") for a
 // month (YYYY-MM; empty means this month) from the records.
 func (s *Service) RecordBook(ctx context.Context, p *auth.Principal, ref, month string) (books.Book, error) {
-	if err := allow(p, auth.ActExportHACCP); err != nil {
+	if err := s.allow(p, auth.ActExportHACCP); err != nil {
 		return books.Book{}, err
 	}
 	rb, err := s.recordBooks(ctx)
@@ -162,7 +162,7 @@ func (s *Service) RecordBook(ctx context.Context, p *auth.Principal, ref, month 
 		start = m
 	}
 	if tpl.Builder == books.BuilderFitness {
-		if err := allow(p, auth.ActFitness); err != nil {
+		if err := s.allow(p, auth.ActFitness); err != nil {
 			return books.Book{}, err
 		}
 	}
@@ -176,7 +176,7 @@ func (s *Service) RecordBook(ctx context.Context, p *auth.Principal, ref, month 
 	if err != nil {
 		return books.Book{}, err
 	}
-	recs = visible(p, recs)
+	recs = s.visible(p, recs)
 	users, err := s.st.Users().ListUsers(ctx)
 	if err != nil {
 		return books.Book{}, err

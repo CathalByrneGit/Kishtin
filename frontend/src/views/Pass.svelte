@@ -20,7 +20,7 @@
   let { big = false, compact = false }: Props = $props();
 
   const feed = kitchenFeed();
-  const expo = $derived(canRunPass(session.user?.role));
+  const expo = $derived(canRunPass());
   const filter = $derived(param("show") ?? "all");
   let busy = $state<string | null>(null);
   let drawer = $state<string | null>(null);

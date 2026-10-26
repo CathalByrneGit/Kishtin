@@ -28,6 +28,15 @@ const (
 	// ActFitness logs and sees fitness to work assessments, which are
 	// health information.
 	ActFitness Action = "haccp.fitness"
+	// ActBackdate logs a record for a check done earlier, giving the time
+	// it was done.
+	ActBackdate Action = "haccp.backdate"
+	// ActLogSignedOff adds or corrects a record in a period a manager has
+	// already signed off.
+	ActLogSignedOff Action = "haccp.signed_off"
+	// ActManagePermissions changes who may do what. Only managers with a
+	// password can, so nobody can give themselves more access.
+	ActManagePermissions Action = "permissions.manage"
 
 	// ActViewKitchen sees the menu, orders, the pass and station queues.
 	ActViewKitchen Action = "kitchen.view"
@@ -65,6 +74,10 @@ var policy = map[Action]rule{
 	ActSignOff:        {roles: []Role{RoleManager}, password: true},
 	ActInspect:        {roles: []Role{RoleHeadChef, RoleManager}},
 	ActFitness:        {roles: []Role{RoleManager}, password: true},
+	ActBackdate:       {roles: everyone},
+	ActLogSignedOff:   {roles: []Role{RoleManager}, password: true},
+
+	ActManagePermissions: {roles: []Role{RoleManager}, password: true},
 
 	ActViewKitchen:     {roles: everyone},
 	ActManageMenu:      {roles: []Role{RoleManager}, password: true},
@@ -88,8 +101,14 @@ type Decision struct {
 	Reason       string
 }
 
-// Can decides whether p may take action a.
-func Can(p Principal, a Action) Decision {
+// Can decides whether p may take action a under Kishtin's default
+// permissions.
+func Can(p Principal, a Action) Decision { return Permissions{}.Can(p, a) }
+
+// Can decides whether p may take action a under these permissions: the
+// restaurant's grant for a if it has one, otherwise Kishtin's default.
+// Managers may always take every action.
+func (pm Permissions) Can(p Principal, a Action) Decision {
 	r, ok := policy[a]
 	if !ok {
 		return Decision{Reason: "unknown action"}
@@ -97,13 +116,29 @@ func Can(p Principal, a Action) Decision {
 	if !p.User.Active {
 		return Decision{Reason: "this user is deactivated"}
 	}
-	if !slices.Contains(r.roles, p.User.Role) {
-		return Decision{Reason: "your role cannot do this"}
+	roles, users, password := r.roles, []string(nil), r.password
+	if g, ok := pm.grant(a); ok {
+		roles, users, password = g.Roles, g.Users, !g.PIN
 	}
-	if r.password && p.Method == MethodPIN {
-		return Decision{NeedPassword: true, Reason: "log in with your manager password to do this"}
+	if p.User.Role != RoleManager && !slices.Contains(roles, p.User.Role) && !slices.Contains(users, p.User.ID) {
+		return Decision{Reason: "you are not allowed to do this: a manager can change this in Setup › Permissions"}
+	}
+	if password && p.Method == MethodPIN {
+		return Decision{NeedPassword: true, Reason: "log in with your password to do this"}
 	}
 	return Decision{Allowed: true}
+}
+
+func (pm Permissions) grant(a Action) (Grant, bool) {
+	if Fixed(a) {
+		return Grant{}, false
+	}
+	for _, g := range pm.Grants {
+		if g.Action == a {
+			return g, true
+		}
+	}
+	return Grant{}, false
 }
 
 // Lockout limits failed logins per user: after MaxFails failures in a row

@@ -63,7 +63,7 @@ func schedulerState(setup menu.Setup, open []orders.Order) scheduler.KitchenStat
 // Kitchen returns open orders and a fresh plan. The plan is computed on
 // every request, so it always reflects the latest change.
 func (s *Service) Kitchen(ctx context.Context, p *auth.Principal) (KitchenView, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return KitchenView{}, err
 	}
 	var view KitchenView

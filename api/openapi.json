@@ -115,6 +115,43 @@
         ],
         "type": "object"
       },
+      "ActionInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "fixed": {
+            "type": "boolean"
+          },
+          "group": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "pin": {
+            "type": "boolean"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "why": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "group",
+          "label",
+          "roles",
+          "pin"
+        ],
+        "type": "object"
+      },
       "ActionPreset": {
         "additionalProperties": false,
         "properties": {
@@ -548,6 +585,81 @@
         "required": [
           "entry",
           "label"
+        ],
+        "type": "object"
+      },
+      "CatchUp": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/CatchUpGap"
+            },
+            "type": "array"
+          },
+          "since": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "gaps"
+        ],
+        "type": "object"
+      },
+      "CatchUpGap": {
+        "additionalProperties": false,
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "check": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "signed_off": {
+            "type": "boolean"
+          },
+          "task": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "type"
+        ],
+        "type": "object"
+      },
+      "CatchUpInput": {
+        "additionalProperties": false,
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/NewRecord"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
         ],
         "type": "object"
       },
@@ -1563,6 +1675,34 @@
         ],
         "type": "object"
       },
+      "Grant": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "pin": {
+            "type": "boolean"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "users": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "action",
+          "roles"
+        ],
+        "type": "object"
+      },
       "Guidance": {
         "additionalProperties": false,
         "properties": {
@@ -1654,6 +1794,21 @@
           "versions": {
             "items": {
               "$ref": "#/components/schemas/VersionedPOSSettings"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "versions"
+        ],
+        "type": "object"
+      },
+      "HistoryOutPermissionsBody": {
+        "additionalProperties": false,
+        "properties": {
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/VersionedPermissions"
             },
             "type": "array"
           }
@@ -2427,6 +2582,12 @@
       "MeOutBody": {
         "additionalProperties": false,
         "properties": {
+          "can": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "key": {
             "$ref": "#/components/schemas/APIKey"
           },
@@ -2438,7 +2599,8 @@
           }
         },
         "required": [
-          "key"
+          "key",
+          "can"
         ],
         "type": "object"
       },
@@ -2911,6 +3073,21 @@
         },
         "required": [
           "records"
+        ],
+        "type": "object"
+      },
+      "Permissions": {
+        "additionalProperties": false,
+        "properties": {
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/Grant"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "grants"
         ],
         "type": "object"
       },
@@ -3572,6 +3749,25 @@
         ],
         "type": "object"
       },
+      "SettingsChangePermissions": {
+        "additionalProperties": false,
+        "properties": {
+          "plan_ref": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Permissions"
+          }
+        },
+        "required": [
+          "value",
+          "reason"
+        ],
+        "type": "object"
+      },
       "SettingsChangeRecordBookSettings": {
         "additionalProperties": false,
         "properties": {
@@ -3755,6 +3951,45 @@
           },
           "proposed": {
             "$ref": "#/components/schemas/POSSettings"
+          }
+        },
+        "required": [
+          "current",
+          "proposed",
+          "changes",
+          "notes"
+        ],
+        "type": "object"
+      },
+      "SettingsPreviewPermissions": {
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "current": {
+            "$ref": "#/components/schemas/VersionedPermissions"
+          },
+          "less_strict": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "problem": {
+            "type": "string"
+          },
+          "proposed": {
+            "$ref": "#/components/schemas/Permissions"
           }
         },
         "required": [
@@ -5010,6 +5245,26 @@
         ],
         "type": "object"
       },
+      "VersionedPermissions": {
+        "additionalProperties": false,
+        "properties": {
+          "builtin": {
+            "type": "boolean"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Permissions"
+          },
+          "version": {
+            "$ref": "#/components/schemas/SettingsVersion"
+          }
+        },
+        "required": [
+          "version",
+          "value",
+          "builtin"
+        ],
+        "type": "object"
+      },
       "VersionedRecordBookSettings": {
         "additionalProperties": false,
         "properties": {
@@ -5205,6 +5460,41 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/auth/actions": {
+      "get": {
+        "description": "The actions permissions are set for, in screen order, with Kishtin's default roles and whether a PIN is enough. Fixed actions are always managers with a password.",
+        "operationId": "list-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ActionInfo"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List every action and who may take it by default",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/auth/login": {
       "post": {
         "description": "Send a PIN for a 12-hour staff session, or a manager password for a 30-minute session that allows manager actions. Needs a device key.",
@@ -5865,6 +6155,142 @@
         "summary": "Ask the local model to read a copy's columns (manager password)",
         "tags": [
           "Record books"
+        ]
+      }
+    },
+    "/haccp/catch-up": {
+      "get": {
+        "description": "Fridge and freezer checks and cleaning tasks that were due and have no record, from the first day records were kept, at most 62 days. Fill them in with POST /haccp/catch-up.",
+        "operationId": "catch-up-gaps",
+        "parameters": [
+          {
+            "description": "First day, YYYY-MM-DD (Dublin). Default: 13 days before the last day.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "First day, YYYY-MM-DD (Dublin). Default: 13 days before the last day.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Last day, YYYY-MM-DD (Dublin). Default: today.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "Last day, YYYY-MM-DD (Dublin). Default: today.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatchUp"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the daily checks with no record in a period",
+        "tags": [
+          "HACCP"
+        ]
+      },
+      "post": {
+        "description": "Each record keeps when the check was done (reading.taken_at) and, if given, who did it (reading.signed_by). Results are checked against the limits in force now.",
+        "operationId": "save-catch-up",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatchUpInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperSavedBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Save rows of checks done earlier, all or none",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
+    "/haccp/catch-up/preview": {
+      "post": {
+        "description": "Each row needs reading.taken_at: when the check was done.",
+        "operationId": "preview-catch-up",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatchUpInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperChecksBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Check rows of checks done earlier, without saving",
+        "tags": [
+          "HACCP"
         ]
       }
     },
@@ -8375,6 +8801,151 @@
           }
         },
         "summary": "Preview a change to the lists",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/permissions": {
+      "get": {
+        "description": "Who may do what, where it differs from Kishtin's defaults: per action, the roles and named staff allowed, and whether a PIN is enough. Managers may always do everything. Staff, API keys, permissions and fitness to work are always managers with a password. See GET /api/auth/actions.",
+        "operationId": "get-permissions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionedPermissions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show the permissions in force",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "put": {
+        "description": "Needs a manager password login or a manager API key, and a reason. A change that makes food safety less strict also needs plan_ref. Saved records are never re-graded.",
+        "operationId": "save-permissions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChangePermissions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionedPermissions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Save a new version of the permissions",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/permissions/history": {
+      "get": {
+        "operationId": "permissions-history",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryOutPermissionsBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List every saved version of the permissions, oldest first",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/permissions/preview": {
+      "post": {
+        "description": "Shows each field that would change, anything that makes food safety less strict, effects on limits and recent records, and anything that stops the change being saved.",
+        "operationId": "preview-permissions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChangePermissions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsPreviewPermissions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Preview a change to the permissions",
         "tags": [
           "Settings"
         ]

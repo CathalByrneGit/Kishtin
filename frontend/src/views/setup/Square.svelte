@@ -22,7 +22,8 @@
   import { dublinTime } from "../../lib/format";
   import { canRunPass } from "../../lib/kitchenfeed.svelte";
   import { onChange } from "../../lib/live.svelte";
-  import { isManagerPassword, session } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
+  import { session } from "../../lib/session.svelte";
 
   type P = Schemas["POSSettings"];
 
@@ -53,7 +54,7 @@
   let choice = $state<Record<string, string>>({});
   let syncing = $state(false);
 
-  const canEdit = $derived(isManagerPassword());
+  const canEdit = $derived(can("settings.manage"));
 
   function resetForm() {
     if (!status) return;
@@ -251,7 +252,7 @@
         changes orders there, and never sees card details. Payments stay in Square.
       </p>
     </div>
-    {#if status?.settings.value.enabled && canRunPass(session.user?.role)}
+    {#if status?.settings.value.enabled && canRunPass()}
       <Button label={syncing ? "Asking Square…" : "Sync now"} disabled={syncing} onclick={syncNow}><RefreshCw size={16} /></Button>
     {/if}
   </header>
@@ -275,7 +276,7 @@
           {/if}
         </div>
       {:else}
-        <ManagerGate what="Connecting Square">
+        <ManagerGate what="Connecting Square" action="settings.manage">
           <div class="stack">
             <p>
               In the Square Developer Dashboard, create an application and copy an access token for the restaurant's
@@ -385,7 +386,7 @@
       </Card>
 
       <Card padding="md" title="3. Turn import on or off">
-        <ManagerGate what="Square import" viewable>
+        <ManagerGate what="Square import" action="settings.manage" viewable>
           <div class="stack">
             <Toggle checked={enabled} label="Import orders from Square" disabled={!canEdit} onchange={(on) => (enabled = on)} />
             <label class="field">

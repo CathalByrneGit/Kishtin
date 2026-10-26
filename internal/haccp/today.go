@@ -95,17 +95,18 @@ type TodayInput struct {
 	Limits      []LimitVersion
 }
 
-// Effective is a record after corrections, placed at the time of the
-// record it corrects.
+// Effective is a record after corrections, placed at the time its check
+// was done.
 type Effective struct {
 	Record
-	// At is when the original record's check was done: when it was logged,
-	// or, for a record transcribed from paper, when it was taken.
+	// At is when the check was done: the time a correction gives, or else
+	// the original record's time.
 	At time.Time
 }
 
-// TakenAt is when a record's check was done: when it was logged, or when
-// it was taken for a record transcribed from paper.
+// TakenAt is when a record's check was done: the time given when it was
+// logged (for a check logged later, or transcribed from paper), or else
+// when it was logged.
 func (r Record) TakenAt() time.Time {
 	if r.Reading.TakenAt != nil {
 		return *r.Reading.TakenAt
@@ -115,8 +116,8 @@ func (r Record) TakenAt() time.Time {
 
 // ApplyCorrections replaces each corrected record with its latest
 // correction. A correction keeps the time of the original it corrects, so
-// it fills the same check. Corrections of records not in the set (from
-// another day) are left out.
+// it fills the same check, unless it gives its own time. Corrections of
+// records not in the set (from another day) are left out.
 func ApplyCorrections(recs []Record) []Effective {
 	byID := map[string]int{}
 	out := make([]Effective, 0, len(recs))
@@ -132,7 +133,11 @@ func ApplyCorrections(recs []Record) []Effective {
 		if !ok {
 			continue
 		}
-		out[i] = Effective{Record: r, At: out[i].At}
+		at := out[i].At
+		if r.Reading.TakenAt != nil {
+			at = *r.Reading.TakenAt
+		}
+		out[i] = Effective{Record: r, At: at}
 		byID[r.ID] = i
 	}
 	return out

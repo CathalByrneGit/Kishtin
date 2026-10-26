@@ -63,11 +63,11 @@ func (s *Service) signOffStatus(ctx context.Context) (SignOffStatus, error) {
 // Today returns the day's checks: what is done, due, missed and out of
 // limit, the cleaning checklist, and batches in use.
 func (s *Service) Today(ctx context.Context, p *auth.Principal) (TodayView, error) {
-	if err := allow(p, auth.ActViewHACCP); err != nil {
+	if err := s.allow(p, auth.ActViewHACCP); err != nil {
 		return TodayView{}, err
 	}
 	from, to := s.dayBounds()
-	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: from, To: to})
+	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{DoneFrom: from, DoneTo: to})
 	if err != nil {
 		return TodayView{}, err
 	}

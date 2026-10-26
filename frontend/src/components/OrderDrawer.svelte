@@ -114,7 +114,7 @@
   // fired, only the pass.
   function canChange(it: OrderItem): boolean {
     if (!order || order.status !== "open" || it.state === "served" || it.state === "voided") return false;
-    return it.state === "held" ? canTakeOrders(session.user?.role) : canRunPass(session.user?.role);
+    return it.state === "held" ? canTakeOrders() : canRunPass();
   }
 
   async function addItems() {
@@ -194,7 +194,7 @@
         {#if order.allergy}<Chip uppercase={false} tone="danger">Allergy</Chip>{/if}
         <span class="muted">Entered {dublinTime(order.created_at)}{order.covers ? ` · ${order.covers} covers` : ""}</span>
       </div>
-      {#if order.status === "open" && canTakeOrders(session.user?.role)}
+      {#if order.status === "open" && canTakeOrders()}
         {#if naming === null}
           <div class="row">
             <span>{order.name ? `Name: ${order.name}` : "No name: shown by its table or ticket."}</span>
@@ -226,7 +226,7 @@
               {c.urgent ? " · urgent" : ""}
             </span>
           </h3>
-          {#if c.state === "fired" && order.status === "open" && canRunPass(session.user?.role) && courseItems.every((it) => it.state === "fired" || it.state === "held" || it.state === "voided")}
+          {#if c.state === "fired" && order.status === "open" && canRunPass() && courseItems.every((it) => it.state === "fired" || it.state === "held" || it.state === "voided")}
             <div><Button size="sm" label="Hold again" disabled={busy} onclick={() => hold(c.course as Course)} /></div>
           {/if}
           <ul class="items">
@@ -237,7 +237,7 @@
                 <span class="row">
                   {#if it.void_reason}<span class="muted small">{it.void_reason}</span>{/if}
                   <Chip size="sm" uppercase={false} tone={st.tone}>{st.label}</Chip>
-                  {#if canWorkStation(session.user?.role) && ["fired", "cooking", "resting", "plating"].includes(it.state)}
+                  {#if canWorkStation() && ["fired", "cooking", "resting", "plating"].includes(it.state)}
                     <Button size="sm" tone="info" surface="solid" label={nextLabel(it.state)} disabled={busy} onclick={() => step(it)} />
                   {/if}
                   {#if canChange(it)}<Button size="sm" label="Change" disabled={busy || changing !== null} onclick={() => startChange(it)} />{/if}
@@ -265,7 +265,7 @@
         </section>
       {/each}
 
-      {#if order.status === "open" && canTakeOrders(session.user?.role)}
+      {#if order.status === "open" && canTakeOrders()}
         {#if adding && menu}
           <section>
             <h3>Add items</h3>
@@ -302,7 +302,7 @@
     {/if}
   </div>
   {#snippet footer()}
-    {#if order && order.status === "open" && canRunPass(session.user?.role)}
+    {#if order && order.status === "open" && canRunPass()}
       <div class="row">
         <Button label="Close order" disabled={busy || !allDone} onclick={close} />
         {#if !allDone}<span class="muted small">Close once every item is served or voided.</span>{/if}

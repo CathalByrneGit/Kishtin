@@ -1,4 +1,5 @@
 <script module lang="ts">
+  import { can, canWithPassword } from "../lib/can.svelte";
   import type { HaccpRecord } from "../lib/api";
 
   export interface LogPreset {
@@ -29,9 +30,9 @@
   import TempInput from "./TempInput.svelte";
   import { api, message, OfflineError, type Check, type Lists, type NewRecord } from "../lib/api";
   import { title as recordTitle, typeLabel } from "../lib/labels";
-  import { addDays, coolingTimes, dublinDate, dublinTime, isClock, longDate, normaliseClock, parseTemp } from "../lib/format";
+  import { addDays, coolingTimes, dublinDate, dublinTime, dublinToDate, isClock, longDate, normaliseClock, parseTemp } from "../lib/format";
   import { live, onChange } from "../lib/live.svelte";
-  import { isManagerPassword, session } from "../lib/session.svelte";
+  import { session } from "../lib/session.svelte";
 
   interface Props {
     preset: LogPreset | null;
@@ -40,7 +41,7 @@
   let { preset, onsaved }: Props = $props();
 
   type Kind = "temp" | "delivery" | "cook" | "cooling" | "hot_hold" | "batch_label" | "cleaning" | "transport" | "training" | "fitness";
-  const canInspect = $derived(session.user?.role === "manager" || session.user?.role === "head_chef");
+  const canInspect = $derived(can("haccp.inspect"));
   // Training is for the head chef and managers; fitness to work, which is
   // health information, for a manager with a password.
   const kinds = $derived(
@@ -55,7 +56,7 @@
         { id: "cleaning", label: "Cleaning" },
         { id: "transport", label: "To a customer" },
         { id: "training", label: "Training", show: canInspect },
-        { id: "fitness", label: "Fitness to work", show: isManagerPassword() },
+        { id: "fitness", label: "Fitness to work", show: can("haccp.fitness") },
       ] as { id: Kind; label: string; show?: boolean }[]
     ).filter((k) => k.show !== false),
   );
@@ -89,6 +90,12 @@
   let action = $state("");
   let notes = $state("");
   let correctionReason = $state("");
+  // When the check was done: now, or earlier (a date and time), and who did
+  // it when that was someone else.
+  let when = $state<"now" | "earlier">("now");
+  let whenDate = $state(dublinDate(new Date()));
+  let whenTime = $state("");
+  let doneBy = $state("");
   // Transport, training and fitness.
   let customer = $state("");
   let separated = $state<"" | "yes" | "no">("");
@@ -179,6 +186,11 @@
     notes = rd.notes ?? "";
     action = "";
     correctionReason = "";
+    const at = new Date(rd.taken_at ?? r.logged_at);
+    when = "now";
+    whenDate = dublinDate(at);
+    whenTime = dublinTime(at);
+    doneBy = rd.signed_by ?? "";
   }
 
   const correcting = $derived(preset?.corrects ?? null);
@@ -197,7 +209,17 @@
   });
 
   const unitKind = $derived(lists?.units.find((u) => u.name === unit)?.kind ?? "fridge");
-  const cooling = $derived(coolingTimes(dublinDate(new Date()), normaliseClock(cookedAt), normaliseClock(fridgeAt)));
+  // Training and fitness to work have their own date; the others can say
+  // when the check was done, if a manager allows it.
+  const showWhen = $derived(kind !== "training" && kind !== "fitness" && (canWithPassword("haccp.backdate") || Boolean(correcting)));
+  const earlier = $derived(showWhen && when === "earlier");
+  const takenAt = $derived.by((): string | null | "bad" => {
+    if (!earlier) return null;
+    const t = normaliseClock(whenTime);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(whenDate) || !isClock(t)) return "bad";
+    return dublinToDate(whenDate, t).toISOString();
+  });
+  const cooling = $derived(coolingTimes(earlier ? whenDate : dublinDate(new Date()), normaliseClock(cookedAt), normaliseClock(fridgeAt)));
   const useBy = $derived(/^\d+$/.test(shelfLife.trim()) ? addDays(madeOn, Number(shelfLife)) : "");
 
   /** draft builds the record from the form, or says what is missing. */
@@ -289,6 +311,14 @@
     }
   });
 
+  /** full adds the notes, when the check was done and who did it. */
+  function full(record: NewRecord): NewRecord {
+    const reading = { ...record.reading, notes: kind === "fitness" ? undefined : notes || undefined };
+    if (takenAt && takenAt !== "bad") reading.taken_at = takenAt;
+    if (showWhen && doneBy.trim()) reading.signed_by = doneBy.trim();
+    return { ...record, reading };
+  }
+
   const runCheck = debounce(async (body: NewRecord) => {
     try {
       verdict = await api.check(body);
@@ -301,8 +331,8 @@
 
   $effect(() => {
     const d = draft;
-    if ("record" in d) {
-      runCheck({ ...d.record, reading: { ...d.record.reading, notes: kind === "fitness" ? undefined : notes || undefined } });
+    if ("record" in d && takenAt !== "bad") {
+      runCheck(full(d.record));
     } else {
       runCheck.cancel();
       verdict = null;
@@ -316,6 +346,7 @@
   const canSave = $derived(
     Boolean(verdict) &&
       "record" in draft &&
+      takenAt !== "bad" &&
       (!needsAction || action.trim() !== "") &&
       (!correcting || correctionReason.trim() !== "") &&
       !saving,
@@ -340,7 +371,7 @@
     if (!("record" in draft)) return;
     saving = true;
     try {
-      const body: NewRecord = { ...draft.record, reading: { ...draft.record.reading, notes: kind === "fitness" ? undefined : notes || undefined } };
+      const body = full(draft.record);
       if (needsAction) body.corrective_action = action.trim();
       if (correcting) {
         body.corrects = correcting.id;
@@ -354,6 +385,7 @@
       notes = "";
       correctionReason = "";
       cutoffText = "";
+      whenTime = "";
       docket = null;
       if (kind !== "temp") {
         food = "";
@@ -606,6 +638,29 @@
           <span>Outcome</span>
           <SegmentedControl block ariaLabel="Fit to work" value={fit} onchange={(v) => (fit = v as typeof fit)} options={[{ value: "yes", label: "Fit to work" }, { value: "no", label: "Not fit to work" }]} />
         </div>
+      {/if}
+
+      {#if showWhen}
+        <div class="field">
+          <span>When was this done?</span>
+          <SegmentedControl
+            block
+            ariaLabel="When was this done?"
+            value={when}
+            onchange={(v) => (when = v as typeof when)}
+            options={correcting
+              ? [{ value: "now", label: "Same time as the original" }, { value: "earlier", label: "A different time" }]
+              : [{ value: "now", label: "Just now" }, { value: "earlier", label: "Earlier" }]}
+          />
+        </div>
+        {#if earlier}
+          <div class="two">
+            <label class="field"><span>Date</span><DatePicker value={whenDate} onchange={(d) => (whenDate = d)} ariaLabel="Date the check was done" block /></label>
+            <label class="field"><span>Time</span><TextInput bind:value={whenTime} block placeholder="HH:MM" ariaLabel="Time the check was done" /></label>
+          </div>
+          {#if takenAt === "bad"}<Notice tone="info" message="Enter the time the check was done, such as 09:00." />{/if}
+          <label class="field"><span>Done by (if not you)</span><TextInput bind:value={doneBy} block placeholder="Name or initials" /></label>
+        {/if}
       {/if}
 
       {#if kind === "fitness"}

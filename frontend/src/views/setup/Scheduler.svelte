@@ -5,7 +5,7 @@
   import ReviewChanges, { type Preview } from "../../components/ReviewChanges.svelte";
   import { api, message, type Schemas } from "../../lib/api";
   import { onChange } from "../../lib/live.svelte";
-  import { isManagerPassword } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
 
   type S = Schemas["Settings"];
 
@@ -26,7 +26,7 @@
 
   let review = $state<{ preview: Preview; value: S } | null>(null);
   let saving = $state(false);
-  const canEdit = $derived(isManagerPassword());
+  const canEdit = $derived(can("settings.manage"));
 
   function reset() {
     if (!current) return;
@@ -127,7 +127,7 @@
     {/if}
   </header>
 
-  <ManagerGate what="The scheduler" viewable>
+  <ManagerGate what="The scheduler" action="settings.manage" viewable>
     {#if error}<Notice tone="error" message={error} />{/if}
     {#if !current}
       {#if !error}<Spinner />{/if}

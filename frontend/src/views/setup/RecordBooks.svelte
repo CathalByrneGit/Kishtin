@@ -21,7 +21,7 @@
     type Settings,
     type Template,
   } from "../../lib/recordbooks";
-  import { isManagerPassword } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
 
   let info = $state<Schemas["RecordBooks"] | null>(null);
   let saved = $state<Schemas["VersionedRecordBookSettings"] | null>(null);
@@ -36,7 +36,7 @@
   let comparing = $state<{ book: string; code: string; file: string } | null>(null);
   let editions = $state(false);
   let saving = $state(false);
-  const canEdit = $derived(isManagerPassword());
+  const canEdit = $derived(can("haccp.limits"));
 
   async function load() {
     try {
@@ -206,7 +206,7 @@
     <Button label="Open Record books" onclick={() => navigate("/books")} />
   </header>
 
-  <ManagerGate what="HACCP records" viewable>
+  <ManagerGate what="HACCP records" action="haccp.limits" viewable>
     {#if error}
       <Notice tone="error" message={error} />
     {:else if !info || !draft || !saved}

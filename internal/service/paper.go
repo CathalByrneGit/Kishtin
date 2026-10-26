@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -41,19 +42,25 @@ type PaperCheck struct {
 // maxPaperRows is the most rows one photo can hold.
 const maxPaperRows = 200
 
-func (s *Service) checkPaperRow(ctx context.Context, st store.Store, file string, nr *NewRecord) (Check, error) {
+func (s *Service) checkPaperRow(ctx context.Context, st store.Store, p *auth.Principal, file string, nr *NewRecord) (Check, error) {
 	if !slices.Contains(PaperTypes, nr.Type) {
 		return Check{}, newErr(KindInvalid, "a %s record cannot be transcribed from paper", nr.Type)
 	}
 	nr.Reading.PaperFile = file
+	return s.checkEarlierRow(ctx, st, p, nr)
+}
+
+// checkEarlierRow checks one row of checks done earlier (from paper or
+// caught up), each with the time it was done.
+func (s *Service) checkEarlierRow(ctx context.Context, st store.Store, p *auth.Principal, nr *NewRecord) (Check, error) {
 	if nr.Reading.TakenAt == nil {
 		return Check{}, newErr(KindInvalid, "say when the check was done (date and time)")
 	}
-	if nr.Reading.TakenAt.After(s.clk.Now()) {
-		return Check{}, newErr(KindInvalid, "the check cannot be in the future")
-	}
 	if nr.Corrects != "" {
-		return Check{}, newErr(KindInvalid, "a correction is logged as usual, not from paper")
+		return Check{}, newErr(KindInvalid, "a correction is logged as usual, from the record it corrects")
+	}
+	if err := s.checkWhen(ctx, st, p, nr); err != nil {
+		return Check{}, err
 	}
 	return s.prepare(ctx, st, nr)
 }
@@ -83,7 +90,7 @@ func (s *Service) readFileMeta(ctx context.Context, sha string) (string, store.F
 // saving: each row's result against today's limits, and anything that
 // stops it being saved.
 func (s *Service) PreviewPaper(ctx context.Context, p *auth.Principal, in PaperImport) ([]PaperCheck, error) {
-	if err := allow(p, auth.ActInspect); err != nil {
+	if err := s.allow(p, auth.ActInspect); err != nil {
 		return nil, err
 	}
 	file, err := s.paperFile(ctx, in.File)
@@ -93,47 +100,40 @@ func (s *Service) PreviewPaper(ctx context.Context, p *auth.Principal, in PaperI
 	if len(in.Rows) == 0 || len(in.Rows) > maxPaperRows {
 		return nil, newErr(KindInvalid, "send 1 to %d rows", maxPaperRows)
 	}
-	out := make([]PaperCheck, 0, len(in.Rows))
-	for i, nr := range in.Rows {
-		c, err := s.checkPaperRow(ctx, s.st, file, &nr)
+	return s.previewRows(ctx, in.Rows, "Copy the action taken from the paper: this reading needs one.",
+		func(nr *NewRecord) (Check, error) { return s.checkPaperRow(ctx, s.st, p, file, nr) }), nil
+}
+
+// previewRows checks rows of records without saving them.
+func (s *Service) previewRows(_ context.Context, rows []NewRecord, needAction string, check func(*NewRecord) (Check, error)) []PaperCheck {
+	out := make([]PaperCheck, 0, len(rows))
+	for i, nr := range rows {
+		c, err := check(&nr)
 		pc := PaperCheck{Row: i + 1}
 		switch {
 		case err != nil:
 			pc.Problem = err.Error()
 		case c.NeedsCorrectiveAction && strings.TrimSpace(nr.CorrectiveAction) == "":
-			pc.Check, pc.Problem = &c, "Copy the action taken from the paper: this reading needs one."
+			pc.Check, pc.Problem = &c, needAction
 		default:
 			pc.Check = &c
 		}
 		out = append(out, pc)
 	}
-	return out, nil
+	return out
 }
 
-// ImportPaper saves the rows transcribed from a paper page, all or none.
-// Each record keeps when the check was done, the name signed on the paper
-// and the photo, and is logged by the person transcribing. Results are
-// checked against the limits in force now.
-func (s *Service) ImportPaper(ctx context.Context, p *auth.Principal, in PaperImport) ([]haccp.Record, error) {
-	if err := allow(p, auth.ActInspect); err != nil {
-		return nil, err
-	}
-	file, err := s.paperFile(ctx, in.File)
-	if err != nil {
-		return nil, err
-	}
-	if len(in.Rows) == 0 || len(in.Rows) > maxPaperRows {
-		return nil, newErr(KindInvalid, "send 1 to %d rows", maxPaperRows)
-	}
+// saveRows saves rows of records all or none.
+func (s *Service) saveRows(ctx context.Context, p *auth.Principal, rows []NewRecord, check func(store.Store, *NewRecord) error) ([]haccp.Record, error) {
 	var saved []haccp.Record
-	err = s.st.WithTx(ctx, func(tx store.Store) error {
-		for i, nr := range in.Rows {
-			if _, err := s.checkPaperRow(ctx, tx, file, &nr); err != nil {
-				return newErr(KindInvalid, "row %d: %s", i+1, err)
+	err := s.st.WithTx(ctx, func(tx store.Store) error {
+		for i, nr := range rows {
+			if err := check(tx, &nr); err != nil {
+				return rowErr(i, err)
 			}
 			rec, err := s.appendRecord(ctx, tx, p, nr)
 			if err != nil {
-				return newErr(KindInvalid, "row %d: %s", i+1, err)
+				return rowErr(i, err)
 			}
 			saved = append(saved, rec)
 		}
@@ -148,6 +148,36 @@ func (s *Service) ImportPaper(ctx context.Context, p *auth.Principal, in PaperIm
 	return saved, nil
 }
 
+// rowErr names the row an error is about, keeping its kind.
+func rowErr(i int, err error) error {
+	var e *Error
+	if errors.As(err, &e) {
+		return &Error{Kind: e.Kind, NeedPassword: e.NeedPassword, Msg: fmt.Sprintf("row %d: %s", i+1, e.Msg)}
+	}
+	return fmt.Errorf("row %d: %w", i+1, err)
+}
+
+// ImportPaper saves the rows transcribed from a paper page, all or none.
+// Each record keeps when the check was done, the name signed on the paper
+// and the photo, and is logged by the person transcribing. Results are
+// checked against the limits in force now.
+func (s *Service) ImportPaper(ctx context.Context, p *auth.Principal, in PaperImport) ([]haccp.Record, error) {
+	if err := s.allow(p, auth.ActInspect); err != nil {
+		return nil, err
+	}
+	file, err := s.paperFile(ctx, in.File)
+	if err != nil {
+		return nil, err
+	}
+	if len(in.Rows) == 0 || len(in.Rows) > maxPaperRows {
+		return nil, newErr(KindInvalid, "send 1 to %d rows", maxPaperRows)
+	}
+	return s.saveRows(ctx, p, in.Rows, func(tx store.Store, nr *NewRecord) error {
+		_, err := s.checkPaperRow(ctx, tx, p, file, nr)
+		return err
+	})
+}
+
 // PaperDraft is a local model's reading of a photo of a paper page: rows
 // for a person to check against the photo before saving.
 type PaperDraft struct {
@@ -160,7 +190,7 @@ type PaperDraft struct {
 // ReadPaper asks the local model to read the rows of a photo of a paper
 // record book page. Nothing is saved: the rows are a draft.
 func (s *Service) ReadPaper(ctx context.Context, p *auth.Principal, file string) (PaperDraft, error) {
-	if err := allow(p, auth.ActInspect); err != nil {
+	if err := s.allow(p, auth.ActInspect); err != nil {
 		return PaperDraft{}, err
 	}
 	if !s.ai.Enabled() {

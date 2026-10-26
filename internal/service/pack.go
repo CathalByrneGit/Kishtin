@@ -15,7 +15,7 @@ import (
 // records with their actions, every record by day, and the limit versions
 // they were checked against.
 func (s *Service) ExportPackPDF(ctx context.Context, p *auth.Principal, q RecordQuery, w io.Writer) (ExportSummary, error) {
-	if err := allow(p, auth.ActExportHACCP); err != nil {
+	if err := s.allow(p, auth.ActExportHACCP); err != nil {
 		return ExportSummary{}, err
 	}
 	sum := ExportSummary{From: q.From, To: q.To}
@@ -23,7 +23,7 @@ func (s *Service) ExportPackPDF(ctx context.Context, p *auth.Principal, q Record
 	if err != nil {
 		return sum, err
 	}
-	recs = visible(p, recs)
+	recs = s.visible(p, recs)
 	rep, err := s.verifyStore(ctx, s.st, true)
 	if err != nil {
 		return sum, err

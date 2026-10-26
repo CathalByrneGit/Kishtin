@@ -113,12 +113,12 @@ func typeAction(t haccp.RecordType) auth.Action {
 }
 
 // allowType checks a principal may log a record type.
-func allowType(p *auth.Principal, t haccp.RecordType) error {
-	if err := allow(p, auth.ActLogHACCP); err != nil {
+func (s *Service) allowType(p *auth.Principal, t haccp.RecordType) error {
+	if err := s.allow(p, auth.ActLogHACCP); err != nil {
 		return err
 	}
 	if a := typeAction(t); a != "" {
-		return allow(p, a)
+		return s.allow(p, a)
 	}
 	return nil
 }
@@ -126,18 +126,18 @@ func allowType(p *auth.Principal, t haccp.RecordType) error {
 // canSee reports whether a principal may see a record. Fitness to work
 // assessments are health information: only managers with a password see
 // them.
-func canSee(p *auth.Principal, r haccp.Record) bool {
+func (s *Service) canSee(p *auth.Principal, r haccp.Record) bool {
 	if r.Type != haccp.RecordFitness {
 		return true
 	}
-	return p != nil && auth.Can(*p, auth.ActFitness).Allowed
+	return p != nil && s.permissions().Can(*p, auth.ActFitness).Allowed
 }
 
 // visible keeps the records a principal may see.
-func visible(p *auth.Principal, recs []haccp.Record) []haccp.Record {
+func (s *Service) visible(p *auth.Principal, recs []haccp.Record) []haccp.Record {
 	out := recs[:0:0]
 	for _, r := range recs {
-		if canSee(p, r) {
+		if s.canSee(p, r) {
 			out = append(out, r)
 		}
 	}
@@ -147,7 +147,13 @@ func visible(p *auth.Principal, recs []haccp.Record) []haccp.Record {
 // CheckRecord checks a reading without saving it, so a screen can show the
 // result before the record is saved.
 func (s *Service) CheckRecord(ctx context.Context, p *auth.Principal, nr NewRecord) (Check, error) {
-	if err := allowType(p, nr.Type); err != nil {
+	if err := s.allowType(p, nr.Type); err != nil {
+		return Check{}, err
+	}
+	if err := notFromPaper(nr); err != nil {
+		return Check{}, err
+	}
+	if err := s.checkWhen(ctx, s.st, p, &nr); err != nil {
 		return Check{}, err
 	}
 	return s.prepare(ctx, s.st, &nr)
@@ -157,11 +163,11 @@ func (s *Service) CheckRecord(ctx context.Context, p *auth.Principal, nr NewReco
 // borderline one if the rules say so, is only saved with a corrective
 // action.
 func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord) (haccp.Record, error) {
-	if err := allowType(p, nr.Type); err != nil {
+	if err := s.allowType(p, nr.Type); err != nil {
 		return haccp.Record{}, err
 	}
-	if nr.Reading.TakenAt != nil || nr.Reading.PaperFile != "" {
-		return haccp.Record{}, newErr(KindInvalid, "a record from paper is saved with paper import, with the photo of the page")
+	if err := notFromPaper(nr); err != nil {
+		return haccp.Record{}, err
 	}
 	var saved haccp.Record
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
@@ -178,6 +184,9 @@ func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord
 // appendRecord checks a new record and appends it to the chain, inside a
 // transaction.
 func (s *Service) appendRecord(ctx context.Context, tx store.Store, p *auth.Principal, nr NewRecord) (haccp.Record, error) {
+	if err := s.checkWhen(ctx, tx, p, &nr); err != nil {
+		return haccp.Record{}, err
+	}
 	c, err := s.prepare(ctx, tx, &nr)
 	if err != nil {
 		return haccp.Record{}, err
@@ -203,14 +212,22 @@ func (s *Service) appendRecord(ctx context.Context, tx store.Store, p *auth.Prin
 		return haccp.Record{}, newErr(KindInvalid, "correction_reason is only for a record that corrects another")
 	}
 	if nr.Type == haccp.RecordCleaning && nr.Corrects == "" && nr.Reading.Done != nil && *nr.Reading.Done {
-		from, to := s.dayBounds()
-		todays, err := tx.HACCP().ListRecords(ctx, store.RecordFilter{From: from, To: to, Types: []haccp.RecordType{haccp.RecordCleaning}})
+		when := s.clk.Now()
+		if nr.Reading.TakenAt != nil {
+			when = *nr.Reading.TakenAt
+		}
+		from, to := dayOf(when)
+		days, err := tx.HACCP().ListRecords(ctx, store.RecordFilter{DoneFrom: from, DoneTo: to, Types: []haccp.RecordType{haccp.RecordCleaning}})
 		if err != nil {
 			return haccp.Record{}, err
 		}
-		if done := haccp.DoneToday(todays, nr.Reading.Task); done != nil {
-			return haccp.Record{}, newErr(KindConflict, "%s was already done today at %s by %s", done.Reading.Task,
-				done.LoggedAt.In(clock.Dublin).Format("15:04"), done.LoggedByName)
+		if done := haccp.DoneToday(days, nr.Reading.Task); done != nil {
+			day := "today"
+			if from.Before(s.clk.Now().Add(-24 * time.Hour)) {
+				day = "on " + from.In(clock.Dublin).Format("Mon 2 Jan")
+			}
+			return haccp.Record{}, newErr(KindConflict, "%s was already done %s at %s by %s", done.Reading.Task, day,
+				done.TakenAt().In(clock.Dublin).Format("15:04"), done.LoggedByName)
 		}
 	}
 
@@ -245,10 +262,110 @@ func (s *Service) appendRecord(ctx context.Context, tx store.Store, p *auth.Prin
 }
 
 // dayBounds returns the start and end of today in Dublin, as UTC.
-func (s *Service) dayBounds() (time.Time, time.Time) {
-	now := s.clk.Now().In(clock.Dublin)
-	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, clock.Dublin)
+func (s *Service) dayBounds() (time.Time, time.Time) { return dayOf(s.clk.Now()) }
+
+// dayOf returns the start and end of t's day in Dublin, as UTC.
+func dayOf(t time.Time) (time.Time, time.Time) {
+	l := t.In(clock.Dublin)
+	start := time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, clock.Dublin)
 	return start.UTC(), start.AddDate(0, 0, 1).UTC()
+}
+
+// Times a check can be given, relative to now.
+const (
+	// backdateGrace is how far back a check's time can be given without
+	// needing permission to log checks done earlier.
+	backdateGrace = 15 * time.Minute
+	// futureGrace allows for a device clock a little ahead of the server.
+	futureGrace = 5 * time.Minute
+)
+
+// checkWhen checks the time a record says its check was done, and who may
+// give it. A correction keeps the time of the record it corrects unless it
+// gives its own. Records in a period a manager has signed off need
+// permission to add to a signed-off period.
+func (s *Service) checkWhen(ctx context.Context, st store.Store, p *auth.Principal, nr *NewRecord) error {
+	now := s.clk.Now()
+	var orig *haccp.Record
+	if nr.Corrects != "" {
+		o, err := st.HACCP().GetRecord(ctx, nr.Corrects)
+		if err != nil {
+			return mapStoreErr(err, "the record being corrected")
+		}
+		orig = &o
+	}
+	if nr.Reading.PaperFile != "" && orig != nil && nr.Reading.PaperFile != orig.Reading.PaperFile {
+		return newErr(KindInvalid, "a correction keeps the photo of the paper page of the record it corrects")
+	}
+	if t := nr.Reading.TakenAt; t != nil {
+		if t.After(now.Add(futureGrace)) {
+			return newErr(KindInvalid, "the time the check was done cannot be in the future")
+		}
+		if t.After(now) {
+			nr.Reading.TakenAt = &now
+		}
+		kept := orig != nil && t.Equal(orig.TakenAt())
+		if !kept && t.Before(now.Add(-backdateGrace)) {
+			if err := s.allow(p, auth.ActBackdate); err != nil {
+				return err
+			}
+		}
+	} else if orig != nil {
+		t := orig.TakenAt()
+		nr.Reading.TakenAt = &t
+	}
+	when := now
+	if nr.Reading.TakenAt != nil {
+		when = *nr.Reading.TakenAt
+	}
+	times := []time.Time{when}
+	if orig != nil {
+		times = append(times, orig.TakenAt())
+	}
+	for _, t := range times {
+		so, err := s.signedOffAt(ctx, st, t)
+		if err != nil {
+			return err
+		}
+		if so == nil {
+			continue
+		}
+		if err := s.allow(p, auth.ActLogSignedOff); err != nil {
+			var e *Error
+			if errors.As(err, &e) {
+				return &Error{Kind: e.Kind, NeedPassword: e.NeedPassword, Msg: fmt.Sprintf("%s is in a period %s signed off (%s to %s): %s",
+					t.In(clock.Dublin).Format("Mon 2 Jan"), so.LoggedByName, so.Reading.PeriodFrom, so.Reading.PeriodTo, e.Msg)}
+			}
+			return err
+		}
+		break
+	}
+	return nil
+}
+
+// notFromPaper refuses a new record with a photo of a paper page: those are
+// saved with paper import. A correction may keep the photo of the record it
+// corrects.
+func notFromPaper(nr NewRecord) error {
+	if nr.Reading.PaperFile != "" && nr.Corrects == "" {
+		return newErr(KindInvalid, "a record from paper is saved with paper import, with the photo of the page")
+	}
+	return nil
+}
+
+// signedOffAt returns the sign-off whose period covers t's day, if any.
+func (s *Service) signedOffAt(ctx context.Context, st store.Store, t time.Time) (*haccp.Record, error) {
+	day := t.In(clock.Dublin).Format(haccp.DateLayout)
+	recs, err := st.HACCP().ListRecords(ctx, store.RecordFilter{Types: []haccp.RecordType{haccp.RecordSignOff}, Newest: true})
+	if err != nil {
+		return nil, err
+	}
+	for i, r := range recs {
+		if r.Corrects == "" && r.Reading.PeriodFrom <= day && day <= r.Reading.PeriodTo {
+			return &recs[i], nil
+		}
+	}
+	return nil, nil
 }
 
 func outcomeLabel(o haccp.Outcome) string {
@@ -263,14 +380,14 @@ func outcomeLabel(o haccp.Outcome) string {
 
 // GetRecord returns one record.
 func (s *Service) GetRecord(ctx context.Context, p *auth.Principal, id string) (haccp.Record, error) {
-	if err := allow(p, auth.ActViewHACCP); err != nil {
+	if err := s.allow(p, auth.ActViewHACCP); err != nil {
 		return haccp.Record{}, err
 	}
 	r, err := s.st.HACCP().GetRecord(ctx, id)
 	if err != nil {
 		return haccp.Record{}, mapStoreErr(err, "record")
 	}
-	if !canSee(p, r) {
+	if !s.canSee(p, r) {
 		return haccp.Record{}, newErr(KindNotFound, "record not found")
 	}
 	return r, nil
@@ -278,6 +395,7 @@ func (s *Service) GetRecord(ctx context.Context, p *auth.Principal, id string) (
 
 // RecordQuery selects records to list.
 type RecordQuery struct {
+	// From and To bound when the check was done.
 	From, To time.Time
 	Types    []haccp.RecordType
 	Outcomes []haccp.Outcome
@@ -290,7 +408,7 @@ const MaxListLimit = 1000
 
 // ListRecords lists records.
 func (s *Service) ListRecords(ctx context.Context, p *auth.Principal, q RecordQuery) ([]haccp.Record, error) {
-	if err := allow(p, auth.ActViewHACCP); err != nil {
+	if err := s.allow(p, auth.ActViewHACCP); err != nil {
 		return nil, err
 	}
 	for _, t := range q.Types {
@@ -309,11 +427,11 @@ func (s *Service) ListRecords(ctx context.Context, p *auth.Principal, q RecordQu
 	if q.Limit <= 0 || q.Limit > MaxListLimit {
 		q.Limit = MaxListLimit
 	}
-	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{From: q.From, To: q.To, Types: q.Types, Outcomes: q.Outcomes, Limit: q.Limit, Newest: q.Newest})
+	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{DoneFrom: q.From, DoneTo: q.To, ByDone: true, Types: q.Types, Outcomes: q.Outcomes, Limit: q.Limit, Newest: q.Newest})
 	if err != nil {
 		return nil, err
 	}
-	return visible(p, recs), nil
+	return s.visible(p, recs), nil
 }
 
 // FileProblem is an attached file that failed its check.
@@ -336,7 +454,7 @@ type VerifyReport struct {
 // Verify re-checks the hash chain, the limit versions records refer to, and
 // every attached file.
 func (s *Service) Verify(ctx context.Context, p *auth.Principal) (VerifyReport, error) {
-	if err := allow(p, auth.ActViewHACCP); err != nil {
+	if err := s.allow(p, auth.ActViewHACCP); err != nil {
 		return VerifyReport{}, err
 	}
 	return s.verifyStore(ctx, s.st, true)

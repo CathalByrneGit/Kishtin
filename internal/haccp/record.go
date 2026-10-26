@@ -260,15 +260,14 @@ func (r Reading) Validate(t RecordType) error {
 	return r.validateType(t)
 }
 
-// validatePaper checks a record transcribed from paper: it needs the photo
-// of the page and when the check was done.
+// validatePaper checks when a check was done and who did it. Any record
+// can say when its check was done (taken_at) and who did it (signed_by); a
+// record transcribed from paper also needs the photo of the page.
 func (r Reading) validatePaper() error {
 	switch {
-	case r.TakenAt == nil && r.PaperFile == "" && r.SignedBy == "":
-		return nil
-	case r.TakenAt == nil:
+	case r.PaperFile != "" && r.TakenAt == nil:
 		return errors.New("a record from paper needs taken_at: when the check was done")
-	case len(r.PaperFile) != 64 || strings.Trim(r.PaperFile, "0123456789abcdef") != "":
+	case r.PaperFile != "" && (len(r.PaperFile) != 64 || strings.Trim(r.PaperFile, "0123456789abcdef") != ""):
 		return errors.New("a record from paper needs paper_file: the SHA-256 of the uploaded photo of the page")
 	case len([]rune(r.SignedBy)) > 80:
 		return errors.New("signed_by is at most 80 characters")

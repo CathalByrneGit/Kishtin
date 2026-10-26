@@ -89,7 +89,7 @@ func menuSetup(ctx context.Context, st store.Store) (menu.Setup, error) {
 // Menu returns the stations, equipment and dishes. Any staff member can see
 // it.
 func (s *Service) Menu(ctx context.Context, p *auth.Principal) (menu.Setup, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return menu.Setup{}, err
 	}
 	return menuSetup(ctx, s.st)
@@ -99,7 +99,7 @@ func (s *Service) menuChanged(id string) { s.publish(events.KindMenu, id) }
 
 // CreateStation adds a station.
 func (s *Service) CreateStation(ctx context.Context, p *auth.Principal, in StationInput) (menu.Station, error) {
-	if err := allow(p, auth.ActManageMenu); err != nil {
+	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return menu.Station{}, err
 	}
 	now := s.clk.Now()
@@ -117,7 +117,7 @@ func (s *Service) CreateStation(ctx context.Context, p *auth.Principal, in Stati
 // UpdateStation changes a station. A station with active dishes or
 // equipment cannot be taken out of use.
 func (s *Service) UpdateStation(ctx context.Context, p *auth.Principal, id string, in StationInput) (menu.Station, error) {
-	if err := allow(p, auth.ActManageMenu); err != nil {
+	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return menu.Station{}, err
 	}
 	var out menu.Station
@@ -165,7 +165,7 @@ func (s *Service) UpdateStation(ctx context.Context, p *auth.Principal, id strin
 
 // CreateEquipment adds equipment to a station.
 func (s *Service) CreateEquipment(ctx context.Context, p *auth.Principal, in EquipmentInput) (menu.Equipment, error) {
-	if err := allow(p, auth.ActManageMenu); err != nil {
+	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return menu.Equipment{}, err
 	}
 	var out menu.Equipment
@@ -198,7 +198,7 @@ func (s *Service) CreateEquipment(ctx context.Context, p *auth.Principal, in Equ
 // UpdateEquipment changes equipment. Equipment with active dishes cannot be
 // taken out of use or moved to another station.
 func (s *Service) UpdateEquipment(ctx context.Context, p *auth.Principal, id string, in EquipmentInput) (menu.Equipment, error) {
-	if err := allow(p, auth.ActManageMenu); err != nil {
+	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return menu.Equipment{}, err
 	}
 	var out menu.Equipment
@@ -267,7 +267,7 @@ func (s *Service) checkCategory(ctx context.Context, st store.Store, d *menu.Dis
 
 // CreateDish adds a dish to the menu.
 func (s *Service) CreateDish(ctx context.Context, p *auth.Principal, in DishInput) (menu.Dish, error) {
-	if err := allow(p, auth.ActManageMenu); err != nil {
+	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return menu.Dish{}, err
 	}
 	var out menu.Dish
@@ -301,7 +301,7 @@ func (s *Service) CreateDish(ctx context.Context, p *auth.Principal, in DishInpu
 // UpdateDish replaces a dish's values. Orders already in the kitchen keep
 // the times they were ordered with.
 func (s *Service) UpdateDish(ctx context.Context, p *auth.Principal, id string, in DishInput) (menu.Dish, error) {
-	if err := allow(p, auth.ActManageMenu); err != nil {
+	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return menu.Dish{}, err
 	}
 	var out menu.Dish
@@ -337,7 +337,7 @@ func (s *Service) UpdateDish(ctx context.Context, p *auth.Principal, id string, 
 
 // SetAvailability marks a dish sold out ("86 salmon") or back on.
 func (s *Service) SetAvailability(ctx context.Context, p *auth.Principal, id string, available bool) (menu.Dish, error) {
-	if err := allow(p, auth.ActSetAvailability); err != nil {
+	if err := s.allow(p, auth.ActSetAvailability); err != nil {
 		return menu.Dish{}, err
 	}
 	var out menu.Dish

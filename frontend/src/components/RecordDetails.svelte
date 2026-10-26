@@ -3,7 +3,7 @@
   import { FileText, PenLine, X } from "@lucide/svelte";
   import { api, message, type HaccpRecord } from "../lib/api";
   import { dublinDate, dublinTime, longDate } from "../lib/format";
-  import { outcomeStyle, readingRows, title, typeLabel } from "../lib/labels";
+  import { doneAt, doneBy, outcomeStyle, readingRows, title, typeLabel } from "../lib/labels";
   import { openLog } from "../lib/logdrawer.svelte";
 
   interface Props {
@@ -42,7 +42,8 @@
 
   const o = $derived(outcomeStyle(record.outcome));
   const rows = $derived(readingRows(record));
-  const at = $derived(new Date(record.logged_at));
+  const at = $derived(new Date(doneAt(record)));
+  const saved = $derived(new Date(record.logged_at));
 </script>
 
 <aside class="panel" aria-label="Record details">
@@ -74,10 +75,10 @@
     {/if}
 
     <dl>
-      <dt>Logged</dt>
+      <dt>When</dt>
       <dd class="num">{longDate(dublinDate(at))}, {dublinTime(at)}</dd>
       <dt>By</dt>
-      <dd>{record.logged_by_name}</dd>
+      <dd>{doneBy(record)}</dd>
       {#each rows as [label, value] (label)}
         <dt>{label}</dt>
         <dd>{value}</dd>
@@ -112,6 +113,8 @@
       <dl class="evidence">
         <dt>Record ID</dt>
         <dd class="hash"><code>{record.id}</code><CopyButton text={record.id} ariaLabel="Copy record ID" /></dd>
+        <dt>Saved</dt>
+        <dd class="num">{longDate(dublinDate(saved))}, {dublinTime(saved)} by {record.logged_by_name}</dd>
         <dt>Hash</dt>
         <dd class="hash"><code>{record.hash}</code><CopyButton text={record.hash} ariaLabel="Copy hash" /></dd>
         <dt>Previous hash</dt>

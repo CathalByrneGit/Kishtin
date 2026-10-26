@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -42,6 +43,9 @@ func (s *Server) settingsRoutes() {
 	registerGroup(s, settings.KindSystem, "system settings",
 		"Backup schedule and retention, upload size and limit preview length. Until changed here they come from kishtin.toml.",
 		func() *service.Group[settings.System] { return s.svc.System() })
+	registerGroup(s, settings.KindPermissions, "permissions",
+		"Who may do what, where it differs from Kishtin's defaults: per action, the roles and named staff allowed, and whether a PIN is enough. Managers may always do everything. Staff, API keys, permissions and fitness to work are always managers with a password. See GET /api/auth/actions.",
+		func() *service.Group[auth.Permissions] { return s.svc.Permissions() })
 }
 
 func registerGroup[T any](s *Server, kind settings.Kind, label, desc string, group func() *service.Group[T]) {

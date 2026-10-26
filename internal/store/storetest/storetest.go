@@ -154,7 +154,8 @@ func testListRecordsFilters(t *testing.T, s store.Store) {
 	appendChain(t, s, 5)
 	fridge := sampleRecord(9)
 	fridge.Type = haccp.RecordFridge
-	fridge.Reading = haccp.Reading{Unit: "Walk-in", TempC: fp(3)}
+	earlier := t0.Add(-24 * time.Hour)
+	fridge.Reading = haccp.Reading{Unit: "Walk-in", TempC: fp(3), TakenAt: &earlier}
 	require.NoError(t, s.WithTx(ctx, func(tx store.Store) error {
 		prev, err := tx.HACCP().LastRecord(ctx)
 		if err != nil {
@@ -193,6 +194,18 @@ func testListRecordsFilters(t *testing.T, s store.Store) {
 	require.Len(t, newest, 2)
 	assert.Equal(t, "rec-009", newest[0].ID)
 	assert.Equal(t, "rec-004", newest[1].ID)
+
+	// rec-009 was logged last, for a check done a day before the others.
+	done, err := s.HACCP().ListRecords(ctx, store.RecordFilter{DoneFrom: t0.Add(-25 * time.Hour), DoneTo: t0})
+	require.NoError(t, err)
+	require.Len(t, done, 1, "DoneFrom and DoneTo bound when the check was done")
+	assert.Equal(t, "rec-009", done[0].ID)
+	byDone, err := s.HACCP().ListRecords(ctx, store.RecordFilter{ByDone: true})
+	require.NoError(t, err)
+	assert.Equal(t, "rec-009", byDone[0].ID, "ByDone orders by when the check was done")
+	byDoneNewest, err := s.HACCP().ListRecords(ctx, store.RecordFilter{ByDone: true, Newest: true, Limit: 1})
+	require.NoError(t, err)
+	assert.Equal(t, "rec-004", byDoneNewest[0].ID)
 }
 
 func testEachRecordPagesInOrder(t *testing.T, s store.Store) {

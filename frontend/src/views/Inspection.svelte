@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { can, canWithPassword } from "../lib/can.svelte";
   import { Button, Card, MetricCard, Notice, SegmentedControl, SelectDropdown, Spinner, TextInput, showFlash } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
   import { api, message, OfflineError, type Schemas } from "../lib/api";
@@ -21,7 +22,7 @@
   let error = $state("");
   let saving = $state(false);
 
-  const canInspect = $derived(session.user?.role === "manager" || session.user?.role === "head_chef");
+  const canInspect = $derived(can("haccp.inspect"));
 
   function start(t: Template | undefined) {
     chosen = t?.id ?? "";

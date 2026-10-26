@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { can, canWithPassword } from "../lib/can.svelte";
   import { Button, Card, Chip, IconButton, Notice, SelectDropdown, Spinner, Table, TextInput, showFlash } from "@kenn-io/kit-ui";
   import { Camera, Plus, Trash2 } from "@lucide/svelte";
   import { onMount } from "svelte";
@@ -19,7 +20,7 @@
   let busy = $state(false);
   let readProblems = $state<string[]>([]);
 
-  const canImport = $derived(session.user?.role === "manager" || session.user?.role === "head_chef");
+  const canImport = $derived(can("haccp.inspect"));
 
   onMount(async () => {
     if (!canImport) return;

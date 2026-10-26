@@ -132,11 +132,11 @@ func (s *Service) buildItems(setup menu.Setup, o *orders.Order, in []NewItem, no
 // CreateOrder enters an order. Its courses are held until the expo fires
 // them, unless listed in Fire.
 func (s *Service) CreateOrder(ctx context.Context, p *auth.Principal, in NewOrder) (orders.Order, error) {
-	if err := allow(p, auth.ActTakeOrders); err != nil {
+	if err := s.allow(p, auth.ActTakeOrders); err != nil {
 		return orders.Order{}, err
 	}
 	if len(in.Fire) > 0 {
-		if err := allow(p, auth.ActRunPass); err != nil {
+		if err := s.allow(p, auth.ActRunPass); err != nil {
 			return orders.Order{}, newErr(KindForbidden, "only the head chef or a manager can fire courses")
 		}
 	}
@@ -201,7 +201,7 @@ func (s *Service) CreateOrder(ctx context.Context, p *auth.Principal, in NewOrde
 // AddItems adds items to an open order. Items added to a fired course are
 // fired straight away.
 func (s *Service) AddItems(ctx context.Context, p *auth.Principal, orderID string, in []NewItem) (orders.Order, error) {
-	if err := allow(p, auth.ActTakeOrders); err != nil {
+	if err := s.allow(p, auth.ActTakeOrders); err != nil {
 		return orders.Order{}, err
 	}
 	if len(in) == 0 {
@@ -324,7 +324,7 @@ func (s *Service) fire(ctx context.Context, tx store.Store, p *auth.Principal, o
 
 // FireCourse fires a course.
 func (s *Service) FireCourse(ctx context.Context, p *auth.Principal, orderID string, course menu.Course) (orders.Order, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return orders.Order{}, err
 	}
 	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
@@ -337,7 +337,7 @@ func (s *Service) FireCourse(ctx context.Context, p *auth.Principal, orderID str
 // refuses once any item has started, since that food is already cooking;
 // void or replace those items instead. Logged with the reason.
 func (s *Service) HoldCourse(ctx context.Context, p *auth.Principal, orderID string, course menu.Course, reason string) (orders.Order, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return orders.Order{}, err
 	}
 	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
@@ -403,7 +403,7 @@ type ItemReplace struct {
 // can replace items in a held course; once a course is fired it is the
 // pass's call, as for any void.
 func (s *Service) ReplaceItem(ctx context.Context, p *auth.Principal, itemID string, in ItemReplace) (orders.Order, error) {
-	if err := allow(p, auth.ActTakeOrders); err != nil {
+	if err := s.allow(p, auth.ActTakeOrders); err != nil {
 		return orders.Order{}, err
 	}
 	o, err := s.orderOfItem(ctx, itemID)
@@ -419,7 +419,7 @@ func (s *Service) ReplaceItem(ctx context.Context, p *auth.Principal, itemID str
 			return newErr(KindConflict, "%s for %s is already %s", old.DishName, o.Label(), old.State)
 		}
 		if old.State != orders.StateHeld {
-			if err := allow(p, auth.ActRunPass); err != nil {
+			if err := s.allow(p, auth.ActRunPass); err != nil {
 				return newErr(KindForbidden, "%s %s is fired: only the head chef or a manager can change it now", o.Label(), old.Course)
 			}
 		}
@@ -516,7 +516,7 @@ func (s *Service) orderOfItem(ctx context.Context, itemID string) (orders.Order,
 // expo override: logged with its reason, and the scheduler re-plans around
 // it.
 func (s *Service) SetTarget(ctx context.Context, p *auth.Principal, orderID string, course menu.Course, at time.Time, reason string) (orders.Order, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return orders.Order{}, err
 	}
 	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
@@ -553,7 +553,7 @@ func (s *Service) SetTarget(ctx context.Context, p *auth.Principal, orderID stri
 // SetUrgent flags a course so the scheduler puts it first, or clears the
 // flag. It is logged as an expo override.
 func (s *Service) SetUrgent(ctx context.Context, p *auth.Principal, orderID string, course menu.Course, urgent bool) (orders.Order, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return orders.Order{}, err
 	}
 	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
@@ -595,7 +595,7 @@ func moveAction(from, to orders.State) auth.Action {
 // served, voided, or one step back to undo a mistake. Every move is logged
 // with who and when; these times become the actual cook times.
 func (s *Service) MoveItems(ctx context.Context, p *auth.Principal, in ItemMove) ([]orders.Order, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return nil, err
 	}
 	if len(in.ItemIDs) == 0 {
@@ -646,7 +646,7 @@ func (s *Service) MoveItems(ctx context.Context, p *auth.Principal, in ItemMove)
 			if c, _ := o.Course(it.Course); c.State == orders.CourseHeld && to != orders.StateVoided {
 				return newErr(KindConflict, "%s %s is held: fire it first", o.Label(), it.Course)
 			}
-			if err := allow(p, moveAction(it.State, to)); err != nil {
+			if err := s.allow(p, moveAction(it.State, to)); err != nil {
 				return err
 			}
 			if err := orders.CanMove(it, to); err != nil {
@@ -753,7 +753,7 @@ func (s *Service) settleCourse(ctx context.Context, tx store.Store, p *auth.Prin
 // the plates arrive. It refuses while any item has not been started, so
 // nothing is marked ready that no one cooked.
 func (s *Service) ReadyCourse(ctx context.Context, p *auth.Principal, orderID string, course menu.Course) (orders.Order, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return orders.Order{}, err
 	}
 	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
@@ -805,7 +805,7 @@ func (s *Service) ReadyCourse(ctx context.Context, p *auth.Principal, orderID st
 // ServeCourse serves every ready item in a course. It refuses while any
 // item is still cooking, so a course leaves the pass together.
 func (s *Service) ServeCourse(ctx context.Context, p *auth.Principal, orderID string, course menu.Course) (orders.Order, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return orders.Order{}, err
 	}
 	o, err := s.st.Orders().GetOrder(ctx, orderID)
@@ -841,7 +841,7 @@ func (s *Service) ServeCourse(ctx context.Context, p *auth.Principal, orderID st
 // RenameOrder sets what the kitchen calls an order, such as a guest's
 // name, or clears it with an empty name. The change is logged.
 func (s *Service) RenameOrder(ctx context.Context, p *auth.Principal, orderID, name string) (orders.Order, error) {
-	if err := allow(p, auth.ActTakeOrders); err != nil {
+	if err := s.allow(p, auth.ActTakeOrders); err != nil {
 		return orders.Order{}, err
 	}
 	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
@@ -873,7 +873,7 @@ func (s *Service) RenameOrder(ctx context.Context, p *auth.Principal, orderID, n
 
 // CloseOrder closes an order once everything is served or voided.
 func (s *Service) CloseOrder(ctx context.Context, p *auth.Principal, orderID string) (orders.Order, error) {
-	if err := allow(p, auth.ActRunPass); err != nil {
+	if err := s.allow(p, auth.ActRunPass); err != nil {
 		return orders.Order{}, err
 	}
 	return s.changeOrder(ctx, orderID, func(tx store.Store, o *orders.Order) error {
@@ -897,7 +897,7 @@ func (s *Service) CloseOrder(ctx context.Context, p *auth.Principal, orderID str
 
 // GetOrder returns one order.
 func (s *Service) GetOrder(ctx context.Context, p *auth.Principal, id string) (orders.Order, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return orders.Order{}, err
 	}
 	o, err := s.st.Orders().GetOrder(ctx, id)
@@ -916,7 +916,7 @@ type OrderFilter struct {
 
 // ListOrders lists open orders, or every order of a day.
 func (s *Service) ListOrders(ctx context.Context, p *auth.Principal, f OrderFilter) ([]orders.Order, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return nil, err
 	}
 	if f.Date == "" {
@@ -931,7 +931,7 @@ func (s *Service) ListOrders(ctx context.Context, p *auth.Principal, f OrderFilt
 
 // OrderEvents returns an order's history, oldest first.
 func (s *Service) OrderEvents(ctx context.Context, p *auth.Principal, id string) ([]orders.Event, error) {
-	if err := allow(p, auth.ActViewKitchen); err != nil {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
 		return nil, err
 	}
 	if _, err := s.st.Orders().GetOrder(ctx, id); err != nil {

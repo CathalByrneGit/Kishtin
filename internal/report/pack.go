@@ -303,7 +303,7 @@ func Write(p Pack, out io.Writer) error {
 
 	cols := []float64{26, 20, 38, 34, 16, 85, 28, 26}
 	header := func() {
-		w.row(cols, []string{"Logged", "Type", "What", "Reading", "Result", "Reason and corrective action", "By", "Record / hash"}, true, &band, nil)
+		w.row(cols, []string{"When", "Type", "What", "Reading", "Result", "Reason and corrective action", "By", "Record / hash"}, true, &band, nil)
 	}
 	record := func(r haccp.Record) {
 		res, bg := outcomeStyle(r.Outcome)
@@ -315,7 +315,7 @@ func Write(p Pack, out io.Writer) error {
 			detail += "\nCorrects " + r.Corrects + ": " + r.CorrectionReason
 		}
 		w.row(cols, []string{
-			w.when(r.LoggedAt), strings.ReplaceAll(string(r.Type), "_", " "), subject(r), w.reading(r), res, detail,
+			w.when(r.TakenAt()), strings.ReplaceAll(string(r.Type), "_", " "), subject(r), w.reading(r), res, detail,
 			r.LoggedByName, fmt.Sprintf("#%d %s", r.Seq, shortHash(r.Hash)),
 		}, false, bg, header)
 	}
@@ -339,7 +339,7 @@ func Write(p Pack, out io.Writer) error {
 	}
 	day := ""
 	for _, r := range p.Records {
-		if d := r.LoggedAt.In(loc).Format("Monday 2 January 2006"); d != day {
+		if d := r.TakenAt().In(loc).Format("Monday 2 January 2006"); d != day {
 			day = d
 			pdf.SetFont("Helvetica", "B", 10)
 			w.color(ink)

@@ -2,8 +2,8 @@
 INSERT INTO haccp_records (
     id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome,
     outcome_reason, limit_version_id, limit_scope, rules_version_id,
-    corrective_action, corrects, correction_reason, prev_hash, hash
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    corrective_action, corrects, correction_reason, prev_hash, hash, done_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: LastRecord :one
 SELECT * FROM haccp_records ORDER BY seq DESC LIMIT 1;
@@ -28,6 +28,7 @@ SELECT body FROM limit_versions ORDER BY created_at, id;
 -- name: ListRecordsOldest :many
 SELECT * FROM haccp_records
 WHERE logged_at >= @from_us AND logged_at < @to_us
+  AND done_at >= @done_from_us AND done_at < @done_to_us
   -- types_csv is a comma-separated list of record types; empty means all.
   AND (CAST(@types_csv AS TEXT) = '' OR instr(',' || @types_csv || ',', ',' || type || ',') > 0)
   AND (CAST(@outcomes_csv AS TEXT) = '' OR instr(',' || @outcomes_csv || ',', ',' || outcome || ',') > 0)
@@ -37,8 +38,30 @@ LIMIT @max_rows;
 -- name: ListRecordsNewest :many
 SELECT * FROM haccp_records
 WHERE logged_at >= @from_us AND logged_at < @to_us
+  AND done_at >= @done_from_us AND done_at < @done_to_us
   -- types_csv is a comma-separated list of record types; empty means all.
   AND (CAST(@types_csv AS TEXT) = '' OR instr(',' || @types_csv || ',', ',' || type || ',') > 0)
   AND (CAST(@outcomes_csv AS TEXT) = '' OR instr(',' || @outcomes_csv || ',', ',' || outcome || ',') > 0)
 ORDER BY logged_at DESC, seq DESC
+LIMIT @max_rows;
+
+-- name: ListRecordsByDoneOldest :many
+SELECT * FROM haccp_records
+WHERE logged_at >= @from_us AND logged_at < @to_us
+  AND done_at >= @done_from_us AND done_at < @done_to_us
+  -- types_csv is a comma-separated list of record types; empty means all.
+  AND (CAST(@types_csv AS TEXT) = '' OR instr(',' || @types_csv || ',', ',' || type || ',') > 0)
+  AND (CAST(@outcomes_csv AS TEXT) = '' OR instr(',' || @outcomes_csv || ',', ',' || outcome || ',') > 0)
+ORDER BY done_at, seq
+LIMIT @max_rows;
+
+
+-- name: ListRecordsByDoneNewest :many
+SELECT * FROM haccp_records
+WHERE logged_at >= @from_us AND logged_at < @to_us
+  AND done_at >= @done_from_us AND done_at < @done_to_us
+  -- types_csv is a comma-separated list of record types; empty means all.
+  AND (CAST(@types_csv AS TEXT) = '' OR instr(',' || @types_csv || ',', ',' || type || ',') > 0)
+  AND (CAST(@outcomes_csv AS TEXT) = '' OR instr(',' || @outcomes_csv || ',', ',' || outcome || ',') > 0)
+ORDER BY done_at DESC, seq DESC
 LIMIT @max_rows;

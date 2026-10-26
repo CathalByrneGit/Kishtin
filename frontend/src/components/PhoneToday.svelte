@@ -4,7 +4,7 @@
   import Ring from "./Ring.svelte";
   import { api, message, type Schemas, type Today } from "../lib/api";
   import { dublinTime, temp } from "../lib/format";
-  import { details, limitText, outcomeStyle, title, typeLabel } from "../lib/labels";
+  import { details, doneAt, doneBy, limitText, outcomeStyle, title, typeLabel } from "../lib/labels";
   import { onChange } from "../lib/live.svelte";
   import type { LogPreset } from "./LogForm.svelte";
 
@@ -102,7 +102,7 @@
           <div class="row slots">
             {#each u.slots as s (s.label)}
               {@const c = slotChip(s)}
-              <Chip tone={c.tone} size="md" uppercase={false} title={s.record ? `Logged ${dublinTime(s.record.logged_at)} by ${s.record.logged_by_name}` : ""}>
+              <Chip tone={c.tone} size="md" uppercase={false} title={s.record ? `Done ${dublinTime(doneAt(s.record))} by ${doneBy(s.record)}` : ""}>
                 <span class="num">{c.label}</span>
               </Chip>
             {/each}
@@ -126,7 +126,7 @@
               }}
             />
             {#if c.record}
-              <span class="muted num">{dublinTime(c.record.logged_at)} · {c.record.logged_by_name}</span>
+              <span class="muted num">{dublinTime(doneAt(c.record))} · {doneBy(c.record)}</span>
             {/if}
           </li>
         {:else}
@@ -144,7 +144,7 @@
             <div class="row">
               <Chip tone={o.tone} uppercase={false}>{o.label}</Chip>
               <strong>{title(r)}</strong>
-              <span class="muted num">{dublinTime(r.logged_at)} · {r.logged_by_name}</span>
+              <span class="muted num">{dublinTime(doneAt(r))} · {doneBy(r)}</span>
             </div>
             <span>{r.outcome_reason}</span>
             {#if r.corrective_action}

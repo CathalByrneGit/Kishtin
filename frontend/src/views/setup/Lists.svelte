@@ -20,7 +20,7 @@
   import { api, message, type Lists, type Schemas } from "../../lib/api";
   import { LOGGABLE_TYPES, TYPE_LABELS, typeLabel } from "../../lib/labels";
   import { onChange } from "../../lib/live.svelte";
-  import { isManagerPassword } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
 
   let lists = $state<Lists | null>(null);
   let version = $state<Schemas["SettingsVersion"] | null>(null);
@@ -44,7 +44,7 @@
   let review = $state<{ preview: Preview; value: Lists } | null>(null);
   let saving = $state(false);
 
-  const canEdit = $derived(isManagerPassword());
+  const canEdit = $derived(can("haccp.limits"));
 
   function normalise(l: Lists) {
     return {
@@ -150,7 +150,7 @@
     {#if version}<span class="muted small">Last changed by {savedBy}: {version.reason}</span>{/if}
   </header>
 
-  <ManagerGate what="This list" viewable>
+  <ManagerGate what="This list" action="haccp.limits" viewable>
     {#if error}<Notice tone="error" message={error} />{/if}
 
     {#if !lists}

@@ -55,7 +55,7 @@ type CopyComparison struct {
 // PDF and says which of the booklet's columns and questions it has. It
 // sends nothing anywhere.
 func (s *Service) CompareCopy(ctx context.Context, p *auth.Principal, ref, file string) (CopyComparison, error) {
-	if err := allow(p, auth.ActExportHACCP); err != nil {
+	if err := s.allow(p, auth.ActExportHACCP); err != nil {
 		return CopyComparison{}, err
 	}
 	rb, err := s.recordBooks(ctx)
@@ -103,7 +103,7 @@ type Suggestion struct {
 // for a checklist or training record, the questions or topics) from a copy
 // of a booklet, and maps them to the fields Kishtin records.
 func (s *Service) SuggestColumns(ctx context.Context, p *auth.Principal, ref, file string) (Suggestion, error) {
-	if err := allow(p, auth.ActManageLimits); err != nil {
+	if err := s.allow(p, auth.ActManageLimits); err != nil {
 		return Suggestion{}, err
 	}
 	if !s.ai.Enabled() {
@@ -250,7 +250,7 @@ const (
 // addresses that checking their editions would download. Nothing is
 // fetched.
 func (s *Service) EditionTargets(ctx context.Context, p *auth.Principal) ([]EditionTarget, error) {
-	if err := allow(p, auth.ActExportHACCP); err != nil {
+	if err := s.allow(p, auth.ActExportHACCP); err != nil {
 		return nil, err
 	}
 	rb, err := s.recordBooks(ctx)
@@ -296,7 +296,7 @@ func (s *Service) download(ctx context.Context, url string) ([]byte, error) {
 // restaurant; a manager asks for it each time. A changed PDF is kept, so
 // it can be compared with the booklet.
 func (s *Service) CheckEditions(ctx context.Context, p *auth.Principal) ([]EditionResult, error) {
-	if err := allow(p, auth.ActManageLimits); err != nil {
+	if err := s.allow(p, auth.ActManageLimits); err != nil {
 		return nil, err
 	}
 	targets, err := s.EditionTargets(ctx, p)

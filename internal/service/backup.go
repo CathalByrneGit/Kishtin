@@ -44,7 +44,7 @@ const backupPrefix, backupExt = "kishtin-", ".db"
 // BackupNow writes a backup, verifies its HACCP chain, writes a .sha256
 // file next to it, and removes backups beyond the keep count.
 func (s *Service) BackupNow(ctx context.Context, p *auth.Principal) (Backup, error) {
-	if err := allow(p, auth.ActBackup); err != nil {
+	if err := s.allow(p, auth.ActBackup); err != nil {
 		return Backup{}, err
 	}
 	return s.backup(ctx)
@@ -161,7 +161,7 @@ func (s *Service) prune(keep int) error {
 
 // ListBackups lists backup files, newest first.
 func (s *Service) ListBackups(ctx context.Context, p *auth.Principal) ([]Backup, error) {
-	if err := allow(p, auth.ActBackup); err != nil {
+	if err := s.allow(p, auth.ActBackup); err != nil {
 		return nil, err
 	}
 	names, err := s.backupNames()

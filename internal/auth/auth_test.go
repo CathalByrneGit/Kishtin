@@ -100,3 +100,47 @@ func TestLockout(t *testing.T) {
 	locked, _ = l.Locked("v", now)
 	assert.False(t, locked, "a good login resets the count")
 }
+
+func TestPermissionsCan(t *testing.T) {
+	chef := User{ID: "u-chef", Role: RoleHeadChef, Active: true}
+	cook := User{ID: "u-cook", Role: RoleLineCook, Active: true}
+	mgr := User{ID: "u-mgr", Role: RoleManager, Active: true}
+	pm := Permissions{Grants: []Grant{
+		{Action: ActSignOff, Roles: []Role{RoleHeadChef}, PIN: true},
+		{Action: ActInspect, Users: []string{"u-cook"}},
+		{Action: ActLogHACCP, Roles: []Role{RoleHeadChef}, PIN: true},
+		{Action: ActManageUsers, Roles: []Role{RoleLineCook}, PIN: true},
+	}}
+	tests := []struct {
+		name     string
+		u        User
+		m        Method
+		a        Action
+		allowed  bool
+		password bool
+	}{
+		{"granted role, PIN enough", chef, MethodPIN, ActSignOff, true, false},
+		{"role not granted", cook, MethodPIN, ActSignOff, false, false},
+		{"manager always may", mgr, MethodPIN, ActSignOff, true, false},
+		{"named user needs password", cook, MethodPIN, ActInspect, false, true},
+		{"named user with password", cook, MethodPassword, ActInspect, true, false},
+		{"grant replaces default roles", cook, MethodPIN, ActLogHACCP, false, false},
+		{"fixed action ignores grant", cook, MethodPIN, ActManageUsers, false, false},
+		{"fixed action, manager PIN", mgr, MethodPIN, ActManageUsers, false, true},
+		{"no grant keeps default", cook, MethodPIN, ActWorkStation, true, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d := pm.Can(Principal{User: tc.u, Method: tc.m}, tc.a)
+			assert.Equal(t, tc.allowed, d.Allowed)
+			assert.Equal(t, tc.password, d.NeedPassword)
+		})
+	}
+	assert.Error(t, pm.Validate(), "a grant for a fixed action is refused")
+	assert.NoError(t, Permissions{Grants: pm.Grants[:3]}.Validate())
+	for _, a := range Actions() {
+		_, ok := policy[a.Action]
+		assert.True(t, ok, a.Action)
+	}
+	assert.Len(t, Actions(), len(policy), "every action is on the permissions screen")
+}

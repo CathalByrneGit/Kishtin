@@ -170,31 +170,111 @@ func (c *cli) paperCmd() *cobra.Command {
 			if err != nil {
 				return apiErr(err)
 			}
-			return c.emit(res, func(w io.Writer) {
-				var tbl [][]string
-				problems := 0
-				for _, r := range res.Rows {
-					result := ""
-					if r.Check != nil {
-						result = strings.ToUpper(r.Check.Result.Outcome)
-					}
-					if r.Problem != nil {
-						problems++
-					}
-					tbl = append(tbl, []string{fmt.Sprint(r.Row), result, deref(r.Problem)})
-				}
-				table(w, "ROW\tRESULT\tPROBLEM", tbl)
-				if problems > 0 {
-					fmt.Fprintf(w, "\n%d rows need fixing before they can be saved.\n", problems)
-				} else {
-					fmt.Fprintln(w, "\nNothing is saved. Add --yes to save every row.")
-				}
-			})
+			return c.emit(res, func(w io.Writer) { rowChecks(w, res.Rows) })
 		},
 	}
 	cmd.Flags().StringVar(&photo, "photo", "", "photo (or PDF scan) of the paper page")
 	cmd.Flags().StringVar(&rowsFile, "rows", "", "JSON file of the rows to save")
 	cmd.Flags().BoolVar(&read, "read", false, "ask the local model to read the photo into draft rows")
+	cmd.Flags().BoolVar(&yes, "yes", false, "save the rows")
+	return cmd
+}
+
+// rowChecks prints the checks of rows to save, and what to do next.
+func rowChecks(w io.Writer, rows []client.PaperCheck) {
+	var tbl [][]string
+	problems := 0
+	for _, r := range rows {
+		result := ""
+		if r.Check != nil {
+			result = strings.ToUpper(r.Check.Result.Outcome)
+		}
+		if r.Problem != nil {
+			problems++
+		}
+		tbl = append(tbl, []string{fmt.Sprint(r.Row), result, deref(r.Problem)})
+	}
+	table(w, "ROW\tRESULT\tPROBLEM", tbl)
+	if problems > 0 {
+		fmt.Fprintf(w, "\n%d rows need fixing before they can be saved.\n", problems)
+	} else {
+		fmt.Fprintln(w, "\nNothing is saved. Add --yes to save every row.")
+	}
+}
+
+func (c *cli) catchUpCmd() *cobra.Command {
+	var from, to, rowsFile string
+	var yes bool
+	cmd := &cobra.Command{
+		Use:   "catch-up",
+		Short: "List daily checks with no record, or save checks done earlier",
+		Long: "catch-up lists the fridge and freezer checks and cleaning tasks that were due and have no\n" +
+			"record, by default for the last 14 days. With --rows it checks a JSON list of records, each\n" +
+			"with reading.taken_at (when the check was done) and, if you like, reading.signed_by; with\n" +
+			"--yes it saves them, all or none.",
+		Example: "  kishtin haccp catch-up\n  kishtin haccp catch-up --from 2026-10-01 --to 2026-10-14 --json\n" +
+			"  kishtin haccp catch-up --rows rows.json\n  kishtin haccp catch-up --rows rows.json --yes",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if rowsFile == "" {
+				q := &client.CatchUpGapsQuery{}
+				if from != "" {
+					q.From = &from
+				}
+				if to != "" {
+					q.To = &to
+				}
+				res, err := c.api.CatchUpGaps(cmd.Context(), &client.CatchUpGapsRequestOptions{Query: q})
+				if err != nil {
+					return apiErr(err)
+				}
+				return c.emit(res, func(w io.Writer) {
+					if len(res.Gaps) == 0 {
+						fmt.Fprintf(w, "Nothing to catch up from %s to %s.\n", res.From, res.To)
+						return
+					}
+					var tbl [][]string
+					for _, g := range res.Gaps {
+						what := deref(g.Unit) + " " + deref(g.Check)
+						if g.Type == "cleaning" {
+							what = deref(g.Task)
+						}
+						signed := ""
+						if deref(g.SignedOff) {
+							signed = "signed off"
+						}
+						tbl = append(tbl, []string{g.Date, g.Type, what, deref(g.Time), signed})
+					}
+					table(w, "DATE\tTYPE\tCHECK\tFROM\t", tbl)
+					fmt.Fprintf(w, "\n%d checks from %s to %s have no record. Save the ones that were done with --rows.\n", len(res.Gaps), res.From, res.To)
+				})
+			}
+			b, err := os.ReadFile(rowsFile)
+			if err != nil {
+				return fmt.Errorf("read rows: %w", err)
+			}
+			var rows []client.NewRecord
+			if err := json.Unmarshal(b, &rows); err != nil {
+				return fmt.Errorf("read rows: %w", err)
+			}
+			body := &client.CatchUpInput{Rows: rows}
+			if yes {
+				res, err := c.api.SaveCatchUp(cmd.Context(), &client.SaveCatchUpRequestOptions{Body: body})
+				if err != nil {
+					return apiErr(err)
+				}
+				return c.emit(res, func(w io.Writer) { fmt.Fprintf(w, "%d records saved.\n", len(res.Records)) })
+			}
+			res, err := c.api.PreviewCatchUp(cmd.Context(), &client.PreviewCatchUpRequestOptions{Body: body})
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) { rowChecks(w, res.Rows) })
+		},
+	}
+	cmd.Flags().StringVar(&from, "from", "", "first day (2026-10-01); default 13 days before --to")
+	cmd.Flags().StringVar(&to, "to", "", "last day; default today")
+	cmd.Flags().StringVar(&rowsFile, "rows", "", "JSON file of records to save")
 	cmd.Flags().BoolVar(&yes, "yes", false, "save the rows")
 	return cmd
 }

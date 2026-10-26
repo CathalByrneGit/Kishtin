@@ -76,6 +76,7 @@ type HaccpRecord struct {
 	PrevHash         string
 	Hash             string
 	RulesVersionID   string
+	DoneAt           int64
 }
 
 type LimitVersion struct {

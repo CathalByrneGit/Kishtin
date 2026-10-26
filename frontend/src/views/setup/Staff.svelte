@@ -4,7 +4,8 @@
   import ManagerGate from "../../components/ManagerGate.svelte";
   import { api, message, type Schemas } from "../../lib/api";
   import { onChange } from "../../lib/live.svelte";
-  import { isManagerPassword, session } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
+  import { session } from "../../lib/session.svelte";
 
   type User = Schemas["User"];
 
@@ -42,7 +43,7 @@
   }
 
   $effect(() => {
-    if (!isManagerPassword()) return;
+    if (!can("users.manage")) return;
     void load();
     return onChange((kind) => {
       if (kind === "staff") void load();
@@ -115,12 +116,12 @@
       <h1>Staff</h1>
       <p>Who can log in. Staff use a 4–8 digit PIN on kitchen devices. Managers also need a password to change setup. Kishtin keeps names and roles only.</p>
     </div>
-    {#if isManagerPassword()}
+    {#if can("users.manage")}
       <Button tone="info" surface="solid" label="Add staff" onclick={() => (adding = true)}><Plus size={16} /></Button>
     {/if}
   </header>
 
-  <ManagerGate what="Staff">
+  <ManagerGate what="Staff" action="users.manage">
     {#if error}<Notice tone="error" message={error} />{/if}
     {#if users === null}
       {#if !error}<Spinner />{/if}
@@ -176,7 +177,7 @@
       <label class="field"><span>Role</span><SelectDropdown value={role} options={roleOptions} onchange={(v) => (role = v)} title="Role" /></label>
       <label class="field"><span>PIN (4–8 digits)</span><TextInput bind:value={pin} block autocomplete="off" invalid={pin !== "" && !pinOK(pin)} /></label>
       <label class="field">
-        <span>Password {role === "manager" ? "(at least 10 characters; needed to change setup)" : "(optional, at least 10 characters)"}</span>
+        <span>Password {role === "manager" ? "(at least 10 characters; needed to change setup)" : "(optional, at least 10 characters; for actions a manager allows with a password in Setup › Permissions)"}</span>
         <TextInput type="password" bind:value={password} block autocomplete="new-password" />
       </label>
       <span class="muted small">A PIN or a password is needed to log in.</span>

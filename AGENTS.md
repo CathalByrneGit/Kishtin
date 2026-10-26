@@ -59,7 +59,9 @@ Inspired by the local-first tools from Kenn Software (kenn.io), especially docba
 | Front of house | Enters orders (until a POS is integrated), sees when food is ready |
 | Manager | Menu and station setup, HACCP review and export, users |
 
-Authentication: short staff PIN login on shared kitchen devices, with a role per user. Manager actions need a full password.
+Authentication: short staff PIN login on shared kitchen devices, with a role per user. Manager actions need a full password by default.
+
+Permissions are customisable: a manager can give an action to other roles or named staff and choose whether a PIN is enough (versioned `permissions` settings, `internal/auth/permissions.go`). Managers always keep every action. Staff, API keys, permissions and fitness to work stay managers with a password. Service code checks actions with `s.allow`, never by role; screens use the `can` map from `/api/auth/me`.
 
 ## Glossary
 
@@ -251,6 +253,7 @@ Official record books (for example Ireland's FSAI Safe Catering booklets) are fi
 - The restaurant picks its bundle and changes what is relevant (booklets in use, titles, columns, notes, sheet layout, manager check, its own added booklets, its uploaded copy) through the versioned `record_books` settings. The same rules as limits apply: preview, reason, manager password, history.
 - These settings change only how records print. They never change a record or its result.
 - A manager's sign-off of a period is a `sign_off` HACCP record in the hash chain, saved only through the sign-off action (manager password), never through ordinary logging. It stores what the period held when signed. A period with missed checks or readings without an action needs a note.
+- Any record can say when its check was done (`taken_at`) and who did it (`signed_by`). Records are found and shown by that time (`done_at` in the store); the time saved stays in the record and the hash chain. Kishtin shows no late marker: how late is acceptable is the restaurant's decision, controlled through permissions (`haccp.backdate`, `haccp.signed_off`).
 - Never fill in a missed check. Never invent a bundle or edition: a bundle copies a real published booklet and records its source.
 - Old paper pages come in through paper import: each record keeps the photo (`paper_file`), when the check was done (`taken_at`) and the name on the paper (`signed_by`), and is graded against the limits in force at import. Saved all or none.
 - An optional local model (`internal/ai`, `[ai]` in `kishtin.toml`, local addresses only) may suggest booklet columns from a copy's text (`internal/pdftext`) or read a photo of a paper page. Its output is always a draft a person reviews, checked by the same rules as typed input.

@@ -29,10 +29,13 @@ const (
 	// KindRecordBooks is the record book bundle in use and the restaurant's
 	// changes to its booklets.
 	KindRecordBooks Kind = "record_books"
+	// KindPermissions is who may do what, where it differs from Kishtin's
+	// defaults.
+	KindPermissions Kind = "permissions"
 )
 
 // Kinds lists every kind.
-var Kinds = []Kind{KindGuidance, KindRules, KindLists, KindSystem, KindScheduler, KindSquare, KindRecordBooks}
+var Kinds = []Kind{KindGuidance, KindRules, KindLists, KindSystem, KindScheduler, KindSquare, KindRecordBooks, KindPermissions}
 
 // Valid reports whether k is a known kind.
 func (k Kind) Valid() bool { return slices.Contains(Kinds, k) }

@@ -263,7 +263,7 @@ func TestManagerPINCannotChangeLimits(t *testing.T) {
 	limit := map[string]any{"check": "fridge", "scope": map[string]any{"kind": "default"}, "max_c": 4.0, "reason": "Tighter"}
 	r = e.do(t, http.MethodPost, "/api/haccp/limits", e.deviceKey, login.Token, limit)
 	assert.Equal(t, http.StatusForbidden, r.status)
-	assert.Contains(t, string(r.body), "manager password")
+	assert.Contains(t, string(r.body), "with your password")
 
 	pw := decode[service.LoginResult](t, e.do(t, http.MethodPost, "/api/auth/login", e.deviceKey, "", map[string]any{"user_id": mgrID, "password": "synthetic-password"}))
 	r = e.do(t, http.MethodPost, "/api/haccp/limits", e.deviceKey, pw.Token, limit)

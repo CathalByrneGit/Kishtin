@@ -22,7 +22,7 @@ func (q *Queries) GetLimitVersion(ctx context.Context, id string) (string, error
 }
 
 const getRecord = `-- name: GetRecord :one
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records WHERE id = ?
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id, done_at FROM haccp_records WHERE id = ?
 `
 
 func (q *Queries) GetRecord(ctx context.Context, id string) (HaccpRecord, error) {
@@ -46,6 +46,7 @@ func (q *Queries) GetRecord(ctx context.Context, id string) (HaccpRecord, error)
 		&i.PrevHash,
 		&i.Hash,
 		&i.RulesVersionID,
+		&i.DoneAt,
 	)
 	return i, err
 }
@@ -85,8 +86,8 @@ const insertRecord = `-- name: InsertRecord :exec
 INSERT INTO haccp_records (
     id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome,
     outcome_reason, limit_version_id, limit_scope, rules_version_id,
-    corrective_action, corrects, correction_reason, prev_hash, hash
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    corrective_action, corrects, correction_reason, prev_hash, hash, done_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertRecordParams struct {
@@ -107,6 +108,7 @@ type InsertRecordParams struct {
 	CorrectionReason string
 	PrevHash         string
 	Hash             string
+	DoneAt           int64
 }
 
 func (q *Queries) InsertRecord(ctx context.Context, arg InsertRecordParams) error {
@@ -128,12 +130,13 @@ func (q *Queries) InsertRecord(ctx context.Context, arg InsertRecordParams) erro
 		arg.CorrectionReason,
 		arg.PrevHash,
 		arg.Hash,
+		arg.DoneAt,
 	)
 	return err
 }
 
 const lastRecord = `-- name: LastRecord :one
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records ORDER BY seq DESC LIMIT 1
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id, done_at FROM haccp_records ORDER BY seq DESC LIMIT 1
 `
 
 func (q *Queries) LastRecord(ctx context.Context) (HaccpRecord, error) {
@@ -157,6 +160,7 @@ func (q *Queries) LastRecord(ctx context.Context) (HaccpRecord, error) {
 		&i.PrevHash,
 		&i.Hash,
 		&i.RulesVersionID,
+		&i.DoneAt,
 	)
 	return i, err
 }
@@ -188,28 +192,33 @@ func (q *Queries) ListLimitVersions(ctx context.Context) ([]string, error) {
 	return items, nil
 }
 
-const listRecordsNewest = `-- name: ListRecordsNewest :many
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records
+const listRecordsByDoneNewest = `-- name: ListRecordsByDoneNewest :many
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id, done_at FROM haccp_records
 WHERE logged_at >= ?1 AND logged_at < ?2
+  AND done_at >= ?3 AND done_at < ?4
   -- types_csv is a comma-separated list of record types; empty means all.
-  AND (CAST(?3 AS TEXT) = '' OR instr(',' || ?3 || ',', ',' || type || ',') > 0)
-  AND (CAST(?4 AS TEXT) = '' OR instr(',' || ?4 || ',', ',' || outcome || ',') > 0)
-ORDER BY logged_at DESC, seq DESC
-LIMIT ?5
+  AND (CAST(?5 AS TEXT) = '' OR instr(',' || ?5 || ',', ',' || type || ',') > 0)
+  AND (CAST(?6 AS TEXT) = '' OR instr(',' || ?6 || ',', ',' || outcome || ',') > 0)
+ORDER BY done_at DESC, seq DESC
+LIMIT ?7
 `
 
-type ListRecordsNewestParams struct {
+type ListRecordsByDoneNewestParams struct {
 	FromUs      int64
 	ToUs        int64
+	DoneFromUs  int64
+	DoneToUs    int64
 	TypesCsv    string
 	OutcomesCsv string
 	MaxRows     int64
 }
 
-func (q *Queries) ListRecordsNewest(ctx context.Context, arg ListRecordsNewestParams) ([]HaccpRecord, error) {
-	rows, err := q.db.QueryContext(ctx, listRecordsNewest,
+func (q *Queries) ListRecordsByDoneNewest(ctx context.Context, arg ListRecordsByDoneNewestParams) ([]HaccpRecord, error) {
+	rows, err := q.db.QueryContext(ctx, listRecordsByDoneNewest,
 		arg.FromUs,
 		arg.ToUs,
+		arg.DoneFromUs,
+		arg.DoneToUs,
 		arg.TypesCsv,
 		arg.OutcomesCsv,
 		arg.MaxRows,
@@ -239,6 +248,149 @@ func (q *Queries) ListRecordsNewest(ctx context.Context, arg ListRecordsNewestPa
 			&i.PrevHash,
 			&i.Hash,
 			&i.RulesVersionID,
+			&i.DoneAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecordsByDoneOldest = `-- name: ListRecordsByDoneOldest :many
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id, done_at FROM haccp_records
+WHERE logged_at >= ?1 AND logged_at < ?2
+  AND done_at >= ?3 AND done_at < ?4
+  -- types_csv is a comma-separated list of record types; empty means all.
+  AND (CAST(?5 AS TEXT) = '' OR instr(',' || ?5 || ',', ',' || type || ',') > 0)
+  AND (CAST(?6 AS TEXT) = '' OR instr(',' || ?6 || ',', ',' || outcome || ',') > 0)
+ORDER BY done_at, seq
+LIMIT ?7
+`
+
+type ListRecordsByDoneOldestParams struct {
+	FromUs      int64
+	ToUs        int64
+	DoneFromUs  int64
+	DoneToUs    int64
+	TypesCsv    string
+	OutcomesCsv string
+	MaxRows     int64
+}
+
+func (q *Queries) ListRecordsByDoneOldest(ctx context.Context, arg ListRecordsByDoneOldestParams) ([]HaccpRecord, error) {
+	rows, err := q.db.QueryContext(ctx, listRecordsByDoneOldest,
+		arg.FromUs,
+		arg.ToUs,
+		arg.DoneFromUs,
+		arg.DoneToUs,
+		arg.TypesCsv,
+		arg.OutcomesCsv,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []HaccpRecord
+	for rows.Next() {
+		var i HaccpRecord
+		if err := rows.Scan(
+			&i.ID,
+			&i.Seq,
+			&i.Type,
+			&i.LoggedBy,
+			&i.LoggedByName,
+			&i.LoggedAt,
+			&i.Reading,
+			&i.Outcome,
+			&i.OutcomeReason,
+			&i.LimitVersionID,
+			&i.LimitScope,
+			&i.CorrectiveAction,
+			&i.Corrects,
+			&i.CorrectionReason,
+			&i.PrevHash,
+			&i.Hash,
+			&i.RulesVersionID,
+			&i.DoneAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecordsNewest = `-- name: ListRecordsNewest :many
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id, done_at FROM haccp_records
+WHERE logged_at >= ?1 AND logged_at < ?2
+  AND done_at >= ?3 AND done_at < ?4
+  -- types_csv is a comma-separated list of record types; empty means all.
+  AND (CAST(?5 AS TEXT) = '' OR instr(',' || ?5 || ',', ',' || type || ',') > 0)
+  AND (CAST(?6 AS TEXT) = '' OR instr(',' || ?6 || ',', ',' || outcome || ',') > 0)
+ORDER BY logged_at DESC, seq DESC
+LIMIT ?7
+`
+
+type ListRecordsNewestParams struct {
+	FromUs      int64
+	ToUs        int64
+	DoneFromUs  int64
+	DoneToUs    int64
+	TypesCsv    string
+	OutcomesCsv string
+	MaxRows     int64
+}
+
+func (q *Queries) ListRecordsNewest(ctx context.Context, arg ListRecordsNewestParams) ([]HaccpRecord, error) {
+	rows, err := q.db.QueryContext(ctx, listRecordsNewest,
+		arg.FromUs,
+		arg.ToUs,
+		arg.DoneFromUs,
+		arg.DoneToUs,
+		arg.TypesCsv,
+		arg.OutcomesCsv,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []HaccpRecord
+	for rows.Next() {
+		var i HaccpRecord
+		if err := rows.Scan(
+			&i.ID,
+			&i.Seq,
+			&i.Type,
+			&i.LoggedBy,
+			&i.LoggedByName,
+			&i.LoggedAt,
+			&i.Reading,
+			&i.Outcome,
+			&i.OutcomeReason,
+			&i.LimitVersionID,
+			&i.LimitScope,
+			&i.CorrectiveAction,
+			&i.Corrects,
+			&i.CorrectionReason,
+			&i.PrevHash,
+			&i.Hash,
+			&i.RulesVersionID,
+			&i.DoneAt,
 		); err != nil {
 			return nil, err
 		}
@@ -254,18 +406,21 @@ func (q *Queries) ListRecordsNewest(ctx context.Context, arg ListRecordsNewestPa
 }
 
 const listRecordsOldest = `-- name: ListRecordsOldest :many
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id, done_at FROM haccp_records
 WHERE logged_at >= ?1 AND logged_at < ?2
+  AND done_at >= ?3 AND done_at < ?4
   -- types_csv is a comma-separated list of record types; empty means all.
-  AND (CAST(?3 AS TEXT) = '' OR instr(',' || ?3 || ',', ',' || type || ',') > 0)
-  AND (CAST(?4 AS TEXT) = '' OR instr(',' || ?4 || ',', ',' || outcome || ',') > 0)
+  AND (CAST(?5 AS TEXT) = '' OR instr(',' || ?5 || ',', ',' || type || ',') > 0)
+  AND (CAST(?6 AS TEXT) = '' OR instr(',' || ?6 || ',', ',' || outcome || ',') > 0)
 ORDER BY logged_at, seq
-LIMIT ?5
+LIMIT ?7
 `
 
 type ListRecordsOldestParams struct {
 	FromUs      int64
 	ToUs        int64
+	DoneFromUs  int64
+	DoneToUs    int64
 	TypesCsv    string
 	OutcomesCsv string
 	MaxRows     int64
@@ -275,6 +430,8 @@ func (q *Queries) ListRecordsOldest(ctx context.Context, arg ListRecordsOldestPa
 	rows, err := q.db.QueryContext(ctx, listRecordsOldest,
 		arg.FromUs,
 		arg.ToUs,
+		arg.DoneFromUs,
+		arg.DoneToUs,
 		arg.TypesCsv,
 		arg.OutcomesCsv,
 		arg.MaxRows,
@@ -304,6 +461,7 @@ func (q *Queries) ListRecordsOldest(ctx context.Context, arg ListRecordsOldestPa
 			&i.PrevHash,
 			&i.Hash,
 			&i.RulesVersionID,
+			&i.DoneAt,
 		); err != nil {
 			return nil, err
 		}
@@ -319,7 +477,7 @@ func (q *Queries) ListRecordsOldest(ctx context.Context, arg ListRecordsOldestPa
 }
 
 const recordsAfterSeq = `-- name: RecordsAfterSeq :many
-SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id FROM haccp_records WHERE seq > ? ORDER BY seq LIMIT ?
+SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id, done_at FROM haccp_records WHERE seq > ? ORDER BY seq LIMIT ?
 `
 
 type RecordsAfterSeqParams struct {
@@ -354,6 +512,7 @@ func (q *Queries) RecordsAfterSeq(ctx context.Context, arg RecordsAfterSeqParams
 			&i.PrevHash,
 			&i.Hash,
 			&i.RulesVersionID,
+			&i.DoneAt,
 		); err != nil {
 			return nil, err
 		}

@@ -22,7 +22,7 @@ var recordTypes = []string{"fridge", "freezer", "delivery", "cook", "reheat", "c
 
 func (c *cli) haccpCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "haccp", Short: "Log, list, verify and export HACCP records"}
-	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd(), c.booksCmd(), c.bookCmd(), c.signOffCmd(), c.editionsCmd(), c.paperCmd())
+	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd(), c.booksCmd(), c.bookCmd(), c.signOffCmd(), c.editionsCmd(), c.paperCmd(), c.catchUpCmd())
 	return cmd
 }
 
@@ -38,6 +38,7 @@ type readingFlags struct {
 	packagingOK, inDate, vehicleOK             bool
 	shelfLife                                  int
 	action, corrects, reason                   string
+	at, doneBy                                 string
 	dryRun                                     bool
 	// Inspection, training, fitness and transport.
 	answersFile, staff, trainer, provider string
@@ -79,6 +80,8 @@ func (f *readingFlags) register(cmd *cobra.Command) {
 	fl.StringVar(&f.corrects, "corrects", "", "ID of an earlier record this one corrects")
 	fl.StringVar(&f.reason, "reason", "", "why the earlier record was wrong (with --corrects)")
 	fl.BoolVar(&f.dryRun, "dry-run", false, "check the reading and show the result without saving")
+	fl.StringVar(&f.at, "at", "", "when the check was done, if earlier: \"2026-10-20 09:00\" or 09:00 today (Dublin), or RFC 3339")
+	fl.StringVar(&f.doneBy, "done-by", "", "who did the check, if not you")
 	fl.StringVar(&f.answersFile, "answers", "", "inspection: JSON file of answers [{\"section\",\"item\",\"ok\",\"action\"}]")
 	fl.StringVar(&f.staff, "staff", "", "training or fitness: the member of staff")
 	fl.StringVar(&f.trainingKind, "training-kind", "in_house", "training: in_house or further")
@@ -98,6 +101,19 @@ func str(cmd *cobra.Command, name, v string) *string {
 		return nil
 	}
 	return &v
+}
+
+// parseWhen reads "2006-01-02 15:04" in Dublin, "15:04" as today in
+// Dublin, or an RFC 3339 time.
+func parseWhen(v string, now time.Time) (*time.Time, error) {
+	if t, err := time.ParseInLocation("2006-01-02 15:04", strings.TrimSpace(v), clock.Dublin); err == nil {
+		return &t, nil
+	}
+	t, err := parseClock(v, now)
+	if err != nil {
+		return nil, fmt.Errorf("%q is not a time like \"2026-10-20 09:00\", 09:00 or 2026-10-20T09:00:00+01:00", v)
+	}
+	return t, nil
 }
 
 // parseClock reads "15:04" as today in Dublin, or an RFC 3339 time.
@@ -150,6 +166,13 @@ func (f *readingFlags) build(cmd *cobra.Command, c *cli, typ string) (*client.Ne
 	}
 	now := time.Now()
 	var err error
+	if f.at != "" {
+		if r.TakenAt, err = parseWhen(f.at, now); err != nil {
+			return nil, err
+		}
+		now = *r.TakenAt // cooling times are on the day of the check
+	}
+	r.SignedBy = str(cmd, "done-by", f.doneBy)
 	if r.CookedAt, err = parseClock(f.cookedAt, now); err != nil {
 		return nil, err
 	}

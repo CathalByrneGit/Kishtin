@@ -217,6 +217,7 @@ func (s *Store) AppendRecord(ctx context.Context, r haccp.Record) error {
 		CorrectionReason: r.CorrectionReason,
 		PrevHash:         r.PrevHash,
 		Hash:             r.Hash,
+		DoneAt:           us(r.TakenAt()),
 	}))
 }
 
@@ -294,6 +295,13 @@ func (s *Store) ListRecords(ctx context.Context, f store.RecordFilter) ([]haccp.
 	if !f.To.IsZero() {
 		to = us(f.To)
 	}
+	doneFrom, doneTo := int64(math.MinInt64), int64(math.MaxInt64)
+	if !f.DoneFrom.IsZero() {
+		doneFrom = us(f.DoneFrom)
+	}
+	if !f.DoneTo.IsZero() {
+		doneTo = us(f.DoneTo)
+	}
 	types := make([]string, 0, len(f.Types))
 	for _, t := range f.Types {
 		if !t.Valid() {
@@ -313,14 +321,18 @@ func (s *Store) ListRecords(ctx context.Context, f store.RecordFilter) ([]haccp.
 	}
 	var rows []sqlitedb.HaccpRecord
 	var err error
-	if f.Newest {
-		rows, err = s.r.ListRecordsNewest(ctx, sqlitedb.ListRecordsNewestParams{
-			FromUs: from, ToUs: to, TypesCsv: typesCSV, OutcomesCsv: outcomesCSV, MaxRows: limit,
-		})
-	} else {
-		rows, err = s.r.ListRecordsOldest(ctx, sqlitedb.ListRecordsOldestParams{
-			FromUs: from, ToUs: to, TypesCsv: typesCSV, OutcomesCsv: outcomesCSV, MaxRows: limit,
-		})
+	args := sqlitedb.ListRecordsOldestParams{
+		FromUs: from, ToUs: to, DoneFromUs: doneFrom, DoneToUs: doneTo, TypesCsv: typesCSV, OutcomesCsv: outcomesCSV, MaxRows: limit,
+	}
+	switch {
+	case f.ByDone && f.Newest:
+		rows, err = s.r.ListRecordsByDoneNewest(ctx, sqlitedb.ListRecordsByDoneNewestParams(args))
+	case f.ByDone:
+		rows, err = s.r.ListRecordsByDoneOldest(ctx, sqlitedb.ListRecordsByDoneOldestParams(args))
+	case f.Newest:
+		rows, err = s.r.ListRecordsNewest(ctx, sqlitedb.ListRecordsNewestParams(args))
+	default:
+		rows, err = s.r.ListRecordsOldest(ctx, args)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("list records: %w", err)

@@ -57,12 +57,18 @@ type Backuper interface {
 type RecordFilter struct {
 	// From and To bound LoggedAt: From is inclusive, To is exclusive.
 	From, To time.Time
-	Types    []haccp.RecordType
-	Outcomes []haccp.Outcome
+	// DoneFrom and DoneTo bound when the check was done (Record.TakenAt):
+	// DoneFrom is inclusive, DoneTo is exclusive.
+	DoneFrom, DoneTo time.Time
+	Types            []haccp.RecordType
+	Outcomes         []haccp.Outcome
 	// Limit caps the number of records; 0 means no cap.
 	Limit int
 	// Newest returns the newest records first instead of oldest first.
 	Newest bool
+	// ByDone orders records by when the check was done instead of when
+	// they were logged.
+	ByDone bool
 }
 
 // HACCPStore stores HACCP records and limit versions.

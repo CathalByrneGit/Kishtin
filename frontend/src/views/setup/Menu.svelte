@@ -7,7 +7,8 @@
   import { api, message, type Dish, type Schemas, type Setup } from "../../lib/api";
   import { courseLabel, seconds } from "../../lib/kitchen";
   import { onChange } from "../../lib/live.svelte";
-  import { isManagerPassword, session } from "../../lib/session.svelte";
+  import { can } from "../../lib/can.svelte";
+  import { session } from "../../lib/session.svelte";
 
   let menu = $state<Setup | null>(null);
   let categories = $state<string[]>([]);
@@ -18,7 +19,7 @@
   let formError = $state("");
   let busy = $state(false);
 
-  const canEdit = $derived(isManagerPassword());
+  const canEdit = $derived(can("menu.manage"));
   const can86 = $derived(["head_chef", "line_cook", "manager"].includes(session.user?.role ?? ""));
 
   async function load() {
@@ -121,7 +122,7 @@
     {/if}
   </header>
 
-  <ManagerGate what="The menu" viewable>
+  <ManagerGate what="The menu" action="menu.manage" viewable>
     {#if error}<Notice tone="error" message={error} />{/if}
     {#if !menu}
       {#if !error}<Spinner />{/if}
