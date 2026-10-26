@@ -1,0 +1,8 @@
+/bin/
+/frontend/dist/
+*.db
+*.db-shm
+*.db-wal
+kishtin.lock
+/.kishtin/
+/dist/

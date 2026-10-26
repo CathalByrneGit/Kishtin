@@ -59,7 +59,9 @@ Inspired by the local-first tools from Kenn Software (kenn.io), especially docba
 | Front of house | Enters orders (until a POS is integrated), sees when food is ready |
 | Manager | Menu and station setup, HACCP review and export, users |
 
-Authentication: short staff PIN login on shared kitchen devices, with a role per user. Manager actions need a full password.
+Authentication: short staff PIN login on shared kitchen devices, with a role per user. Manager actions need a full password by default.
+
+Permissions are customisable: a manager can give an action to other roles or named staff and choose whether a PIN is enough (versioned `permissions` settings, `internal/auth/permissions.go`). Managers always keep every action. Staff, API keys, permissions and fitness to work stay managers with a password. Service code checks actions with `s.allow`, never by role; screens use the `can` map from `/api/auth/me`.
 
 ## Glossary
 
@@ -183,6 +185,10 @@ internal/store/storetest/ conformance suite run against every backend
 internal/web/          HTTP handlers, API routes, embedded frontend assets
 internal/voice/        command grammar, parsing, confirmations (no audio I/O)
 internal/speech/       client for the local speech-to-text / text-to-speech sidecar
+internal/ai/           client for an optional local model server (drafts only)
+internal/pdftext/      PDF text extraction without CGO (go-pdfium on wazero)
+internal/books/        record book bundles, templates and page builders
+internal/analytics/    pure report calculations (pass times, HACCP checks); no I/O
 internal/integrations/ POS adapters, starting with Square (later)
 frontend/              Svelte 5 app (kit-ui), built with Vite into frontend/dist/
 ```
@@ -193,7 +199,7 @@ Dependencies point inward. `scheduler` and the rules in `haccp` must not import 
 
 ### HACCP (`internal/haccp`)
 
-Record types: fridge/freezer temperature, delivery, cook/reheat, cooling, hot holding, batch label, cleaning task. Each record stores who logged it, when, the reading, the pass/fail result, and a corrective action when it failed.
+Record types: fridge/freezer temperature, delivery, cook/reheat, cooling, hot holding, batch label, cleaning task, hygiene inspection, staff training, fitness to work, delivery to a customer, and a manager's sign-off. Each record stores who logged it, when, the reading, the pass/fail result, and a corrective action when it failed.
 
 Default critical limits, from FSAI Safe Catering guidance. Keep these defaults as named constants in one file, each with a comment citing its source. They are the starting point; the restaurant can customise them (see Customisable limits below):
 
@@ -221,6 +227,15 @@ Limits are data, not code. A manager can set limits that match the restaurant's 
 - **Preview before saving.** A limit change shows how recent records would have scored under the new limit, then asks to confirm (show the plan, then act).
 - Export the full limit history alongside HACCP records, so the inspection pack is complete.
 
+#### Customisable guidance and rules
+
+Every guideline Kishtin checks against is customisable, not only the limits, with the same rules: versioned, previewed before saving, a reason every time, a HACCP plan reference for anything less strict, manager password, and no re-grading of saved records.
+
+- **Reference guidance.** The baseline limits are compared with when deciding "looser". It starts as the FSAI defaults and can be replaced by the restaurant's own HACCP plan, for example to recognise 70°C for 2 minutes as equal to 75°C. Guidance looser than the FSAI constants needs a plan reference; limits looser than the guidance need one. Each limit stores the guidance version it was checked against.
+- **Food-safety rules.** Whether borderline readings need a corrective action, and whether names must come from the managed lists. A failed reading always needs a corrective action; that rule is not customisable. Each record stores the rules version in force.
+- **Managed lists.** Fridges and freezers, food categories and cleaning tasks, so names stay consistent and unit or category limits apply reliably.
+- **System settings.** Backup schedule and retention, upload size, preview length. Paths, listen address and TLS stay in `kishtin.toml`.
+
 Rules:
 
 - A failed reading cannot be saved without a corrective action.
@@ -229,6 +244,20 @@ Rules:
 - Provide a CSV export by date range for inspections.
 - Batch labels track made-on and use-by dates (for example the house grape soda syrup, 5–7 days chilled).
 - Delivery records can attach a photo of the supplier's docket or invoice, taken on a phone. Store files on local disk under a content hash, referenced from the record. This works without AI and gives traceability back to the supplier; AI extraction comes later (see AI).
+
+#### Record books (`internal/books`)
+
+Official record books (for example Ireland's FSAI Safe Catering booklets) are filled in from HACCP records, never typed in twice.
+
+- A **bundle** is one country's or issuer's set of booklets, kept as a data file in `internal/books/bundles/`. Developers add a bundle when a country needs one. A new edition with renamed or reordered columns is a data change.
+- Each booklet is a template: its columns, the record field in each, its notes, and the edition and SHA-256 of the official PDF it copies. Rows come from a small set of pure builders (fridge grid, cooking log, hot holding log, deliveries, and a daily record made of other booklets' sections). Only a booklet that needs a new kind of row needs code.
+- The restaurant picks its bundle and changes what is relevant (booklets in use, titles, columns, notes, sheet layout, manager check, its own added booklets, its uploaded copy) through the versioned `record_books` settings. The same rules as limits apply: preview, reason, manager password, history.
+- These settings change only how records print. They never change a record or its result.
+- A manager's sign-off of a period is a `sign_off` HACCP record in the hash chain, saved only through the sign-off action (manager password), never through ordinary logging. It stores what the period held when signed. A period with missed checks or readings without an action needs a note.
+- Any record can say when its check was done (`taken_at`) and who did it (`signed_by`). Records are found and shown by that time (`done_at` in the store); the time saved stays in the record and the hash chain. Kishtin shows no late marker: how late is acceptable is the restaurant's decision, controlled through permissions (`haccp.backdate`, `haccp.signed_off`).
+- Never fill in a missed check. Never invent a bundle or edition: a bundle copies a real published booklet and records its source.
+- Old paper pages come in through paper import: each record keeps the photo (`paper_file`), when the check was done (`taken_at`) and the name on the paper (`signed_by`), and is graded against the limits in force at import. Saved all or none.
+- An optional local model (`internal/ai`, `[ai]` in `kishtin.toml`, local addresses only) may suggest booklet columns from a copy's text (`internal/pdftext`) or read a photo of a paper page. Its output is always a draft a person reviews, checked by the same rules as typed input.
 
 ### Menu and stations (`internal/menu`)
 
@@ -290,7 +319,8 @@ v1 default algorithm, `backward` (backward scheduling with capacity):
 
 Requirements:
 
-- Every recommendation carries a human-readable reason.
+- Every recommendation carries a human-readable reason. A course at risk or late also carries a cause code (`equipment_full`, `started_late`, `cooking_long`, `waiting_at_pass`, `busy`).
+- The server keeps a snapshot of the plan each time it changes (`plan_snapshots`), with the strategy and settings version, so services can be analysed afterwards.
 - The expo can override any recommendation. Overrides are logged and the plan is recomputed.
 - Re-plan on every event (new order, fire, start, finish, void) and on a timer every 15 seconds.
 - Learned timings: after enough records, replace configured cook times with a smoothed average of actual times (for example an exponentially weighted moving average). Show both values in the menu screen so a manager can see and reset them.
@@ -301,7 +331,7 @@ Voice is a core feature, not an extra. A chef holding a pan must be able to run 
 
 **How it works:**
 
-- **Capture:** push-to-talk on a large on-screen button, a foot pedal or a Bluetooth headset button. Hands-free wake word is a later option. No always-on listening in v1; it causes false triggers in a loud kitchen and raises privacy concerns.
+- **Capture:** push-to-talk on a large on-screen button, a foot pedal or a Bluetooth headset button. Hands-free listening for a wake word ("Kishtin") is opt-in per device and off by default, because it causes false triggers in a loud kitchen and raises privacy concerns: it shows a clear indicator while on, stops when the screen is hidden or reloaded, and the server ignores and never logs speech that does not start with the wake word. Answers and confirmations in hands-free mode need the wake word too.
 - **Microphones:** close-talk headsets or directional mics. Kitchen noise (extractors, fryers, tickets, music) is the main accuracy problem, so test with recordings from the real kitchen.
 - **Recognition:** the browser records audio and sends it over the local network to the server. The Go server passes it to a local speech-to-text sidecar process (for example whisper.cpp or a similar small model) over HTTP or stdin. Running it as a sidecar keeps the Go binary free of CGO. No audio leaves the building.
 - **Understanding:** v1 matches the transcript against a fixed command grammar with fuzzy matching on menu item names, table numbers and staff vocabulary. Bias recognition toward the current menu and open tables.
@@ -335,7 +365,7 @@ The restaurant uses **Square** for its till and payments.
 - **Status out:** optionally write ticket progress back to Square so front of house sees it on the till.
 - **Payments:** stay entirely in Square POS and Square Terminal. This system never receives, logs or stores card data, which keeps it out of PCI DSS card-data scope.
 - **Offline:** if Square or the internet is unreachable, manual order entry keeps working, and orders sync when the connection returns. Never drop or duplicate an order: dedupe on Square's order ID and version.
-- Store the Square access token in config or the environment, never in the repo or database dumps.
+- Store the Square access token in config, the environment, or a credentials file the server writes in the data folder when a manager connects Square on the screens (readable by the server only). Never in the repo, the database, backups or exports.
 
 ## AI (later, after the core system works)
 
@@ -398,8 +428,9 @@ make test-duckdb # DuckDB backend tests (CGO build)
 - Never handle raw card data.
 - Never send audio, transcripts or kitchen data to a cloud service. Speech and AI run locally.
 - Any new action must work by touch as well as by voice.
-- Keep personal data to a minimum (staff names and PINs only) to stay within GDPR obligations.
+- Keep personal data to a minimum (staff names and PINs only) to stay within GDPR obligations. Operational logs (order events, voice log, activity) name staff, so a leaver can be anonymised; HACCP records keep names. List anything new Kishtin records in `docs/recording.md`. Fitness to work records keep only the outcome (who, when, why, fit or not, action), never symptoms or answers, and only managers with a password can log or see them.
 - Prefer the standard library, then the libraries in the Go libraries table. Ask before adding anything else, and explain what it replaces.
+- Kishtin is licensed under Apache 2.0 (`LICENSE`, `NOTICE`). Only add dependencies under licences compatible with it (MIT, BSD, ISC, Apache 2.0 and similar); never GPL or AGPL code. After any dependency change, `make generate` refreshes `internal/legal/licenses.txt`, the notices built into the programs.
 - Write a migration for every schema change, for every supported backend in the same change. Never edit a migration that has already shipped.
 - The CLI is a client of the server's HTTP API; it never opens the database directly while the server is running. The API always requires a key, binds to loopback by default, and needs a key plus TLS or a trusted network to listen more widely. (Pattern taken from docbank.)
 - Work on feature branches. Never commit to or push `main`. Open pull requests and leave merging to a person. PR descriptions lead with what changed for the kitchen, with screenshots of real UI using synthetic data.

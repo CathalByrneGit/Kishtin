@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Frontend checks (svelte-check, unit tests, kit-ui-check)
+        run: make frontend-test
+      - name: Build the frontend for embedding
+        run: make frontend
+      - name: Test (pure-Go SQLite)
+        run: go test -race ./...
+      - name: Test (CGO SQLite)
+        run: CGO_ENABLED=1 go test -tags sqlite_cgo ./...
+      - name: Generated code is current
+        run: |
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+          make generate
+          git diff --exit-code
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+      - name: Release config is valid
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: check
+
+  # Builds this platform's release download and installs it with the
+  # install script, as a restaurant would, on Linux, macOS and Windows.
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Build the frontend for embedding
+        shell: bash
+        run: cd frontend && bun install --frozen-lockfile && bun run build
+      - name: Build this platform's download
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --snapshot --clean --single-target --skip=before
+      - name: Install with install.sh
+        if: runner.os != 'Windows'
+        run: |
+          KISHTIN_RELEASE_URL="$PWD/dist" KISHTIN_INSTALL_DIR="$RUNNER_TEMP/kishtin" sh scripts/install.sh
+          "$RUNNER_TEMP/kishtin/kishtind" --version
+          "$RUNNER_TEMP/kishtin/kishtin" --version
+      - name: Install with install.ps1
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:KISHTIN_RELEASE_URL = Join-Path $PWD 'dist'
+          $env:KISHTIN_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'kishtin'
+          $env:KISHTIN_NO_MODIFY_PATH = '1'
+          ./scripts/install.ps1
+          & (Join-Path $env:KISHTIN_INSTALL_DIR 'kishtind.exe') --version
+          & (Join-Path $env:KISHTIN_INSTALL_DIR 'kishtin.exe') --version

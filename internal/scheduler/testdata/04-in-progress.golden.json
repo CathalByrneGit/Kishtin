@@ -1,0 +1,133 @@
+{
+  "at": "2026-05-01T18:00:00Z",
+  "strategy": "backward",
+  "settings_version": "test-settings",
+  "stations": [
+    {
+      "station_id": "grill",
+      "name": "Grill",
+      "actions": [
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "steak",
+          "dish_name": "Steak",
+          "quantity": 1,
+          "item_ids": [
+            "o9-1"
+          ],
+          "order_ids": [
+            "o9"
+          ],
+          "labels": [
+            "Table 9"
+          ],
+          "start_at": "2026-05-01T18:03:00Z",
+          "now": false,
+          "late": true,
+          "text": "Start 1× Steak on the flat-top at 19:03 for Table 9",
+          "reason": "Table 9 mains are due at 19:21. Steak: 12 min cook + 5 min rest + 1 min plate, so start by 19:03. The flat-top is full until 19:03 (3 of 3 in use). The course moved from 19:18 to 19:21 so every item finishes together."
+        }
+      ],
+      "in_progress": [
+        {
+          "item_id": "o2-1",
+          "order_id": "o2",
+          "label": "Table 2",
+          "dish_name": "Burger",
+          "state": "cooking",
+          "phase_ends_at": "2026-05-01T18:03:00Z"
+        },
+        {
+          "item_id": "o2-2",
+          "order_id": "o2",
+          "label": "Table 2",
+          "dish_name": "Burger",
+          "state": "cooking",
+          "phase_ends_at": "2026-05-01T18:03:00Z"
+        },
+        {
+          "item_id": "o2-3",
+          "order_id": "o2",
+          "label": "Table 2",
+          "dish_name": "Burger",
+          "state": "cooking",
+          "phase_ends_at": "2026-05-01T18:03:00Z"
+        }
+      ]
+    },
+    {
+      "station_id": "fryer",
+      "name": "Fryer",
+      "actions": [
+        {
+          "station_id": "fryer",
+          "equipment_id": "baskets",
+          "equipment_name": "Fryer",
+          "dish_id": "fries",
+          "dish_name": "Fries",
+          "quantity": 1,
+          "item_ids": [
+            "o9-2"
+          ],
+          "order_ids": [
+            "o9"
+          ],
+          "labels": [
+            "Table 9"
+          ],
+          "start_at": "2026-05-01T18:16:30Z",
+          "now": false,
+          "late": true,
+          "text": "Start 1× Fries on the fryer at 19:16 for Table 9",
+          "reason": "Table 9 mains are due at 19:21. Fries: 4 min cook + 30 s plate, so start by 19:16. The flat-top is full until 19:03 (3 of 3 in use). The course moved from 19:18 to 19:21 so every item finishes together."
+        }
+      ],
+      "in_progress": []
+    },
+    {
+      "station_id": "cold",
+      "name": "Cold section",
+      "actions": [],
+      "in_progress": []
+    }
+  ],
+  "courses": [
+    {
+      "order_id": "o2",
+      "label": "Table 2",
+      "course": "main",
+      "target": "2026-05-01T18:06:00Z",
+      "planned_ready": "2026-05-01T18:06:00Z",
+      "status": "on_track",
+      "reason": "On track for 19:06."
+    },
+    {
+      "order_id": "o9",
+      "label": "Table 9",
+      "course": "main",
+      "target": "2026-05-01T18:18:00Z",
+      "planned_ready": "2026-05-01T18:21:00Z",
+      "status": "at_risk",
+      "reason": "Due at 19:18; expected at 19:21. The flat-top is full until 19:03 (3 of 3 in use).",
+      "cause": "equipment_full"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "o9-1",
+      "order_id": "o9",
+      "latest_start": "2026-05-01T18:03:00Z",
+      "start_at": "2026-05-01T18:03:00Z",
+      "ready_at": "2026-05-01T18:21:00Z"
+    },
+    {
+      "item_id": "o9-2",
+      "order_id": "o9",
+      "latest_start": "2026-05-01T18:16:30Z",
+      "start_at": "2026-05-01T18:16:30Z",
+      "ready_at": "2026-05-01T18:21:00Z"
+    }
+  ]
+}

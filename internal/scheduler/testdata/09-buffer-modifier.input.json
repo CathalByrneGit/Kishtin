@@ -1,0 +1,111 @@
+{
+  "description": "Table 10 orders a well-done burger (2 extra minutes) and a medium one. They cook separately, and the grill's 30-second buffer starts both earlier.",
+  "now": "2026-05-01T18:00:00Z",
+  "stations": [
+    {
+      "id": "grill",
+      "name": "Grill"
+    },
+    {
+      "id": "fryer",
+      "name": "Fryer"
+    },
+    {
+      "id": "cold",
+      "name": "Cold section"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "flat-top",
+      "station_id": "grill",
+      "name": "Flat-top"
+    },
+    {
+      "id": "baskets",
+      "station_id": "fryer",
+      "name": "Fryer"
+    }
+  ],
+  "dishes": {
+    "burger": {
+      "name": "Burger",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "8m",
+      "rest": "2m",
+      "plate": "1m",
+      "hold": "3m",
+      "batchable": true
+    },
+    "steak": {
+      "name": "Steak",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "12m",
+      "rest": "5m",
+      "plate": "1m",
+      "hold": "0s"
+    },
+    "fries": {
+      "name": "Fries",
+      "station": "fryer",
+      "equipment": "baskets",
+      "capacity": 2,
+      "cook": "4m",
+      "plate": "30s",
+      "hold": "2m",
+      "batchable": true
+    },
+    "salad": {
+      "name": "Salad",
+      "station": "cold",
+      "plate": "3m",
+      "hold": "5m"
+    }
+  },
+  "courses": [
+    {
+      "order_id": "o10",
+      "label": "Table 10",
+      "course": "main",
+      "fired_at": "2026-05-01T18:00:00Z",
+      "target": "2026-05-01T18:14:00Z",
+      "items": [
+        {
+          "id": "o10-1",
+          "dish": "burger",
+          "state": "fired",
+          "modifiers": [
+            "Well done"
+          ],
+          "extra_cook": "2m"
+        },
+        {
+          "id": "o10-2",
+          "dish": "burger",
+          "state": "fired"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "strategy": "backward",
+    "batching": true,
+    "batch_window_seconds": 120,
+    "max_pass_wait_seconds": 180,
+    "station_buffers": [
+      {
+        "station_id": "grill",
+        "seconds": 30
+      }
+    ],
+    "priority_lead_seconds": 120,
+    "priority_takeaway": false,
+    "priority_allergy": true,
+    "large_table_covers": 0,
+    "replan_seconds": 15
+  }
+}

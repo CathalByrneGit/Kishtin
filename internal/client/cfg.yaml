@@ -1,0 +1,14 @@
+# Generates the Go client used by the kishtin CLI from api/openapi.json.
+# Run `make generate` after changing any API route.
+package: client
+output:
+  use-single-file: true
+  directory: internal/client
+  filename: client.gen.go
+generate:
+  client: true
+  client-with-response: true
+  default-int-type: int64
+# API errors are RFC 9457 problems; use their detail as the error message.
+error-mapping:
+  ErrorModel: detail

@@ -1,0 +1,73 @@
+# Kishtin server configuration. Copy to <data_dir>/kishtin.toml, or pass
+# --config to kishtind. Every setting here is optional.
+
+# Where the database, attached files and backups live.
+# Default: ~/.kishtin, or /var/lib/kishtin when there is no home folder.
+# data_dir = "/var/lib/kishtin"
+
+# Starting restaurant name for the screens. A manager can change it in Setup.
+# restaurant_name = "The Synthetic Kitchen"
+
+[server]
+# Loopback only by default. To serve kitchen tablets over Wi-Fi, listen on
+# the network address and either set tls_cert and tls_key, or set
+# trusted_network = true on a private network you control.
+listen = "127.0.0.1:8080"
+# tls_cert = "/etc/kishtin/cert.pem"
+# tls_key = "/etc/kishtin/key.pem"
+# trusted_network = false
+
+[store]
+# Only sqlite is built so far.
+driver = "sqlite"
+# dsn = "/var/lib/kishtin/kishtin.db"
+
+[backup]
+# A consistent copy of the database is written this often and its HACCP
+# chain is verified. Copy backups off the machine yourself.
+# interval, keep and [files] max_size_mb are starting values: once a manager
+# saves system settings (kishtin settings set system), those win. dir stays
+# here only.
+interval = "6h"
+keep = 28
+# dir = "/var/lib/kishtin/backups"
+
+[files]
+# Largest docket or invoice photo accepted.
+max_size_mb = 15
+
+[speech]
+# Local speech sidecars for voice control. Both are optional: without
+# stt_url, typed voice commands still work; without tts_url, replies show on
+# screen (and use an on-device voice if the device has one). Both must be on
+# this machine or the kitchen network: Kishtin refuses any other address,
+# so kitchen audio never leaves the building. See docs/voice.md.
+# stt_url = "http://127.0.0.1:8178"   # whisper.cpp server, started with --convert
+# tts_url = "http://127.0.0.1:5000"   # Piper HTTP server
+# timeout = "20s"
+# Words that start a hands-free command (hands-free is off on every
+# device until someone turns it on). 4 letters or more.
+# wake_words = ["kishtin"]
+
+[ai]
+# An optional small local model, for suggesting record book columns from
+# a copy of a booklet and reading photos of paper record book pages. Any
+# server with the OpenAI-compatible chat API (llama.cpp's llama-server,
+# Ollama). It must be on this machine or the kitchen network: Kishtin
+# refuses any other address. Reading photos needs a model that takes
+# images. Or set KISHTIN_AI_URL. See docs/record-books.md.
+# url = "http://127.0.0.1:8081"
+# model = "lfm2-vl"
+# timeout = "2m"
+
+[square]
+# Orders from the Square till. A manager can connect Square on the screens
+# (Setup, Connections), which keeps the token in <data_dir>/connectors/,
+# outside the database. Or set the token here or in the environment
+# (KISHTIN_SQUARE_TOKEN); then it wins and the screens cannot change it.
+# Whether orders are imported, and for which location, is a manager's
+# setting on the Square page, which shows what is sent before it is saved.
+# See docs/square.md.
+# environment = "production"   # or "sandbox"
+# token = ""
+# timeout = "15s"

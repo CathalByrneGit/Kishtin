@@ -1,0 +1,154 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-root);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Temperatures: monospaced, tabular numbers, readable at arm's length. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kitchen screens: every kit control at least 56px tall. */
+.kitchen {
+  --kit-control-height: 56px;
+  --kit-control-font-size: var(--font-size-lg);
+}
+
+/* kit-ui's segmented control grows its frame, not its segments, with the
+   control height; make each segment a full-height tap target. */
+.kitchen .kit-segmented__btn {
+  min-height: var(--kit-control-height);
+}
+
+/* kit-ui's text input has fixed heights; on kitchen screens make it a
+   full-size field like every other control. */
+.kitchen .kit-text-input {
+  height: auto;
+  min-height: var(--kit-control-height);
+  font-size: var(--kit-control-font-size);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: var(--text-secondary);
+}
+
+.section-title {
+  font-size: var(--font-size-lg);
+  margin: var(--space-6) 0 var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field > span {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+textarea.text-area {
+  font: inherit;
+  font-size: var(--font-size-md);
+  min-height: 80px;
+  padding: var(--space-4) var(--space-5);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+
+textarea.text-area:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+/* Desktop pages: a heading row, then content. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.head h1 {
+  font-size: var(--font-size-2xl);
+}
+
+.head p {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  max-width: 70ch;
+}
+
+/* The heading row of a card that holds a table. */
+.table-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: var(--border-width) solid var(--border-muted);
+}
+
+.table-head h2 {
+  font-size: var(--font-size-md);
+}
+
+.table-head span {
+  font-size: var(--font-size-sm);
+}
+
+/* Chart marks: one hue, validated against the chart surface in each mode
+   with the dataviz palette checks. Light: the accent blue (#2563eb on
+   white). Dark: the accent blue is too light for a mark, so it is mixed 85%
+   with the surface (#558dd5 on #16161e). Text never uses it. */
+:root {
+  --chart-series: var(--accent-blue);
+  --chart-grid: var(--border-muted, var(--border-default));
+}
+:root.dark {
+  --chart-series: color-mix(in oklab, var(--accent-blue) 85%, var(--bg-surface));
+}

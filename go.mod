@@ -1,0 +1,48 @@
+module github.com/cathalbyrnegit/kishtin
+
+go 1.27.0
+
+require (
+	github.com/BurntSushi/toml v1.6.0
+	github.com/cenkalti/backoff/v7 v7.0.1
+	github.com/danielgtaylor/huma/v2 v2.39.1
+	github.com/doordash-oss/oapi-codegen-dd/v3 v3.76.3
+	github.com/gabriel-vasile/mimetype v1.4.16
+	github.com/go-pdf/fpdf v0.9.0
+	github.com/go-playground/validator/v10 v10.30.4
+	github.com/gofrs/flock v0.13.1
+	github.com/google/uuid v1.6.0
+	github.com/klippa-app/go-pdfium v1.21.4
+	github.com/mattn/go-sqlite3 v1.14.52
+	github.com/pressly/goose/v3 v3.29.0
+	github.com/spf13/cobra v1.10.2
+	github.com/stretchr/testify v1.12.1
+	golang.org/x/crypto v0.58.0
+	golang.org/x/term v0.47.0
+	modernc.org/sqlite v1.61.0
+)
+
+require (
+	github.com/dustin/go-humanize v1.1.0 // indirect
+	github.com/go-playground/locales v0.14.1 // indirect
+	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jolestar/go-commons-pool/v2 v2.1.2 // indirect
+	github.com/leodido/go-urn v1.5.0 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
+	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/ncruces/go-strftime v1.1.0 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/sethvargo/go-retry v0.5.0 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/tetratelabs/wazero v1.12.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
+	modernc.org/libc v1.79.0 // indirect
+	modernc.org/mathutil v1.7.1 // indirect
+	modernc.org/memory v1.12.1 // indirect
+)

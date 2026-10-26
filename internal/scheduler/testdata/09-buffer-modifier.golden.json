@@ -1,0 +1,98 @@
+{
+  "at": "2026-05-01T18:00:00Z",
+  "strategy": "backward",
+  "settings_version": "test-settings",
+  "stations": [
+    {
+      "station_id": "grill",
+      "name": "Grill",
+      "actions": [
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "modifiers": [
+            "Well done"
+          ],
+          "quantity": 1,
+          "item_ids": [
+            "o10-1"
+          ],
+          "order_ids": [
+            "o10"
+          ],
+          "labels": [
+            "Table 10"
+          ],
+          "start_at": "2026-05-01T18:00:30Z",
+          "now": true,
+          "text": "Start 1× Burger (Well done) on the flat-top now for Table 10",
+          "reason": "Table 10 mains are due at 19:14. Burger: 10 min cook + 2 min rest + 1 min plate, so start by 19:00. That includes the station's 30 s buffer."
+        },
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "quantity": 1,
+          "item_ids": [
+            "o10-2"
+          ],
+          "order_ids": [
+            "o10"
+          ],
+          "labels": [
+            "Table 10"
+          ],
+          "start_at": "2026-05-01T18:02:30Z",
+          "now": false,
+          "text": "Start 1× Burger on the flat-top at 19:02 for Table 10",
+          "reason": "Table 10 mains are due at 19:14. Burger: 8 min cook + 2 min rest + 1 min plate, so start by 19:02. That includes the station's 30 s buffer."
+        }
+      ],
+      "in_progress": []
+    },
+    {
+      "station_id": "fryer",
+      "name": "Fryer",
+      "actions": [],
+      "in_progress": []
+    },
+    {
+      "station_id": "cold",
+      "name": "Cold section",
+      "actions": [],
+      "in_progress": []
+    }
+  ],
+  "courses": [
+    {
+      "order_id": "o10",
+      "label": "Table 10",
+      "course": "main",
+      "target": "2026-05-01T18:14:00Z",
+      "planned_ready": "2026-05-01T18:13:30Z",
+      "status": "on_track",
+      "reason": "On track for 19:14."
+    }
+  ],
+  "items": [
+    {
+      "item_id": "o10-1",
+      "order_id": "o10",
+      "latest_start": "2026-05-01T18:00:30Z",
+      "start_at": "2026-05-01T18:00:30Z",
+      "ready_at": "2026-05-01T18:13:30Z"
+    },
+    {
+      "item_id": "o10-2",
+      "order_id": "o10",
+      "latest_start": "2026-05-01T18:02:30Z",
+      "start_at": "2026-05-01T18:02:30Z",
+      "ready_at": "2026-05-01T18:13:30Z"
+    }
+  ]
+}

@@ -1,0 +1,469 @@
+{
+  "id": "general",
+  "name": "Kishtin general record books",
+  "country": "Any country",
+  "issuer": "Kishtin",
+  "language": "en",
+  "templates": [
+    {
+      "id": "general-fridges",
+      "code": "T1",
+      "title": "Fridge and freezer temperatures",
+      "builder": "unit_grid",
+      "units_per_page": 6,
+      "columns": [
+        {
+          "label": "Day",
+          "field": "date",
+          "width": 14
+        },
+        {
+          "label": "Unit",
+          "field": "unit_checks",
+          "width": 168
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 66
+        },
+        {
+          "label": "Checked by",
+          "field": "signed",
+          "width": 25
+        }
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "general-cooking",
+      "code": "T2",
+      "title": "Cooking, cooling and reheating",
+      "builder": "cooking",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 17
+        },
+        {
+          "label": "Food",
+          "field": "food",
+          "width": 46
+        },
+        {
+          "label": "Cooking finished",
+          "group": "Cooking",
+          "field": "cook_finished",
+          "width": 20
+        },
+        {
+          "label": "Core temp",
+          "group": "Cooking",
+          "field": "core_temp",
+          "width": 22
+        },
+        {
+          "label": "By",
+          "group": "Cooking",
+          "field": "cook_signed",
+          "width": 19
+        },
+        {
+          "label": "Into fridge",
+          "group": "Cooling",
+          "field": "into_fridge",
+          "width": 24
+        },
+        {
+          "label": "By",
+          "group": "Cooling",
+          "field": "cool_signed",
+          "width": 19
+        },
+        {
+          "label": "Core temp",
+          "group": "Reheating",
+          "field": "reheat_temp",
+          "width": 22
+        },
+        {
+          "label": "By",
+          "group": "Reheating",
+          "field": "reheat_signed",
+          "width": 19
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 51
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "general-hot-hold",
+      "code": "T3",
+      "title": "Hot holding",
+      "builder": "hot_hold",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Food",
+          "field": "food",
+          "width": 62
+        },
+        {
+          "label": "1st check",
+          "field": "check_1",
+          "width": 30
+        },
+        {
+          "label": "2nd check",
+          "field": "check_2",
+          "width": 30
+        },
+        {
+          "label": "3rd check",
+          "field": "check_3",
+          "width": 30
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 65
+        },
+        {
+          "label": "By",
+          "field": "signed",
+          "width": 24
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "general-deliveries",
+      "code": "T4",
+      "title": "Deliveries",
+      "builder": "delivery",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Product",
+          "field": "food",
+          "width": 44
+        },
+        {
+          "label": "Batch code",
+          "field": "batch_code",
+          "width": 26
+        },
+        {
+          "label": "Supplier",
+          "field": "supplier",
+          "width": 38
+        },
+        {
+          "label": "Use by",
+          "field": "use_by",
+          "width": 18
+        },
+        {
+          "label": "Temperature",
+          "field": "temp",
+          "width": 22
+        },
+        {
+          "label": "Vehicle",
+          "field": "vehicle",
+          "width": 18
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 53
+        },
+        {
+          "label": "By",
+          "field": "signed",
+          "width": 22
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "general-daily",
+      "code": "T5",
+      "title": "Daily record",
+      "builder": "daily",
+      "sections": [
+        "general-deliveries",
+        "general-fridges",
+        "general-cooking",
+        "general-hot-hold"
+      ],
+      "manager_check": true
+    },
+    {
+      "id": "general-inspection",
+      "code": "T6",
+      "title": "Hygiene inspection",
+      "builder": "checklist",
+      "checklist": [
+        {
+          "title": "Premises and equipment",
+          "items": [
+            "Rooms and equipment clean and in good repair?",
+            "Food-contact surfaces clean and disinfected?",
+            "Cleaning chemicals and cloths suitable and stored correctly?"
+          ]
+        },
+        {
+          "title": "Storage",
+          "items": [
+            "Ready-to-eat food stored above or apart from raw food?",
+            "Food covered, labelled and in date?",
+            "Fridges and freezers working?"
+          ]
+        },
+        {
+          "title": "Handling",
+          "items": [
+            "Raw and ready-to-eat food prepared apart, or surfaces disinfected between?",
+            "Probe thermometers used and cleaned correctly?",
+            "Staff aware of allergens?"
+          ]
+        },
+        {
+          "title": "Staff",
+          "items": [
+            "Staff fit to work, in clean protective clothing?",
+            "Hand-wash basins stocked and used only for hand washing?"
+          ]
+        },
+        {
+          "title": "Pests and waste",
+          "items": [
+            "No signs of pests?",
+            "Waste stored correctly and bins clean?"
+          ]
+        },
+        {
+          "title": "Records",
+          "items": [
+            "All checks recorded, with corrective actions?"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "label": "Check",
+          "field": "item",
+          "width": 130
+        },
+        {
+          "label": "Yes",
+          "field": "yes",
+          "width": 16
+        },
+        {
+          "label": "No",
+          "field": "no",
+          "width": 16
+        },
+        {
+          "label": "Action taken",
+          "field": "action",
+          "width": 111
+        }
+      ]
+    },
+    {
+      "id": "general-training",
+      "code": "T7",
+      "title": "Staff training",
+      "builder": "training",
+      "checklist": [
+        {
+          "items": [
+            "Basic hygiene rules",
+            "Personal hygiene and hand washing",
+            "Allergens",
+            "Cleaning",
+            "Temperature control and using a probe",
+            "Cooking, cooling and reheating",
+            "Storage and stock rotation",
+            "Pest control and waste"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "label": "Topic",
+          "field": "topic",
+          "width": 120
+        },
+        {
+          "label": "Dates",
+          "field": "dates",
+          "width": 50
+        },
+        {
+          "label": "Trainer",
+          "field": "trainer",
+          "width": 53
+        },
+        {
+          "label": "Employee signature",
+          "field": "signature",
+          "width": 50
+        }
+      ],
+      "further_columns": [
+        {
+          "label": "Course or training",
+          "field": "nature",
+          "width": 110
+        },
+        {
+          "label": "Provider",
+          "field": "provider",
+          "width": 70
+        },
+        {
+          "label": "Completed",
+          "field": "completed",
+          "width": 43
+        },
+        {
+          "label": "Employee signature",
+          "field": "signature",
+          "width": 50
+        }
+      ]
+    },
+    {
+      "id": "general-fitness",
+      "code": "T8",
+      "title": "Fitness to work",
+      "builder": "fitness",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 24
+        },
+        {
+          "label": "Employee",
+          "field": "staff",
+          "width": 50
+        },
+        {
+          "label": "Reason",
+          "field": "reason",
+          "width": 50
+        },
+        {
+          "label": "Fit to work",
+          "field": "fit",
+          "width": 22
+        },
+        {
+          "label": "Action taken",
+          "field": "action",
+          "width": 75
+        },
+        {
+          "label": "Manager",
+          "field": "manager",
+          "width": 38
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "notes": [
+        "Kishtin keeps only the outcome of each assessment. Keep any signed questionnaire on paper."
+      ]
+    },
+    {
+      "id": "general-transport",
+      "code": "T9",
+      "title": "Deliveries to customers",
+      "builder": "transport",
+      "columns": [
+        {
+          "label": "Date",
+          "field": "date",
+          "width": 18
+        },
+        {
+          "label": "Food",
+          "field": "food",
+          "width": 46
+        },
+        {
+          "label": "Batch / use by",
+          "field": "batch_use_by",
+          "width": 32
+        },
+        {
+          "label": "Customer",
+          "field": "customer",
+          "width": 44
+        },
+        {
+          "label": "Raw and ready-to-eat apart",
+          "field": "separated",
+          "width": 28
+        },
+        {
+          "label": "Temperature",
+          "field": "temp",
+          "width": 26
+        },
+        {
+          "label": "Comments and action taken",
+          "field": "comments",
+          "width": 43
+        },
+        {
+          "label": "By",
+          "field": "signed",
+          "width": 22
+        },
+        {
+          "label": "Record",
+          "field": "ref",
+          "width": 14
+        }
+      ],
+      "manager_check": true
+    }
+  ]
+}

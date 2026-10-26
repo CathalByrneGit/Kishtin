@@ -1,0 +1,113 @@
+{
+  "description": "Table 6 mains are ready and have waited 4 minutes at the pass, so they are late. Table 8's burger is resting and its fries are cooking.",
+  "now": "2026-05-01T18:00:00Z",
+  "stations": [
+    {
+      "id": "grill",
+      "name": "Grill"
+    },
+    {
+      "id": "fryer",
+      "name": "Fryer"
+    },
+    {
+      "id": "cold",
+      "name": "Cold section"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "flat-top",
+      "station_id": "grill",
+      "name": "Flat-top"
+    },
+    {
+      "id": "baskets",
+      "station_id": "fryer",
+      "name": "Fryer"
+    }
+  ],
+  "dishes": {
+    "burger": {
+      "name": "Burger",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "8m",
+      "rest": "2m",
+      "plate": "1m",
+      "hold": "3m",
+      "batchable": true
+    },
+    "steak": {
+      "name": "Steak",
+      "station": "grill",
+      "equipment": "flat-top",
+      "capacity": 3,
+      "cook": "12m",
+      "rest": "5m",
+      "plate": "1m",
+      "hold": "0s"
+    },
+    "fries": {
+      "name": "Fries",
+      "station": "fryer",
+      "equipment": "baskets",
+      "capacity": 2,
+      "cook": "4m",
+      "plate": "30s",
+      "hold": "2m",
+      "batchable": true
+    },
+    "salad": {
+      "name": "Salad",
+      "station": "cold",
+      "plate": "3m",
+      "hold": "5m"
+    }
+  },
+  "courses": [
+    {
+      "order_id": "o6",
+      "label": "Table 6",
+      "course": "main",
+      "fired_at": "2026-05-01T17:45:00Z",
+      "target": "2026-05-01T17:56:00Z",
+      "items": [
+        {
+          "id": "o6-1",
+          "dish": "burger",
+          "state": "ready",
+          "state_at": "2026-05-01T17:56:00Z"
+        },
+        {
+          "id": "o6-2",
+          "dish": "salad",
+          "state": "ready",
+          "state_at": "2026-05-01T17:56:00Z"
+        }
+      ]
+    },
+    {
+      "order_id": "o8",
+      "label": "Table 8",
+      "course": "main",
+      "fired_at": "2026-05-01T17:51:00Z",
+      "target": "2026-05-01T18:02:00Z",
+      "items": [
+        {
+          "id": "o8-1",
+          "dish": "burger",
+          "state": "resting",
+          "state_at": "2026-05-01T17:59:00Z"
+        },
+        {
+          "id": "o8-2",
+          "dish": "fries",
+          "state": "cooking",
+          "state_at": "2026-05-01T17:58:00Z"
+        }
+      ]
+    }
+  ]
+}

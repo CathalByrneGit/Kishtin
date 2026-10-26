@@ -1,0 +1,65 @@
+{
+  "at": "2026-05-01T18:00:00Z",
+  "strategy": "backward",
+  "settings_version": "test-settings",
+  "stations": [
+    {
+      "station_id": "grill",
+      "name": "Grill",
+      "actions": [],
+      "in_progress": [
+        {
+          "item_id": "o8-1",
+          "order_id": "o8",
+          "label": "Table 8",
+          "dish_name": "Burger",
+          "state": "resting",
+          "phase_ends_at": "2026-05-01T18:01:00Z"
+        }
+      ]
+    },
+    {
+      "station_id": "fryer",
+      "name": "Fryer",
+      "actions": [],
+      "in_progress": [
+        {
+          "item_id": "o8-2",
+          "order_id": "o8",
+          "label": "Table 8",
+          "dish_name": "Fries",
+          "state": "cooking",
+          "phase_ends_at": "2026-05-01T18:02:00Z"
+        }
+      ]
+    },
+    {
+      "station_id": "cold",
+      "name": "Cold section",
+      "actions": [],
+      "in_progress": []
+    }
+  ],
+  "courses": [
+    {
+      "order_id": "o6",
+      "label": "Table 6",
+      "course": "main",
+      "target": "2026-05-01T17:56:00Z",
+      "planned_ready": "2026-05-01T17:56:00Z",
+      "status": "late",
+      "reason": "Ready at the pass for 4 min, longer than 3 min: serve now.",
+      "cause": "waiting_at_pass"
+    },
+    {
+      "order_id": "o8",
+      "label": "Table 8",
+      "course": "main",
+      "target": "2026-05-01T18:02:00Z",
+      "planned_ready": "2026-05-01T18:02:30Z",
+      "status": "on_track",
+      "reason": "On track for 19:02."
+    }
+  ],
+  "items": []
+}

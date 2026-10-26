@@ -1,0 +1,152 @@
+{
+  "at": "2026-05-01T18:00:00Z",
+  "strategy": "backward",
+  "settings_version": "test-settings",
+  "stations": [
+    {
+      "station_id": "grill",
+      "name": "Grill",
+      "actions": [
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "quantity": 2,
+          "item_ids": [
+            "o4-1",
+            "o4-2"
+          ],
+          "order_ids": [
+            "o4"
+          ],
+          "labels": [
+            "Table 4"
+          ],
+          "start_at": "2026-05-01T18:00:00Z",
+          "now": true,
+          "text": "Start 2× Burger on the flat-top now for Table 4",
+          "reason": "Table 4 mains are due at 19:11. Burger: 8 min cook + 2 min rest + 1 min plate, so start by 19:00."
+        },
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "quantity": 2,
+          "item_ids": [
+            "o7-1",
+            "o7-2"
+          ],
+          "order_ids": [
+            "o7"
+          ],
+          "labels": [
+            "Table 7"
+          ],
+          "start_at": "2026-05-01T18:08:00Z",
+          "now": false,
+          "late": true,
+          "text": "Start 2× Burger on the flat-top at 19:08 for Table 7",
+          "reason": "Table 7 mains are due at 19:19. Burger: 8 min cook + 2 min rest + 1 min plate, so start by 19:08. The flat-top is full until 19:08 (3 of 3 in use). The course moved from 19:11 to 19:19 so every item finishes together."
+        }
+      ],
+      "in_progress": []
+    },
+    {
+      "station_id": "fryer",
+      "name": "Fryer",
+      "actions": [
+        {
+          "station_id": "fryer",
+          "equipment_id": "baskets",
+          "equipment_name": "Fryer",
+          "dish_id": "fries",
+          "dish_name": "Fries",
+          "quantity": 1,
+          "item_ids": [
+            "o7-3"
+          ],
+          "order_ids": [
+            "o7"
+          ],
+          "labels": [
+            "Table 7"
+          ],
+          "start_at": "2026-05-01T18:14:30Z",
+          "now": false,
+          "late": true,
+          "text": "Start 1× Fries on the fryer at 19:14 for Table 7",
+          "reason": "Table 7 mains are due at 19:19. Fries: 4 min cook + 30 s plate, so start by 19:14. The flat-top is full until 19:08 (3 of 3 in use). The course moved from 19:11 to 19:19 so every item finishes together."
+        }
+      ],
+      "in_progress": []
+    },
+    {
+      "station_id": "cold",
+      "name": "Cold section",
+      "actions": [],
+      "in_progress": []
+    }
+  ],
+  "courses": [
+    {
+      "order_id": "o4",
+      "label": "Table 4",
+      "course": "main",
+      "target": "2026-05-01T18:11:00Z",
+      "planned_ready": "2026-05-01T18:11:00Z",
+      "status": "on_track",
+      "reason": "On track for 19:11."
+    },
+    {
+      "order_id": "o7",
+      "label": "Table 7",
+      "course": "main",
+      "target": "2026-05-01T18:11:00Z",
+      "planned_ready": "2026-05-01T18:19:00Z",
+      "status": "at_risk",
+      "reason": "Due at 19:11; expected at 19:19. The flat-top is full until 19:08 (3 of 3 in use).",
+      "cause": "equipment_full"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "o4-1",
+      "order_id": "o4",
+      "latest_start": "2026-05-01T18:00:00Z",
+      "start_at": "2026-05-01T18:00:00Z",
+      "ready_at": "2026-05-01T18:11:00Z"
+    },
+    {
+      "item_id": "o4-2",
+      "order_id": "o4",
+      "latest_start": "2026-05-01T18:00:00Z",
+      "start_at": "2026-05-01T18:00:00Z",
+      "ready_at": "2026-05-01T18:11:00Z"
+    },
+    {
+      "item_id": "o7-1",
+      "order_id": "o7",
+      "latest_start": "2026-05-01T18:08:00Z",
+      "start_at": "2026-05-01T18:08:00Z",
+      "ready_at": "2026-05-01T18:19:00Z"
+    },
+    {
+      "item_id": "o7-2",
+      "order_id": "o7",
+      "latest_start": "2026-05-01T18:08:00Z",
+      "start_at": "2026-05-01T18:08:00Z",
+      "ready_at": "2026-05-01T18:19:00Z"
+    },
+    {
+      "item_id": "o7-3",
+      "order_id": "o7",
+      "latest_start": "2026-05-01T18:14:30Z",
+      "start_at": "2026-05-01T18:14:30Z",
+      "ready_at": "2026-05-01T18:19:00Z"
+    }
+  ]
+}

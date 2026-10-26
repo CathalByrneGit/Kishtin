@@ -1,0 +1,94 @@
+{
+  "at": "2026-05-01T18:00:00Z",
+  "strategy": "backward",
+  "settings_version": "test-settings",
+  "stations": [
+    {
+      "station_id": "grill",
+      "name": "Grill",
+      "actions": [
+        {
+          "station_id": "grill",
+          "equipment_id": "flat-top",
+          "equipment_name": "Flat-top",
+          "dish_id": "burger",
+          "dish_name": "Burger",
+          "quantity": 1,
+          "item_ids": [
+            "o4-1"
+          ],
+          "order_ids": [
+            "o4"
+          ],
+          "labels": [
+            "Table 4"
+          ],
+          "start_at": "2026-05-01T18:00:00Z",
+          "now": true,
+          "text": "Start 1× Burger on the flat-top now for Table 4",
+          "reason": "Table 4 mains are due at 19:11. Burger: 8 min cook + 2 min rest + 1 min plate, so start by 19:00."
+        }
+      ],
+      "in_progress": []
+    },
+    {
+      "station_id": "fryer",
+      "name": "Fryer",
+      "actions": [],
+      "in_progress": []
+    },
+    {
+      "station_id": "cold",
+      "name": "Cold section",
+      "actions": [
+        {
+          "station_id": "cold",
+          "dish_id": "salad",
+          "dish_name": "Salad",
+          "quantity": 1,
+          "item_ids": [
+            "o4-2"
+          ],
+          "order_ids": [
+            "o4"
+          ],
+          "labels": [
+            "Table 4"
+          ],
+          "start_at": "2026-05-01T18:08:00Z",
+          "now": false,
+          "text": "Start 1× Salad at 19:08 for Table 4",
+          "reason": "Table 4 mains are due at 19:11. Salad: 3 min plate, so start by 19:08."
+        }
+      ],
+      "in_progress": []
+    }
+  ],
+  "courses": [
+    {
+      "order_id": "o4",
+      "label": "Table 4",
+      "course": "main",
+      "target": "2026-05-01T18:11:00Z",
+      "planned_ready": "2026-05-01T18:11:00Z",
+      "status": "on_track",
+      "reason": "On track for 19:11."
+    }
+  ],
+  "items": [
+    {
+      "item_id": "o4-1",
+      "order_id": "o4",
+      "latest_start": "2026-05-01T18:00:00Z",
+      "start_at": "2026-05-01T18:00:00Z",
+      "ready_at": "2026-05-01T18:11:00Z"
+    },
+    {
+      "item_id": "o4-2",
+      "order_id": "o4",
+      "latest_start": "2026-05-01T18:08:00Z",
+      "start_at": "2026-05-01T18:08:00Z",
+      "ready_at": "2026-05-01T18:11:00Z"
+    }
+  ]
+}

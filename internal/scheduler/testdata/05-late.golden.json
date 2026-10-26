@@ -1,0 +1,67 @@
+{
+  "at": "2026-05-01T18:00:00Z",
+  "strategy": "backward",
+  "settings_version": "test-settings",
+  "stations": [
+    {
+      "station_id": "grill",
+      "name": "Grill",
+      "actions": [],
+      "in_progress": []
+    },
+    {
+      "station_id": "fryer",
+      "name": "Fryer",
+      "actions": [],
+      "in_progress": []
+    },
+    {
+      "station_id": "cold",
+      "name": "Cold section",
+      "actions": [
+        {
+          "station_id": "cold",
+          "dish_id": "salad",
+          "dish_name": "Salad",
+          "quantity": 1,
+          "item_ids": [
+            "o3-1"
+          ],
+          "order_ids": [
+            "o3"
+          ],
+          "labels": [
+            "Table 3"
+          ],
+          "start_at": "2026-05-01T18:00:00Z",
+          "now": true,
+          "late": true,
+          "text": "Start 1× Salad now for Table 3",
+          "reason": "Table 3 starters were due at 18:58. Salad: 3 min plate, so it should have started by 18:55. Starting now, the course reaches the pass at 19:03."
+        }
+      ],
+      "in_progress": []
+    }
+  ],
+  "courses": [
+    {
+      "order_id": "o3",
+      "label": "Table 3",
+      "course": "starter",
+      "target": "2026-05-01T17:58:00Z",
+      "planned_ready": "2026-05-01T18:03:00Z",
+      "status": "late",
+      "reason": "Due at 18:58; expected at the pass at 19:03. Salad should have started by 18:55.",
+      "cause": "started_late"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "o3-1",
+      "order_id": "o3",
+      "latest_start": "2026-05-01T18:00:00Z",
+      "start_at": "2026-05-01T18:00:00Z",
+      "ready_at": "2026-05-01T18:03:00Z"
+    }
+  ]
+}
