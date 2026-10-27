@@ -8,7 +8,7 @@ See [AGENTS.md](AGENTS.md) for the full plan. This README describes what is buil
 
 ## What works now
 
-Roadmap stages 1 to 5 and 7: the HACCP log, ported from the browser prototype; the menu with stations and equipment; orders and the pass; the cook scheduler; voice control; and orders from Square.
+Roadmap stages 1 to 7: the HACCP log, ported from the browser prototype; the menu with stations and equipment; orders and the pass; the cook scheduler; voice control; cook times learned from real cooks; and orders from Square (and SumUp).
 
 - **Screens** for a computer, served by `kishtind` itself: the Pass, Stations and Orders; HACCP Today, Records, Record books, Exports and Verify; and Setup for the menu, the scheduler, fridges and tasks, limits and rules, HACCP records, staff, device keys, backups and settings. Search with Ctrl K. Each device can instead show a full-screen pass screen, station screen or phone layout, with large type and 56 px buttons. See [docs/screens.md](docs/screens.md).
 - **Menu**: stations, equipment with how many units it holds, and dishes with cook, rest, plate and hold times, batch capacity, modifiers such as "well done +2 min", and 86 for sold out. See [docs/kitchen.md](docs/kitchen.md).

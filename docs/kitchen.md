@@ -178,9 +178,9 @@ Every command takes `--json`. The same actions are in the API under `/api/menu`,
 
 ## Not built yet
 
-- Orders from Square (roadmap stage 7). Orders are entered in Kishtin by hand.
 - Learned rest and plate times. Only the cook time is learned; rest and plate stay as set.
 - Named service profiles, replaying a past service under new settings, a fixed pace between courses, and course gaps per service.
-- Voice control (stage 5).
-- A course cannot be un-fired, and an item's dish or modifiers cannot be changed once ordered: void it and add the right one.
-- The plan is made on request, not stored. The order history records what happened; plans are not kept.
+- A course can be held again only while nothing in it has started.
+- An item's dish or modifiers are not edited in place: **Change** voids it and adds the right one, and both stay in the order's history.
+
+Orders from Square and SumUp, voice control and kept scheduler plans are described in [square.md](square.md), [sumup.md](sumup.md), [voice.md](voice.md) and [recording.md](recording.md).
