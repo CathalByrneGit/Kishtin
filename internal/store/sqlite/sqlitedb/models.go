@@ -91,6 +91,12 @@ type HaccpRecord struct {
 	DoneAt           int64
 }
 
+type LearnedReset struct {
+	DishID  string
+	ResetAt int64
+	ResetBy string
+}
+
 type LimitVersion struct {
 	ID         string
 	CheckType  string
@@ -166,6 +172,7 @@ type OrderItem struct {
 	ReadyAt       sql.NullInt64
 	ServedAt      sql.NullInt64
 	VoidReason    string
+	CookLearned   int64
 }
 
 type PlanSnapshot struct {

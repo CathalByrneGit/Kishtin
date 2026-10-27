@@ -59,7 +59,7 @@ When two people tap at once, or one taps on a screen that is out of date, only t
 - **Serve** serves a whole course, and only once every item in it is ready, so a course leaves the pass together.
 - **Close** an order once every item is served or voided.
 - **Change** an item that was ordered wrong (a burger that should be well done, the wrong dish): the old item is voided and the right one added in its place, in one step, so it can never end up half done. The void reason says what replaced it ("asked for well done by Burger (Well done)"). The new item joins the same course, and goes straight to its station if the course is fired. Front of house can change items in a held course; once the course is fired, only the head chef or a manager can, as with any void.
-- Every change goes in the order's **history**: who, when, and what. The history cannot be edited or deleted. Item state changes in it are the actual cook times that learned cook times will use later.
+- Every change goes in the order's **history**: who, when, and what. The history cannot be edited or deleted. Item state changes in it are the actual cook times that [learned cook times](#learned-cook-times) come from.
 
 ### Expo overrides
 
@@ -121,6 +121,21 @@ The scheduler settings are a versioned settings group, changed like the HACCP se
 | `priority_lead_seconds` | 120 | Each priority moves a course this much earlier in the planning order. An urgent course counts as two. |
 | `station_buffers` | none | Extra seconds before a station's items are due. |
 | `replan_seconds` | 15 | How often screens ask for a new plan when nothing changes. |
+| `learned_times` | off | New orders use each dish's learned cook time once it has 10 cooks (see below). |
+
+### Learned cook times
+
+Kishtin learns how long each dish really takes from the station screens, so the scheduler can plan with the kitchen's real times instead of the ones typed in on day one.
+
+- **What it learns from.** Every cook of the dish in the last 90 days that was started and marked ready on a station screen: the time from started to ready, less the dish's rest and plate time and any modifier (a well-done burger's extra 2 minutes come off). What is left is the cook time for the plain dish.
+- **How.** A smoothed average: each new cook moves the learned time a fifth of the way towards itself, so recent cooks count most and one odd cook moves it little.
+- **What it leaves out.** A cook that took under a quarter, or over four times, the time set when it was ordered: most likely someone tapped ready late or early. Voided items, and cooks before the dish was last reset.
+- **When it is used.** Only when `learned_times` is on in the scheduler settings, and only for a dish with at least 10 cooks; other dishes keep their set time. It applies to new orders and items added from then on: orders already in the kitchen keep the times they had. Turning it on is reviewed like any settings change, and the review lists each dish's set and learned time.
+![Set and learned cook times](screenshots/learned-times.png)
+
+- **Where to see it.** **Setup › Kitchen › Menu** shows each dish's set and learned cook time, how many cooks it is learned from, and whether new orders use it. An item using a learned time is marked `cook_learned` in the API.
+- **Reset.** After a new recipe or new equipment, a manager uses **Reset learned** on the dish (or `kishtin menu learned reset DISH`). Kishtin learns again from the next cook, and the set time is used until there are 10. Each reset is in the activity log.
+- **What it does not change.** The cook time set on the menu stays as it is; learned times never overwrite it. Rest and plate times are not learned. Learned times are worked out again at most every 5 minutes.
 
 The golden plans in `internal/scheduler/testdata` show the scheduler's output for fixed kitchens; a change to plan output must update them on purpose.
 
@@ -155,15 +170,17 @@ kishtin items move --to voided --reason "Dropped" ID
 kishtin items replace ID --with "Burger: well done" --reason "Asked for well done"
 
 kishtin settings show scheduler
+kishtin menu learned                             # each dish's set and learned cook time
+kishtin menu learned reset Burger                # learn again from the next cook (manager)
 ```
 
 Every command takes `--json`. The same actions are in the API under `/api/menu`, `/api/orders`, `/api/kitchen` and `/api/settings/scheduler`.
 
 ## Not built yet
 
-- Orders from Square (roadmap stage 7). Orders are entered in Kishtin by hand.
-- Cook times learned from real cooks (stage 6). The history records actual times, but the scheduler uses the menu's times.
+- Learned rest and plate times. Only the cook time is learned; rest and plate stay as set.
 - Named service profiles, replaying a past service under new settings, a fixed pace between courses, and course gaps per service.
-- Voice control (stage 5).
-- A course cannot be un-fired, and an item's dish or modifiers cannot be changed once ordered: void it and add the right one.
-- The plan is made on request, not stored. The order history records what happened; plans are not kept.
+- A course can be held again only while nothing in it has started.
+- An item's dish or modifiers are not edited in place: **Change** voids it and adds the right one, and both stay in the order's history.
+
+Orders from Square and SumUp, voice control and kept scheduler plans are described in [square.md](square.md), [sumup.md](sumup.md), [voice.md](voice.md) and [recording.md](recording.md).

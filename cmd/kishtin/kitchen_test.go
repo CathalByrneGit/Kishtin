@@ -111,3 +111,32 @@ func TestKitchenCLI(t *testing.T) {
 	out = cli("settings", "show", "scheduler")
 	assert.Contains(t, out, "backward")
 }
+
+func TestLearnedCLI(t *testing.T) {
+	url, key := server(t)
+	cli := func(args ...string) string {
+		t.Helper()
+		out, _, err := run(t, url, key, "", args...)
+		require.NoError(t, err, "%v", args)
+		return out
+	}
+	cli("menu", "station", "add", "--name", "Grill")
+	cli("menu", "dish", "add", "--name", "Synthetic burger", "--station", "Grill", "--cook", "8m", "--rest", "2m", "--plate", "1m")
+
+	out := cli("menu", "learned")
+	assert.Contains(t, out, "New orders use the cook times set on the menu")
+	assert.Regexp(t, `Synthetic burger\s+8m\s+no cooks yet\s+0\s+set`, out)
+
+	out = cli("menu", "learned", "reset", "synthetic burger")
+	assert.Contains(t, out, "Synthetic burger learns its cook time again from its next cook")
+
+	var res struct {
+		On     bool `json:"on"`
+		Dishes []struct {
+			ResetAt *string `json:"reset_at"`
+		} `json:"dishes"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(cli("menu", "learned", "--json")), &res))
+	require.Len(t, res.Dishes, 1)
+	assert.NotNil(t, res.Dishes[0].ResetAt)
+}

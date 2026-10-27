@@ -66,6 +66,8 @@ func KindOf(err error) Kind {
 type Service struct {
 	tablets *TabletNetwork
 	startup Startup
+	// learnt holds learned cook times; see learned.
+	learnt  learnCache
 	joins   joins
 	st      store.Store
 	clk     clock.Clock

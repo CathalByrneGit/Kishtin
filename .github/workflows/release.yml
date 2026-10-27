@@ -28,10 +28,18 @@ jobs:
         run: make frontend
       - name: Test
         run: go test ./...
+      # Release notes for owners, when docs/releases/<tag>.md exists;
+      # otherwise GoReleaser lists the commits since the last release.
+      - name: Release notes
+        id: notes
+        run: |
+          if [ -f "docs/releases/${GITHUB_REF_NAME}.md" ]; then
+            echo "flag=--release-notes=docs/releases/${GITHUB_REF_NAME}.md" >> "$GITHUB_OUTPUT"
+          fi
       - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          args: release --clean ${{ steps.notes.outputs.flag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

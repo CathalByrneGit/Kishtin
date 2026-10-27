@@ -137,7 +137,7 @@ func (c *cli) menuCmd() *cobra.Command {
 			})
 		},
 	}
-	cmd.AddCommand(c.stationCmds(), c.equipmentCmds(), c.dishCmds(), c.availabilityCmd(true), c.availabilityCmd(false))
+	cmd.AddCommand(c.stationCmds(), c.equipmentCmds(), c.dishCmds(), c.availabilityCmd(true), c.availabilityCmd(false), c.learnedCmd())
 	return cmd
 }
 
@@ -1032,4 +1032,71 @@ func (c *cli) itemsCmd() *cobra.Command {
 	replace.Flags().StringVar(&why, "reason", "", "why, for the log")
 	cmd.AddCommand(next, set, replace)
 	return cmd
+}
+
+func (c *cli) learnedCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "learned", Short: "Each dish's cook time as set and as learned from past cooks", Args: cobra.NoArgs,
+		Long: "learned shows each dish's cook time as set on the menu and as learned from its cooks in the last 90 days:\n" +
+			"the time from started to ready, less rest, plate and modifiers, smoothed so recent cooks count most.\n" +
+			"New orders use a learned time once the dish has enough cooks and the scheduler setting learned_times is on.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			res, err := c.api.ListLearnedTimes(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) {
+				if res.On {
+					fmt.Fprintf(w, "New orders use learned cook times for dishes with %d cooks or more.\n\n", res.MinCooks)
+				} else {
+					fmt.Fprintf(w, "New orders use the cook times set on the menu. Turn on learned_times in the scheduler settings to use learned ones.\n\n")
+				}
+				var rows [][]string
+				for _, d := range res.Dishes {
+					rows = append(rows, []string{d.DishName, secs(d.SetSeconds), learnedText(d, res.MinCooks), fmt.Sprint(d.Cooks), usedText(d)})
+				}
+				table(w, "DISH\tSET\tLEARNED\tCOOKS\tNEW ORDERS USE", rows)
+			})
+		},
+	}
+	reset := &cobra.Command{
+		Use: "reset DISH", Short: "Start a dish's learned cook time again from its next cook (manager)", Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			m, err := c.menu(cmd.Context())
+			if err != nil {
+				return err
+			}
+			d, err := findDish(m, args[0])
+			if err != nil {
+				return err
+			}
+			res, err := c.api.ResetLearnedTime(cmd.Context(), &client.ResetLearnedTimeRequestOptions{PathParams: &client.ResetLearnedTimePath{ID: d.ID}})
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) {
+				fmt.Fprintf(w, "%s learns its cook time again from its next cook. Until it has enough cooks, new orders use the set time, %s.\n", res.DishName, secs(res.SetSeconds))
+			})
+		},
+	}
+	cmd.AddCommand(reset)
+	return cmd
+}
+
+func learnedText(d client.LearnedDish, minCooks int64) string {
+	switch {
+	case d.Cooks == 0:
+		return "no cooks yet"
+	case !d.Ready:
+		return fmt.Sprintf("%s (needs %d cooks)", secs(d.LearnedSeconds), minCooks)
+	default:
+		return secs(d.LearnedSeconds)
+	}
+}
+
+func usedText(d client.LearnedDish) string {
+	if d.InUse {
+		return "learned"
+	}
+	return "set"
 }

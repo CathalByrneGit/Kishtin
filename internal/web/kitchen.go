@@ -137,6 +137,24 @@ func (s *Server) kitchenRoutes() {
 		return reply(s.svc.SetAvailability(ctx, principal(ctx), in.ID, in.Body.Available))
 	}))
 
+	huma.Register(s.api, huma.Operation{
+		OperationID: "list-learned-times", Method: http.MethodGet, Path: "/menu/learned", Tags: menuTags,
+		Summary: "Each dish's cook time as set and as learned from past cooks",
+		Description: "A learned cook time is a smoothed average of each cook's time from started to ready, less the rest and plate time and any modifier, " +
+			"over the last 90 days and since any reset. New orders use it once a dish has enough cooks and the scheduler setting learned_times is on.",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.LearnedTimes], error) {
+		return reply(s.svc.Learned(ctx, principal(ctx)))
+	}))
+	huma.Register(s.api, huma.Operation{
+		OperationID: "reset-learned-time", Method: http.MethodPost, Path: "/menu/dishes/{id}/learned/reset", Tags: menuTags,
+		Summary:     "Start a dish's learned cook time again from its next cook",
+		Description: "For example after a new recipe or new equipment. Cooks before now are no longer learned from. Noted in the activity log.",
+	}, wrap(s, func(ctx context.Context, in *struct {
+		ID string `path:"id"`
+	}) (*out[service.LearnedDish], error) {
+		return reply(s.svc.ResetLearned(ctx, principal(ctx), in.ID))
+	}))
+
 	orderTags := []string{"Orders"}
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-orders", Method: http.MethodGet, Path: "/orders", Tags: orderTags,

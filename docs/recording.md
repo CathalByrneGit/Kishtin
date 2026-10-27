@@ -42,6 +42,7 @@ Things staff and screens do that are not HACCP records or order events:
 | `setup` | when Kishtin was set up, by which manager, and whether from the screens or `kishtind setup` |
 | `device.paired` | a tablet or phone paired by QR code: its name, its new device key, and the manager who made the code |
 | `password.recovered` | a manager's password set with `kishtind reset-password` on the Kishtin computer: whose, and whether they were made a manager or added to do it |
+| `dish.learned_reset` | a dish's learned cook time reset: which dish and who |
 | `startup.changed` | Kishtin set to start with the computer, or not, from the screens or `kishtin startup`: who, on or off, and how (Task Scheduler, LaunchAgent, systemd) |
 
 `kishtin activity --kind dish.sold_out`, or `GET /api/activity`. Head chef or manager (the "Exports, record books and the activity log" permission).

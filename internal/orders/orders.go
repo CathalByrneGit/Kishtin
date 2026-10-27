@@ -110,6 +110,9 @@ type Item struct {
 	HoldSeconds   int         `json:"hold_seconds"`
 	Batchable     bool        `json:"batchable"`
 	Timing        menu.Timing `json:"timing"`
+	// CookLearned is true when Timing's cook time was learned from past
+	// cooks rather than set on the menu.
+	CookLearned bool `json:"cook_learned,omitempty"`
 	// StateAt is when the item entered its current state. With the state,
 	// it gives how far through a phase the item is.
 	StateAt    time.Time  `json:"state_at"`

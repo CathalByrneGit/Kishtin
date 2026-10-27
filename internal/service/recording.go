@@ -28,13 +28,14 @@ const (
 	ActivityDevicePaired       = "device.paired"
 	ActivityPasswordRecovered  = "password.recovered"
 	ActivityStartupChanged     = "startup.changed"
+	ActivityLearnedReset       = "dish.learned_reset"
 )
 
 // ActivityKinds lists every activity kind.
 var ActivityKinds = []string{
 	ActivityLogin, ActivityLogout, ActivityScreenConnected, ActivityScreenDisconnected,
 	ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityStaffAnonymised, ActivitySetup, ActivityDevicePaired,
-	ActivityPasswordRecovered, ActivityStartupChanged,
+	ActivityPasswordRecovered, ActivityStartupChanged, ActivityLearnedReset,
 }
 
 // How a HACCP record was entered, kept in the activity log.

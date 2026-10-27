@@ -248,6 +248,8 @@ export const api = {
   updateDish: (id: string, body: Schemas["DishInput"]) => json<Dish>("PUT", `/menu/dishes/${encodeURIComponent(id)}`, { body }),
   setAvailability: (id: string, available: boolean) =>
     json<Dish>("PUT", `/menu/dishes/${encodeURIComponent(id)}/availability`, { body: { available } }),
+  learned: () => json<Schemas["LearnedTimes"]>("GET", "/menu/learned"),
+  resetLearned: (id: string) => json<Schemas["LearnedDish"]>("POST", `/menu/dishes/${encodeURIComponent(id)}/learned/reset`),
 
   orders: (date?: string) => json<Schemas["OrdersBody"]>("GET", "/orders", { query: { date } }),
   createOrder: (body: Schemas["NewOrder"]) => json<Order>("POST", "/orders", { body }),

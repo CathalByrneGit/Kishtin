@@ -20,6 +20,7 @@
   let leadText = $state("");
   let allergy = $state(true);
   let takeaway = $state(false);
+  let learnedTimes = $state(false);
   let largeText = $state("");
   let replanText = $state("");
   let buffers = $state<Record<string, string>>({});
@@ -38,6 +39,7 @@
     leadText = String(v.priority_lead_seconds);
     allergy = v.priority_allergy;
     takeaway = v.priority_takeaway;
+    learnedTimes = v.learned_times;
     largeText = String(v.large_table_covers);
     replanText = String(v.replan_seconds);
     buffers = Object.fromEntries(v.station_buffers.map((b) => [b.station_id, String(b.seconds)]));
@@ -75,7 +77,7 @@
     }
     return {
       strategy, batching, batch_window_seconds: nums.window!, max_pass_wait_seconds: nums.wait!, priority_lead_seconds: nums.lead!,
-      priority_allergy: allergy, priority_takeaway: takeaway, large_table_covers: nums.large!, replan_seconds: nums.replan!, station_buffers,
+      priority_allergy: allergy, priority_takeaway: takeaway, learned_times: learnedTimes, large_table_covers: nums.large!, replan_seconds: nums.replan!, station_buffers,
     };
   });
   /** same compares settings whatever order their fields and buffers are in. */
@@ -160,6 +162,17 @@
           </div>
         </Card>
 
+        <Card padding="md" title="Cook times">
+          <div class="stack">
+            <Toggle checked={learnedTimes} label="Use learned cook times" disabled={!canEdit} onchange={(on) => (learnedTimes = on)} />
+            <p class="muted small">
+              Kishtin learns each dish's real cook time from the station screens: the time from started to ready, less rest, plate and modifiers, with recent
+              cooks counting most. When this is on, new orders use a dish's learned time once it has 10 cooks; other dishes keep their set time. Orders already in
+              the kitchen keep their times. Setup › Kitchen › Menu shows both times.
+            </p>
+          </div>
+        </Card>
+
         <Card padding="md" title="Batching">
           <div class="stack">
             <Toggle checked={batching} label="Cook the same dish for several tables at once" onchange={(on) => (batching = on)} />
@@ -206,7 +219,7 @@
             <li>Named service profiles ("Weekday lunch", "Saturday dinner").</li>
             <li>Replaying a past service under new settings before switching.</li>
             <li>A fixed pace between courses, and course gaps per service.</li>
-            <li>Cook times learned from real cooks.</li>
+            <li>Learning rest and plate times: only the cook time is learned.</li>
           </ul>
         </Card>
       </div>

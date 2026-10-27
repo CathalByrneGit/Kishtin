@@ -174,4 +174,4 @@ Said plainly, so nobody is caught out:
 
 ## Making a release
 
-For developers: push a tag such as `v0.2.0`. The Release workflow runs the tests, then GoReleaser builds every archive with the screens embedded, writes `SHA256SUMS`, and publishes them with the two install scripts. Try it locally without publishing with `make release-snapshot` (needs [GoReleaser](https://goreleaser.com) v2); the archives land in `dist/`.
+For developers: write the release notes for owners in `docs/releases/<tag>.md` (for example `docs/releases/v0.2.0.md`), merge it to `main`, then push a tag such as `v0.2.0` on `main`. Without a notes file, the release lists the commits since the last one. The Release workflow runs the tests, then GoReleaser builds every archive with the screens embedded, writes `SHA256SUMS`, and publishes them with the two install scripts. Try it locally without publishing with `make release-snapshot` (needs [GoReleaser](https://goreleaser.com) v2); the archives land in `dist/`.

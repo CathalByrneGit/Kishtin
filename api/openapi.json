@@ -2365,6 +2365,9 @@
           "batchable": {
             "type": "boolean"
           },
+          "cook_learned": {
+            "type": "boolean"
+          },
           "course": {
             "type": "string"
           },
@@ -2694,6 +2697,82 @@
           "ready_at",
           "late_by_seconds",
           "cause"
+        ],
+        "type": "object"
+      },
+      "LearnedDish": {
+        "additionalProperties": false,
+        "properties": {
+          "cooks": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dish_id": {
+            "type": "string"
+          },
+          "dish_name": {
+            "type": "string"
+          },
+          "in_use": {
+            "type": "boolean"
+          },
+          "last_cook": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "learned_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ready": {
+            "type": "boolean"
+          },
+          "reset_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "set_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "skipped": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dish_id",
+          "dish_name",
+          "set_seconds",
+          "learned_seconds",
+          "cooks",
+          "skipped",
+          "ready",
+          "in_use"
+        ],
+        "type": "object"
+      },
+      "LearnedTimes": {
+        "additionalProperties": false,
+        "properties": {
+          "dishes": {
+            "items": {
+              "$ref": "#/components/schemas/LearnedDish"
+            },
+            "type": "array"
+          },
+          "min_cooks": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "on": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on",
+          "min_cooks",
+          "dishes"
         ],
         "type": "object"
       },
@@ -4353,6 +4432,9 @@
             "format": "int64",
             "type": "integer"
           },
+          "learned_times": {
+            "type": "boolean"
+          },
           "max_pass_wait_seconds": {
             "format": "int64",
             "type": "integer"
@@ -4391,7 +4473,8 @@
           "priority_takeaway",
           "priority_allergy",
           "large_table_covers",
-          "replan_seconds"
+          "replan_seconds",
+          "learned_times"
         ],
         "type": "object"
       },
@@ -8883,6 +8966,48 @@
         ]
       }
     },
+    "/menu/dishes/{id}/learned/reset": {
+      "post": {
+        "description": "For example after a new recipe or new equipment. Cooks before now are no longer learned from. Noted in the activity log.",
+        "operationId": "reset-learned-time",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnedDish"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Start a dish's learned cook time again from its next cook",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
     "/menu/equipment": {
       "post": {
         "operationId": "create-equipment",
@@ -8970,6 +9095,38 @@
           }
         },
         "summary": "Change equipment (manager password)",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/learned": {
+      "get": {
+        "description": "A learned cook time is a smoothed average of each cook's time from started to ready, less the rest and plate time and any modifier, over the last 90 days and since any reset. New orders use it once a dish has enough cooks and the scheduler setting learned_times is on.",
+        "operationId": "list-learned-times",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnedTimes"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Each dish's cook time as set and as learned from past cooks",
         "tags": [
           "Menu"
         ]

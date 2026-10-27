@@ -246,6 +246,10 @@ type ClientInterface interface {
 	SetDishAvailability(ctx context.Context, options *SetDishAvailabilityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetDishAvailabilityResponse, error)
 	SetDishAvailabilityWithResponse(ctx context.Context, options *SetDishAvailabilityRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetDishAvailabilityResp, error)
 
+	// ResetLearnedTime Start a dish's learned cook time again from its next cook
+	ResetLearnedTime(ctx context.Context, options *ResetLearnedTimeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ResetLearnedTimeResponse, error)
+	ResetLearnedTimeWithResponse(ctx context.Context, options *ResetLearnedTimeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ResetLearnedTimeResp, error)
+
 	// CreateEquipment Add equipment to a station (manager password)
 	CreateEquipment(ctx context.Context, options *CreateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateEquipmentResponse, error)
 	CreateEquipmentWithResponse(ctx context.Context, options *CreateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateEquipmentResp, error)
@@ -253,6 +257,10 @@ type ClientInterface interface {
 	// UpdateEquipment Change equipment (manager password)
 	UpdateEquipment(ctx context.Context, options *UpdateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateEquipmentResponse, error)
 	UpdateEquipmentWithResponse(ctx context.Context, options *UpdateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*UpdateEquipmentResp, error)
+
+	// ListLearnedTimes Each dish's cook time as set and as learned from past cooks
+	ListLearnedTimes(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListLearnedTimesResponse, error)
+	ListLearnedTimesWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListLearnedTimesResp, error)
 
 	// CreateStation Add a station (manager password)
 	CreateStation(ctx context.Context, options *CreateStationRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateStationResponse, error)
@@ -3868,6 +3876,69 @@ func (c *Client) SetDishAvailability(ctx context.Context, options *SetDishAvaila
 	return responseParser(ctx, resp)
 }
 
+// ResetLearnedTime Start a dish's learned cook time again from its next cook
+func (c *Client) ResetLearnedTime(ctx context.Context, options *ResetLearnedTimeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ResetLearnedTimeResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/menu/dishes/{id}/learned/reset",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ResetLearnedTimeResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ResetLearnedTimeErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ResetLearnedTimeErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ResetLearnedTimeResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ResetLearnedTimeResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/dishes/{id}/learned/reset")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // CreateEquipment Add equipment to a station (manager password)
 func (c *Client) CreateEquipment(ctx context.Context, options *CreateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateEquipmentResponse, error) {
 	var err error
@@ -3990,6 +4061,68 @@ func (c *Client) UpdateEquipment(ctx context.Context, options *UpdateEquipmentRe
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/equipment/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ListLearnedTimes Each dish's cook time as set and as learned from past cooks
+func (c *Client) ListLearnedTimes(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListLearnedTimesResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/menu/learned",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ListLearnedTimesResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ListLearnedTimesErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ListLearnedTimesErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ListLearnedTimesResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ListLearnedTimesResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/learned")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -10472,6 +10605,50 @@ func (o *SetDishAvailabilityRequestOptions) GetHeader() (map[string]string, erro
 	return nil, nil
 }
 
+// ResetLearnedTimeRequestOptions is the options needed to make a request to ResetLearnedTime.
+type ResetLearnedTimeRequestOptions struct {
+	PathParams *ResetLearnedTimePath
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *ResetLearnedTimeRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *ResetLearnedTimeRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *ResetLearnedTimeRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *ResetLearnedTimeRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *ResetLearnedTimeRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // CreateEquipmentRequestOptions is the options needed to make a request to CreateEquipment.
 type CreateEquipmentRequestOptions struct {
 	Body *CreateEquipmentBody
@@ -16147,6 +16324,67 @@ func (c *Client) SetDishAvailabilityWithResponse(ctx context.Context, options *S
 	}
 }
 
+// ResetLearnedTime Start a dish's learned cook time again from its next cook
+func (c *Client) ResetLearnedTimeWithResponse(ctx context.Context, options *ResetLearnedTimeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ResetLearnedTimeResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/menu/dishes/{id}/learned/reset",
+		Method:     "POST",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/dishes/{id}/learned/reset")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ResetLearnedTimeResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ResetLearnedTimeResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ResetLearnedTimeResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ResetLearnedTimeErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ResetLearnedTimeErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // CreateEquipment Add equipment to a station (manager password)
 func (c *Client) CreateEquipmentWithResponse(ctx context.Context, options *CreateEquipmentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateEquipmentResp, error) {
 	var err error
@@ -16262,6 +16500,66 @@ func (c *Client) UpdateEquipmentWithResponse(ctx context.Context, options *Updat
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "UpdateEquipmentErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ListLearnedTimes Each dish's cook time as set and as learned from past cooks
+func (c *Client) ListLearnedTimesWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListLearnedTimesResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/menu/learned",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/learned")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ListLearnedTimesResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ListLearnedTimesResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListLearnedTimesResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ListLearnedTimesErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ListLearnedTimesErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -21310,6 +21608,14 @@ func (s SetDishAvailabilityPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
 }
 
+type ResetLearnedTimePath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (r ResetLearnedTimePath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(r))
+}
+
 type UpdateEquipmentPath struct {
 	ID string `json:"id" validate:"required"`
 }
@@ -22141,6 +22447,10 @@ type SetDishAvailabilityResponse = Dish
 
 type SetDishAvailabilityErrorResponse = ErrorModel
 
+type ResetLearnedTimeResponse = LearnedDish
+
+type ResetLearnedTimeErrorResponse = ErrorModel
+
 type CreateEquipmentResponse = Equipment
 
 type CreateEquipmentErrorResponse = ErrorModel
@@ -22148,6 +22458,10 @@ type CreateEquipmentErrorResponse = ErrorModel
 type UpdateEquipmentResponse = Equipment
 
 type UpdateEquipmentErrorResponse = ErrorModel
+
+type ListLearnedTimesResponse = LearnedTimes
+
+type ListLearnedTimesErrorResponse = ErrorModel
 
 type CreateStationResponse = Station
 
@@ -22901,6 +23215,14 @@ type SetDishAvailabilityResp struct {
 	ApplicationProblemPlusJSONDefault *SetDishAvailabilityErrorResponse
 }
 
+type ResetLearnedTimeResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ResetLearnedTimeResponse
+	ApplicationProblemPlusJSONDefault *ResetLearnedTimeErrorResponse
+}
+
 type CreateEquipmentResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -22915,6 +23237,14 @@ type UpdateEquipmentResp struct {
 	StatusCode                        int
 	JSON200                           *UpdateEquipmentResponse
 	ApplicationProblemPlusJSONDefault *UpdateEquipmentErrorResponse
+}
+
+type ListLearnedTimesResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ListLearnedTimesResponse
+	ApplicationProblemPlusJSONDefault *ListLearnedTimesErrorResponse
 }
 
 type CreateStationResp struct {
@@ -25381,6 +25711,7 @@ func (i ImportedVersion) Validate() error {
 type Item struct {
 	BatchCapacity *int64     `json:"batch_capacity,omitempty"`
 	Batchable     bool       `json:"batchable"`
+	CookLearned   *bool      `json:"cook_learned,omitempty"`
 	Course        string     `json:"course" validate:"required"`
 	DishID        string     `json:"dish_id" validate:"required"`
 	DishName      string     `json:"dish_name" validate:"required"`
@@ -25634,6 +25965,47 @@ type LateCourse struct {
 
 func (l LateCourse) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(l))
+}
+
+type LearnedDish struct {
+	Cooks          int64      `json:"cooks"`
+	DishID         string     `json:"dish_id" validate:"required"`
+	DishName       string     `json:"dish_name" validate:"required"`
+	InUse          bool       `json:"in_use"`
+	LastCook       *time.Time `json:"last_cook,omitempty"`
+	LearnedSeconds int64      `json:"learned_seconds"`
+	Ready          bool       `json:"ready"`
+	ResetAt        *time.Time `json:"reset_at,omitempty"`
+	SetSeconds     int64      `json:"set_seconds"`
+	Skipped        int64      `json:"skipped"`
+}
+
+func (l LearnedDish) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(l))
+}
+
+type LearnedTimes struct {
+	Dishes   []LearnedDish `json:"dishes" validate:"required"`
+	MinCooks int64         `json:"min_cooks"`
+	On       bool          `json:"on"`
+}
+
+func (l LearnedTimes) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(l.Dishes, "required"); err != nil {
+		errors = errors.Append("Dishes", err)
+	}
+	for i, item := range l.Dishes {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Dishes[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type LimitPreview struct {
@@ -27071,6 +27443,7 @@ type Settings struct {
 	BatchWindowSeconds  int64           `json:"batch_window_seconds"`
 	Batching            bool            `json:"batching"`
 	LargeTableCovers    int64           `json:"large_table_covers"`
+	LearnedTimes        bool            `json:"learned_times"`
 	MaxPassWaitSeconds  int64           `json:"max_pass_wait_seconds"`
 	PriorityAllergy     bool            `json:"priority_allergy"`
 	PriorityLeadSeconds int64           `json:"priority_lead_seconds"`

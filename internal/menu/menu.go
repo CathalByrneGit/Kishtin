@@ -227,7 +227,13 @@ func (t Timing) Total() time.Duration { return t.Cook + t.Rest + t.Plate }
 // TimingFor applies the named modifiers to the dish's times. It returns an
 // error naming any modifier the dish does not have.
 func (d Dish) TimingFor(modifiers []string) (Timing, error) {
-	cook := d.CookSeconds
+	return d.TimingWithCook(d.CookSeconds, modifiers)
+}
+
+// TimingWithCook is TimingFor with another cook time in place of the
+// dish's, such as one learned from past cooks.
+func (d Dish) TimingWithCook(cookSeconds int, modifiers []string) (Timing, error) {
+	cook := cookSeconds
 	for _, name := range modifiers {
 		i := slices.IndexFunc(d.Modifiers, func(m Modifier) bool { return strings.EqualFold(m.Name, strings.TrimSpace(name)) })
 		if i < 0 {

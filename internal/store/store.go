@@ -197,6 +197,13 @@ type MenuStore interface {
 	GetDish(ctx context.Context, id string) (menu.Dish, error)
 	// ListDishes returns every dish, ordered by name.
 	ListDishes(ctx context.Context) ([]menu.Dish, error)
+
+	// ResetLearned records that a dish's learned cook time was reset at at:
+	// cooks before then are not learned from.
+	ResetLearned(ctx context.Context, dishID string, at time.Time, by string) error
+	// LearnedResets returns when each dish was last reset, for dishes that
+	// have been.
+	LearnedResets(ctx context.Context) (map[string]time.Time, error)
 }
 
 // OrderFilter selects orders. With OpenOnly unset, From and To bound
