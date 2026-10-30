@@ -32,23 +32,25 @@ type ApiKey struct {
 }
 
 type Dish struct {
-	ID            string
-	Name          string
-	Course        string
-	StationID     string
-	EquipmentID   sql.NullString
-	BatchCapacity int64
-	CookSeconds   int64
-	RestSeconds   int64
-	PlateSeconds  int64
-	HoldSeconds   int64
-	Batchable     int64
-	Modifiers     string
-	FoodCategory  string
-	Available     int64
-	Active        int64
-	CreatedAt     int64
-	UpdatedAt     int64
+	ID               string
+	Name             string
+	Course           string
+	StationID        string
+	EquipmentID      sql.NullString
+	BatchCapacity    int64
+	CookSeconds      int64
+	RestSeconds      int64
+	PlateSeconds     int64
+	HoldSeconds      int64
+	Batchable        int64
+	Modifiers        string
+	FoodCategory     string
+	Available        int64
+	Active           int64
+	CreatedAt        int64
+	UpdatedAt        int64
+	Allergens        string
+	AllergensChecked int64
 }
 
 type Equipment struct {

@@ -66,6 +66,10 @@ type ClientInterface interface {
 	CreateBackup(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*CreateBackupResponse, error)
 	CreateBackupWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*CreateBackupResp, error)
 
+	// GetCollection Takeaways being prepared and ready to collect, for a screen facing customers
+	GetCollection(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetCollectionResponse, error)
+	GetCollectionWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetCollectionResp, error)
+
 	// ListConnectors List what Kishtin can connect to, what each sends, and whether it is connected
 	ListConnectors(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResponse, error)
 	ListConnectorsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResp, error)
@@ -233,6 +237,10 @@ type ClientInterface interface {
 	// GetMenu Show stations, equipment and dishes
 	GetMenu(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResponse, error)
 	GetMenuWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetMenuResp, error)
+
+	// GetAllergenChart Every dish with the regulated allergens it contains
+	GetAllergenChart(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetAllergenChartResponse, error)
+	GetAllergenChartWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetAllergenChartResp, error)
 
 	// CreateDish Add a dish (manager password)
 	CreateDish(ctx context.Context, options *CreateDishRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateDishResponse, error)
@@ -1050,6 +1058,68 @@ func (c *Client) CreateBackup(ctx context.Context, reqEditors ...runtime.Request
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/backups")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetCollection Takeaways being prepared and ready to collect, for a screen facing customers
+func (c *Client) GetCollection(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetCollectionResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/collection",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetCollectionResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetCollectionErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetCollectionErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetCollectionResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetCollectionResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/collection")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -3678,6 +3748,68 @@ func (c *Client) GetMenu(ctx context.Context, reqEditors ...runtime.RequestEdito
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetAllergenChart Every dish with the regulated allergens it contains
+func (c *Client) GetAllergenChart(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetAllergenChartResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/menu/allergens",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetAllergenChartResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetAllergenChartErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetAllergenChartErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetAllergenChartResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetAllergenChartResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/allergens")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -13638,6 +13770,66 @@ func (c *Client) CreateBackupWithResponse(ctx context.Context, reqEditors ...run
 	}
 }
 
+// GetCollection Takeaways being prepared and ready to collect, for a screen facing customers
+func (c *Client) GetCollectionWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetCollectionResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/collection",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/collection")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetCollectionResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetCollectionResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetCollectionResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetCollectionErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetCollectionErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // ListConnectors List what Kishtin can connect to, what each sends, and whether it is connected
 func (c *Client) ListConnectorsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListConnectorsResp, error) {
 	var err error
@@ -16129,6 +16321,66 @@ func (c *Client) GetMenuWithResponse(ctx context.Context, reqEditors ...runtime.
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "GetMenuErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// GetAllergenChart Every dish with the regulated allergens it contains
+func (c *Client) GetAllergenChartWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetAllergenChartResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/menu/allergens",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/menu/allergens")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetAllergenChartResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetAllergenChartResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetAllergenChartResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetAllergenChartErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetAllergenChartErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -22273,6 +22525,10 @@ type CreateBackupResponse = Backup
 
 type CreateBackupErrorResponse = ErrorModel
 
+type GetCollectionResponse = CollectionBoard
+
+type GetCollectionErrorResponse = ErrorModel
+
 type ListConnectorsResponse = ConnectorsBody
 
 type ListConnectorsErrorResponse = ErrorModel
@@ -22434,6 +22690,10 @@ type PlanSnapshotsErrorResponse = ErrorModel
 type GetMenuResponse = Setup
 
 type GetMenuErrorResponse = ErrorModel
+
+type GetAllergenChartResponse = AllergenChart
+
+type GetAllergenChartErrorResponse = ErrorModel
 
 type CreateDishResponse = Dish
 
@@ -22826,6 +23086,14 @@ type CreateBackupResp struct {
 	ApplicationProblemPlusJSONDefault *CreateBackupErrorResponse
 }
 
+type GetCollectionResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetCollectionResponse
+	ApplicationProblemPlusJSONDefault *GetCollectionErrorResponse
+}
+
 type ListConnectorsResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -23189,6 +23457,14 @@ type GetMenuResp struct {
 	StatusCode                        int
 	JSON200                           *GetMenuResponse
 	ApplicationProblemPlusJSONDefault *GetMenuErrorResponse
+}
+
+type GetAllergenChartResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetAllergenChartResponse
+	ApplicationProblemPlusJSONDefault *GetAllergenChartErrorResponse
 }
 
 type CreateDishResp struct {
@@ -23979,6 +24255,63 @@ func (a AddItemsBody) Validate() error {
 	return errors
 }
 
+type Allergen struct {
+	Code   string  `json:"code" validate:"required"`
+	Detail *string `json:"detail,omitempty"`
+	Name   string  `json:"name" validate:"required"`
+}
+
+func (a Allergen) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
+type AllergenChart struct {
+	Allergens []Allergen     `json:"allergens" validate:"required"`
+	Dishes    []AllergenDish `json:"dishes" validate:"required"`
+	Unchecked int64          `json:"unchecked"`
+}
+
+func (a AllergenChart) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(a.Allergens, "required"); err != nil {
+		errors = errors.Append("Allergens", err)
+	}
+	for i, item := range a.Allergens {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Allergens[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(a.Dishes, "required"); err != nil {
+		errors = errors.Append("Dishes", err)
+	}
+	for i, item := range a.Dishes {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Dishes[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type AllergenDish struct {
+	Allergens []string `json:"allergens" validate:"required"`
+	Available bool     `json:"available"`
+	Checked   bool     `json:"checked"`
+	Course    string   `json:"course" validate:"required"`
+	DishID    string   `json:"dish_id" validate:"required"`
+	DishName  string   `json:"dish_name" validate:"required"`
+}
+
+func (a AllergenDish) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(a))
+}
+
 type AnonymisePreview struct {
 	Mentions UserMentions `json:"mentions"`
 	Name     string       `json:"name" validate:"required"`
@@ -24605,6 +24938,49 @@ func (c CleaningToday) Validate() error {
 	return errors
 }
 
+type CollectionBoard struct {
+	Preparing  []CollectionOrder `json:"preparing" validate:"required"`
+	Ready      []CollectionOrder `json:"ready" validate:"required"`
+	Restaurant string            `json:"restaurant" validate:"required"`
+}
+
+func (c CollectionBoard) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Preparing, "required"); err != nil {
+		errors = errors.Append("Preparing", err)
+	}
+	for i, item := range c.Preparing {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Preparing[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(c.Ready, "required"); err != nil {
+		errors = errors.Append("Ready", err)
+	}
+	for i, item := range c.Ready {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Ready[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(c.Restaurant, "required"); err != nil {
+		errors = errors.Append("Restaurant", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type CollectionOrder struct {
+	Name    *string    `json:"name,omitempty"`
+	Number  int64      `json:"number"`
+	ReadyAt *time.Time `json:"ready_at,omitempty"`
+}
+
 type Column struct {
 	Field     *string `json:"field,omitempty"`
 	Fixed     *string `json:"fixed,omitempty"`
@@ -24882,27 +25258,32 @@ func (d DayTemp) Validate() error {
 }
 
 type Dish struct {
-	Active        bool       `json:"active"`
-	Available     bool       `json:"available"`
-	BatchCapacity *int64     `json:"batch_capacity,omitempty"`
-	Batchable     bool       `json:"batchable"`
-	CookSeconds   int64      `json:"cook_seconds"`
-	Course        string     `json:"course" validate:"required"`
-	CreatedAt     time.Time  `json:"created_at" validate:"required"`
-	EquipmentID   *string    `json:"equipment_id,omitempty"`
-	FoodCategory  *string    `json:"food_category,omitempty"`
-	HoldSeconds   int64      `json:"hold_seconds"`
-	ID            string     `json:"id" validate:"required"`
-	Modifiers     []Modifier `json:"modifiers" validate:"required"`
-	Name          string     `json:"name" validate:"required"`
-	PlateSeconds  int64      `json:"plate_seconds"`
-	RestSeconds   int64      `json:"rest_seconds"`
-	StationID     string     `json:"station_id" validate:"required"`
-	UpdatedAt     time.Time  `json:"updated_at" validate:"required"`
+	Active           bool       `json:"active"`
+	Allergens        []string   `json:"allergens" validate:"required"`
+	AllergensChecked bool       `json:"allergens_checked"`
+	Available        bool       `json:"available"`
+	BatchCapacity    *int64     `json:"batch_capacity,omitempty"`
+	Batchable        bool       `json:"batchable"`
+	CookSeconds      int64      `json:"cook_seconds"`
+	Course           string     `json:"course" validate:"required"`
+	CreatedAt        time.Time  `json:"created_at" validate:"required"`
+	EquipmentID      *string    `json:"equipment_id,omitempty"`
+	FoodCategory     *string    `json:"food_category,omitempty"`
+	HoldSeconds      int64      `json:"hold_seconds"`
+	ID               string     `json:"id" validate:"required"`
+	Modifiers        []Modifier `json:"modifiers" validate:"required"`
+	Name             string     `json:"name" validate:"required"`
+	PlateSeconds     int64      `json:"plate_seconds"`
+	RestSeconds      int64      `json:"rest_seconds"`
+	StationID        string     `json:"station_id" validate:"required"`
+	UpdatedAt        time.Time  `json:"updated_at" validate:"required"`
 }
 
 func (d Dish) Validate() error {
 	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(d.Allergens, "required"); err != nil {
+		errors = errors.Append("Allergens", err)
+	}
 	if err := typesValidator.Var(d.Course, "required"); err != nil {
 		errors = errors.Append("Course", err)
 	}
@@ -24938,20 +25319,23 @@ func (d Dish) Validate() error {
 }
 
 type DishInput struct {
-	Active        *bool      `json:"active,omitempty"`
-	Available     *bool      `json:"available,omitempty"`
-	BatchCapacity *int64     `json:"batch_capacity,omitempty"`
-	Batchable     *bool      `json:"batchable,omitempty"`
-	CookSeconds   *int64     `json:"cook_seconds,omitempty"`
-	Course        string     `json:"course" validate:"required"`
-	EquipmentID   *string    `json:"equipment_id,omitempty"`
-	FoodCategory  *string    `json:"food_category,omitempty"`
-	HoldSeconds   *int64     `json:"hold_seconds,omitempty"`
-	Modifiers     []Modifier `json:"modifiers,omitempty"`
-	Name          string     `json:"name" validate:"required"`
-	PlateSeconds  *int64     `json:"plate_seconds,omitempty"`
-	RestSeconds   *int64     `json:"rest_seconds,omitempty"`
-	StationID     string     `json:"station_id" validate:"required"`
+	Active           *bool      `json:"active,omitempty"`
+	Allergens        []string   `json:"allergens,omitempty"`
+	AllergensChecked *bool      `json:"allergens_checked,omitempty"`
+	AllergensNone    *bool      `json:"allergens_none,omitempty"`
+	Available        *bool      `json:"available,omitempty"`
+	BatchCapacity    *int64     `json:"batch_capacity,omitempty"`
+	Batchable        *bool      `json:"batchable,omitempty"`
+	CookSeconds      *int64     `json:"cook_seconds,omitempty"`
+	Course           string     `json:"course" validate:"required"`
+	EquipmentID      *string    `json:"equipment_id,omitempty"`
+	FoodCategory     *string    `json:"food_category,omitempty"`
+	HoldSeconds      *int64     `json:"hold_seconds,omitempty"`
+	Modifiers        []Modifier `json:"modifiers,omitempty"`
+	Name             string     `json:"name" validate:"required"`
+	PlateSeconds     *int64     `json:"plate_seconds,omitempty"`
+	RestSeconds      *int64     `json:"rest_seconds,omitempty"`
+	StationID        string     `json:"station_id" validate:"required"`
 }
 
 func (d DishInput) Validate() error {

@@ -140,3 +140,30 @@ func TestLearnedCLI(t *testing.T) {
 	require.Len(t, res.Dishes, 1)
 	assert.NotNil(t, res.Dishes[0].ResetAt)
 }
+
+func TestAllergensCLI(t *testing.T) {
+	url, key := server(t)
+	cli := func(args ...string) string {
+		t.Helper()
+		out, _, err := run(t, url, key, "", args...)
+		require.NoError(t, err, "%v", args)
+		return out
+	}
+	cli("menu", "station", "add", "--name", "Grill")
+	cli("menu", "dish", "add", "--name", "Synthetic burger", "--station", "Grill", "--cook", "8m", "--allergens", "milk,Gluten")
+	cli("menu", "dish", "add", "--name", "Synthetic chips", "--station", "Grill", "--cook", "4m")
+	out := cli("menu", "allergens")
+	assert.Regexp(t, `Synthetic burger\s+main\s+Cereals containing gluten, Milk`, out)
+	assert.Regexp(t, `Synthetic chips\s+main\s+NOT CHECKED \(listed: none\)`, out)
+	assert.Contains(t, out, "1 dishes have not had their allergens checked")
+
+	cli("menu", "dish", "update", "synthetic burger", "--no-allergens")
+	cli("menu", "dish", "update", "synthetic chips", "--cook", "5m")
+	out = cli("menu", "allergens")
+	assert.Regexp(t, `Synthetic burger\s+main\s+none`, out)
+	assert.Contains(t, out, "NOT CHECKED", "an update that does not touch allergens leaves them unchecked")
+
+	_, _, err := run(t, url, key, "", "menu", "dish", "update", "synthetic chips", "--allergens", "garlic")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"garlic" is not one of the 14 allergens`)
+}

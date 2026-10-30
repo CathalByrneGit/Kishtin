@@ -20,13 +20,14 @@ SELECT * FROM equipment ORDER BY station_id, name;
 
 -- name: InsertDish :exec
 INSERT INTO dishes (id, name, course, station_id, equipment_id, batch_capacity, cook_seconds, rest_seconds,
-    plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at,
+    allergens, allergens_checked)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: UpdateDish :execrows
 UPDATE dishes SET name = ?, course = ?, station_id = ?, equipment_id = ?, batch_capacity = ?, cook_seconds = ?,
     rest_seconds = ?, plate_seconds = ?, hold_seconds = ?, batchable = ?, modifiers = ?, food_category = ?,
-    available = ?, active = ?, updated_at = ?
+    available = ?, active = ?, updated_at = ?, allergens = ?, allergens_checked = ?
 WHERE id = ?;
 
 -- name: GetDish :one

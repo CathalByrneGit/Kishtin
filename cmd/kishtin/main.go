@@ -74,7 +74,7 @@ func newRoot(out, errOut io.Writer, in io.Reader) *cobra.Command {
 	root.SetErr(errOut)
 	root.PersistentFlags().StringVar(&c.url, "url", envOr("KISHTIN_URL", "http://127.0.0.1:8080"), "server URL ($KISHTIN_URL)")
 	root.PersistentFlags().BoolVar(&c.asJSON, "json", false, "print JSON instead of text")
-	root.AddCommand(c.whoamiCmd(), c.licensesCmd(), c.permissionsCmd(), c.plansCmd(), c.activityCmd(), c.reportCmd(), c.haccpCmd(), c.limitsCmd(), c.settingsCmd(), c.staffCmd(), c.keysCmd(), c.backupCmd(), c.startupCmd(),
+	root.AddCommand(c.whoamiCmd(), c.licensesCmd(), c.permissionsCmd(), c.plansCmd(), c.activityCmd(), c.reportCmd(), c.haccpCmd(), c.limitsCmd(), c.settingsCmd(), c.staffCmd(), c.keysCmd(), c.backupCmd(), c.startupCmd(), c.collectionCmd(),
 		c.menuCmd(), c.orderCmd(), c.passCmd(), c.stationCmd(), c.itemsCmd(), c.sayCmd(), c.voiceCmd(), c.tillCmd("square", "Square", "Orders from Square: status, catalog mapping and sync", ""),
 		c.tillCmd("sumup", "SumUp", "Paid sales from SumUp: status, item mapping and sync",
 			"\n\nSumUp's API has sales, not orders: a sale reaches Kishtin once it is paid, as a\ntakeaway named by its SumUp code. Its items have names, not IDs, so they are mapped by\nname, and the catalog is the items sold in recent sales."),

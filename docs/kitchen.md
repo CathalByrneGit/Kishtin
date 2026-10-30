@@ -19,8 +19,23 @@ The menu is three kinds of thing:
 - **Modifiers** add to (or take from) the cook time, such as "Well done" +2 min or "Rare" −1 min.
 - **Food category** must be one of the HACCP lists' food categories when that list has entries, so the dish's cooking limit applies.
 - **86.** Head chefs, line cooks and managers can mark a dish sold out; it cannot be ordered until it is back on.
+- **Allergens.** Each dish lists which of the 14 regulated allergens it contains, and whether a manager has checked that list (see [Allergens](#allergens)).
 - Nothing is deleted. Stations, equipment and dishes are taken out of use instead, because past orders refer to them. A station or piece of equipment still used by a dish on the menu cannot be taken out of use.
 - Changing the menu needs a manager logged in with a password.
+
+## Allergens
+
+Food served without packaging must come with information about 14 allergens: Regulation (EU) No 1169/2011, Annex II, applied in Ireland by S.I. No. 489 of 2014 (see the FSAI's guidance on allergen information for non-prepacked food). Kishtin keeps that information per dish.
+
+- **The 14** are cereals containing gluten, crustaceans, eggs, fish, peanuts, soybeans, milk, nuts, celery, mustard, sesame, sulphur dioxide and sulphites (above 10 mg per kg or litre), lupin, and molluscs. They are fixed in law, so they are not a setting.
+- **Set them on the dish** in **Setup › Kitchen › Menu › Edit**: tick what it contains, and tick **These allergens are checked**. A dish nobody has checked shows **Not checked** everywhere: it may contain anything, and customers must not be told it is safe. A checked dish with nothing ticked contains none of the 14.
+- **The allergen chart**, **Setup › Kitchen › Allergens**, shows every dish on the menu against the 14, for staff to show customers, with **Print**. Everyone who can log in can see it. The printout says when it was printed.
+- **On the kitchen screens**, every item of an order flagged **Allergy** shows what it contains ("Contains: Milk, Eggs"), or **Allergens not checked** in red.
+- Every change to a dish's allergens, or to whether they are checked, goes in the activity log with the before and after.
+
+![The allergen chart](screenshots/allergens.png)
+
+Said plainly: Kishtin records what a dish contains as entered by a manager. It does not know recipes or suppliers' ingredients, does not track cross-contact in the kitchen, and modifiers ("no cheese") do not change a dish's allergens. Check supplier labels when a recipe or supplier changes.
 
 ## Orders
 
@@ -170,11 +185,14 @@ kishtin items move --to voided --reason "Dropped" ID
 kishtin items replace ID --with "Burger: well done" --reason "Asked for well done"
 
 kishtin settings show scheduler
+kishtin menu allergens                           # the allergen chart
+kishtin menu dish update Burger --allergens gluten,milk   # or --no-allergens; both mark them checked
+kishtin collection                               # takeaways being prepared and ready to collect
 kishtin menu learned                             # each dish's set and learned cook time
 kishtin menu learned reset Burger                # learn again from the next cook (manager)
 ```
 
-Every command takes `--json`. The same actions are in the API under `/api/menu`, `/api/orders`, `/api/kitchen` and `/api/settings/scheduler`.
+Every command takes `--json`. The same actions are in the API under `/api/menu` (including `/api/menu/allergens`), `/api/orders`, `/api/kitchen`, `/api/collection` and `/api/settings/scheduler`.
 
 ## Not built yet
 

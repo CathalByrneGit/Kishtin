@@ -137,7 +137,7 @@ func (c *cli) menuCmd() *cobra.Command {
 			})
 		},
 	}
-	cmd.AddCommand(c.stationCmds(), c.equipmentCmds(), c.dishCmds(), c.availabilityCmd(true), c.availabilityCmd(false), c.learnedCmd())
+	cmd.AddCommand(c.stationCmds(), c.equipmentCmds(), c.dishCmds(), c.availabilityCmd(true), c.availabilityCmd(false), c.learnedCmd(), c.allergensCmd())
 	return cmd
 }
 
@@ -268,8 +268,8 @@ type dishFlags struct {
 	name, course, station, equipment, category string
 	cook, rest, plate, hold                    time.Duration
 	capacity                                   int64
-	batchable, active                          bool
-	modifiers                                  []string
+	batchable, active, noAllergens             bool
+	modifiers, allergens                       []string
 }
 
 func (f *dishFlags) register(cmd *cobra.Command) {
@@ -287,6 +287,8 @@ func (f *dishFlags) register(cmd *cobra.Command) {
 	fl.BoolVar(&f.batchable, "batchable", false, "allow cooking for several tables at once")
 	fl.BoolVar(&f.active, "active", true, "false takes the dish off the menu")
 	fl.StringArrayVar(&f.modifiers, "modifier", nil, `a modifier and its extra cook time, such as "Well done=2m" or "Rare=-1m" (repeatable)`)
+	fl.StringSliceVar(&f.allergens, "allergens", nil, "the allergens it contains, such as gluten,milk (marks them checked); see kishtin menu allergens")
+	fl.BoolVar(&f.noAllergens, "no-allergens", false, "it contains none of the 14 allergens (marks them checked)")
 }
 
 func parseModifiers(specs []string) ([]client.Modifier, error) {
@@ -366,6 +368,12 @@ func (f *dishFlags) input(cmd *cobra.Command, m *client.Setup, base *client.Dish
 	}
 	if base != nil && fl.Changed("active") {
 		in.Active = &f.active
+	}
+	if fl.Changed("allergens") || f.noAllergens {
+		if fl.Changed("allergens") && f.noAllergens {
+			return nil, fmt.Errorf("give --allergens or --no-allergens, not both")
+		}
+		in.Allergens, in.AllergensNone, in.AllergensChecked = f.allergens, &f.noAllergens, ptr(true)
 	}
 	return in, nil
 }
@@ -1099,4 +1107,80 @@ func usedText(d client.LearnedDish) string {
 		return "learned"
 	}
 	return "set"
+}
+
+func (c *cli) allergensCmd() *cobra.Command {
+	return &cobra.Command{
+		Use: "allergens", Short: "The allergen chart: every dish and the 14 allergens it contains", Args: cobra.NoArgs,
+		Long: "allergens lists each dish on the menu with the regulated allergens it contains (Regulation (EU) No 1169/2011,\n" +
+			"Annex II). A dish marked NOT CHECKED has not had its allergens checked by a manager and may contain any of them.\n" +
+			"Set a dish's allergens with: kishtin menu dish update DISH --allergens gluten,milk (or --no-allergens).",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			res, err := c.api.GetAllergenChart(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) {
+				names := map[string]string{}
+				for _, a := range res.Allergens {
+					names[a.Code] = a.Name
+				}
+				var rows [][]string
+				for _, d := range res.Dishes {
+					contains := "none"
+					if len(d.Allergens) > 0 {
+						var ns []string
+						for _, a := range d.Allergens {
+							ns = append(ns, names[a])
+						}
+						contains = strings.Join(ns, ", ")
+					}
+					if !d.Checked {
+						contains = "NOT CHECKED (listed: " + contains + ")"
+					}
+					rows = append(rows, []string{d.DishName, d.Course, contains})
+				}
+				table(w, "DISH\tCOURSE\tCONTAINS", rows)
+				if res.Unchecked > 0 {
+					fmt.Fprintf(w, "\n%d dishes have not had their allergens checked. Do not tell customers they are allergen-free.\n", res.Unchecked)
+				}
+				fmt.Fprintf(w, "\nAllergen codes: %s\n", strings.Join(func() []string {
+					out := make([]string, len(res.Allergens))
+					for i, a := range res.Allergens {
+						out[i] = a.Code
+					}
+					return out
+				}(), ", "))
+			})
+		},
+	}
+}
+
+func (c *cli) collectionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use: "collection", Short: "Takeaways being prepared and ready to collect, as the collection screen shows them", Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			res, err := c.api.GetCollection(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) {
+				list := func(os []client.CollectionOrder) string {
+					if len(os) == 0 {
+						return "none"
+					}
+					var out []string
+					for _, o := range os {
+						s := fmt.Sprintf("#%d", o.Number)
+						if o.Name != nil && *o.Name != "" {
+							s += " (" + *o.Name + ")"
+						}
+						out = append(out, s)
+					}
+					return strings.Join(out, ", ")
+				}
+				fmt.Fprintf(w, "Ready to collect: %s\nPreparing: %s\n", list(res.Ready), list(res.Preparing))
+			})
+		},
+	}
 }

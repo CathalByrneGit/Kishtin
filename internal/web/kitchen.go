@@ -138,6 +138,14 @@ func (s *Server) kitchenRoutes() {
 	}))
 
 	huma.Register(s.api, huma.Operation{
+		OperationID: "get-allergen-chart", Method: http.MethodGet, Path: "/menu/allergens", Tags: menuTags,
+		Summary: "Every dish with the regulated allergens it contains",
+		Description: "The 14 allergens of Regulation (EU) No 1169/2011, Annex II, and each dish on the menu with the ones it contains. " +
+			"A dish with checked false has not had its allergens checked by a manager and may contain any of them.",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.AllergenChart], error) {
+		return reply(s.svc.Allergens(ctx, principal(ctx)))
+	}))
+	huma.Register(s.api, huma.Operation{
 		OperationID: "list-learned-times", Method: http.MethodGet, Path: "/menu/learned", Tags: menuTags,
 		Summary: "Each dish's cook time as set and as learned from past cooks",
 		Description: "A learned cook time is a smoothed average of each cook's time from started to ready, less the rest and plate time and any modifier, " +
@@ -153,6 +161,15 @@ func (s *Server) kitchenRoutes() {
 		ID string `path:"id"`
 	}) (*out[service.LearnedDish], error) {
 		return reply(s.svc.ResetLearned(ctx, principal(ctx), in.ID))
+	}))
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "get-collection", Method: http.MethodGet, Path: "/collection", Tags: []string{"Orders"},
+		Summary: "Takeaways being prepared and ready to collect, for a screen facing customers",
+		Description: "Works with a device key and no staff login, for a screen customers can see. It gives only ticket numbers and order names: " +
+			"no items, notes or staff. A takeaway is ready once every item not voided is at the pass, and leaves when it is served or closed.",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.CollectionBoard], error) {
+		return reply(s.svc.Collection(ctx))
 	}))
 
 	orderTags := []string{"Orders"}

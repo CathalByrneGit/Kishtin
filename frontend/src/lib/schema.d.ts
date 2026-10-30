@@ -136,6 +136,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Takeaways being prepared and ready to collect, for a screen facing customers
+         * @description Works with a device key and no staff login, for a screen customers can see. It gives only ticket numbers and order names: no items, notes or staff. A takeaway is ready once every item not voided is at the pass, and leaves when it is served or closed.
+         */
+        get: operations["get-collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/connectors": {
         parameters: {
             query?: never;
@@ -855,6 +875,26 @@ export interface paths {
         };
         /** Show stations, equipment and dishes */
         get: operations["get-menu"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/allergens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every dish with the regulated allergens it contains
+         * @description The 14 allergens of Regulation (EU) No 1169/2011, Annex II, and each dish on the menu with the ones it contains. A dish with checked false has not had its allergens checked by a manager and may contain any of them.
+         */
+        get: operations["get-allergen-chart"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2247,6 +2287,25 @@ export interface components {
         AddItemsBody: {
             items: components["schemas"]["NewItem"][];
         };
+        Allergen: {
+            code: string;
+            detail?: string;
+            name: string;
+        };
+        AllergenChart: {
+            allergens: components["schemas"]["Allergen"][];
+            dishes: components["schemas"]["AllergenDish"][];
+            /** Format: int64 */
+            unchecked: number;
+        };
+        AllergenDish: {
+            allergens: string[];
+            available: boolean;
+            checked: boolean;
+            course: string;
+            dish_id: string;
+            dish_name: string;
+        };
         AnonymisePreview: {
             mentions: components["schemas"]["UserMentions"];
             name: string;
@@ -2422,6 +2481,18 @@ export interface components {
             record?: components["schemas"]["Record"];
             task: string;
         };
+        CollectionBoard: {
+            preparing: components["schemas"]["CollectionOrder"][];
+            ready: components["schemas"]["CollectionOrder"][];
+            restaurant: string;
+        };
+        CollectionOrder: {
+            name?: string;
+            /** Format: int64 */
+            number: number;
+            /** Format: date-time */
+            ready_at?: string;
+        };
         Column: {
             field?: string;
             fixed?: string;
@@ -2543,6 +2614,8 @@ export interface components {
         };
         Dish: {
             active: boolean;
+            allergens: string[];
+            allergens_checked: boolean;
             available: boolean;
             /** Format: int64 */
             batch_capacity?: number;
@@ -2569,6 +2642,9 @@ export interface components {
         };
         DishInput: {
             active?: boolean;
+            allergens?: string[];
+            allergens_checked?: boolean;
+            allergens_none?: boolean;
             available?: boolean;
             /** Format: int64 */
             batch_capacity?: number;
@@ -4181,6 +4257,35 @@ export interface operations {
             };
         };
     };
+    "get-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionBoard"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-connectors": {
         parameters: {
             query?: never;
@@ -5558,6 +5663,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Setup"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-allergen-chart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllergenChart"];
                 };
             };
             /** @description Error */
