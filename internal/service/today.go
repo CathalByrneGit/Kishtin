@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
@@ -87,13 +88,42 @@ func (s *Service) Today(ctx context.Context, p *auth.Principal) (TodayView, erro
 	if err != nil {
 		return TodayView{}, err
 	}
+	done, err := s.cleaningDays(ctx, lists.Value, from.AddDate(0, 0, -haccp.MaxEveryDays), from)
+	if err != nil {
+		return TodayView{}, err
+	}
 	t := haccp.BuildToday(haccp.TodayInput{
 		Now: s.clk.Now(), Loc: clock.Dublin, Records: recs, BatchLabels: batches,
-		Lists: lists.Value, Limits: limits,
+		Lists: lists.Value, Limits: limits, CleaningDone: done,
 	})
 	so, err := s.signOffStatus(ctx)
 	if err != nil {
 		return TodayView{}, err
 	}
 	return TodayView{RestaurantName: sys.Value.RestaurantName, Today: t, CorrectiveActions: lists.Value.CorrectiveActions, SignOff: so}, nil
+}
+
+// cleaningDays returns, per cleaning task done every N days (lower case),
+// the days (Dublin) it was done between from and to, after corrections.
+// Daily tasks are left out; with none of the other kind it reads nothing.
+func (s *Service) cleaningDays(ctx context.Context, lists haccp.Lists, from, to time.Time) (map[string][]string, error) {
+	out := map[string][]string{}
+	interval := false
+	for _, t := range lists.CleaningTasks {
+		interval = interval || !t.Daily()
+	}
+	if !interval {
+		return out, nil
+	}
+	recs, err := s.st.HACCP().ListRecords(ctx, store.RecordFilter{Types: []haccp.RecordType{haccp.RecordCleaning}, DoneFrom: from, DoneTo: to})
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range haccp.ApplyCorrections(recs) {
+		if e.Type == haccp.RecordCleaning && e.Reading.Done != nil && *e.Reading.Done {
+			k := strings.ToLower(e.Reading.Task)
+			out[k] = append(out[k], e.At.In(clock.Dublin).Format(haccp.DateLayout))
+		}
+	}
+	return out, nil
 }

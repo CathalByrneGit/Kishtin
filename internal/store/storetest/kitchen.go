@@ -37,6 +37,7 @@ func sampleMenu(t *testing.T, s store.Store) (menu.Station, menu.Equipment, menu
 		ID: "dish-burger", Name: "Synthetic burger", Course: menu.CourseMain, StationID: st.ID, EquipmentID: eq.ID,
 		BatchCapacity: 6, CookSeconds: 480, RestSeconds: 120, PlateSeconds: 60, HoldSeconds: 180, Batchable: true,
 		Modifiers: []menu.Modifier{{Name: "Well done", AddSeconds: 120}}, FoodCategory: "minced meat",
+		Allergens: []string{"gluten", "milk", "sesame"}, AllergensChecked: true,
 		Available: true, Active: true, CreatedAt: t0, UpdatedAt: t0,
 	}
 	require.NoError(t, s.Menu().CreateDish(ctx, d))
@@ -60,7 +61,7 @@ func testMenuRoundTrip(t *testing.T, s store.Store) {
 	// A dish with no equipment and no modifiers.
 	salad := menu.Dish{
 		ID: "dish-salad", Name: "Synthetic salad", Course: menu.CourseStarter, StationID: st.ID, PlateSeconds: 120,
-		Modifiers: []menu.Modifier{}, Available: true, Active: true, CreatedAt: t0, UpdatedAt: t0,
+		Modifiers: []menu.Modifier{}, Allergens: []string{}, Available: true, Active: true, CreatedAt: t0, UpdatedAt: t0,
 	}
 	require.NoError(t, s.Menu().CreateDish(ctx, salad))
 	dishes, err := s.Menu().ListDishes(ctx)
@@ -72,9 +73,12 @@ func testMenuRoundTrip(t *testing.T, s store.Store) {
 	eq.Slots = 4
 	require.NoError(t, s.Menu().UpdateEquipment(ctx, eq))
 	d.Available, d.CookSeconds, d.Modifiers = false, 500, nil
+	d.Allergens, d.AllergensChecked = []string{"milk"}, false
 	require.NoError(t, s.Menu().UpdateDish(ctx, d))
 	got, err = s.Menu().GetDish(ctx, d.ID)
 	require.NoError(t, err)
+	assert.Equal(t, []string{"milk"}, got.Allergens)
+	assert.False(t, got.AllergensChecked)
 	assert.False(t, got.Available)
 	assert.Equal(t, 500, got.CookSeconds)
 	assert.Equal(t, []menu.Modifier{}, got.Modifiers)

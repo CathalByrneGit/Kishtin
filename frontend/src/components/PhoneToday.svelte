@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dueToday, scheduleStatus } from "../lib/cleaning";
   import { Button, Card, Checkbox, Chip, EmptyState, Notice, Spinner, showFlash, type ChipTone } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
   import Ring from "./Ring.svelte";
@@ -112,10 +113,11 @@
       </Card>
     {/each}
 
-    <h2 class="section-title">Daily cleaning</h2>
+    <h2 class="section-title">Cleaning due today</h2>
     <Card padding="md">
       <ul class="checklist">
-        {#each today.cleaning as c (c.task)}
+        {#each today.cleaning.filter(dueToday) as c (c.task)}
+          {@const st = scheduleStatus(c)}
           <li>
             <Checkbox
               checked={Boolean(c.record)}
@@ -125,12 +127,13 @@
                 if (on) void tick(c.task);
               }}
             />
+            {#if st}<Chip size="sm" uppercase={false} tone={st.tone}>{st.label}</Chip>{/if}
             {#if c.record}
               <span class="muted num">{dublinTime(doneAt(c.record))} · {doneBy(c.record)}</span>
             {/if}
           </li>
         {:else}
-          <li class="muted">No cleaning tasks. A manager adds them in Setup.</li>
+          <li class="muted">{today.cleaning.length > 0 ? "No cleaning due today." : "No cleaning tasks. A manager adds them in Setup."}</li>
         {/each}
       </ul>
     </Card>

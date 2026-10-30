@@ -50,6 +50,16 @@ type DishInput struct {
 	// and available.
 	Available *bool `json:"available,omitempty"`
 	Active    *bool `json:"active,omitempty"`
+	// Allergens are the codes of the 14 regulated allergens the dish
+	// contains, such as "milk" and "gluten". Left out, they stay as they
+	// are; an empty list means none.
+	Allergens *[]string `json:"allergens,omitempty"`
+	// AllergensNone true says the dish contains none of the 14, clearing
+	// any listed. It is how a client that drops empty lists says "none".
+	AllergensNone bool `json:"allergens_none,omitempty"`
+	// AllergensChecked says a manager has checked the allergens, including
+	// that a dish with none has none. Left out, it stays as it is.
+	AllergensChecked *bool `json:"allergens_checked,omitempty"`
 }
 
 func orBool(v *bool, def bool) bool {
@@ -60,13 +70,46 @@ func orBool(v *bool, def bool) bool {
 }
 
 func (in DishInput) dish(old menu.Dish) menu.Dish {
+	if in.AllergensNone {
+		in.Allergens = &[]string{}
+	}
 	return menu.Dish{
 		Name: in.Name, Course: in.Course, StationID: in.StationID, EquipmentID: in.EquipmentID,
 		BatchCapacity: in.BatchCapacity, CookSeconds: in.CookSeconds, RestSeconds: in.RestSeconds,
 		PlateSeconds: in.PlateSeconds, HoldSeconds: in.HoldSeconds, Batchable: in.Batchable,
 		Modifiers: in.Modifiers, FoodCategory: in.FoodCategory,
 		Available: orBool(in.Available, old.Available), Active: orBool(in.Active, old.Active),
+		Allergens: listOr(in.Allergens, old.Allergens), AllergensChecked: orBool(in.AllergensChecked, old.AllergensChecked),
 	}.Normalize()
+}
+
+func listOr(v *[]string, def []string) []string {
+	if v == nil {
+		return def
+	}
+	return *v
+}
+
+// noteAllergens logs a change to a dish's allergens, or to whether they
+// are checked, in the activity log: what customers are told about
+// allergens must be traceable.
+func (s *Service) noteAllergens(ctx context.Context, tx store.Store, p *auth.Principal, old, d menu.Dish) error {
+	if slices.Equal(old.Allergens, d.Allergens) && old.AllergensChecked == d.AllergensChecked {
+		return nil
+	}
+	names := func(codes []string) string {
+		if len(codes) == 0 {
+			return "none"
+		}
+		out := make([]string, len(codes))
+		for i, c := range codes {
+			out[i] = menu.AllergenName(c)
+		}
+		return strings.Join(out, ", ")
+	}
+	return s.note(ctx, tx, p, ActivityAllergensChanged, d.ID, map[string]any{
+		"dish": d.Name, "before": names(old.Allergens), "after": names(d.Allergens), "checked": d.AllergensChecked,
+	})
 }
 
 // MenuSetup reads the whole menu through st.
@@ -270,6 +313,9 @@ func (s *Service) CreateDish(ctx context.Context, p *auth.Principal, in DishInpu
 	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return menu.Dish{}, err
 	}
+	if in.AllergensNone && in.Allergens != nil && len(*in.Allergens) > 0 {
+		return menu.Dish{}, newErr(KindInvalid, "a dish cannot have no allergens and some: give one or the other")
+	}
 	var out menu.Dish
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
 		setup, err := menuSetup(ctx, tx)
@@ -288,6 +334,9 @@ func (s *Service) CreateDish(ctx context.Context, p *auth.Principal, in DishInpu
 		if err := tx.Menu().CreateDish(ctx, d); err != nil {
 			return mapStoreErr(err, "a dish called "+d.Name)
 		}
+		if err := s.noteAllergens(ctx, tx, p, menu.Dish{Allergens: []string{}}, d); err != nil {
+			return err
+		}
 		out = d
 		return nil
 	})
@@ -303,6 +352,9 @@ func (s *Service) CreateDish(ctx context.Context, p *auth.Principal, in DishInpu
 func (s *Service) UpdateDish(ctx context.Context, p *auth.Principal, id string, in DishInput) (menu.Dish, error) {
 	if err := s.allow(p, auth.ActManageMenu); err != nil {
 		return menu.Dish{}, err
+	}
+	if in.AllergensNone && in.Allergens != nil && len(*in.Allergens) > 0 {
+		return menu.Dish{}, newErr(KindInvalid, "a dish cannot have no allergens and some: give one or the other")
 	}
 	var out menu.Dish
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
@@ -324,6 +376,9 @@ func (s *Service) UpdateDish(ctx context.Context, p *auth.Principal, id string, 
 		}
 		if err := tx.Menu().UpdateDish(ctx, d); err != nil {
 			return mapStoreErr(err, "a dish called "+d.Name)
+		}
+		if err := s.noteAllergens(ctx, tx, p, old, d); err != nil {
+			return err
 		}
 		out = d
 		return nil
@@ -367,5 +422,50 @@ func (s *Service) SetAvailability(ctx context.Context, p *auth.Principal, id str
 		return menu.Dish{}, err
 	}
 	s.menuChanged(id)
+	return out, nil
+}
+
+// AllergenDish is one dish's row in the allergen chart.
+type AllergenDish struct {
+	DishID    string      `json:"dish_id"`
+	DishName  string      `json:"dish_name"`
+	Course    menu.Course `json:"course"`
+	Allergens []string    `json:"allergens"`
+	// Checked is false while a manager has not checked the dish's
+	// allergens: it may contain any of them.
+	Checked   bool `json:"checked"`
+	Available bool `json:"available"`
+}
+
+// AllergenChart is every dish on the menu with the regulated allergens it
+// contains, for telling customers.
+type AllergenChart struct {
+	Allergens []menu.Allergen `json:"allergens"`
+	Dishes    []AllergenDish  `json:"dishes"`
+	// Unchecked counts dishes whose allergens nobody has checked yet.
+	Unchecked int `json:"unchecked"`
+}
+
+// Allergens returns the allergen chart: every dish on the menu, in course
+// order, with the allergens it contains. Any staff member can see it.
+func (s *Service) Allergens(ctx context.Context, p *auth.Principal) (AllergenChart, error) {
+	if err := s.allow(p, auth.ActViewKitchen); err != nil {
+		return AllergenChart{}, err
+	}
+	dishes, err := s.st.Menu().ListDishes(ctx)
+	if err != nil {
+		return AllergenChart{}, err
+	}
+	out := AllergenChart{Allergens: menu.Allergens, Dishes: []AllergenDish{}}
+	for _, d := range dishes {
+		if !d.Active {
+			continue
+		}
+		out.Dishes = append(out.Dishes, AllergenDish{DishID: d.ID, DishName: d.Name, Course: d.Course, Allergens: d.Allergens, Checked: d.AllergensChecked, Available: d.Available})
+		if !d.AllergensChecked {
+			out.Unchecked++
+		}
+	}
+	slices.SortStableFunc(out.Dishes, func(a, b AllergenDish) int { return a.Course.Order() - b.Course.Order() })
 	return out, nil
 }

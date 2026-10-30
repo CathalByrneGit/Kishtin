@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { everyLabel } from "../lib/cleaning";
   import { Button, Card, Checkbox, Chip, DatePicker, Notice, Spinner, TextInput, showFlash } from "@kenn-io/kit-ui";
   import { untrack } from "svelte";
   import { api, message, OfflineError, type NewRecord, type Schemas } from "../lib/api";
@@ -143,7 +144,7 @@
               <li class:done={filled(e)}>
                 <span class="what">
                   <strong>{gapLabel(e.gap)}</strong>
-                  <span class="muted small">{e.gap.type === "cleaning" ? "Cleaning" : e.gap.type === "freezer" ? "Freezer" : "Fridge"}</span>
+                  <span class="muted small">{e.gap.type === "cleaning" ? (e.gap.every_days ? `Cleaning, ${everyLabel(e.gap.every_days).toLowerCase()}: fell due this day` : "Cleaning") : e.gap.type === "freezer" ? "Freezer" : "Fridge"}</span>
                 </span>
                 {#if e.gap.type === "cleaning"}
                   <Checkbox checked={e.done} disabled={locked} label="Done" onchange={(on) => (e.done = on)} />

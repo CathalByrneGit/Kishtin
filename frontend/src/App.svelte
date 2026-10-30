@@ -33,6 +33,7 @@
     UtensilsCrossed,
     Search,
     Settings,
+    LifeBuoy,
     SlidersHorizontal,
     Plug,
     Users,
@@ -49,6 +50,7 @@
   import { endSession, session, takePairingFromURL } from "./lib/session.svelte";
   import KitchenShell from "./screens/KitchenShell.svelte";
   import Login from "./screens/Login.svelte";
+  import Collection from "./screens/Collection.svelte";
   import Pair from "./screens/Pair.svelte";
   import Exports from "./views/Exports.svelte";
   import Books from "./views/Books.svelte";
@@ -61,6 +63,8 @@
   import Pass from "./views/Pass.svelte";
   import Stations from "./views/Stations.svelte";
   import MenuSetup from "./views/setup/Menu.svelte";
+  import AllergenChart from "./views/setup/Allergens.svelte";
+  import Guides from "./views/Guides.svelte";
   import SchedulerSetup from "./views/setup/Scheduler.svelte";
   import ConnectionsSetup from "./views/setup/Connections.svelte";
   import TillSetup from "./views/setup/Till.svelte";
@@ -111,6 +115,7 @@
     people: { id: "people", label: "Staff and access", icon: Users },
     backups: { id: "backups", label: "Backups", icon: Archive },
     settings: { id: "settings", label: "Settings", icon: Settings },
+    guides: { id: "guides", label: "Staff guides", icon: LifeBuoy },
   } satisfies Record<string, Section>;
   type SectionId = keyof typeof sections;
 
@@ -129,6 +134,7 @@
     { path: "/exports", label: "Downloads", section: "exports", view: "exports", group: "HACCP" },
     { path: "/verify", label: "Verify", section: "exports", view: "verify", group: "HACCP" },
     { path: "/setup/menu", label: "Menu", section: "kitchen", view: "menu", group: "Setup" },
+    { path: "/setup/allergens", label: "Allergens", section: "kitchen", view: "allergens", group: "Setup" },
     { path: "/setup/scheduler", label: "Scheduler", section: "kitchen", view: "scheduler", group: "Setup" },
     { path: "/setup/lists", label: "Fridges and tasks", section: "safety", view: "lists", group: "Setup" },
     { path: "/setup/limits", label: "Limits and rules", section: "safety", view: "limits", group: "Setup" },
@@ -141,6 +147,7 @@
     { path: "/setup/keys", label: "Device keys", section: "people", view: "keys", group: "Setup" },
     { path: "/setup/backups", label: "Backups", section: "backups", view: null, group: "Setup" },
     { path: "/setup/settings", label: "Settings", section: "settings", view: null, group: "This device" },
+    { path: "/guides", label: "Staff guides", section: "guides", view: null, group: "Help" },
   ];
 
   function sidebarGroup(label: string | null, ids: SectionId[], end = false): SidebarGroup {
@@ -162,7 +169,7 @@
     sidebarGroup("Reports", ["reports"]),
     sidebarGroup("HACCP", ["today", "records", "books", "exports"]),
     sidebarGroup("Setup", ["kitchen", "safety", "connections", "people", "backups"]),
-    sidebarGroup(null, ["settings"], true),
+    sidebarGroup(null, ["guides", "settings"], true),
   ];
 
   let restaurant = $state("");
@@ -307,6 +314,8 @@
 
 {#if !session.deviceKey}
   <Pair />
+{:else if screen.kind === "collection"}
+  <Collection />
 {:else if !session.token}
   <Login />
 {:else if screen.kind !== "desktop"}
@@ -386,6 +395,10 @@
           <VoiceView />
         {:else if route.path === "/setup/menu"}
           <MenuSetup />
+        {:else if route.path === "/guides"}
+          <Guides {restaurant} />
+        {:else if route.path === "/setup/allergens"}
+          <AllergenChart {restaurant} />
         {:else if route.path === "/setup/scheduler"}
           <SchedulerSetup />
         {:else if route.path === "/setup/connections"}

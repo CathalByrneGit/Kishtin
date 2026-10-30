@@ -136,6 +136,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Takeaways being prepared and ready to collect, for a screen facing customers
+         * @description Works with a device key and no staff login, for a screen customers can see. It gives only ticket numbers and order names: no items, notes or staff. A takeaway is ready once every item not voided is at the pass, and leaves when it is served or closed.
+         */
+        get: operations["get-collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/connectors": {
         parameters: {
             query?: never;
@@ -243,6 +263,26 @@ export interface paths {
         };
         /** Download an attached file */
         get: operations["get-file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How far the restaurant has got with setting Kishtin up
+         * @description Each step is worked out from what is set up and recorded, so it ticks itself off. Steps marked optional are not counted in done and total.
+         */
+        get: operations["get-setup-progress"];
         put?: never;
         post?: never;
         delete?: never;
@@ -855,6 +895,26 @@ export interface paths {
         };
         /** Show stations, equipment and dishes */
         get: operations["get-menu"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/menu/allergens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every dish with the regulated allergens it contains
+         * @description The 14 allergens of Regulation (EU) No 1169/2011, Annex II, and each dish on the menu with the ones it contains. A dish with checked false has not had its allergens checked by a manager and may contain any of them.
+         */
+        get: operations["get-allergen-chart"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2247,6 +2307,25 @@ export interface components {
         AddItemsBody: {
             items: components["schemas"]["NewItem"][];
         };
+        Allergen: {
+            code: string;
+            detail?: string;
+            name: string;
+        };
+        AllergenChart: {
+            allergens: components["schemas"]["Allergen"][];
+            dishes: components["schemas"]["AllergenDish"][];
+            /** Format: int64 */
+            unchecked: number;
+        };
+        AllergenDish: {
+            allergens: string[];
+            available: boolean;
+            checked: boolean;
+            course: string;
+            dish_id: string;
+            dish_name: string;
+        };
         AnonymisePreview: {
             mentions: components["schemas"]["UserMentions"];
             name: string;
@@ -2371,6 +2450,8 @@ export interface components {
             area?: string;
             check?: string;
             date: string;
+            /** Format: int64 */
+            every_days?: number;
             signed_off?: boolean;
             task?: string;
             time?: string;
@@ -2415,12 +2496,29 @@ export interface components {
         };
         CleaningTask: {
             area?: string;
+            /** Format: int64 */
+            every_days?: number;
             task: string;
         };
         CleaningToday: {
             area?: string;
+            /** Format: int64 */
+            every_days?: number;
             record?: components["schemas"]["Record"];
+            schedule?: components["schemas"]["TaskSchedule"];
             task: string;
+        };
+        CollectionBoard: {
+            preparing: components["schemas"]["CollectionOrder"][];
+            ready: components["schemas"]["CollectionOrder"][];
+            restaurant: string;
+        };
+        CollectionOrder: {
+            name?: string;
+            /** Format: int64 */
+            number: number;
+            /** Format: date-time */
+            ready_at?: string;
         };
         Column: {
             field?: string;
@@ -2543,6 +2641,8 @@ export interface components {
         };
         Dish: {
             active: boolean;
+            allergens: string[];
+            allergens_checked: boolean;
             available: boolean;
             /** Format: int64 */
             batch_capacity?: number;
@@ -2569,6 +2669,9 @@ export interface components {
         };
         DishInput: {
             active?: boolean;
+            allergens?: string[];
+            allergens_checked?: boolean;
+            allergens_none?: boolean;
             available?: boolean;
             /** Format: int64 */
             batch_capacity?: number;
@@ -2766,6 +2869,7 @@ export interface components {
             /** Format: int64 */
             cleaning_due: number;
             cleaning_missed_by_task: components["schemas"]["Count"][];
+            cleaning_overdue_by_task: components["schemas"]["Count"][];
             /** Format: int64 */
             cleaning_percent: number;
             from: string;
@@ -3258,6 +3362,14 @@ export interface components {
             phase_ends_at: string;
             state: string;
         };
+        ProgressStep: {
+            detail: string;
+            done: boolean;
+            href: string;
+            id: string;
+            optional?: boolean;
+            title: string;
+        };
         Reading: {
             answers?: components["schemas"]["Answer"][];
             area?: string;
@@ -3547,6 +3659,13 @@ export interface components {
             pin?: string;
             restaurant: string;
         };
+        SetupProgress: {
+            /** Format: int64 */
+            done: number;
+            steps: components["schemas"]["ProgressStep"][];
+            /** Format: int64 */
+            total: number;
+        };
         SetupStatusOutBody: {
             code_needed: boolean;
             needed: boolean;
@@ -3714,6 +3833,11 @@ export interface components {
             reason?: string;
             /** Format: date-time */
             target_at: string;
+        };
+        TaskSchedule: {
+            last_done?: string;
+            next_due?: string;
+            status: string;
         };
         Template: {
             builder?: string;
@@ -4181,6 +4305,35 @@ export interface operations {
             };
         };
     };
+    "get-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionBoard"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-connectors": {
         parameters: {
             query?: never;
@@ -4394,6 +4547,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-setup-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupProgress"];
+                };
             };
             /** @description Error */
             default: {
@@ -5558,6 +5740,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Setup"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-allergen-chart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllergenChart"];
                 };
             };
             /** @description Error */

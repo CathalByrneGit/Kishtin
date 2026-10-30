@@ -28,6 +28,19 @@
   let batchable = $state(d0?.batchable ?? false);
   let category = $state(d0?.food_category ?? "");
   let active = $state(d0?.active ?? true);
+  let allergens = $state<string[]>([...(d0?.allergens ?? [])]);
+  let allergensChecked = $state(d0?.allergens_checked ?? false);
+  let allergenList = $state<Schemas["Allergen"][]>([]);
+  void api
+    .allergens()
+    .then((c) => (allergenList = c.allergens))
+    .catch(() => {});
+
+  function toggleAllergen(code: string, on: boolean) {
+    allergens = on ? [...allergens, code] : allergens.filter((a) => a !== code);
+    // Choosing allergens is checking them.
+    allergensChecked = true;
+  }
   let mods = $state((d0?.modifiers ?? []).map((m) => ({ name: m.name, text: (m.add_seconds < 0 ? "-" : "") + minutesText(Math.abs(m.add_seconds)) })));
   let error = $state("");
   let busy = $state(false);
@@ -61,6 +74,7 @@
       batch_capacity: equipmentId ? cap : undefined, cook_seconds: times.cook ?? 0, rest_seconds: times.rest ?? 0,
       plate_seconds: times.plate ?? 0, hold_seconds: times.hold ?? 0, batchable, modifiers,
       food_category: category || undefined, active: d0 ? active : undefined,
+      allergens: allergenList.length > 0 ? allergens : undefined, allergens_checked: allergenList.length > 0 ? allergensChecked : undefined,
     };
   });
 
@@ -140,6 +154,17 @@
       <div><Button size="sm" label="Add a modifier" onclick={() => mods.push({ name: "", text: "" })}><Plus size={14} /></Button></div>
     </div>
 
+    <div class="field">
+      <span>Allergens it contains</span>
+      <div class="allergens">
+        {#each allergenList as a (a.code)}
+          <Checkbox checked={allergens.includes(a.code)} label={a.name} onchange={(on) => toggleAllergen(a.code, on)} />
+        {/each}
+      </div>
+      <Checkbox bind:checked={allergensChecked} label="These allergens are checked, including that the dish has none of the others" />
+      {#if !allergensChecked}<span class="muted small">Unchecked, the allergen chart shows “Not checked”: customers must not be told it is safe.</span>{/if}
+    </div>
+
     {#if d0}
       <Toggle checked={active} label="On the menu" onchange={(on) => (active = on)} />
     {/if}
@@ -156,6 +181,12 @@
 </Modal>
 
 <style>
+  .allergens {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-2) var(--space-4);
+    margin-bottom: var(--space-3);
+  }
   .form {
     display: flex;
     flex-direction: column;

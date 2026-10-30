@@ -1,4 +1,6 @@
 <script lang="ts">
+  import GettingStarted from "../components/GettingStarted.svelte";
+  import { dueToday, scheduleStatus } from "../lib/cleaning";
   import { can, canWithPassword } from "../lib/can.svelte";
   import { Button, Card, Checkbox, Chip, EmptyState, MetricCard, Notice, Spinner, Table, TableHeaderCell, showFlash, type ChipTone } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
@@ -65,7 +67,10 @@
     return seen;
   });
 
-  const cleaningDone = $derived(today?.cleaning.filter((c) => c.record).length ?? 0);
+  const cleaningToday = $derived((today?.cleaning ?? []).filter(dueToday));
+  const cleaningDone = $derived(cleaningToday.filter((c) => c.record).length);
+  const daily = $derived((today?.cleaning ?? []).filter((c) => !c.schedule));
+  const longer = $derived((today?.cleaning ?? []).filter((c) => c.schedule));
   const batchAlerts = $derived(today?.batches.filter((b) => b.status !== "ok").length ?? 0);
 </script>
 
@@ -76,6 +81,8 @@
       {#if today}<span class="muted">{longDate(today.date)}</span>{/if}
     </div>
   </header>
+
+  <GettingStarted />
 
   {#if error}
     <Notice tone="error" title="Could not load today" message={error} />
@@ -120,11 +127,11 @@
       </MetricCard>
       <MetricCard
         label="Cleaning"
-        value={`${cleaningDone} of ${today.cleaning.length}`}
+        value={`${cleaningDone} of ${cleaningToday.length}`}
 
-        tone={today.cleaning.length > 0 && cleaningDone === today.cleaning.length ? "success" : "neutral"}
+        tone={cleaningToday.length > 0 && cleaningDone === cleaningToday.length ? "success" : "neutral"}
       >
-        <span class="muted small">Daily cleaning tasks done</span>
+        <span class="muted small">Cleaning tasks due today, done</span>
       </MetricCard>
       <MetricCard
         label="Batches"
@@ -186,9 +193,9 @@
       </section>
 
       <section>
-        <Card padding="md" title="Daily cleaning" meta={`${cleaningDone} of ${today.cleaning.length} done`}>
+        <Card padding="md" title="Daily cleaning" meta={`${daily.filter((c) => c.record).length} of ${daily.length} done`}>
           <ul class="checklist">
-            {#each today.cleaning as c (c.task)}
+            {#each daily as c (c.task)}
               <li>
                 <Checkbox
                   checked={Boolean(c.record)}
@@ -203,10 +210,33 @@
                 {/if}
               </li>
             {:else}
-              <li class="muted">No cleaning tasks. A manager adds them in Setup.</li>
+              <li class="muted">{longer.length > 0 ? "No daily cleaning tasks." : "No cleaning tasks. A manager adds them in Setup."}</li>
             {/each}
           </ul>
         </Card>
+        {#if longer.length > 0}
+          <Card padding="md" title="Weekly and longer">
+            <ul class="checklist">
+              {#each longer as c (c.task)}
+                {@const st = scheduleStatus(c)}
+                <li class="longer">
+                  <span class="top">
+                    <Checkbox
+                      checked={Boolean(c.record)}
+                      disabled={Boolean(c.record) || ticking !== null}
+                      label={c.task}
+                      onchange={(on) => {
+                        if (on) void tick(c.task);
+                      }}
+                    />
+                    {#if st}<Chip size="sm" uppercase={false} tone={st.tone}>{st.label}</Chip>{/if}
+                  </span>
+                  <span class="muted small">{#if c.record}<span class="num">{dublinTime(doneAt(c.record))}</span> · {doneBy(c.record)} · {/if}{st?.text}</span>
+                </li>
+              {/each}
+            </ul>
+          </Card>
+        {/if}
       </section>
 
       <section class="wide">
@@ -270,6 +300,17 @@
 </div>
 
 <style>
+  .checklist li.longer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+  .longer .top {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
   .metrics :global(.kit-metric-card__layout) {
     min-height: 0;
     gap: var(--space-2);

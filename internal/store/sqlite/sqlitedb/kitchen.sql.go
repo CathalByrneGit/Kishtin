@@ -11,7 +11,7 @@ import (
 )
 
 const getDish = `-- name: GetDish :one
-SELECT id, name, course, station_id, equipment_id, batch_capacity, cook_seconds, rest_seconds, plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at FROM dishes WHERE id = ?
+SELECT id, name, course, station_id, equipment_id, batch_capacity, cook_seconds, rest_seconds, plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at, allergens, allergens_checked FROM dishes WHERE id = ?
 `
 
 func (q *Queries) GetDish(ctx context.Context, id string) (Dish, error) {
@@ -35,6 +35,8 @@ func (q *Queries) GetDish(ctx context.Context, id string) (Dish, error) {
 		&i.Active,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Allergens,
+		&i.AllergensChecked,
 	)
 	return i, err
 }
@@ -65,28 +67,31 @@ func (q *Queries) GetOrder(ctx context.Context, id string) (Order, error) {
 
 const insertDish = `-- name: InsertDish :exec
 INSERT INTO dishes (id, name, course, station_id, equipment_id, batch_capacity, cook_seconds, rest_seconds,
-    plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at,
+    allergens, allergens_checked)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertDishParams struct {
-	ID            string
-	Name          string
-	Course        string
-	StationID     string
-	EquipmentID   sql.NullString
-	BatchCapacity int64
-	CookSeconds   int64
-	RestSeconds   int64
-	PlateSeconds  int64
-	HoldSeconds   int64
-	Batchable     int64
-	Modifiers     string
-	FoodCategory  string
-	Available     int64
-	Active        int64
-	CreatedAt     int64
-	UpdatedAt     int64
+	ID               string
+	Name             string
+	Course           string
+	StationID        string
+	EquipmentID      sql.NullString
+	BatchCapacity    int64
+	CookSeconds      int64
+	RestSeconds      int64
+	PlateSeconds     int64
+	HoldSeconds      int64
+	Batchable        int64
+	Modifiers        string
+	FoodCategory     string
+	Available        int64
+	Active           int64
+	CreatedAt        int64
+	UpdatedAt        int64
+	Allergens        string
+	AllergensChecked int64
 }
 
 func (q *Queries) InsertDish(ctx context.Context, arg InsertDishParams) error {
@@ -108,6 +113,8 @@ func (q *Queries) InsertDish(ctx context.Context, arg InsertDishParams) error {
 		arg.Active,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.Allergens,
+		arg.AllergensChecked,
 	)
 	return err
 }
@@ -341,7 +348,7 @@ func (q *Queries) ListCourses(ctx context.Context, orderID string) ([]OrderCours
 }
 
 const listDishes = `-- name: ListDishes :many
-SELECT id, name, course, station_id, equipment_id, batch_capacity, cook_seconds, rest_seconds, plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at FROM dishes ORDER BY name
+SELECT id, name, course, station_id, equipment_id, batch_capacity, cook_seconds, rest_seconds, plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at, allergens, allergens_checked FROM dishes ORDER BY name
 `
 
 func (q *Queries) ListDishes(ctx context.Context) ([]Dish, error) {
@@ -371,6 +378,8 @@ func (q *Queries) ListDishes(ctx context.Context) ([]Dish, error) {
 			&i.Active,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Allergens,
+			&i.AllergensChecked,
 		); err != nil {
 			return nil, err
 		}
@@ -716,27 +725,29 @@ func (q *Queries) MaxOrderNumberSince(ctx context.Context, createdAt int64) (int
 const updateDish = `-- name: UpdateDish :execrows
 UPDATE dishes SET name = ?, course = ?, station_id = ?, equipment_id = ?, batch_capacity = ?, cook_seconds = ?,
     rest_seconds = ?, plate_seconds = ?, hold_seconds = ?, batchable = ?, modifiers = ?, food_category = ?,
-    available = ?, active = ?, updated_at = ?
+    available = ?, active = ?, updated_at = ?, allergens = ?, allergens_checked = ?
 WHERE id = ?
 `
 
 type UpdateDishParams struct {
-	Name          string
-	Course        string
-	StationID     string
-	EquipmentID   sql.NullString
-	BatchCapacity int64
-	CookSeconds   int64
-	RestSeconds   int64
-	PlateSeconds  int64
-	HoldSeconds   int64
-	Batchable     int64
-	Modifiers     string
-	FoodCategory  string
-	Available     int64
-	Active        int64
-	UpdatedAt     int64
-	ID            string
+	Name             string
+	Course           string
+	StationID        string
+	EquipmentID      sql.NullString
+	BatchCapacity    int64
+	CookSeconds      int64
+	RestSeconds      int64
+	PlateSeconds     int64
+	HoldSeconds      int64
+	Batchable        int64
+	Modifiers        string
+	FoodCategory     string
+	Available        int64
+	Active           int64
+	UpdatedAt        int64
+	Allergens        string
+	AllergensChecked int64
+	ID               string
 }
 
 func (q *Queries) UpdateDish(ctx context.Context, arg UpdateDishParams) (int64, error) {
@@ -756,6 +767,8 @@ func (q *Queries) UpdateDish(ctx context.Context, arg UpdateDishParams) (int64, 
 		arg.Available,
 		arg.Active,
 		arg.UpdatedAt,
+		arg.Allergens,
+		arg.AllergensChecked,
 		arg.ID,
 	)
 	if err != nil {

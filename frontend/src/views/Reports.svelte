@@ -249,7 +249,7 @@
           <Card padding="md" title="Missed checks by fridge and freezer">
             <BarList rows={h.missed_by_unit.map((u) => ({ label: u.label, value: u.count }))} ariaLabel="Missed checks by unit" format={(v) => `${v} missed`} empty="No check was missed." />
           </Card>
-          <Card padding="md" title="Cleaning tasks not done">
+          <Card padding="md" title="Daily cleaning tasks not done">
             <BarList
               rows={h.cleaning_missed_by_task.map((t) => ({ label: t.label, value: t.count }))}
               ariaLabel="Cleaning tasks not done by task"
@@ -257,6 +257,16 @@
               empty="Every cleaning task was done."
             />
           </Card>
+          {#if h.cleaning_overdue_by_task.length > 0}
+            <Card padding="md" title="Weekly and longer tasks overdue">
+              <BarList
+                rows={h.cleaning_overdue_by_task.map((t) => ({ label: t.label, value: t.count }))}
+                ariaLabel="Days each weekly or longer cleaning task was overdue"
+                format={(v) => `${v} ${v === 1 ? "day" : "days"} overdue`}
+                empty=""
+              />
+            </Card>
+          {/if}
           <Card padding="md" title="Out of limit by kind">
             <BarList rows={h.out_of_limit_by_type.map((t) => ({ label: typeLabel(t.key), value: t.count }))} ariaLabel="Out-of-limit records by kind" empty="No reading was out of limit." />
           </Card>

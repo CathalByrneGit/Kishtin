@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { allergenLine } from "../lib/allergens.svelte";
   import { Button, Chip, EmptyState, IconButton, MetricCard, Modal, Notice, SegmentedControl, Spinner, TextInput, showFlash } from "@kenn-io/kit-ui";
   import { Flame, History, Pause, TimerReset } from "@lucide/svelte";
   import OrderDrawer from "../components/OrderDrawer.svelte";
@@ -194,7 +195,13 @@
                 {#each group(items) as g (g.key)}
                   {@const s = itemState(g.item.state)}
                   <li class:done={g.item.state === "served" || g.item.state === "voided"} class:picked={only !== null && lineKey(g.item) === only}>
-                    <span><span class="num">{g.n}×</span> {itemName(g.item)}{#if g.item.notes}<span class="muted">: {g.item.notes}</span>{/if}</span>
+                    <span>
+                      <span class="num">{g.n}×</span> {itemName(g.item)}{#if g.item.notes}<span class="muted">: {g.item.notes}</span>{/if}
+                      {#if o.allergy}
+                        {@const al = allergenLine(g.item.dish_id)}
+                        {#if al}<span class="allergens" class:unchecked={al.unchecked}>{al.text}</span>{/if}
+                      {/if}
+                    </span>
                     <Chip size="sm" uppercase={false} tone={s.tone}>{s.label}</Chip>
                   </li>
                 {/each}
@@ -259,6 +266,14 @@
 {/if}
 
 <style>
+  .allergens {
+    display: block;
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+  }
+  .allergens.unchecked {
+    color: var(--accent-red);
+  }
   .metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

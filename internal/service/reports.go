@@ -81,9 +81,13 @@ func (s *Service) ReportHACCP(ctx context.Context, p *auth.Principal, fromDay, t
 	if err != nil {
 		return analytics.HACCPReport{}, err
 	}
+	before, err := s.cleaningDays(ctx, lists.Value, from.AddDate(0, 0, -haccp.MaxEveryDays), from)
+	if err != nil {
+		return analytics.HACCPReport{}, err
+	}
 	return analytics.BuildHACCP(analytics.HACCPInput{
 		From: from, To: to, Loc: clock.Dublin, Now: s.clk.Now(), Since: since, Records: recs,
-		Units: lists.Value.Units, CleaningTasks: lists.Value.CleaningTasks, Limits: limits,
+		Units: lists.Value.Units, CleaningTasks: lists.Value.CleaningTasks, Limits: limits, CleaningDoneBefore: before,
 	}), nil
 }
 

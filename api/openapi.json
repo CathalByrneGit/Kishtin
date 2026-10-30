@@ -242,6 +242,87 @@
         ],
         "type": "object"
       },
+      "Allergen": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object"
+      },
+      "AllergenChart": {
+        "additionalProperties": false,
+        "properties": {
+          "allergens": {
+            "items": {
+              "$ref": "#/components/schemas/Allergen"
+            },
+            "type": "array"
+          },
+          "dishes": {
+            "items": {
+              "$ref": "#/components/schemas/AllergenDish"
+            },
+            "type": "array"
+          },
+          "unchecked": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "allergens",
+          "dishes",
+          "unchecked"
+        ],
+        "type": "object"
+      },
+      "AllergenDish": {
+        "additionalProperties": false,
+        "properties": {
+          "allergens": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "checked": {
+            "type": "boolean"
+          },
+          "course": {
+            "type": "string"
+          },
+          "dish_id": {
+            "type": "string"
+          },
+          "dish_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dish_id",
+          "dish_name",
+          "course",
+          "allergens",
+          "checked",
+          "available"
+        ],
+        "type": "object"
+      },
       "AnonymisePreview": {
         "additionalProperties": false,
         "properties": {
@@ -730,6 +811,10 @@
           "date": {
             "type": "string"
           },
+          "every_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "signed_off": {
             "type": "boolean"
           },
@@ -894,6 +979,10 @@
           "area": {
             "type": "string"
           },
+          "every_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "task": {
             "type": "string"
           }
@@ -909,8 +998,15 @@
           "area": {
             "type": "string"
           },
+          "every_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "record": {
             "$ref": "#/components/schemas/Record"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/TaskSchedule"
           },
           "task": {
             "type": "string"
@@ -918,6 +1014,52 @@
         },
         "required": [
           "task"
+        ],
+        "type": "object"
+      },
+      "CollectionBoard": {
+        "additionalProperties": false,
+        "properties": {
+          "preparing": {
+            "items": {
+              "$ref": "#/components/schemas/CollectionOrder"
+            },
+            "type": "array"
+          },
+          "ready": {
+            "items": {
+              "$ref": "#/components/schemas/CollectionOrder"
+            },
+            "type": "array"
+          },
+          "restaurant": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "restaurant",
+          "preparing",
+          "ready"
+        ],
+        "type": "object"
+      },
+      "CollectionOrder": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ready_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number"
         ],
         "type": "object"
       },
@@ -1337,6 +1479,15 @@
           "active": {
             "type": "boolean"
           },
+          "allergens": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "allergens_checked": {
+            "type": "boolean"
+          },
           "available": {
             "type": "boolean"
           },
@@ -1407,6 +1558,8 @@
           "hold_seconds",
           "batchable",
           "modifiers",
+          "allergens",
+          "allergens_checked",
           "available",
           "active",
           "created_at",
@@ -1418,6 +1571,18 @@
         "additionalProperties": false,
         "properties": {
           "active": {
+            "type": "boolean"
+          },
+          "allergens": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "allergens_checked": {
+            "type": "boolean"
+          },
+          "allergens_none": {
             "type": "boolean"
           },
           "available": {
@@ -2038,6 +2203,12 @@
             },
             "type": "array"
           },
+          "cleaning_overdue_by_task": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "type": "array"
+          },
           "cleaning_percent": {
             "format": "int64",
             "type": "integer"
@@ -2104,6 +2275,7 @@
           "cleaning_done",
           "cleaning_percent",
           "cleaning_missed_by_task",
+          "cleaning_overdue_by_task",
           "records",
           "out_of_limit",
           "without_action",
@@ -3918,6 +4090,37 @@
         ],
         "type": "object"
       },
+      "ProgressStep": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "href": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "optional": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "detail",
+          "done",
+          "href"
+        ],
+        "type": "object"
+      },
       "Reading": {
         "additionalProperties": false,
         "properties": {
@@ -5036,6 +5239,31 @@
         ],
         "type": "object"
       },
+      "SetupProgress": {
+        "additionalProperties": false,
+        "properties": {
+          "done": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ProgressStep"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "steps",
+          "done",
+          "total"
+        ],
+        "type": "object"
+      },
       "SetupStatusOutBody": {
         "additionalProperties": false,
         "properties": {
@@ -5660,6 +5888,24 @@
         },
         "required": [
           "target_at"
+        ],
+        "type": "object"
+      },
+      "TaskSchedule": {
+        "additionalProperties": false,
+        "properties": {
+          "last_done": {
+            "type": "string"
+          },
+          "next_due": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
         ],
         "type": "object"
       },
@@ -6812,6 +7058,38 @@
         ]
       }
     },
+    "/collection": {
+      "get": {
+        "description": "Works with a device key and no staff login, for a screen customers can see. It gives only ticket numbers and order names: no items, notes or staff. A takeaway is ready once every item not voided is at the pass, and leaves when it is served or closed.",
+        "operationId": "get-collection",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionBoard"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Takeaways being prepared and ready to collect, for a screen facing customers",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
     "/connectors": {
       "get": {
         "operationId": "list-connectors",
@@ -7109,6 +7387,38 @@
         "summary": "Download an attached file",
         "tags": [
           "Files"
+        ]
+      }
+    },
+    "/getting-started": {
+      "get": {
+        "description": "Each step is worked out from what is set up and recorded, so it ticks itself off. Steps marked optional are not counted in done and total.",
+        "operationId": "get-setup-progress",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupProgress"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "How far the restaurant has got with setting Kishtin up",
+        "tags": [
+          "Setup"
         ]
       }
     },
@@ -8817,6 +9127,38 @@
           }
         },
         "summary": "Show stations, equipment and dishes",
+        "tags": [
+          "Menu"
+        ]
+      }
+    },
+    "/menu/allergens": {
+      "get": {
+        "description": "The 14 allergens of Regulation (EU) No 1169/2011, Annex II, and each dish on the menu with the ones it contains. A dish with checked false has not had its allergens checked by a manager and may contain any of them.",
+        "operationId": "get-allergen-chart",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllergenChart"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Every dish with the regulated allergens it contains",
         "tags": [
           "Menu"
         ]

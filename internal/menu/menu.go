@@ -95,6 +95,13 @@ type Dish struct {
 	// FoodCategory links the dish to a HACCP food category, such as
 	// poultry, for its cooking limit.
 	FoodCategory string `json:"food_category,omitempty"`
+	// Allergens are the codes of the 14 regulated allergens the dish
+	// contains (see Allergens), in the regulation's order.
+	Allergens []string `json:"allergens"`
+	// AllergensChecked is true once a manager has checked the dish's
+	// allergens. An unchecked dish with none listed is unknown, not
+	// allergen-free.
+	AllergensChecked bool `json:"allergens_checked"`
 	// Available is false while the dish is 86'd (sold out).
 	Available bool `json:"available"`
 	// Active is false for a dish taken off the menu. Dishes are never
@@ -168,6 +175,9 @@ func (d Dish) Validate() error {
 			errs = append(errs, fmt.Errorf("%s must be between 0 and %d", p.name, MaxPhaseSecs))
 		}
 	}
+	if _, err := CleanAllergens(d.Allergens); err != nil {
+		errs = append(errs, err)
+	}
 	if d.CookSeconds+d.RestSeconds+d.PlateSeconds == 0 {
 		errs = append(errs, errors.New("a dish needs a cook, rest or plate time"))
 	}
@@ -208,6 +218,11 @@ func (d Dish) Normalize() Dish {
 		mods = append(mods, m)
 	}
 	d.Modifiers = mods
+	if clean, err := CleanAllergens(d.Allergens); err == nil {
+		d.Allergens = clean
+	} else if d.Allergens == nil {
+		d.Allergens = []string{}
+	}
 	if d.EquipmentID == "" {
 		d.BatchCapacity = 0
 	}

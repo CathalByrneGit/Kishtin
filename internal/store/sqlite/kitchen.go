@@ -110,12 +110,16 @@ func (s *Store) CreateDish(ctx context.Context, d menu.Dish) error {
 	if err != nil {
 		return fmt.Errorf("encode modifiers: %w", err)
 	}
+	allergens, err := encodeStrings(d.Allergens)
+	if err != nil {
+		return fmt.Errorf("encode allergens: %w", err)
+	}
 	return mapErr(s.w.InsertDish(ctx, sqlitedb.InsertDishParams{
 		ID: d.ID, Name: d.Name, Course: string(d.Course), StationID: d.StationID, EquipmentID: nullStr(d.EquipmentID),
 		BatchCapacity: int64(d.BatchCapacity), CookSeconds: int64(d.CookSeconds), RestSeconds: int64(d.RestSeconds),
 		PlateSeconds: int64(d.PlateSeconds), HoldSeconds: int64(d.HoldSeconds), Batchable: boolInt(d.Batchable),
 		Modifiers: string(mods), FoodCategory: d.FoodCategory, Available: boolInt(d.Available), Active: boolInt(d.Active),
-		CreatedAt: us(d.CreatedAt), UpdatedAt: us(d.UpdatedAt),
+		CreatedAt: us(d.CreatedAt), UpdatedAt: us(d.UpdatedAt), Allergens: allergens, AllergensChecked: boolInt(d.AllergensChecked),
 	}))
 }
 
@@ -124,12 +128,16 @@ func (s *Store) UpdateDish(ctx context.Context, d menu.Dish) error {
 	if err != nil {
 		return fmt.Errorf("encode modifiers: %w", err)
 	}
+	allergens, err := encodeStrings(d.Allergens)
+	if err != nil {
+		return fmt.Errorf("encode allergens: %w", err)
+	}
 	return rowsAffected(s.w.UpdateDish(ctx, sqlitedb.UpdateDishParams{
 		Name: d.Name, Course: string(d.Course), StationID: d.StationID, EquipmentID: nullStr(d.EquipmentID),
 		BatchCapacity: int64(d.BatchCapacity), CookSeconds: int64(d.CookSeconds), RestSeconds: int64(d.RestSeconds),
 		PlateSeconds: int64(d.PlateSeconds), HoldSeconds: int64(d.HoldSeconds), Batchable: boolInt(d.Batchable),
 		Modifiers: string(mods), FoodCategory: d.FoodCategory, Available: boolInt(d.Available), Active: boolInt(d.Active),
-		UpdatedAt: us(d.UpdatedAt), ID: d.ID,
+		UpdatedAt: us(d.UpdatedAt), Allergens: allergens, AllergensChecked: boolInt(d.AllergensChecked), ID: d.ID,
 	}))
 }
 
@@ -145,7 +153,12 @@ func dishFromRow(r sqlitedb.Dish) (menu.Dish, error) {
 	if err := json.Unmarshal([]byte(r.Modifiers), &mods); err != nil {
 		return menu.Dish{}, fmt.Errorf("decode modifiers of dish %s: %w", r.ID, err)
 	}
+	allergens := []string{}
+	if err := json.Unmarshal([]byte(r.Allergens), &allergens); err != nil {
+		return menu.Dish{}, fmt.Errorf("decode allergens of dish %s: %w", r.ID, err)
+	}
 	return menu.Dish{
+		Allergens: allergens, AllergensChecked: r.AllergensChecked != 0,
 		ID: r.ID, Name: r.Name, Course: menu.Course(r.Course), StationID: r.StationID, EquipmentID: r.EquipmentID.String,
 		BatchCapacity: int(r.BatchCapacity), CookSeconds: int(r.CookSeconds), RestSeconds: int(r.RestSeconds),
 		PlateSeconds: int(r.PlateSeconds), HoldSeconds: int(r.HoldSeconds), Batchable: r.Batchable != 0,

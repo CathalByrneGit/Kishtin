@@ -52,3 +52,29 @@ func (c *cli) startupCmd() *cobra.Command {
 	)
 	return cmd
 }
+
+func (c *cli) gettingStartedCmd() *cobra.Command {
+	return &cobra.Command{
+		Use: "getting-started", Short: "How far the restaurant has got with setting Kishtin up", Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			res, err := c.api.GetSetupProgress(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) {
+				fmt.Fprintf(w, "%d of %d steps done.\n\n", res.Done, res.Total)
+				for _, s := range res.Steps {
+					mark := "[ ]"
+					if s.Done {
+						mark = "[x]"
+					}
+					opt := ""
+					if s.Optional != nil && *s.Optional {
+						opt = " (optional)"
+					}
+					fmt.Fprintf(w, "%s %s%s\n    %s\n", mark, s.Title, opt, s.Detail)
+				}
+			})
+		},
+	}
+}

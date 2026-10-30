@@ -41,7 +41,7 @@ A **fail** always needs a corrective action before it can be saved. A **borderli
 Kitchens do not always log a check the moment it is done. Any record can say when its check was done and who did it:
 
 - On the log form, **When was this done?** › **Earlier** takes a date and time, and **Done by** a name if it was someone else.
-- **Catch up** (HACCP › Records › Catch up) lists the daily checks with no record (fridge and freezer checks and cleaning tasks), by day, from the first day records were kept. Fill in the ones that were done, with the time, and save them together. See [screens.md](screens.md#catch-up).
+- **Catch up** (HACCP › Records › Catch up) lists the checks with no record (fridge and freezer checks and cleaning tasks), by day, from the first day records were kept. Fill in the ones that were done, with the time, and save them together. See [screens.md](screens.md#catch-up).
 - From the command line: `kishtin haccp log fridge --unit "Walk-in fridge" --temp 3.4 --at "2026-10-20 09:00" --done-by Liam`, and `kishtin haccp catch-up`.
 
 ![Catch up](screenshots/catch-up.png)
@@ -53,6 +53,19 @@ A time in the future is refused. Whether staff may log checks done earlier, and 
 A correction keeps the time of the record it corrects, unless it gives a different time.
 
 Records brought in from paper keep the photo of the page, when the check was done and the name written on the paper. See [record-books.md](record-books.md#bringing-in-paper-records).
+
+
+## Weekly and longer tasks
+
+A cleaning task can be due less often than every day: beer line cleaning every week, an ice machine every two weeks, extractor filters every four weeks. Set **How often** on the task in **Setup › Food safety › Fridges and tasks** (or `every_days` in the lists).
+
+- **When it is due.** A task done every N days falls due N days after it was last done, whatever the day of the week. Doing it early starts the count again from that day. A task never done yet is **Due**, but is never counted as missed, because Kishtin cannot know when it first fell due.
+- **Today** lists these tasks under **Weekly and longer**, each with **Overdue** (and the day it was due), **Due today**, **Done**, or **Next** and its date. A task counts as one of today's checks only when it is due, overdue or done today.
+- **Catch up** lists an overdue task once, on the day it fell due. Filling it in with the day it was really done moves its next due date on.
+- **Reports** show, for these tasks, how many days in the period each was overdue. Daily tasks are counted as before.
+- They are recorded as ordinary cleaning records, so the record books, exports and the hash chain treat them like any other.
+
+![Weekly and longer tasks on Today](screenshots/recurring-tasks.png)
 
 ## Records cannot be changed
 

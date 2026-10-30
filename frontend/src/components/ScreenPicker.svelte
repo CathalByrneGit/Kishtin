@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Notice, SelectDropdown } from "@kenn-io/kit-ui";
+  import { Button, Checkbox, Notice, SelectDropdown } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
   import { api, message, type Schemas } from "../lib/api";
   import { SCREEN_LABELS, screen, setScreen, type ScreenKind } from "../lib/screen.svelte";
@@ -11,6 +11,7 @@
 
   let kind = $state<ScreenKind>(screen.kind);
   let station = $state(screen.station ?? "");
+  let names = $state(screen.names ?? false);
   let stations = $state<Schemas["Station"][]>([]);
   let error = $state("");
 
@@ -28,9 +29,13 @@
     pass: "Every open order in large type, for a wall-mounted tablet or TV at the pass.",
     station: "One station's queue in large type, for a tablet at that station.",
     phone: "Today's checks, logging, new orders and the pass, for a phone.",
+    collection:
+      "Takeaway numbers being prepared and ready to collect, in large type, for a screen customers can see. It needs no staff login and shows no items, notes or staff.",
   };
 
-  const unchanged = $derived(kind === screen.kind && (kind !== "station" || station === screen.station));
+  const unchanged = $derived(
+    kind === screen.kind && (kind !== "station" || station === screen.station) && (kind !== "collection" || names === (screen.names ?? false)),
+  );
 </script>
 
 <div class="stack">
@@ -52,6 +57,9 @@
       <Notice tone="info" message="There are no stations yet. A manager adds them in Setup, Menu." />
     {/if}
   {/if}
+  {#if kind === "collection"}
+    <Checkbox bind:checked={names} label="Show order names as well as numbers (customers can see them)" />
+  {/if}
   <p class="muted small">{HELP[kind]} The choice is kept on this device only.</p>
   {#if error}<Notice tone="error" message={error} />{/if}
   <div>
@@ -61,7 +69,7 @@
       label="Use this screen"
       disabled={unchanged || (kind === "station" && !station)}
       onclick={() => {
-        setScreen(kind, kind === "station" ? station : null);
+        setScreen(kind, kind === "station" ? station : null, names);
         onchanged?.();
       }}
     />

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { allergenLine } from "../lib/allergens.svelte";
   import { Button, Chip, EmptyState, IconButton, Notice, SegmentedControl, Spinner, showFlash } from "@kenn-io/kit-ui";
   import { Info } from "@lucide/svelte";
   import AllDayStrip from "../components/AllDayStrip.svelte";
@@ -143,6 +144,10 @@
                       <div class="what">
                         <span class="dish">{itemName(it)}</span>
                         {#if it.notes}<span class="note">{it.notes}</span>{/if}
+                        {#if t.order.allergy}
+                          {@const al = allergenLine(it.dish_id)}
+                          {#if al}<span class="allergens" class:unchecked={al.unchecked}>{al.text}</span>{/if}
+                        {/if}
                       </div>
                       {#if finished}
                         <Chip size="sm" uppercase={false} tone="success">Ready</Chip>
@@ -202,6 +207,14 @@
 </div>
 
 <style>
+  .allergens {
+    display: block;
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+  }
+  .allergens.unchecked {
+    color: var(--accent-red);
+  }
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);

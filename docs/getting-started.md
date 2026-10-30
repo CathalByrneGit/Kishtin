@@ -4,6 +4,18 @@ This guide is for the person setting Kishtin up in a restaurant: an owner, manag
 
 > **Before you start:** no Kishtin release has been published yet, so the install lines in Step 1 will not work until one is. Until then, Kishtin has to be built from its source code by someone technical; see the [README](../README.md#build-from-source).
 
+## At a glance
+
+1. Install Kishtin on a computer that stays on in the restaurant, and let it start by itself.
+2. Open it in a browser on that computer and fill in your restaurant's name and your own.
+3. Add your staff, each with a PIN.
+4. Connect each tablet and phone by scanning a QR code.
+5. Name your fridges, freezers and cleaning tasks, and add your menu if you want the kitchen screens.
+6. Print the staff guides and pin them up.
+7. Take your records to your environmental health officer.
+
+Once you are set up, **Today** shows a **Getting started** list that ticks itself off as you go, so you can see what is left.
+
 ## How Kishtin is different
 
 Most restaurant systems (Square, Toast, Lightspeed and the like) live **in the cloud**. Your tills, tablets and kitchen screens talk to the company's computers over the internet, and your data is stored there.
@@ -122,7 +134,8 @@ The tablet notices by itself when the certificate is in place, connects, and sho
 Go through these once. Everything can be changed later.
 
 - **Setup › Kitchen › Menu**: your stations (grill, fryer, cold section), the equipment in each and how many it holds ("flat-top: 3 at once"), and each dish with its cook, rest and plate times.
-- **Setup › Food safety › Fridges and tasks**: your fridges and freezers by name, and your daily cleaning tasks.
+- **Setup › Food safety › Fridges and tasks**: your fridges and freezers by name, and your cleaning tasks, each with how often it is due (every day, every week, and so on).
+- **Setup › Kitchen › Allergens**: tick each dish's allergens in the menu, then check the chart. Staff use it to answer customers.
 - **Setup › Food safety › Limits and rules**: Kishtin starts with the FSAI's limits (fridges at 5°C or below, cooking to 75°C, and so on). Leave them unless your HACCP plan says otherwise.
 
 ## Step 7: Choose what each tablet shows
@@ -134,6 +147,14 @@ On each tablet, open the menu (☰) at the top right, or **Settings › This dev
 - **Phone** for a phone: fridge checks, logging a check, and taking an order.
 
 ![The pass](screenshots/pass.png)
+
+## Step 8: Print the staff guides
+
+Open **Staff guides** (in the sidebar, near Settings). It has one-page guides in large type: logging in, fridge checks, what to do when a reading fails, deliveries, cooking and cooling, cleaning, the station screen, voice, and allergens. **Print all**, or **Print** one, and pin them up where the work happens. They use the same words as the buttons.
+
+## Step 9: Show your environmental health officer
+
+Before you rely on Kishtin instead of the paper booklets, ask your environmental health officer whether they accept these records. [Kishtin's records, for your environmental health officer](for-inspectors.md) explains them in an inspector's terms, says what to print, and lists the questions to ask. Keep your paper records going until they say yes.
 
 ## Every day
 
@@ -166,6 +187,7 @@ It says **Done** and who can now log in. This works only on the Kishtin computer
 
 ## Where to go next
 
+- [Kishtin's records, for your environmental health officer](for-inspectors.md).
 - [Screens](screens.md): every page, explained.
 - [Install](install.md): updating, other options, and what isn't built yet.
 - [HACCP log](haccp.md) and [Record books](record-books.md): checks, exports, and the FSAI booklets.

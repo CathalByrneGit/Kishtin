@@ -55,6 +55,7 @@ Choose what a device shows in **Settings → This device → This device shows**
 | Pass screen | a wall-mounted tablet or TV at the pass | every open order in large type, with Fire, Serve, Mark ready, Change time, Hold again and Urgent for the head chef or a manager |
 | Station screen | a tablet at one station | that station's all-day counts, its tickets with a button per item, and recently done items to undo |
 | Phone | a phone | four tabs: Today (fridge and cleaning checks), Log check, New order (for staff who take orders), and the Pass |
+| Collection screen, facing customers | a TV or tablet customers can see | takeaway numbers **Preparing** and **Ready to collect**, in very large type (see below) |
 
 - The choice is kept in that device's browser only. A device with a phone-sized screen starts on the phone layout; anything else starts on the desktop.
 - Kitchen screens have no sidebar: a top bar with what the screen is, the restaurant, a large clock (pass and station), the connection, who is logged in, and the menu. The menu switches staff, changes the screen, and sets the theme and high contrast.
@@ -62,6 +63,10 @@ Choose what a device shows in **Settings → This device → This device shows**
 - Every button, field and tab on a kitchen screen is at least 56 px tall, and type is larger, so they work with wet or gloved hands and read at arm's length.
 - The station screen's columns wrap on a portrait tablet: Start now and In progress side by side, Coming up below.
 - Kitchen screens keep the screen awake where the browser allows it, show the last known state with a "Not connected" notice if the server drops, and update after every change on any device.
+- **The collection screen** needs no staff login once it is chosen: it stays on after staff log out, so a screen facing customers never shows the kitchen. It shows only takeaway ticket numbers, and names too if **Show order names** is ticked when choosing it (customers can see them). A takeaway is **Ready to collect** once every item not voided is at the pass, and leaves when the pass marks it served or the order is closed. **Staff** in the corner, then **Leave**, returns the device to the login. Table orders never show.
+
+  ![Collection screen](screenshots/collection.png)
+
 - A PIN login lasts 12 hours, so a shared pass or station screen asks for a PIN again after a long shift. Records, exports, verify and setup are on the desktop layout only.
 
 ## Layout
@@ -129,9 +134,10 @@ Each button sends the state the cook saw. If someone else has already moved thos
 
 ## Today
 
-- **Figures**: checks done out of due, out-of-limit readings today, how many of those have no corrective action, cleaning tasks done, and batches in use.
+- **Figures**: checks done out of due, out-of-limit readings today, how many of those have no corrective action, cleaning tasks due today and done, and batches in use.
 - **Fridge and freezer temperatures**: one row per unit, with its limit and a column for each check time. Each check shows the reading (green pass, amber borderline, red fail), **Due**, or amber **Missed** once the next check has started. **Log** opens the log form with that unit chosen.
 - **Daily cleaning**: tick a task to record it as done, with your name and the time. Each task can be done once a day.
+- **Weekly and longer**: tasks due every week or longer, each showing **Overdue**, **Due today**, **Done** or when it is next due, and when it was last done. Tick one to record it, early or late. See [haccp.md](haccp.md#weekly-and-longer-tasks).
 - **Needs attention**: today's failed and borderline records, why, and the corrective action. Select a record to open it in Records.
 - **Batches in use**: batch labels with a use-by date from three days ago onwards: Expired, Use today, or OK.
 
@@ -214,10 +220,11 @@ It runs when you open the page, and again with **Check again**. If something doe
 
 Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and rules** and **Permissions**. Changing them, and opening **Staff**, **Device keys** and **Backups** at all, needs a manager logged in with their password, unless a manager has given that job to others in **Permissions**. Use **Password login** on the page. That logs this device in with a password for 30 minutes.
 
-- **Menu**: a card per station with its equipment and how many each holds, and every dish in a sortable table with its course, station, equipment and capacity, cook time, the learned cook time with how many cooks it comes from and whether new orders use it, total time, how long it can wait, and status (Available, 86, off the menu). **Reset learned** (manager password) starts a dish's learned time again from its next cook. **Add station**, **Add equipment**, **Add dish** and **Edit** need the manager password. The dish form takes times in minutes or minutes:seconds, the food category from the HACCP lists, and modifiers with their extra cook minutes. **86** and **Back on** are open to head chefs, line cooks and managers.
+- **Menu**: a card per station with its equipment and how many each holds, and every dish in a sortable table with its course, station, equipment and capacity, cook time, the learned cook time with how many cooks it comes from and whether new orders use it, total time, how long it can wait, and status (Available, 86, off the menu). **Reset learned** (manager password) starts a dish's learned time again from its next cook. **Edit** also sets the dish's allergens.
+- **Allergens**: the allergen chart, every dish on the menu against the 14 regulated allergens, with **Print**. Dishes whose allergens nobody has checked show **Not checked**. See [kitchen.md](kitchen.md#allergens). **Add station**, **Add equipment**, **Add dish** and **Edit** need the manager password. The dish form takes times in minutes or minutes:seconds, the food category from the HACCP lists, and modifiers with their extra cook minutes. **86** and **Back on** are open to head chefs, line cooks and managers.
 - **Connections**: what Kishtin can connect to (Square and SumUp), what each sends, and whether it is connected and in use. **Set up** opens the connector's page. **Square** has its setup in three steps: connect the account (paste the access token, checked with Square before it is saved), map till items to dishes, and turn import on (with a review of exactly what is sent to Square); then recent till orders with anything to check. See [square.md](square.md). **SumUp** has the same three steps, with an API key and a merchant account; it brings in sales once they are paid. See [sumup.md](sumup.md).
 - **Scheduler**: the strategy, batching, priorities, how long a ready course can wait at the pass, how often screens re-plan, a buffer per station, and **Use learned cook times** (see [kitchen.md](kitchen.md#learned-cook-times)). **Review changes** shows what changes before saving with a reason. A card lists what the scheduler does not do yet.
-- **Fridges and tasks**: fridges and freezers with their check times, and which fridges are non-food; daily cleaning tasks and their areas; food categories; quick-pick corrective actions per record type. Edit freely, then **Review changes** shows what changes and what it affects, and asks for a reason before saving.
+- **Fridges and tasks**: fridges and freezers with their check times, and which fridges are non-food; cleaning tasks with their areas and **How often** (every day, week, 2 weeks or 4 weeks); food categories; quick-pick corrective actions per record type. Edit freely, then **Review changes** shows what changes and what it affects, and asks for a reason before saving.
 - **Limits and rules**: the limits in use, and the full history with who changed each one and why.
   - **Change** or **New limit** opens the limit form. It covers fridge and freezer maximums, delivery borderlines, hot-holding minimums, cooking time–temperature combinations and cooling times, for a dish, food category, unit or every one.
   - **Preview the change** shows what it replaces, any warning that it is below your guidance or the FSAI defaults, and how recent records would have scored under it.
@@ -228,6 +235,18 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and ru
 - **Staff**: add staff with a role and a PIN (managers also get a password of at least 10 characters), change roles, change a PIN or password, and deactivate or reactivate. Staff are never deleted, because records name who logged them. Once someone is deactivated, **Anonymise** replaces their name with "Former staff N" in the kitchen's logs, after showing what will change; HACCP records keep their name. See [recording.md](recording.md#leavers).
 - **Device keys**: make device keys and staff keys for the CLI. The key and pairing link are shown once. You can revoke a key.
 - **Backups**: the latest backup, the schedule, and every backup on the server with its record count, size, verify result and chain head. **Back up now** makes one straight away.
+
+## Staff guides
+
+**Staff guides** (in the sidebar, near Settings) has one-page guides to print and pin up: logging in, fridge and freezer checks, what to do if a reading fails, deliveries, cooking and cooling, cleaning, the station screen, voice commands, and answering customers about allergens. Each uses the words on the buttons. **Print** prints one, a page each; **Print all** prints them all.
+
+![Staff guides](screenshots/guides.png)
+
+## Getting started list
+
+For a manager, **Today** starts with a **Getting started** list until everything on it is done: name the restaurant, add staff and a second manager, name your fridges and cleaning tasks, connect a tablet, log a first check, start Kishtin with the computer, and (optionally) add the menu and check its allergens. Each step ticks itself off from what is set up and recorded, with **Open** to go to the screen where it is done. **Hide this list** hides it on that device. `kishtin getting-started` and `GET /api/getting-started` give the same list.
+
+![Getting started list](screenshots/getting-started-list.png)
 
 ## Settings
 

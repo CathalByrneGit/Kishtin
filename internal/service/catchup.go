@@ -29,6 +29,9 @@ type CatchUpGap struct {
 	Check string           `json:"check,omitempty"`
 	Task  string           `json:"task,omitempty"`
 	Area  string           `json:"area,omitempty"`
+	// EveryDays is how often a cleaning task is due, when not every day;
+	// the gap is then the day it fell due.
+	EveryDays int `json:"every_days,omitempty"`
 	// Time is the start of the check's window (HH:MM), as a starting point
 	// for when it was done. Empty for cleaning tasks, which have none.
 	Time string `json:"time,omitempty"`
@@ -149,8 +152,9 @@ func (s *Service) CatchUpGaps(ctx context.Context, p *auth.Principal, fromDay, t
 		})
 	}
 
-	// Cleaning tasks are due every day; today's are not missed until the
-	// day is over.
+	// Daily cleaning tasks are due every day; today's are not missed until
+	// the day is over. A task done every N days is missed from the day
+	// after it fell due.
 	done := map[string]bool{}
 	for _, e := range haccp.ApplyCorrections(recs) {
 		if e.Type == haccp.RecordCleaning && e.Reading.Done != nil && *e.Reading.Done {
@@ -160,10 +164,26 @@ func (s *Service) CatchUpGaps(ctx context.Context, p *auth.Principal, fromDay, t
 	for d := from; d.Before(today) && !d.After(to); d = d.AddDate(0, 0, 1) {
 		day := d.Format(haccp.DateLayout)
 		for _, t := range lists.Value.CleaningTasks {
-			if !done[day+"\x00"+strings.ToLower(t.Task)] {
+			if t.Daily() && !done[day+"\x00"+strings.ToLower(t.Task)] {
 				out.Gaps = append(out.Gaps, CatchUpGap{Date: day, Type: haccp.RecordCleaning, Task: t.Task, Area: t.Area, SignedOff: signed[day]})
 			}
 		}
+	}
+	interval, err := s.cleaningDays(ctx, lists.Value, today.AddDate(0, 0, -2*haccp.MaxEveryDays), today.AddDate(0, 0, 1))
+	if err != nil {
+		return out, err
+	}
+	todayDay := today.Format(haccp.DateLayout)
+	for _, t := range lists.Value.CleaningTasks {
+		if t.Daily() {
+			continue
+		}
+		sched := haccp.TaskScheduleFor(t, interval[strings.ToLower(t.Task)], todayDay)
+		due := sched.NextDue
+		if sched.Status != haccp.TaskOverdue || due < from.Format(haccp.DateLayout) || due > to.Format(haccp.DateLayout) {
+			continue
+		}
+		out.Gaps = append(out.Gaps, CatchUpGap{Date: due, Type: haccp.RecordCleaning, Task: t.Task, Area: t.Area, EveryDays: t.EveryDays, SignedOff: signed[due]})
 	}
 	slices.SortStableFunc(out.Gaps, func(a, b CatchUpGap) int { return strings.Compare(a.Date, b.Date) })
 	return out, nil

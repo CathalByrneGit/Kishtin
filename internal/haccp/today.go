@@ -54,6 +54,12 @@ type CleaningToday struct {
 	Task   string  `json:"task"`
 	Area   string  `json:"area,omitempty"`
 	Record *Record `json:"record,omitempty"`
+	// EveryDays is how often the task is due; 0 is every day.
+	EveryDays int `json:"every_days,omitempty"`
+	// Schedule says, for a task done every N days, when it was last done,
+	// when it is next due and whether it is due today. Daily tasks have
+	// none.
+	Schedule *TaskSchedule `json:"schedule,omitempty"`
 }
 
 // BatchToday is a batch label still in use.
@@ -93,6 +99,9 @@ type TodayInput struct {
 	BatchLabels []Record
 	Lists       Lists
 	Limits      []LimitVersion
+	// CleaningDone gives, per cleaning task (lower case), the days it was
+	// done before today, for tasks done every N days.
+	CleaningDone map[string][]string
 }
 
 // Effective is a record after corrections, placed at the time its check
@@ -219,6 +228,19 @@ func BuildToday(in TodayInput) Today {
 			r := recs[k].Record
 			if r.Type == RecordCleaning && strings.EqualFold(r.Reading.Task, ct.Task) && r.Reading.Done != nil && *r.Reading.Done {
 				c.Record = &r
+			}
+		}
+		if !ct.Daily() {
+			done := in.CleaningDone[strings.ToLower(ct.Task)]
+			if c.Record != nil {
+				done = append(done, day)
+			}
+			sched := TaskScheduleFor(ct, done, day)
+			c.EveryDays, c.Schedule = ct.EveryDays, &sched
+			if sched.Status == TaskNotDue {
+				// Not due today: listed, but not one of today's checks.
+				t.Cleaning = append(t.Cleaning, c)
+				continue
 			}
 		}
 		if c.Record != nil {
