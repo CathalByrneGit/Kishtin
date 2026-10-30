@@ -7,6 +7,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/cathalbyrnegit/kishtin/internal/autostart"
+	"github.com/cathalbyrnegit/kishtin/internal/service"
 )
 
 // StartupStatus is whether Kishtin starts by itself with this computer.
@@ -23,6 +24,14 @@ type startupIn struct {
 }
 
 func (s *Server) startupRoutes() {
+	huma.Register(s.api, huma.Operation{
+		OperationID: "get-setup-progress", Method: http.MethodGet, Path: "/getting-started", Tags: []string{"Setup"},
+		Summary:     "How far the restaurant has got with setting Kishtin up",
+		Description: "Each step is worked out from what is set up and recorded, so it ticks itself off. Steps marked optional are not counted in done and total.",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.SetupProgress], error) {
+		return reply(s.svc.SetupProgress(ctx, principal(ctx)))
+	}))
+
 	huma.Register(s.api, huma.Operation{
 		OperationID: "get-startup", Method: http.MethodGet, Path: "/startup", Tags: []string{"Setup"},
 		Summary:     "Whether Kishtin starts by itself with this computer",

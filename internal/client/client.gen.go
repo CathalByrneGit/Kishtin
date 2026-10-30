@@ -98,6 +98,10 @@ type ClientInterface interface {
 	GetFile(ctx context.Context, options *GetFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*struct{}, error)
 	GetFileWithResponse(ctx context.Context, options *GetFileRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetFileResp, error)
 
+	// GetSetupProgress How far the restaurant has got with setting Kishtin up
+	GetSetupProgress(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSetupProgressResponse, error)
+	GetSetupProgressWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSetupProgressResp, error)
+
 	// ListRecordBooks List the record books in use, and the bundles and booklet kinds available
 	ListRecordBooks(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResponse, error)
 	ListRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResp, error)
@@ -1554,6 +1558,68 @@ func (c *Client) GetFile(ctx context.Context, options *GetFileRequestOptions, re
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/files/{sha256}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// GetSetupProgress How far the restaurant has got with setting Kishtin up
+func (c *Client) GetSetupProgress(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSetupProgressResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/getting-started",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*GetSetupProgressResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(GetSetupProgressErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "GetSetupProgressErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(GetSetupProgressResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "GetSetupProgressResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/getting-started")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -14232,6 +14298,66 @@ func (c *Client) GetFileWithResponse(ctx context.Context, options *GetFileReques
 	}
 }
 
+// GetSetupProgress How far the restaurant has got with setting Kishtin up
+func (c *Client) GetSetupProgressWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*GetSetupProgressResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/getting-started",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/getting-started")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &GetSetupProgressResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(GetSetupProgressResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSetupProgressResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(GetSetupProgressErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "GetSetupProgressErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // ListRecordBooks List the record books in use, and the bundles and booklet kinds available
 func (c *Client) ListRecordBooksWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ListRecordBooksResp, error) {
 	var err error
@@ -22553,6 +22679,10 @@ type UploadFileErrorResponse = ErrorModel
 
 type GetFileErrorResponse = ErrorModel
 
+type GetSetupProgressResponse = SetupProgress
+
+type GetSetupProgressErrorResponse = ErrorModel
+
 type ListRecordBooksResponse = RecordBooks
 
 type ListRecordBooksErrorResponse = ErrorModel
@@ -23146,6 +23276,14 @@ type GetFileResp struct {
 	Body                              []byte
 	StatusCode                        int
 	ApplicationProblemPlusJSONDefault *GetFileErrorResponse
+}
+
+type GetSetupProgressResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *GetSetupProgressResponse
+	ApplicationProblemPlusJSONDefault *GetSetupProgressErrorResponse
 }
 
 type ListRecordBooksResp struct {
@@ -27488,6 +27626,19 @@ func (p Progress) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(p))
 }
 
+type ProgressStep struct {
+	Detail   string `json:"detail" validate:"required"`
+	Done     bool   `json:"done"`
+	Href     string `json:"href" validate:"required"`
+	ID       string `json:"id" validate:"required"`
+	Optional *bool  `json:"optional,omitempty"`
+	Title    string `json:"title" validate:"required"`
+}
+
+func (p ProgressStep) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(p))
+}
+
 type Reading struct {
 	Answers       []Answer   `json:"answers,omitempty"`
 	Area          *string    `json:"area,omitempty"`
@@ -28389,6 +28540,30 @@ type SetupInBody struct {
 
 func (s SetupInBody) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
+type SetupProgress struct {
+	Done  int64          `json:"done"`
+	Steps []ProgressStep `json:"steps" validate:"required"`
+	Total int64          `json:"total"`
+}
+
+func (s SetupProgress) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(s.Steps, "required"); err != nil {
+		errors = errors.Append("Steps", err)
+	}
+	for i, item := range s.Steps {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Steps[%d]", i), err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type SetupStatusOutBody struct {

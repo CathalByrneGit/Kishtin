@@ -1,4 +1,5 @@
 <script lang="ts">
+  import GettingStarted from "../components/GettingStarted.svelte";
   import { dueToday, scheduleStatus } from "../lib/cleaning";
   import { can, canWithPassword } from "../lib/can.svelte";
   import { Button, Card, Checkbox, Chip, EmptyState, MetricCard, Notice, Spinner, Table, TableHeaderCell, showFlash, type ChipTone } from "@kenn-io/kit-ui";
@@ -80,6 +81,8 @@
       {#if today}<span class="muted">{longDate(today.date)}</span>{/if}
     </div>
   </header>
+
+  <GettingStarted />
 
   {#if error}
     <Notice tone="error" title="Could not load today" message={error} />

@@ -271,6 +271,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How far the restaurant has got with setting Kishtin up
+         * @description Each step is worked out from what is set up and recorded, so it ticks itself off. Steps marked optional are not counted in done and total.
+         */
+        get: operations["get-setup-progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/haccp/books": {
         parameters: {
             query?: never;
@@ -3342,6 +3362,14 @@ export interface components {
             phase_ends_at: string;
             state: string;
         };
+        ProgressStep: {
+            detail: string;
+            done: boolean;
+            href: string;
+            id: string;
+            optional?: boolean;
+            title: string;
+        };
         Reading: {
             answers?: components["schemas"]["Answer"][];
             area?: string;
@@ -3630,6 +3658,13 @@ export interface components {
             password: string;
             pin?: string;
             restaurant: string;
+        };
+        SetupProgress: {
+            /** Format: int64 */
+            done: number;
+            steps: components["schemas"]["ProgressStep"][];
+            /** Format: int64 */
+            total: number;
         };
         SetupStatusOutBody: {
             code_needed: boolean;
@@ -4512,6 +4547,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-setup-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupProgress"];
+                };
             };
             /** @description Error */
             default: {

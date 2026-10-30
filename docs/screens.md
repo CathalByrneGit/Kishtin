@@ -236,6 +236,18 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and ru
 - **Device keys**: make device keys and staff keys for the CLI. The key and pairing link are shown once. You can revoke a key.
 - **Backups**: the latest backup, the schedule, and every backup on the server with its record count, size, verify result and chain head. **Back up now** makes one straight away.
 
+## Staff guides
+
+**Staff guides** (in the sidebar, near Settings) has one-page guides to print and pin up: logging in, fridge and freezer checks, what to do if a reading fails, deliveries, cooking and cooling, cleaning, the station screen, voice commands, and answering customers about allergens. Each uses the words on the buttons. **Print** prints one, a page each; **Print all** prints them all.
+
+![Staff guides](screenshots/guides.png)
+
+## Getting started list
+
+For a manager, **Today** starts with a **Getting started** list until everything on it is done: name the restaurant, add staff and a second manager, name your fridges and cleaning tasks, connect a tablet, log a first check, start Kishtin with the computer, and (optionally) add the menu and check its allergens. Each step ticks itself off from what is set up and recorded, with **Open** to go to the screen where it is done. **Hide this list** hides it on that device. `kishtin getting-started` and `GET /api/getting-started` give the same list.
+
+![Getting started list](screenshots/getting-started-list.png)
+
 ## Settings
 
 - **Restaurant**: the name, backup schedule and retention, largest upload, and preview length. These change through the same review as Setup. See [settings.md](settings.md#system-settings).

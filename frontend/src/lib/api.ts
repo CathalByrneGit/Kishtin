@@ -251,6 +251,7 @@ export const api = {
   learned: () => json<Schemas["LearnedTimes"]>("GET", "/menu/learned"),
   allergens: () => json<Schemas["AllergenChart"]>("GET", "/menu/allergens"),
   collection: () => json<Schemas["CollectionBoard"]>("GET", "/collection"),
+  gettingStarted: () => json<Schemas["SetupProgress"]>("GET", "/getting-started"),
   resetLearned: (id: string) => json<Schemas["LearnedDish"]>("POST", `/menu/dishes/${encodeURIComponent(id)}/learned/reset`),
 
   orders: (date?: string) => json<Schemas["OrdersBody"]>("GET", "/orders", { query: { date } }),

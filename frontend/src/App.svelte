@@ -33,6 +33,7 @@
     UtensilsCrossed,
     Search,
     Settings,
+    LifeBuoy,
     SlidersHorizontal,
     Plug,
     Users,
@@ -63,6 +64,7 @@
   import Stations from "./views/Stations.svelte";
   import MenuSetup from "./views/setup/Menu.svelte";
   import AllergenChart from "./views/setup/Allergens.svelte";
+  import Guides from "./views/Guides.svelte";
   import SchedulerSetup from "./views/setup/Scheduler.svelte";
   import ConnectionsSetup from "./views/setup/Connections.svelte";
   import TillSetup from "./views/setup/Till.svelte";
@@ -113,6 +115,7 @@
     people: { id: "people", label: "Staff and access", icon: Users },
     backups: { id: "backups", label: "Backups", icon: Archive },
     settings: { id: "settings", label: "Settings", icon: Settings },
+    guides: { id: "guides", label: "Staff guides", icon: LifeBuoy },
   } satisfies Record<string, Section>;
   type SectionId = keyof typeof sections;
 
@@ -144,6 +147,7 @@
     { path: "/setup/keys", label: "Device keys", section: "people", view: "keys", group: "Setup" },
     { path: "/setup/backups", label: "Backups", section: "backups", view: null, group: "Setup" },
     { path: "/setup/settings", label: "Settings", section: "settings", view: null, group: "This device" },
+    { path: "/guides", label: "Staff guides", section: "guides", view: null, group: "Help" },
   ];
 
   function sidebarGroup(label: string | null, ids: SectionId[], end = false): SidebarGroup {
@@ -165,7 +169,7 @@
     sidebarGroup("Reports", ["reports"]),
     sidebarGroup("HACCP", ["today", "records", "books", "exports"]),
     sidebarGroup("Setup", ["kitchen", "safety", "connections", "people", "backups"]),
-    sidebarGroup(null, ["settings"], true),
+    sidebarGroup(null, ["guides", "settings"], true),
   ];
 
   let restaurant = $state("");
@@ -391,6 +395,8 @@
           <VoiceView />
         {:else if route.path === "/setup/menu"}
           <MenuSetup />
+        {:else if route.path === "/guides"}
+          <Guides {restaurant} />
         {:else if route.path === "/setup/allergens"}
           <AllergenChart {restaurant} />
         {:else if route.path === "/setup/scheduler"}

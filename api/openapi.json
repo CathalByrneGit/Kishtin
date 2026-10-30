@@ -4090,6 +4090,37 @@
         ],
         "type": "object"
       },
+      "ProgressStep": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "href": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "optional": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "detail",
+          "done",
+          "href"
+        ],
+        "type": "object"
+      },
       "Reading": {
         "additionalProperties": false,
         "properties": {
@@ -5205,6 +5236,31 @@
           "name",
           "password",
           "device"
+        ],
+        "type": "object"
+      },
+      "SetupProgress": {
+        "additionalProperties": false,
+        "properties": {
+          "done": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ProgressStep"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "steps",
+          "done",
+          "total"
         ],
         "type": "object"
       },
@@ -7331,6 +7387,38 @@
         "summary": "Download an attached file",
         "tags": [
           "Files"
+        ]
+      }
+    },
+    "/getting-started": {
+      "get": {
+        "description": "Each step is worked out from what is set up and recorded, so it ticks itself off. Steps marked optional are not counted in done and total.",
+        "operationId": "get-setup-progress",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupProgress"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "How far the restaurant has got with setting Kishtin up",
+        "tags": [
+          "Setup"
         ]
       }
     },
