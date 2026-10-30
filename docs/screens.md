@@ -134,9 +134,10 @@ Each button sends the state the cook saw. If someone else has already moved thos
 
 ## Today
 
-- **Figures**: checks done out of due, out-of-limit readings today, how many of those have no corrective action, cleaning tasks done, and batches in use.
+- **Figures**: checks done out of due, out-of-limit readings today, how many of those have no corrective action, cleaning tasks due today and done, and batches in use.
 - **Fridge and freezer temperatures**: one row per unit, with its limit and a column for each check time. Each check shows the reading (green pass, amber borderline, red fail), **Due**, or amber **Missed** once the next check has started. **Log** opens the log form with that unit chosen.
 - **Daily cleaning**: tick a task to record it as done, with your name and the time. Each task can be done once a day.
+- **Weekly and longer**: tasks due every week or longer, each showing **Overdue**, **Due today**, **Done** or when it is next due, and when it was last done. Tick one to record it, early or late. See [haccp.md](haccp.md#weekly-and-longer-tasks).
 - **Needs attention**: today's failed and borderline records, why, and the corrective action. Select a record to open it in Records.
 - **Batches in use**: batch labels with a use-by date from three days ago onwards: Expired, Use today, or OK.
 
@@ -223,7 +224,7 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and ru
 - **Allergens**: the allergen chart, every dish on the menu against the 14 regulated allergens, with **Print**. Dishes whose allergens nobody has checked show **Not checked**. See [kitchen.md](kitchen.md#allergens). **Add station**, **Add equipment**, **Add dish** and **Edit** need the manager password. The dish form takes times in minutes or minutes:seconds, the food category from the HACCP lists, and modifiers with their extra cook minutes. **86** and **Back on** are open to head chefs, line cooks and managers.
 - **Connections**: what Kishtin can connect to (Square and SumUp), what each sends, and whether it is connected and in use. **Set up** opens the connector's page. **Square** has its setup in three steps: connect the account (paste the access token, checked with Square before it is saved), map till items to dishes, and turn import on (with a review of exactly what is sent to Square); then recent till orders with anything to check. See [square.md](square.md). **SumUp** has the same three steps, with an API key and a merchant account; it brings in sales once they are paid. See [sumup.md](sumup.md).
 - **Scheduler**: the strategy, batching, priorities, how long a ready course can wait at the pass, how often screens re-plan, a buffer per station, and **Use learned cook times** (see [kitchen.md](kitchen.md#learned-cook-times)). **Review changes** shows what changes before saving with a reason. A card lists what the scheduler does not do yet.
-- **Fridges and tasks**: fridges and freezers with their check times, and which fridges are non-food; daily cleaning tasks and their areas; food categories; quick-pick corrective actions per record type. Edit freely, then **Review changes** shows what changes and what it affects, and asks for a reason before saving.
+- **Fridges and tasks**: fridges and freezers with their check times, and which fridges are non-food; cleaning tasks with their areas and **How often** (every day, week, 2 weeks or 4 weeks); food categories; quick-pick corrective actions per record type. Edit freely, then **Review changes** shows what changes and what it affects, and asks for a reason before saving.
 - **Limits and rules**: the limits in use, and the full history with who changed each one and why.
   - **Change** or **New limit** opens the limit form. It covers fridge and freezer maximums, delivery borderlines, hot-holding minimums, cooking time–temperature combinations and cooling times, for a dish, food category, unit or every one.
   - **Preview the change** shows what it replaces, any warning that it is below your guidance or the FSAI defaults, and how recent records would have scored under it.

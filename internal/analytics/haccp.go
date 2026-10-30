@@ -24,6 +24,10 @@ type HACCPInput struct {
 	CleaningTasks []haccp.CleaningTask
 	// Limits is the limit history, for each unit's limit now.
 	Limits []haccp.LimitVersion
+	// CleaningDoneBefore gives, per cleaning task done every N days (lower
+	// case), the days it was done before From, so the period's first due
+	// day is known.
+	CleaningDoneBefore map[string][]string
 }
 
 // HACCPReport is how well the daily checks were kept up in a period.
@@ -45,8 +49,11 @@ type HACCPReport struct {
 	CleaningDue     int `json:"cleaning_due"`
 	CleaningDone    int `json:"cleaning_done"`
 	CleaningPercent int `json:"cleaning_percent"`
-	// CleaningMissedByTask counts cleaning tasks not done, most first.
+	// CleaningMissedByTask counts daily cleaning tasks not done, most first.
 	CleaningMissedByTask []Count `json:"cleaning_missed_by_task"`
+	// CleaningOverdueByTask counts, for tasks done every N days (weekly and
+	// longer), the days in the period they were overdue, most first.
+	CleaningOverdueByTask []Count `json:"cleaning_overdue_by_task"`
 	// Readings counts every record in the period, and the failed and
 	// borderline ones.
 	Records       int `json:"records"`
@@ -112,7 +119,7 @@ func BuildHACCP(in HACCPInput) HACCPReport {
 	}
 	r := HACCPReport{
 		From: day(in.From, loc).Format(haccp.DateLayout), To: day(in.To, loc).Format(haccp.DateLayout),
-		MissedByWeekday: []Count{}, MissedByUnit: []Count{}, CleaningMissedByTask: []Count{},
+		MissedByWeekday: []Count{}, MissedByUnit: []Count{}, CleaningMissedByTask: []Count{}, CleaningOverdueByTask: []Count{},
 		OutOfLimitByType: []Count{}, Temperatures: []UnitTemps{}, Recent: []haccp.Record{},
 	}
 	if !start.Before(end) {
@@ -186,6 +193,9 @@ func BuildHACCP(in HACCPInput) HACCPReport {
 	missedTask := map[string]int{}
 	for d := start; d.Before(end) && d.Before(today); d = d.AddDate(0, 0, 1) {
 		for _, t := range in.CleaningTasks {
+			if !t.Daily() {
+				continue
+			}
 			r.CleaningDue++
 			if cleaned[d.Format(haccp.DateLayout)+"\x00"+strings.ToLower(t.Task)] {
 				r.CleaningDone++
@@ -201,6 +211,26 @@ func BuildHACCP(in HACCPInput) HACCPReport {
 		}
 	}
 	sortCounts(r.CleaningMissedByTask)
+	lastDay := end.AddDate(0, 0, -1)
+	if !lastDay.Before(today) {
+		lastDay = today.AddDate(0, 0, -1)
+	}
+	for _, t := range in.CleaningTasks {
+		if t.Daily() || lastDay.Before(start) {
+			continue
+		}
+		done := append([]string{}, in.CleaningDoneBefore[strings.ToLower(t.Task)]...)
+		for k := range cleaned {
+			day, task, _ := strings.Cut(k, "\x00")
+			if task == strings.ToLower(t.Task) {
+				done = append(done, day)
+			}
+		}
+		if n := haccp.OverdueDays(t, done, start.Format(haccp.DateLayout), lastDay.Format(haccp.DateLayout)); n > 0 {
+			r.CleaningOverdueByTask = append(r.CleaningOverdueByTask, Count{Key: t.Task, Label: t.Task, Count: n})
+		}
+	}
+	sortCounts(r.CleaningOverdueByTask)
 
 	// Out-of-limit readings.
 	byType := map[haccp.RecordType]int{}

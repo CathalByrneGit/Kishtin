@@ -25,7 +25,8 @@ Times are medians (half were quicker), with the time nine in ten were quicker th
 
 - **Fridge and freezer checks**: due, done and missed. Missed checks are counted the way the record books count them, from the first day records were kept; a check counts as done when its time slot has a reading, whenever it was entered.
 - **Missed checks by day of the week** and **by fridge and freezer**.
-- **Cleaning tasks done** and **not done**, by task, on days that are over.
+- **Cleaning tasks done** and **not done**, by task, on days that are over, for daily tasks.
+- **Weekly and longer tasks overdue**: for tasks due every week or longer, how many days in the period each was overdue.
 - **Records**, **out of limit** and **out of limit with no corrective action**, and out of limit by kind.
 - **Highest reading each day**, for each fridge and freezer, against its limit now. Days with no reading leave a gap.
 - **Out-of-limit records**: the latest, each linking to the record.

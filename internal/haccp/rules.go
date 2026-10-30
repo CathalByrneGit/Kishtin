@@ -94,7 +94,17 @@ type ActionPreset struct {
 type CleaningTask struct {
 	Task string `json:"task"`
 	Area string `json:"area,omitempty"`
+	// EveryDays is how often the task is due: 0 or 1 every day, 7 every
+	// week, 14 every two weeks, and so on. A task done every N days falls
+	// due N days after it was last done (see TaskScheduleFor).
+	EveryDays int `json:"every_days,omitempty"`
 }
+
+// MaxEveryDays is the longest a cleaning task can go between times done.
+const MaxEveryDays = 366
+
+// Daily reports whether the task is due every day.
+func (t CleaningTask) Daily() bool { return t.EveryDays <= 1 }
 
 // Lists are the names staff choose from when logging records.
 type Lists struct {
@@ -170,7 +180,11 @@ func (l Lists) Normalize() Lists {
 		out.FoodCategories = append(out.FoodCategories, strings.TrimSpace(c))
 	}
 	for _, t := range l.CleaningTasks {
-		out.CleaningTasks = append(out.CleaningTasks, CleaningTask{Task: strings.TrimSpace(t.Task), Area: strings.TrimSpace(t.Area)})
+		every := t.EveryDays
+		if every == 1 {
+			every = 0
+		}
+		out.CleaningTasks = append(out.CleaningTasks, CleaningTask{Task: strings.TrimSpace(t.Task), Area: strings.TrimSpace(t.Area), EveryDays: every})
 	}
 	return out
 }
@@ -215,10 +229,15 @@ func (l Lists) Validate() error {
 		}
 		seenAction[k] = true
 	}
+	var every []error
 	for _, t := range l.CleaningTasks {
 		tasks = append(tasks, t.Task)
+		if t.EveryDays < 0 || t.EveryDays > MaxEveryDays {
+			every = append(every, fmt.Errorf("cleaning task %q: how often must be between 1 and %d days", t.Task, MaxEveryDays))
+		}
 	}
 	return errors.Join(
+		errors.Join(every...),
 		unique("units", units),
 		unique("food_categories", l.FoodCategories),
 		unique("cleaning_tasks", tasks),

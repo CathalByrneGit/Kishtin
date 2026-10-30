@@ -2430,6 +2430,8 @@ export interface components {
             area?: string;
             check?: string;
             date: string;
+            /** Format: int64 */
+            every_days?: number;
             signed_off?: boolean;
             task?: string;
             time?: string;
@@ -2474,11 +2476,16 @@ export interface components {
         };
         CleaningTask: {
             area?: string;
+            /** Format: int64 */
+            every_days?: number;
             task: string;
         };
         CleaningToday: {
             area?: string;
+            /** Format: int64 */
+            every_days?: number;
             record?: components["schemas"]["Record"];
+            schedule?: components["schemas"]["TaskSchedule"];
             task: string;
         };
         CollectionBoard: {
@@ -2842,6 +2849,7 @@ export interface components {
             /** Format: int64 */
             cleaning_due: number;
             cleaning_missed_by_task: components["schemas"]["Count"][];
+            cleaning_overdue_by_task: components["schemas"]["Count"][];
             /** Format: int64 */
             cleaning_percent: number;
             from: string;
@@ -3790,6 +3798,11 @@ export interface components {
             reason?: string;
             /** Format: date-time */
             target_at: string;
+        };
+        TaskSchedule: {
+            last_done?: string;
+            next_due?: string;
+            status: string;
         };
         Template: {
             builder?: string;

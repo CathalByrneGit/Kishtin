@@ -24779,6 +24779,7 @@ type CatchUpGap struct {
 	Area      *string `json:"area,omitempty"`
 	Check     *string `json:"check,omitempty"`
 	Date      string  `json:"date" validate:"required"`
+	EveryDays *int64  `json:"every_days,omitempty"`
 	SignedOff *bool   `json:"signed_off,omitempty"`
 	Task      *string `json:"task,omitempty"`
 	Time      *string `json:"time,omitempty"`
@@ -24906,8 +24907,9 @@ func (c ChecklistSection) Validate() error {
 }
 
 type CleaningTask struct {
-	Area *string `json:"area,omitempty"`
-	Task string  `json:"task" validate:"required"`
+	Area      *string `json:"area,omitempty"`
+	EveryDays *int64  `json:"every_days,omitempty"`
+	Task      string  `json:"task" validate:"required"`
 }
 
 func (c CleaningTask) Validate() error {
@@ -24915,9 +24917,11 @@ func (c CleaningTask) Validate() error {
 }
 
 type CleaningToday struct {
-	Area   *string `json:"area,omitempty"`
-	Record *Record `json:"record,omitempty"`
-	Task   string  `json:"task" validate:"required"`
+	Area      *string       `json:"area,omitempty"`
+	EveryDays *int64        `json:"every_days,omitempty"`
+	Record    *Record       `json:"record,omitempty"`
+	Schedule  *TaskSchedule `json:"schedule,omitempty"`
+	Task      string        `json:"task" validate:"required"`
 }
 
 func (c CleaningToday) Validate() error {
@@ -24926,6 +24930,13 @@ func (c CleaningToday) Validate() error {
 		if v, ok := any(c.Record).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append("Record", err)
+			}
+		}
+	}
+	if c.Schedule != nil {
+		if v, ok := any(c.Schedule).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Schedule", err)
 			}
 		}
 	}
@@ -25738,24 +25749,25 @@ func (g GuidanceCheck) Validate() error {
 }
 
 type HACCPReport struct {
-	ChecksDone           int64       `json:"checks_done"`
-	ChecksDue            int64       `json:"checks_due"`
-	ChecksMissed         int64       `json:"checks_missed"`
-	ChecksPercent        int64       `json:"checks_percent"`
-	CleaningDone         int64       `json:"cleaning_done"`
-	CleaningDue          int64       `json:"cleaning_due"`
-	CleaningMissedByTask []Count     `json:"cleaning_missed_by_task" validate:"required"`
-	CleaningPercent      int64       `json:"cleaning_percent"`
-	From                 string      `json:"from" validate:"required"`
-	MissedByUnit         []Count     `json:"missed_by_unit" validate:"required"`
-	MissedByWeekday      []Count     `json:"missed_by_weekday" validate:"required"`
-	OutOfLimit           int64       `json:"out_of_limit"`
-	OutOfLimitByType     []Count     `json:"out_of_limit_by_type" validate:"required"`
-	Recent               []Record    `json:"recent" validate:"required"`
-	Records              int64       `json:"records"`
-	Temperatures         []UnitTemps `json:"temperatures" validate:"required"`
-	To                   string      `json:"to" validate:"required"`
-	WithoutAction        int64       `json:"without_action"`
+	ChecksDone            int64       `json:"checks_done"`
+	ChecksDue             int64       `json:"checks_due"`
+	ChecksMissed          int64       `json:"checks_missed"`
+	ChecksPercent         int64       `json:"checks_percent"`
+	CleaningDone          int64       `json:"cleaning_done"`
+	CleaningDue           int64       `json:"cleaning_due"`
+	CleaningMissedByTask  []Count     `json:"cleaning_missed_by_task" validate:"required"`
+	CleaningOverdueByTask []Count     `json:"cleaning_overdue_by_task" validate:"required"`
+	CleaningPercent       int64       `json:"cleaning_percent"`
+	From                  string      `json:"from" validate:"required"`
+	MissedByUnit          []Count     `json:"missed_by_unit" validate:"required"`
+	MissedByWeekday       []Count     `json:"missed_by_weekday" validate:"required"`
+	OutOfLimit            int64       `json:"out_of_limit"`
+	OutOfLimitByType      []Count     `json:"out_of_limit_by_type" validate:"required"`
+	Recent                []Record    `json:"recent" validate:"required"`
+	Records               int64       `json:"records"`
+	Temperatures          []UnitTemps `json:"temperatures" validate:"required"`
+	To                    string      `json:"to" validate:"required"`
+	WithoutAction         int64       `json:"without_action"`
 }
 
 func (h HACCPReport) Validate() error {
@@ -25767,6 +25779,16 @@ func (h HACCPReport) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("CleaningMissedByTask[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(h.CleaningOverdueByTask, "required"); err != nil {
+		errors = errors.Append("CleaningOverdueByTask", err)
+	}
+	for i, item := range h.CleaningOverdueByTask {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("CleaningOverdueByTask[%d]", i), err)
 			}
 		}
 	}
@@ -28828,6 +28850,16 @@ type TargetBody struct {
 }
 
 func (t TargetBody) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(t))
+}
+
+type TaskSchedule struct {
+	LastDone *string `json:"last_done,omitempty"`
+	NextDue  *string `json:"next_due,omitempty"`
+	Status   string  `json:"status" validate:"required"`
+}
+
+func (t TaskSchedule) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(t))
 }
 

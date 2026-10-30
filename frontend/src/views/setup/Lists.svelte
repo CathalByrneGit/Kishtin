@@ -18,6 +18,7 @@
   import ManagerGate from "../../components/ManagerGate.svelte";
   import ReviewChanges, { type Preview } from "../../components/ReviewChanges.svelte";
   import { api, message, type Lists, type Schemas } from "../../lib/api";
+  import { everyOptions } from "../../lib/cleaning";
   import { LOGGABLE_TYPES, TYPE_LABELS, typeLabel } from "../../lib/labels";
   import { onChange } from "../../lib/live.svelte";
   import { can } from "../../lib/can.svelte";
@@ -36,6 +37,7 @@
   let newUnit = $state("");
   let newUnitKind = $state("fridge");
   let newTask = $state("");
+  let newTaskEvery = $state("0");
   let newTaskArea = $state("");
   let newCategory = $state("");
   let newAction = $state("");
@@ -96,8 +98,10 @@
 
   function addTask() {
     if (!newTask.trim()) return;
-    tasks.push(newTaskArea.trim() ? { task: newTask.trim(), area: newTaskArea.trim() } : { task: newTask.trim() });
+    const every = Number(newTaskEvery);
+    tasks.push({ task: newTask.trim(), ...(newTaskArea.trim() ? { area: newTaskArea.trim() } : {}), ...(every > 1 ? { every_days: every } : {}) });
     newTask = "";
+    newTaskEvery = "0";
     newTaskArea = "";
   }
 
@@ -228,17 +232,27 @@
 
       <div class="grid">
         <Card padding="none">
-          <div class="table-head"><h2>Daily cleaning tasks</h2></div>
-          <Table unsorted ariaLabel="Daily cleaning tasks">
+          <div class="table-head"><h2>Cleaning tasks</h2></div>
+          <Table unsorted ariaLabel="Cleaning tasks">
             {#snippet header()}
               <TableHeaderCell label="Task" />
               <TableHeaderCell label="Area" />
+              <TableHeaderCell label="How often" />
               <TableHeaderCell><span class="kit-sr-only">Remove</span></TableHeaderCell>
             {/snippet}
             {#each tasks as t, i (i)}
               <tr>
                 <td>{t.task}</td>
                 <td class="muted">{t.area ?? ""}</td>
+                <td>
+                  <SelectDropdown
+                    value={String(t.every_days ?? 0)}
+                    options={everyOptions(t.every_days)}
+                    disabled={!canEdit}
+                    title={`How often: ${t.task}`}
+                    onchange={(v) => (t.every_days = Number(v) > 1 ? Number(v) : undefined)}
+                  />
+                </td>
                 <td class="end">
                   {#if canEdit}
                     <IconButton ariaLabel={`Remove ${t.task}`} onclick={() => tasks.splice(i, 1)}><Trash2 size={16} /></IconButton>
@@ -251,6 +265,7 @@
             <div class="add">
               <TextInput bind:value={newTask} placeholder="New cleaning task" ariaLabel="New cleaning task" />
               <TextInput bind:value={newTaskArea} placeholder="Area (optional)" ariaLabel="Area" />
+              <SelectDropdown value={newTaskEvery} options={everyOptions(0)} title="How often" onchange={(v) => (newTaskEvery = v)} />
               <Button label="Add" onclick={addTask} disabled={!newTask.trim()}><Plus size={16} /></Button>
             </div>
           {/if}

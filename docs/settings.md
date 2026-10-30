@@ -78,7 +78,7 @@ Each record stores the rules version in force when it was saved.
     ] }
   ],
   "food_categories": ["poultry", "pork", "minced meat", "fish", "rice"],
-  "cleaning_tasks": [ { "task": "Deep clean fryer", "area": "Fryer station" } ],
+  "cleaning_tasks": [ { "task": "Deep clean fryer", "area": "Fryer station" }, { "task": "Clean beer lines", "area": "Cellar", "every_days": 7 } ],
   "corrective_actions": [ { "type": "fridge", "text": "Moved food to a working unit" } ]
 }
 ```
@@ -93,6 +93,7 @@ Each record stores the rules version in force when it was saved.
 - Fridge readings must name a fridge, and freezer readings a freezer.
 - Limits for a fridge, freezer or food category must use a listed name too.
 - A cleaning record gets its area from the list when none is given.
+- `every_days` sets how often a cleaning task is due: left out (or 1) every day, 7 every week, 14 every two weeks, 28 every four weeks, or any number of days up to 366. See [Weekly and longer tasks](haccp.md#weekly-and-longer-tasks).
 - The preview warns when recent records or current limits use names the new lists do not have.
 
 Dishes are not listed yet; they come with the menu (roadmap stage 2).

@@ -811,6 +811,10 @@
           "date": {
             "type": "string"
           },
+          "every_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "signed_off": {
             "type": "boolean"
           },
@@ -975,6 +979,10 @@
           "area": {
             "type": "string"
           },
+          "every_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "task": {
             "type": "string"
           }
@@ -990,8 +998,15 @@
           "area": {
             "type": "string"
           },
+          "every_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "record": {
             "$ref": "#/components/schemas/Record"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/TaskSchedule"
           },
           "task": {
             "type": "string"
@@ -2188,6 +2203,12 @@
             },
             "type": "array"
           },
+          "cleaning_overdue_by_task": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "type": "array"
+          },
           "cleaning_percent": {
             "format": "int64",
             "type": "integer"
@@ -2254,6 +2275,7 @@
           "cleaning_done",
           "cleaning_percent",
           "cleaning_missed_by_task",
+          "cleaning_overdue_by_task",
           "records",
           "out_of_limit",
           "without_action",
@@ -5810,6 +5832,24 @@
         },
         "required": [
           "target_at"
+        ],
+        "type": "object"
+      },
+      "TaskSchedule": {
+        "additionalProperties": false,
+        "properties": {
+          "last_done": {
+            "type": "string"
+          },
+          "next_due": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
         ],
         "type": "object"
       },
