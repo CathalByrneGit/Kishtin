@@ -117,3 +117,85 @@ func testAnonymiseUser(t *testing.T, s store.Store) {
 	require.NotNil(t, back.AnonymisedAt)
 	assert.True(t, at.Equal(*back.AnonymisedAt))
 }
+
+func testClearCustomerDetails(t *testing.T, s store.Store) {
+	ctx := context.Background()
+	sampleMenu(t, s)
+	o := sampleOrder("ord-c", 1, t0)
+	o.Kind, o.Table, o.Name, o.Notes = orders.KindTakeaway, "", "Aoife \"Synthetic\" Ní Bhriain", "Severe nut allergy"
+	require.NoError(t, s.Orders().CreateOrder(ctx, o))
+	other := sampleOrder("ord-d", 2, t0)
+	other.Name = "Liam"
+	require.NoError(t, s.Orders().CreateOrder(ctx, other))
+	label := o.Label()
+	require.NoError(t, s.Orders().AppendEvent(ctx, orders.Event{ID: "ev-1", OrderID: o.ID, Kind: orders.EventCreated, Detail: label + ", 2 items", At: t0, By: "u1", ByName: "Synthetic cook"}))
+	require.NoError(t, s.Orders().AppendEvent(ctx, orders.Event{ID: "ev-2", OrderID: o.ID, Kind: orders.EventRenamed, From: "Aoife", To: o.Name, Detail: "renamed from Aoife to " + o.Name, At: t0, By: "u1", ByName: "Synthetic cook"}))
+	body, err := json.Marshal(map[string]any{"courses": []map[string]string{{"label": label}, {"label": other.Label()}}})
+	require.NoError(t, err)
+	require.NoError(t, s.Activity().AppendPlanSnapshot(ctx, store.PlanSnapshot{ID: "ps-1", At: t0.Add(time.Minute), Trigger: "timer", Strategy: "backward", SettingsVersion: "v", Hash: "h", Body: body}))
+	require.NoError(t, s.Voice().AppendVoiceLog(ctx, voice.LogEntry{ID: "vl-1", At: t0.Add(time.Minute), UserID: "u1", UserName: "Synthetic cook", Source: "push", Transcript: "fire aoife mains", Outcome: "done", Reply: label + " mains fired"}))
+	imp := integrations.Imported{POS: "square", ExternalID: "sq-c", Version: 1, State: integrations.OrderOpen, OrderID: o.ID, Label: label, FirstSeen: t0, LastSeen: t0,
+		Payload: integrations.TillOrder{ID: "sq-c", Version: 1, State: integrations.OrderOpen, Customer: o.Name, Takeaway: true,
+			Lines: []integrations.TillLine{{UID: "l1", Name: "Synthetic soup", Quantity: 1, Note: "Severe nut allergy"}}}}
+	require.NoError(t, s.POS().SaveImported(ctx, imp))
+
+	due, err := s.Orders().OrdersWithCustomerDetails(ctx, t0, 10)
+	require.NoError(t, err)
+	assert.Empty(t, due, "nothing from before the orders")
+	due, err = s.Orders().OrdersWithCustomerDetails(ctx, t0.Add(time.Second), 10)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"ord-c", "ord-d"}, due)
+	due, err = s.Orders().OrdersWithCustomerDetails(ctx, t0.Add(time.Second), 1)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"ord-c"}, due)
+
+	require.NoError(t, s.WithTx(ctx, func(tx store.Store) error {
+		return tx.Orders().ClearCustomerDetails(ctx, store.CustomerClear{
+			OrderID: o.ID, Names: []string{o.Name, "Aoife"}, Notes: []string{o.Notes, "no onion"}, From: t0, To: t0.Add(time.Hour),
+		})
+	}))
+
+	got, err := s.Orders().GetOrder(ctx, o.ID)
+	require.NoError(t, err)
+	assert.Empty(t, got.Name)
+	assert.Empty(t, got.Notes)
+	for _, it := range got.Items {
+		assert.Empty(t, it.Notes)
+	}
+	evs, err := s.Orders().ListEvents(ctx, o.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "Takeaway #1, 2 items", evs[0].Detail)
+	assert.Equal(t, "name cleared", evs[1].Detail)
+	assert.Empty(t, evs[1].From)
+	assert.Empty(t, evs[1].To)
+	assert.Equal(t, "Synthetic cook", evs[0].ByName, "staff names stay")
+
+	snaps, err := s.Activity().ListPlanSnapshots(ctx, time.Time{}, time.Time{}, 10)
+	require.NoError(t, err)
+	require.Len(t, snaps, 1)
+	assert.NotContains(t, string(snaps[0].Body), "Bhriain")
+	assert.Contains(t, string(snaps[0].Body), "Takeaway #1")
+	assert.Contains(t, string(snaps[0].Body), "Liam", "other orders' labels stay")
+
+	vl, err := s.Voice().ListVoiceLog(ctx, time.Time{}, 10)
+	require.NoError(t, err)
+	assert.Equal(t, "Takeaway #1 mains fired", vl[0].Reply)
+
+	gotImp, err := s.POS().GetImported(ctx, "square", "sq-c")
+	require.NoError(t, err)
+	assert.Equal(t, "Takeaway #1", gotImp.Label)
+	assert.Empty(t, gotImp.Payload.Customer)
+	assert.Empty(t, gotImp.Payload.Lines[0].Note)
+	vs, err := s.POS().ListImportedVersions(ctx, "square", "sq-c")
+	require.NoError(t, err)
+	assert.Empty(t, vs[0].Payload.Customer)
+	assert.Empty(t, vs[0].Payload.Lines[0].Note)
+
+	kept, err := s.Orders().GetOrder(ctx, other.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "Liam", kept.Name, "other orders are not touched")
+	assert.Equal(t, "no onion", kept.Items[0].Notes)
+	due, err = s.Orders().OrdersWithCustomerDetails(ctx, t0.Add(time.Second), 10)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"ord-d"}, due, "a cleared order is not found again")
+}

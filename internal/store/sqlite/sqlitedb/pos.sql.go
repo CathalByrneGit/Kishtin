@@ -201,6 +201,40 @@ func (q *Queries) ListMappings(ctx context.Context, pos string) ([]PosMapping, e
 	return items, nil
 }
 
+const replaceInPOSOrder = `-- name: ReplaceInPOSOrder :exec
+UPDATE pos_orders SET label = replace(label, ?1, ?2),
+    payload = replace(payload, ?1, ?2), notices = replace(notices, ?1, ?2)
+WHERE order_id = ?3
+`
+
+type ReplaceInPOSOrderParams struct {
+	Old     string
+	New     string
+	OrderID string
+}
+
+func (q *Queries) ReplaceInPOSOrder(ctx context.Context, arg ReplaceInPOSOrderParams) error {
+	_, err := q.db.ExecContext(ctx, replaceInPOSOrder, arg.Old, arg.New, arg.OrderID)
+	return err
+}
+
+const replaceInPOSOrderVersions = `-- name: ReplaceInPOSOrderVersions :exec
+UPDATE pos_order_versions SET payload = replace(payload, ?1, ?2)
+WHERE EXISTS (SELECT 1 FROM pos_orders p WHERE p.pos = pos_order_versions.pos
+    AND p.external_id = pos_order_versions.external_id AND p.order_id = ?3)
+`
+
+type ReplaceInPOSOrderVersionsParams struct {
+	Old     string
+	New     string
+	OrderID string
+}
+
+func (q *Queries) ReplaceInPOSOrderVersions(ctx context.Context, arg ReplaceInPOSOrderVersionsParams) error {
+	_, err := q.db.ExecContext(ctx, replaceInPOSOrderVersions, arg.Old, arg.New, arg.OrderID)
+	return err
+}
+
 const upsertImported = `-- name: UpsertImported :exec
 INSERT INTO pos_orders (pos, external_id, version, state, order_id, label, added, unmapped, notices, payload, first_seen, last_seen)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

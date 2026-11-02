@@ -10,7 +10,29 @@ Every check, with who logged it, when it was saved and when the check was done, 
 
 ## Orders and order events
 
-Every order, course and item, and an event for every change: created, fired, started, ready, served, voided (with the reason), held, target moved, flagged urgent. Each event names who did it and the device it came from. Append-only.
+Every order, course and item, and an event for every change: created, fired, started, ready, served, voided (with the reason), held, target moved, flagged urgent. Each event names who did it and the device it came from. Append-only, except that customers' names and order notes are cleared after a set time (below).
+
+## Customers' names and order notes
+
+An order can hold a customer's name ("Takeaway #5 (Aoife)") and notes that can say who they are or what they are allergic to. Kishtin keeps them for **30 days** after the order closes, then clears them. Set the number of days in **Settings › Clear customers' names and order notes** (`customer_details_days`, 0 to 2600; 0 keeps them for as long as the order).
+
+Clearing removes, from each order closed that long ago (or left open that long):
+
+- the order's name and notes, and its items' notes;
+- the names in its history ("renamed from …" reads "name cleared", and "Takeaway #5 (Aoife)" becomes "Takeaway #5");
+- the customer's name and notes in the copies kept of its till order (Square or SumUp);
+- its name in scheduler plans and voice replies kept while it was open.
+
+Tables, ticket numbers, dishes, times, the allergy mark and who did what stay, so reports and learned cook times still work.
+
+It does **not** clear:
+
+- **voice command transcripts**: what a chef said ("fire Aoife's mains") is kept as said;
+- the customer named on a HACCP **delivery to a customer** record: HACCP records cannot be changed.
+
+Kishtin clears them every hour. **Settings › Customer details** shows how many orders are due, with **Clear now**. Each run is in the activity log, with how many orders it cleared and no names. It cannot be undone. Manager with a password only.
+
+`kishtin customer-details`, or `GET /api/customer-details` then `POST /api/customer-details/clear`.
 
 ## Scheduler plans
 
@@ -39,6 +61,7 @@ Things staff and screens do that are not HACCP records or order events:
 | `screen.connected`, `screen.disconnected` | which device and who was logged in; on disconnect, how many seconds it stayed connected. A screen that drops off the Wi-Fi shows as disconnected once the server notices, within about 20 seconds. |
 | `haccp.entered` | for each HACCP record: how it was entered (`form`, `voice`, `catch_up`, `paper`, `api`), when the check was done and when it was saved |
 | `staff.anonymised` | which leaver was anonymised, by whom, and how many entries changed |
+| `orders.customer_details_cleared` | customers' names and order notes cleared: how many orders, the days kept, and who, or the server's hourly job |
 | `setup` | when Kishtin was set up, by which manager, and whether from the screens or `kishtind setup` |
 | `device.paired` | a tablet or phone paired by QR code: its name, its new device key, and the manager who made the code |
 | `password.recovered` | a manager's password set with `kishtind reset-password` on the Kishtin computer: whose, and whether they were made a manager or added to do it |
@@ -83,7 +106,7 @@ What it does not change:
 
 ## How long things are kept
 
-Everything except voice recordings is kept until the restaurant deletes the database. HACCP records should be kept for as long as your inspector and HACCP plan require; Irish Revenue rules require business records for six years.
+Voice recordings are kept for the days set (none by default), and customers' names and order notes for 30 days after the order closes unless you change it. Everything else is kept until the restaurant deletes the database. Backups made before details were cleared still hold them until the backups are deleted (Settings › Backups to keep). HACCP records should be kept for as long as your inspector and HACCP plan require; Irish Revenue rules require business records for six years.
 
 ## What Kishtin does not record
 

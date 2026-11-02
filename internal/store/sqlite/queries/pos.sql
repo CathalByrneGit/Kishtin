@@ -37,3 +37,13 @@ ON CONFLICT (pos, external_id, version) DO NOTHING;
 
 -- name: ListImportedVersions :many
 SELECT * FROM pos_order_versions WHERE pos = ? AND external_id = ? ORDER BY version;
+
+-- name: ReplaceInPOSOrder :exec
+UPDATE pos_orders SET label = replace(label, sqlc.arg(old), sqlc.arg(new)),
+    payload = replace(payload, sqlc.arg(old), sqlc.arg(new)), notices = replace(notices, sqlc.arg(old), sqlc.arg(new))
+WHERE order_id = sqlc.arg(order_id);
+
+-- name: ReplaceInPOSOrderVersions :exec
+UPDATE pos_order_versions SET payload = replace(payload, sqlc.arg(old), sqlc.arg(new))
+WHERE EXISTS (SELECT 1 FROM pos_orders p WHERE p.pos = pos_order_versions.pos
+    AND p.external_id = pos_order_versions.external_id AND p.order_id = sqlc.arg(order_id));

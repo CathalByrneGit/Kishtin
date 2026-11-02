@@ -167,3 +167,25 @@ func TestAllergensCLI(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `"garlic" is not one of the 14 allergens`)
 }
+
+func TestCustomerDetailsCLI(t *testing.T) {
+	url, key := server(t)
+	cli := func(args ...string) string {
+		t.Helper()
+		out, _, err := run(t, url, key, "", args...)
+		require.NoError(t, err, "%v", args)
+		return out
+	}
+	out := cli("customer-details", "--yes")
+	assert.Contains(t, out, "Nothing to clear.")
+
+	var pv struct {
+		Days   int      `json:"days"`
+		Orders int      `json:"orders"`
+		Notes  []string `json:"notes"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(cli("customer-details", "--json")), &pv))
+	assert.Equal(t, 30, pv.Days)
+	assert.Zero(t, pv.Orders)
+	assert.NotEmpty(t, pv.Notes)
+}

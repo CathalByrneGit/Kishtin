@@ -10,6 +10,33 @@ import (
 	"database/sql"
 )
 
+const clearOrderCustomer = `-- name: ClearOrderCustomer :exec
+UPDATE orders SET name = '', notes = '' WHERE id = ?
+`
+
+func (q *Queries) ClearOrderCustomer(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, clearOrderCustomer, id)
+	return err
+}
+
+const clearOrderItemNotes = `-- name: ClearOrderItemNotes :exec
+UPDATE order_items SET notes = '' WHERE order_id = ?
+`
+
+func (q *Queries) ClearOrderItemNotes(ctx context.Context, orderID string) error {
+	_, err := q.db.ExecContext(ctx, clearOrderItemNotes, orderID)
+	return err
+}
+
+const clearRenameEvents = `-- name: ClearRenameEvents :exec
+UPDATE order_events SET from_val = '', to_val = '', detail = 'name cleared' WHERE order_id = ? AND kind = 'renamed'
+`
+
+func (q *Queries) ClearRenameEvents(ctx context.Context, orderID string) error {
+	_, err := q.db.ExecContext(ctx, clearRenameEvents, orderID)
+	return err
+}
+
 const getDish = `-- name: GetDish :one
 SELECT id, name, course, station_id, equipment_id, batch_capacity, cook_seconds, rest_seconds, plate_seconds, hold_seconds, batchable, modifiers, food_category, available, active, created_at, updated_at, allergens, allergens_checked FROM dishes WHERE id = ?
 `
@@ -720,6 +747,105 @@ func (q *Queries) MaxOrderNumberSince(ctx context.Context, createdAt int64) (int
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const ordersWithCustomerDetails = `-- name: OrdersWithCustomerDetails :many
+SELECT o.id FROM orders o
+WHERE COALESCE(o.closed_at, o.created_at) < ?1
+  AND (o.name != '' OR o.notes != ''
+    OR EXISTS (SELECT 1 FROM order_items i WHERE i.order_id = o.id AND i.notes != '')
+    OR EXISTS (SELECT 1 FROM order_events e WHERE e.order_id = o.id AND e.kind = 'renamed' AND (e.from_val != '' OR e.to_val != '')))
+ORDER BY COALESCE(o.closed_at, o.created_at), o.id
+LIMIT ?2
+`
+
+type OrdersWithCustomerDetailsParams struct {
+	Before  sql.NullInt64
+	MaxRows int64
+}
+
+// Orders closed (or, if never closed, created) before a time that still
+// hold a customer's name or notes, oldest first.
+func (q *Queries) OrdersWithCustomerDetails(ctx context.Context, arg OrdersWithCustomerDetailsParams) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, ordersWithCustomerDetails, arg.Before, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const replaceInOrderEvents = `-- name: ReplaceInOrderEvents :exec
+UPDATE order_events SET detail = replace(detail, ?1, ?2) WHERE order_id = ?3
+`
+
+type ReplaceInOrderEventsParams struct {
+	Old     string
+	New     string
+	OrderID string
+}
+
+func (q *Queries) ReplaceInOrderEvents(ctx context.Context, arg ReplaceInOrderEventsParams) error {
+	_, err := q.db.ExecContext(ctx, replaceInOrderEvents, arg.Old, arg.New, arg.OrderID)
+	return err
+}
+
+const replaceInPlanSnapshots = `-- name: ReplaceInPlanSnapshots :exec
+UPDATE plan_snapshots SET body = replace(body, ?1, ?2)
+WHERE at >= ?3 AND at <= ?4
+`
+
+type ReplaceInPlanSnapshotsParams struct {
+	Old    string
+	New    string
+	FromAt int64
+	ToAt   int64
+}
+
+func (q *Queries) ReplaceInPlanSnapshots(ctx context.Context, arg ReplaceInPlanSnapshotsParams) error {
+	_, err := q.db.ExecContext(ctx, replaceInPlanSnapshots,
+		arg.Old,
+		arg.New,
+		arg.FromAt,
+		arg.ToAt,
+	)
+	return err
+}
+
+const replaceInVoiceReplies = `-- name: ReplaceInVoiceReplies :exec
+UPDATE voice_log SET reply = replace(reply, ?1, ?2)
+WHERE at >= ?3 AND at <= ?4
+`
+
+type ReplaceInVoiceRepliesParams struct {
+	Old    string
+	New    string
+	FromAt int64
+	ToAt   int64
+}
+
+func (q *Queries) ReplaceInVoiceReplies(ctx context.Context, arg ReplaceInVoiceRepliesParams) error {
+	_, err := q.db.ExecContext(ctx, replaceInVoiceReplies,
+		arg.Old,
+		arg.New,
+		arg.FromAt,
+		arg.ToAt,
+	)
+	return err
 }
 
 const updateDish = `-- name: UpdateDish :execrows

@@ -82,6 +82,14 @@ type ClientInterface interface {
 	ConnectTill(ctx context.Context, options *ConnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectTillResponse, error)
 	ConnectTillWithResponse(ctx context.Context, options *ConnectTillRequestOptions, reqEditors ...runtime.RequestEditorFn) (*ConnectTillResp, error)
 
+	// PreviewClearCustomerDetails Show how many orders would lose their customer's name and notes if cleared now, without changing anything
+	PreviewClearCustomerDetails(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*PreviewClearCustomerDetailsResponse, error)
+	PreviewClearCustomerDetailsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*PreviewClearCustomerDetailsResp, error)
+
+	// ClearCustomerDetails Clear customers' names and order notes now (manager password); cannot be undone
+	ClearCustomerDetails(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ClearCustomerDetailsResponse, error)
+	ClearCustomerDetailsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ClearCustomerDetailsResp, error)
+
 	// CreateJoinCode Make a QR code that pairs a tablet or phone
 	CreateJoinCode(ctx context.Context, options *CreateJoinCodeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateJoinCodeResponse, error)
 	CreateJoinCodeWithResponse(ctx context.Context, options *CreateJoinCodeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateJoinCodeResp, error)
@@ -1298,6 +1306,130 @@ func (c *Client) ConnectTill(ctx context.Context, options *ConnectTillRequestOpt
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/connectors/{till}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// PreviewClearCustomerDetails Show how many orders would lose their customer's name and notes if cleared now, without changing anything
+func (c *Client) PreviewClearCustomerDetails(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*PreviewClearCustomerDetailsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/customer-details",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*PreviewClearCustomerDetailsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(PreviewClearCustomerDetailsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "PreviewClearCustomerDetailsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(PreviewClearCustomerDetailsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "PreviewClearCustomerDetailsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/customer-details")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// ClearCustomerDetails Clear customers' names and order notes now (manager password); cannot be undone
+func (c *Client) ClearCustomerDetails(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ClearCustomerDetailsResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/customer-details/clear",
+		Method:     "POST",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*ClearCustomerDetailsResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(ClearCustomerDetailsErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "ClearCustomerDetailsErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(ClearCustomerDetailsResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "ClearCustomerDetailsResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/customer-details/clear")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -14065,6 +14197,126 @@ func (c *Client) ConnectTillWithResponse(ctx context.Context, options *ConnectTi
 	}
 }
 
+// PreviewClearCustomerDetails Show how many orders would lose their customer's name and notes if cleared now, without changing anything
+func (c *Client) PreviewClearCustomerDetailsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*PreviewClearCustomerDetailsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/customer-details",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/customer-details")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &PreviewClearCustomerDetailsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(PreviewClearCustomerDetailsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewClearCustomerDetailsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(PreviewClearCustomerDetailsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "PreviewClearCustomerDetailsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// ClearCustomerDetails Clear customers' names and order notes now (manager password); cannot be undone
+func (c *Client) ClearCustomerDetailsWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*ClearCustomerDetailsResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/customer-details/clear",
+		Method:     "POST",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/customer-details/clear")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &ClearCustomerDetailsResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(ClearCustomerDetailsResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ClearCustomerDetailsResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(ClearCustomerDetailsErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "ClearCustomerDetailsErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // CreateJoinCode Make a QR code that pairs a tablet or phone
 func (c *Client) CreateJoinCodeWithResponse(ctx context.Context, options *CreateJoinCodeRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreateJoinCodeResp, error) {
 	var err error
@@ -22665,6 +22917,14 @@ type ConnectTillResponse = ConnectResult
 
 type ConnectTillErrorResponse = ErrorModel
 
+type PreviewClearCustomerDetailsResponse = CustomerDetailsPreview
+
+type PreviewClearCustomerDetailsErrorResponse = ErrorModel
+
+type ClearCustomerDetailsResponse = CustomerDetailsResult
+
+type ClearCustomerDetailsErrorResponse = ErrorModel
+
 type CreateJoinCodeResponse = JoinCode
 
 type CreateJoinCodeErrorResponse = ErrorModel
@@ -23245,6 +23505,22 @@ type ConnectTillResp struct {
 	StatusCode                        int
 	JSON200                           *ConnectTillResponse
 	ApplicationProblemPlusJSONDefault *ConnectTillErrorResponse
+}
+
+type PreviewClearCustomerDetailsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *PreviewClearCustomerDetailsResponse
+	ApplicationProblemPlusJSONDefault *PreviewClearCustomerDetailsErrorResponse
+}
+
+type ClearCustomerDetailsResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *ClearCustomerDetailsResponse
+	ApplicationProblemPlusJSONDefault *ClearCustomerDetailsErrorResponse
 }
 
 type CreateJoinCodeResp struct {
@@ -25392,6 +25668,22 @@ type CourseStatus struct {
 
 func (c CourseStatus) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type CustomerDetailsPreview struct {
+	Before *time.Time `json:"before,omitempty"`
+	Days   int64      `json:"days"`
+	Notes  []string   `json:"notes" validate:"required"`
+	Orders int64      `json:"orders"`
+}
+
+func (c CustomerDetailsPreview) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type CustomerDetailsResult struct {
+	Before *time.Time `json:"before,omitempty"`
+	Orders int64      `json:"orders"`
 }
 
 type DayTemp struct {
@@ -29009,6 +29301,7 @@ func (s SyncState) Validate() error {
 type System struct {
 	BackupIntervalMinutes int64  `json:"backup_interval_minutes"`
 	BackupKeep            int64  `json:"backup_keep"`
+	CustomerDetailsDays   int64  `json:"customer_details_days"`
 	MaxUploadMb           int64  `json:"max_upload_mb"`
 	PreviewRecords        int64  `json:"preview_records"`
 	RestaurantName        string `json:"restaurant_name" validate:"required"`

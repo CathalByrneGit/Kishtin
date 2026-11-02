@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cathalbyrnegit/kishtin/internal/menu"
@@ -412,4 +413,70 @@ func (s *Store) ListItemEvents(ctx context.Context, from, to time.Time) ([]order
 		out = append(out, eventFromRow(r))
 	}
 	return out, nil
+}
+
+func (s *Store) OrdersWithCustomerDetails(ctx context.Context, before time.Time, limit int) ([]string, error) {
+	ids, err := s.r.OrdersWithCustomerDetails(ctx, sqlitedb.OrdersWithCustomerDetailsParams{
+		Before: sql.NullInt64{Int64: us(before), Valid: true}, MaxRows: int64(limit),
+	})
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	return ids, nil
+}
+
+func (s *Store) ClearCustomerDetails(ctx context.Context, c store.CustomerClear) error {
+	w := s.w
+	if err := w.ClearOrderCustomer(ctx, c.OrderID); err != nil {
+		return mapErr(err)
+	}
+	if err := w.ClearOrderItemNotes(ctx, c.OrderID); err != nil {
+		return mapErr(err)
+	}
+	if err := w.ClearRenameEvents(ctx, c.OrderID); err != nil {
+		return mapErr(err)
+	}
+	from, to := us(c.From), us(c.To)
+	for _, name := range c.Names {
+		if name = strings.TrimSpace(name); name == "" {
+			continue
+		}
+		label, labelJSON, value := " ("+name+")", " ("+jsonText(name)+")", `"`+jsonText(name)+`"`
+		if err := w.ReplaceInOrderEvents(ctx, sqlitedb.ReplaceInOrderEventsParams{Old: label, New: "", OrderID: c.OrderID}); err != nil {
+			return mapErr(err)
+		}
+		for _, r := range [][2]string{{label, ""}, {value, `""`}} {
+			if err := w.ReplaceInPOSOrder(ctx, sqlitedb.ReplaceInPOSOrderParams{Old: r[0], New: r[1], OrderID: c.OrderID}); err != nil {
+				return mapErr(err)
+			}
+		}
+		if err := w.ReplaceInPOSOrderVersions(ctx, sqlitedb.ReplaceInPOSOrderVersionsParams{Old: value, New: `""`, OrderID: c.OrderID}); err != nil {
+			return mapErr(err)
+		}
+		if err := w.ReplaceInPlanSnapshots(ctx, sqlitedb.ReplaceInPlanSnapshotsParams{Old: labelJSON, New: "", FromAt: from, ToAt: to}); err != nil {
+			return mapErr(err)
+		}
+		if err := w.ReplaceInVoiceReplies(ctx, sqlitedb.ReplaceInVoiceRepliesParams{Old: label, New: "", FromAt: from, ToAt: to}); err != nil {
+			return mapErr(err)
+		}
+	}
+	for _, note := range c.Notes {
+		if strings.TrimSpace(note) == "" {
+			continue
+		}
+		value := `"` + jsonText(note) + `"`
+		if err := w.ReplaceInPOSOrder(ctx, sqlitedb.ReplaceInPOSOrderParams{Old: value, New: `""`, OrderID: c.OrderID}); err != nil {
+			return mapErr(err)
+		}
+		if err := w.ReplaceInPOSOrderVersions(ctx, sqlitedb.ReplaceInPOSOrderVersionsParams{Old: value, New: `""`, OrderID: c.OrderID}); err != nil {
+			return mapErr(err)
+		}
+	}
+	return nil
+}
+
+// jsonText is s as it appears inside a JSON string.
+func jsonText(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b[1 : len(b)-1])
 }

@@ -148,7 +148,7 @@ type Options struct {
 
 // DefaultSystem returns the system settings used when none are configured.
 func DefaultSystem() settings.System {
-	return settings.System{BackupIntervalMinutes: 6 * 60, BackupKeep: 28, MaxUploadMB: 15, PreviewRecords: 50}
+	return settings.System{BackupIntervalMinutes: 6 * 60, BackupKeep: 28, MaxUploadMB: 15, PreviewRecords: 50, CustomerDetailsDays: settings.DefaultCustomerDetailsDays}
 }
 
 // New returns a service. Call Init before use.

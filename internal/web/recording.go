@@ -103,4 +103,17 @@ func (s *Server) recordingRoutes() {
 	}) (*out[service.AnonymiseResult], error) {
 		return reply(s.svc.Anonymise(ctx, principal(ctx), in.ID))
 	}))
+	huma.Register(s.api, huma.Operation{
+		OperationID: "preview-clear-customer-details", Method: http.MethodGet, Path: "/customer-details", Tags: []string{"Settings"},
+		Summary: "Show how many orders would lose their customer's name and notes if cleared now, without changing anything",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.CustomerDetailsPreview], error) {
+		return reply(s.svc.PreviewClearCustomerDetails(ctx, principal(ctx)))
+	}))
+	huma.Register(s.api, huma.Operation{
+		OperationID: "clear-customer-details", Method: http.MethodPost, Path: "/customer-details/clear", Tags: []string{"Settings"},
+		Summary:     "Clear customers' names and order notes now (manager password); cannot be undone",
+		Description: "Clears the customer's name and notes from orders closed more than customer_details_days ago (system settings), with their items' notes and the same words in their history, till copies, kept plans and voice replies. Kishtin also does this every hour.",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.CustomerDetailsResult], error) {
+		return reply(s.svc.ClearCustomerDetails(ctx, principal(ctx)))
+	}))
 }

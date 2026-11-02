@@ -45,7 +45,7 @@ func setup(t *testing.T) *fixture {
 	clk := clock.NewFixed(start)
 	svc := New(Options{
 		Store: st, Clock: clk, Files: fs,
-		System: settings.System{BackupKeep: 2, MaxUploadMB: 1, PreviewRecords: 50},
+		System: settings.System{BackupKeep: 2, MaxUploadMB: 1, PreviewRecords: 50, CustomerDetailsDays: settings.DefaultCustomerDetailsDays},
 		Backups: BackupConfig{
 			Dir:  filepath.Join(dir, "backups"),
 			Open: func(ctx context.Context, path string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, path) },

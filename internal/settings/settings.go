@@ -61,6 +61,28 @@ type System struct {
 	// on this machine, to check what was said and to test speech models on
 	// the kitchen's own voices. 0, the default, keeps none.
 	VoiceAudioDays int `json:"voice_audio_days"`
+	// CustomerDetailsDays is how many days after an order is closed its
+	// customer's name and the order's notes are kept: they can say who a
+	// customer is and what they are allergic to. Then they are cleared, with
+	// the copies kept with the order. 0 keeps them.
+	CustomerDetailsDays int `json:"customer_details_days"`
+}
+
+// DefaultCustomerDetailsDays is how long a new install keeps customer
+// names and order notes.
+const DefaultCustomerDetailsDays = 30
+
+// UnmarshalJSON reads system settings. Settings saved before customer
+// details were cleared have no customer_details_days, and take the default
+// rather than keeping them for ever.
+func (s *System) UnmarshalJSON(b []byte) error {
+	type plain System
+	v := plain{CustomerDetailsDays: DefaultCustomerDetailsDays}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	*s = System(v)
+	return nil
 }
 
 // Upper bounds for system settings.
@@ -68,6 +90,9 @@ const (
 	MaxUploadMBLimit    = 100
 	PreviewRecordsLimit = 500
 	VoiceAudioDaysLimit = 365
+	// CustomerDetailsDaysLimit is the longest customer details can be kept
+	// before they are cleared: about seven years, past Revenue's six.
+	CustomerDetailsDaysLimit = 2600
 )
 
 // Validate checks the system settings.
@@ -93,6 +118,9 @@ func (s System) Validate() error {
 	}
 	if s.VoiceAudioDays < 0 || s.VoiceAudioDays > VoiceAudioDaysLimit {
 		errs = append(errs, fmt.Errorf("voice_audio_days must be between 0 (keep none) and %d", VoiceAudioDaysLimit))
+	}
+	if s.CustomerDetailsDays < 0 || s.CustomerDetailsDays > CustomerDetailsDaysLimit {
+		errs = append(errs, fmt.Errorf("customer_details_days must be between 0 (keep them) and %d", CustomerDetailsDaysLimit))
 	}
 	return errors.Join(errs...)
 }

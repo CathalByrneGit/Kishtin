@@ -37,7 +37,7 @@ var ActivityKinds = []string{
 	ActivityLogin, ActivityLogout, ActivityScreenConnected, ActivityScreenDisconnected,
 	ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityStaffAnonymised, ActivitySetup, ActivityDevicePaired,
 	ActivityPasswordRecovered, ActivityStartupChanged, ActivityLearnedReset,
-	ActivityAllergensChanged,
+	ActivityAllergensChanged, ActivityCustomerDetailsCleared,
 }
 
 // How a HACCP record was entered, kept in the activity log.

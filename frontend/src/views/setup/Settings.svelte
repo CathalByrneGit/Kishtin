@@ -18,6 +18,7 @@
   let upload = $state("");
   let previewN = $state("");
   let voiceDays = $state("");
+  let customerDays = $state("");
 
   let review = $state<{ preview: Preview; value: Schemas["System"] } | null>(null);
   let saving = $state(false);
@@ -39,12 +40,42 @@
     }
   }
 
+  // Customers' names and order notes, cleared after the days set.
+  let customers = $state<Schemas["CustomerDetailsPreview"] | null>(null);
+  let customersError = $state("");
+  let confirmClear = $state(false);
+  let clearing = $state(false);
+
+  async function loadCustomers() {
+    try {
+      customers = await api.previewClearCustomerDetails();
+      customersError = "";
+    } catch (err) {
+      customersError = message(err);
+    }
+  }
+
+  async function clearCustomers() {
+    clearing = true;
+    try {
+      const res = await api.clearCustomerDetails();
+      showFlash(`Cleared the customer details of ${res.orders} orders`, { tone: "success" });
+      confirmClear = false;
+    } catch (err) {
+      showFlash(message(err), { tone: "danger", durationMs: 10000 });
+    } finally {
+      clearing = false;
+      await loadCustomers();
+    }
+  }
+
   // Permissions arrive after the page opens.
   let startupAsked = false;
   $effect(() => {
     if (canEdit && !startupAsked) {
       startupAsked = true;
       void loadStartup();
+      void loadCustomers();
     }
   });
 
@@ -70,6 +101,7 @@
     upload = String(v.max_upload_mb);
     previewN = String(v.preview_records);
     voiceDays = String(v.voice_audio_days);
+    customerDays = String(v.customer_details_days);
   }
 
   async function load() {
@@ -85,7 +117,10 @@
   onMount(() => {
     void load();
     return onChange((kind) => {
-      if (kind === "settings") void load();
+      if (kind === "settings") {
+        void load();
+        if (canEdit) void loadCustomers();
+      }
     });
   });
 
@@ -96,8 +131,17 @@
     const u = whole(upload);
     const p = whole(previewN);
     const vd = whole(voiceDays);
-    if (i === null || k === null || u === null || p === null || vd === null) return "Every number must be a whole number.";
-    return { restaurant_name: name.trim(), backup_interval_minutes: i, backup_keep: k, max_upload_mb: u, preview_records: p, voice_audio_days: vd };
+    const cd = whole(customerDays);
+    if (i === null || k === null || u === null || p === null || vd === null || cd === null) return "Every number must be a whole number.";
+    return {
+      restaurant_name: name.trim(),
+      backup_interval_minutes: i,
+      backup_keep: k,
+      max_upload_mb: u,
+      preview_records: p,
+      voice_audio_days: vd,
+      customer_details_days: cd,
+    };
   });
   const dirty = $derived(system !== null && typeof draft !== "string" && JSON.stringify(draft) !== JSON.stringify(system.value));
 
@@ -168,6 +212,10 @@
                 <span>Keep recordings of voice commands (days, 0–365; 0 keeps none)</span>
                 <TextInput bind:value={voiceDays} disabled={!canEdit} />
               </label>
+              <label class="field">
+                <span>Clear customers' names and order notes (days after the order closes, 0–2600; 0 keeps them)</span>
+                <TextInput bind:value={customerDays} disabled={!canEdit} />
+              </label>
             </div>
             {#if typeof draft === "string"}<Notice tone="error" message={draft} />{/if}
             {#if canEdit && dirty}
@@ -178,6 +226,43 @@
             {/if}
           </Card>
           <p class="muted small">The backup folder, listen address and TLS are set in <code>kishtin.toml</code> on the server.</p>
+        {/if}
+      </ManagerGate>
+
+      <h2 class="section-title">Customer details</h2>
+      <ManagerGate what="Customer details" action="settings.manage">
+        {#if customers}
+          <Card padding="md">
+            <div class="stack">
+              <div class="row">
+                {#if customers.days <= 0}
+                  <Chip tone="warning" uppercase={false}>Kept</Chip>
+                {:else if customers.orders > 0}
+                  <Chip tone="warning" uppercase={false}>{customers.orders} orders to clear</Chip>
+                {:else}
+                  <Chip tone="success" uppercase={false}>Cleared after {customers.days} days</Chip>
+                {/if}
+              </div>
+              <ul class="notes">
+                {#each customers.notes as n, i (i)}<li>{n}</li>{/each}
+              </ul>
+              {#if customers.orders > 0}
+                {#if confirmClear}
+                  <Notice tone="warning" message={`Clear the customer details of ${customers.orders} orders now? This cannot be undone.`} />
+                  <div class="row">
+                    <Button label="Cancel" onclick={() => (confirmClear = false)} />
+                    <Button tone="danger" surface="solid" label="Clear them now" disabled={clearing} onclick={clearCustomers} />
+                  </div>
+                {:else}
+                  <div><Button label="Clear now" onclick={() => (confirmClear = true)} /></div>
+                {/if}
+              {/if}
+            </div>
+          </Card>
+        {:else if customersError}
+          <Notice tone="error" message={customersError} />
+        {:else}
+          <Spinner />
         {/if}
       </ManagerGate>
 
@@ -272,6 +357,11 @@
   }
   code {
     font-family: var(--font-mono);
+  }
+  .notes {
+    margin: 0;
+    padding-left: var(--space-5);
+    line-height: 1.5;
   }
   p {
     margin: 0;
