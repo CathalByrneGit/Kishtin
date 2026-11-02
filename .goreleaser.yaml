@@ -42,6 +42,27 @@ archives:
     files:
       - none*
 
+# A software bill of materials (SPDX JSON, made by syft) for each
+# download, listing every Go module built into the two programs, and one
+# for the source, which adds the packages the screens are built from.
+sboms:
+  - id: archives
+    artifacts: archive
+  - id: source
+    artifacts: any
+    documents: ["kishtin_source.sbom.json"]
+    # The repository, without build output or kit-ui's own development
+    # packages. syft reads the screens' packages from node_modules, as it
+    # does not read bun.lock.
+    args:
+      - dir:..
+      - --exclude=./dist
+      - --exclude=./bin
+      - --exclude=./frontend/dist
+      - --exclude=./frontend/vendor
+      - --select-catalogers=+javascript-package-cataloger
+      - --output=spdx-json=$document
+
 checksum:
   name_template: SHA256SUMS
   algorithm: sha256

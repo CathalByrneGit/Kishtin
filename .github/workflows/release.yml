@@ -2,7 +2,8 @@ name: Release
 
 # Pushing a tag such as v0.2.0 runs the tests, then builds the downloads
 # for Linux, macOS and Windows and publishes them as a GitHub release with
-# SHA256SUMS and the install scripts.
+# SHA256SUMS, the install scripts, and a software bill of materials for
+# each download and for the source.
 on:
   push:
     tags: ["v*"]
@@ -36,6 +37,8 @@ jobs:
           if [ -f "docs/releases/${GITHUB_REF_NAME}.md" ]; then
             echo "flag=--release-notes=docs/releases/${GITHUB_REF_NAME}.md" >> "$GITHUB_OUTPUT"
           fi
+      # syft makes the software bills of materials (.goreleaser.yaml, sboms).
+      - uses: anchore/sbom-action/download-syft@v0
       - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
