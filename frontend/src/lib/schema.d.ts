@@ -194,6 +194,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customer-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show how many orders would lose their customer's name and notes if cleared now, without changing anything */
+        get: operations["preview-clear-customer-details"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer-details/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clear customers' names and order notes now (manager password); cannot be undone
+         * @description Clears the customer's name and notes from orders closed more than customer_details_days ago (system settings), with their items' notes and the same words in their history, till copies, kept plans and voice replies. Kishtin also does this every hour.
+         */
+        post: operations["clear-customer-details"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/devices/join-codes": {
         parameters: {
             query?: never;
@@ -2628,6 +2665,21 @@ export interface components {
             /** Format: date-time */
             target: string;
         };
+        CustomerDetailsPreview: {
+            /** Format: date-time */
+            before?: string;
+            /** Format: int64 */
+            days: number;
+            notes: string[];
+            /** Format: int64 */
+            orders: number;
+        };
+        CustomerDetailsResult: {
+            /** Format: date-time */
+            before?: string;
+            /** Format: int64 */
+            orders: number;
+        };
         DayTemp: {
             /** Format: double */
             avg_c?: number;
@@ -3822,6 +3874,8 @@ export interface components {
             /** Format: int64 */
             backup_keep: number;
             /** Format: int64 */
+            customer_details_days: number;
+            /** Format: int64 */
             max_upload_mb: number;
             /** Format: int64 */
             preview_records: number;
@@ -4416,6 +4470,64 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-clear-customer-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetailsPreview"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "clear-customer-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetailsResult"];
+                };
             };
             /** @description Error */
             default: {

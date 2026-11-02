@@ -37,7 +37,7 @@ Roadmap stages 1 to 7: the HACCP log, ported from the browser prototype; the men
 - **Collection screen**: a screen facing customers with takeaway numbers being prepared and ready to collect, with no staff login. See [docs/screens.md](docs/screens.md#kitchen-screens).
 - **Learned cook times**: Kishtin learns each dish's real cook time from the station screens and, when a manager turns it on, new orders use it once a dish has 10 cooks. Setup › Kitchen › Menu shows set and learned times side by side, with a reset per dish. See [docs/kitchen.md](docs/kitchen.md#learned-cook-times).
 - **Reports**: pass times (share on time, fire to pass, waiting at the pass, why courses were late, dish times against set times) and HACCP checks (checks and cleaning done and missed, out-of-limit readings, each fridge's temperatures). See [docs/reports.md](docs/reports.md).
-- **Recording**: scheduler plans as they change, with why each course ran late; an activity log of sold-out dishes, logins, screens dropping off and how each HACCP record was entered; the device behind each action; every version of each till order; optional voice recordings. Leavers can be anonymised. See [docs/recording.md](docs/recording.md).
+- **Recording**: scheduler plans as they change, with why each course ran late; an activity log of sold-out dishes, logins, screens dropping off and how each HACCP record was entered; the device behind each action; every version of each till order; optional voice recordings. Customers' names and order notes are cleared 30 days after an order closes. Leavers can be anonymised. See [docs/recording.md](docs/recording.md).
 - **Permissions**: a manager can give any role or named member of staff jobs such as signing off records, and choose whether a PIN is enough. See [docs/permissions.md](docs/permissions.md).
 - **HTTP API** (OpenAPI spec in [api/openapi.json](api/openapi.json)) and the **`kishtin` CLI**, which uses the API.
 
@@ -52,7 +52,7 @@ Roadmap stages 1 to 7: the HACCP log, ported from the browser prototype; the men
 
 ## Install and run
 
-Setting Kishtin up in a restaurant, and not technical? Start with **[Getting started](docs/getting-started.md)**: a step-by-step guide that also explains how Kishtin differs from cloud systems.
+Setting Kishtin up in a restaurant, and not technical? Start with **[Getting started](docs/getting-started.md)**: a step-by-step guide that also explains how Kishtin differs from cloud systems. Then [Keeping the Kishtin computer safe](docs/security.md): disk encryption, updates and backups. To report a security problem, see [SECURITY.md](SECURITY.md).
 
 On Windows, in PowerShell:
 

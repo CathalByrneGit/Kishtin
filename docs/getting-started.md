@@ -160,6 +160,7 @@ Before you rely on Kishtin instead of the paper booklets, ask your environmental
 
 - **Kishtin starts by itself** when you log in to the computer, if you said yes in Step 2. If you said no, start it after every restart: open PowerShell or Terminal, type `kishtind`, press Enter.
 - **Fridge checks and cleaning** are on **Today**. Tap **Log check** to record one. A reading out of limit asks what you did about it.
+- **Keep the computer safe.** Turn on disk encryption and automatic updates once: see [Keeping the Kishtin computer safe](security.md).
 - **Copy the backups every week.** Kishtin makes a backup every 6 hours, but it is on the same computer. Copy the `backups` and `files` folders from Kishtin's data folder (`C:\Users\<you>\.kishtin` on Windows, `.kishtin` in your home folder on a Mac) to a USB stick or another computer. See **Setup › Backups** for where they are.
 
 ![Today](screenshots/today.png)
@@ -187,6 +188,7 @@ It says **Done** and who can now log in. This works only on the Kishtin computer
 
 ## Where to go next
 
+- [Keeping the Kishtin computer safe](security.md): disk encryption, a separate account, updates and backups. Do this in your first week.
 - [Kishtin's records, for your environmental health officer](for-inspectors.md).
 - [Screens](screens.md): every page, explained.
 - [Install](install.md): updating, other options, and what isn't built yet.

@@ -62,11 +62,15 @@ func TestTriggersBlockEdits(t *testing.T) {
 	require.NoError(t, s.AppendVoiceLog(ctx, voice.LogEntry{ID: "v1", UserID: "x", UserName: "x", Source: voice.SourceTyped, Transcript: "x", Outcome: voice.OutcomeDone, Reply: "x"}))
 	require.NoError(t, s.AppendActivity(ctx, store.Activity{ID: "a1", Kind: "login", UserID: "x", UserName: "x"}))
 	require.NoError(t, s.AppendPlanSnapshot(ctx, store.PlanSnapshot{ID: "p1", Trigger: "timer", Body: []byte("{}")}))
-	// A leaver's name is the one thing that can change.
+	// A leaver's name, and the words that can hold a customer's name or an
+	// order's notes, are the only things that can change.
 	for _, q := range []string{
 		"UPDATE voice_log SET user_name = 'Former staff 1'",
 		"UPDATE order_events SET by_name = 'Former staff 1'",
 		"UPDATE activity SET user_name = 'Former staff 1'",
+		"UPDATE order_events SET detail = 'name cleared', from_val = '', to_val = ''",
+		"UPDATE voice_log SET reply = 'Table 4 fired'",
+		"UPDATE plan_snapshots SET body = '{}'",
 	} {
 		_, err := s.writer.ExecContext(ctx, q)
 		require.NoError(t, err, q)
@@ -76,11 +80,13 @@ func TestTriggersBlockEdits(t *testing.T) {
 		"UPDATE order_events SET by_name = 'y', by_user = 'y'",
 		"UPDATE activity SET detail = '{\"edited\":true}'",
 		"DELETE FROM activity",
-		"UPDATE plan_snapshots SET body = '{}'",
+		"UPDATE plan_snapshots SET body = '[]', hash = 'edited'",
+		"UPDATE plan_snapshots SET at = 5",
 		"DELETE FROM plan_snapshots",
 		"UPDATE voice_log SET transcript = 'edited'",
 		"DELETE FROM voice_log",
-		"UPDATE order_events SET detail = 'edited'",
+		"UPDATE order_events SET detail = 'edited', kind = 'voided'",
+		"UPDATE order_events SET at = 5",
 		"DELETE FROM order_events",
 		"UPDATE haccp_records SET outcome = 'fail'",
 		"DELETE FROM haccp_records",

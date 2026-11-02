@@ -59,6 +59,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
+      # syft makes the software bills of materials (.goreleaser.yaml, sboms).
+      - uses: anchore/sbom-action/download-syft@v0
       - name: Build every download
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -72,6 +74,7 @@ jobs:
             dist/*.tar.gz
             dist/*.zip
             dist/SHA256SUMS
+            dist/*.sbom.json
           retention-days: 3
 
   # Installs the snapshot with the install script, as a restaurant would, on

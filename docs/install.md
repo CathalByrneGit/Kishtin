@@ -91,6 +91,10 @@ Kishtin lets tablets and phones on the restaurant's network use it from the star
 - On a computer with several networks or a VPN, name the address tablets should use in `kishtin.toml`: `tablet_addresses = ["192.168.1.20"]` under `[server]`.
 - To keep Kishtin on this computer only, set `tablets = false` under `[server]`.
 
+## Keep the computer safe
+
+Before you rely on Kishtin, turn on disk encryption, give Kishtin its own computer account, and turn on automatic updates. [Keeping the Kishtin computer safe](security.md) has the steps, and how to restore from a backup.
+
 ## Update
 
 Run the same install line again. It replaces the two programs and leaves the data alone. Take a backup in **Setup › Backups** before a big update.
@@ -135,6 +139,8 @@ Each release on [GitHub](https://github.com/cathalbyrnegit/kishtin/releases) has
 | Windows, Intel/AMD | `kishtin_windows_amd64.zip` |
 | Windows, ARM | `kishtin_windows_arm64.zip` |
 
+Each archive also has a software bill of materials beside it (`.sbom.json`, SPDX), listing every package built into it, and `kishtin_source.sbom.json` covers the source. See [SECURITY.md](../SECURITY.md#checking-a-download).
+
 Check the archive against its line in `SHA256SUMS` (`sha256sum`, `shasum -a 256`, or `Get-FileHash` on Windows), unpack it, and put `kishtind` and `kishtin` somewhere on your PATH. On a Mac, a file downloaded in a browser is blocked the first time ("cannot be opened"); the install line above avoids that. To allow a hand-downloaded copy, run `xattr -d com.apple.quarantine kishtind kishtin` in its folder.
 
 ## Forgotten manager password
@@ -174,4 +180,4 @@ Said plainly, so nobody is caught out:
 
 ## Making a release
 
-For developers: write the release notes for owners in `docs/releases/<tag>.md` (for example `docs/releases/v0.2.0.md`), merge it to `main`, then push a tag such as `v0.2.0` on `main`. Without a notes file, the release lists the commits since the last one. The Release workflow runs the tests, then GoReleaser builds every archive with the screens embedded, writes `SHA256SUMS`, and publishes them with the two install scripts. Try it locally without publishing with `make release-snapshot` (needs [GoReleaser](https://goreleaser.com) v2); the archives land in `dist/`.
+For developers: write the release notes for owners in `docs/releases/<tag>.md` (for example `docs/releases/v0.2.0.md`), merge it to `main`, then push a tag such as `v0.2.0` on `main`. Without a notes file, the release lists the commits since the last one. The Release workflow runs the tests, then GoReleaser builds every archive with the screens embedded, writes `SHA256SUMS` and a software bill of materials for each archive and for the source (made by [syft](https://github.com/anchore/syft)), and publishes them with the two install scripts. Try it locally without publishing with `make release-snapshot` (needs [GoReleaser](https://goreleaser.com) v2 and syft); the archives land in `dist/`.

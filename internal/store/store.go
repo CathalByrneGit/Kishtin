@@ -242,6 +242,26 @@ type OrderStore interface {
 	// ListItemEvents returns item state changes between from (inclusive)
 	// and to (exclusive), oldest first.
 	ListItemEvents(ctx context.Context, from, to time.Time) ([]orders.Event, error)
+
+	// ClearCustomerDetails removes what an order says about its customer:
+	// its name and notes, its items' notes, the names in its history, the
+	// till's copies of it, and its label ("Takeaway #5 (Aoife)") in plans
+	// kept and voice replies while it was open. Nothing else changes.
+	ClearCustomerDetails(ctx context.Context, c CustomerClear) error
+	// OrdersWithCustomerDetails returns up to limit orders, closed before
+	// the time given (or created before it, if still open), that still hold
+	// a customer's name or notes, oldest first.
+	OrdersWithCustomerDetails(ctx context.Context, before time.Time, limit int) ([]string, error)
+}
+
+// CustomerClear is what to clear from one order.
+type CustomerClear struct {
+	OrderID string
+	// Names are every name the order has had; Notes its own notes and its
+	// items' notes.
+	Names, Notes []string
+	// From and To are when the order was open.
+	From, To time.Time
 }
 
 // VoiceStore stores the voice command log. Entries are append-only.

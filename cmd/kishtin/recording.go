@@ -227,3 +227,50 @@ func (c *cli) tillVersionsCmd(id string) *cobra.Command {
 		},
 	}
 }
+
+func (c *cli) customerDetailsCmd() *cobra.Command {
+	var yes bool
+	cmd := &cobra.Command{
+		Use:   "customer-details",
+		Short: "Clear customers' names and order notes past the days kept (cannot be undone)",
+		Long: "customer-details shows how many orders closed more than customer_details_days ago (system\n" +
+			"settings) still hold a customer's name or notes, then asks to clear them now. Kishtin also\n" +
+			"clears them every hour. Tables, dishes, times and who did what stay. With --json it only\n" +
+			"shows the preview, unless --yes is given. Manager password (a manager's API key).",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			pv, err := c.api.PreviewClearCustomerDetails(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			if c.asJSON && !yes {
+				return c.emit(pv, nil)
+			}
+			for _, n := range pv.Notes {
+				fmt.Fprintln(c.errOut, n)
+			}
+			if pv.Days <= 0 || pv.Orders == 0 {
+				return c.emit(pv, func(w io.Writer) { fmt.Fprintln(w, "Nothing to clear.") })
+			}
+			if !yes {
+				ok, err := confirm(c.in, c.errOut, fmt.Sprintf("Clear the customer details of %d orders?", pv.Orders))
+				if err != nil {
+					return err
+				}
+				if !ok {
+					fmt.Fprintln(c.errOut, "Nothing changed.")
+					return nil
+				}
+			}
+			res, err := c.api.ClearCustomerDetails(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(res, func(w io.Writer) {
+				fmt.Fprintf(w, "Done: cleared the customer details of %d orders.\n", res.Orders)
+			})
+		},
+	}
+	cmd.Flags().BoolVar(&yes, "yes", false, "clear without asking")
+	return cmd
+}

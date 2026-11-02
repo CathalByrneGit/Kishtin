@@ -95,3 +95,34 @@ ON CONFLICT (dish_id) DO UPDATE SET reset_at = excluded.reset_at, reset_by = exc
 
 -- name: ListLearnedResets :many
 SELECT * FROM learned_resets;
+
+-- name: ClearOrderCustomer :exec
+UPDATE orders SET name = '', notes = '' WHERE id = ?;
+
+-- name: ClearOrderItemNotes :exec
+UPDATE order_items SET notes = '' WHERE order_id = ?;
+
+-- name: ClearRenameEvents :exec
+UPDATE order_events SET from_val = '', to_val = '', detail = 'name cleared' WHERE order_id = ? AND kind = 'renamed';
+
+-- name: ReplaceInOrderEvents :exec
+UPDATE order_events SET detail = replace(detail, sqlc.arg(old), sqlc.arg(new)) WHERE order_id = sqlc.arg(order_id);
+
+-- name: ReplaceInPlanSnapshots :exec
+UPDATE plan_snapshots SET body = replace(body, sqlc.arg(old), sqlc.arg(new))
+WHERE at >= sqlc.arg(from_at) AND at <= sqlc.arg(to_at);
+
+-- name: ReplaceInVoiceReplies :exec
+UPDATE voice_log SET reply = replace(reply, sqlc.arg(old), sqlc.arg(new))
+WHERE at >= sqlc.arg(from_at) AND at <= sqlc.arg(to_at);
+
+-- name: OrdersWithCustomerDetails :many
+-- Orders closed (or, if never closed, created) before a time that still
+-- hold a customer's name or notes, oldest first.
+SELECT o.id FROM orders o
+WHERE COALESCE(o.closed_at, o.created_at) < sqlc.arg(before)
+  AND (o.name != '' OR o.notes != ''
+    OR EXISTS (SELECT 1 FROM order_items i WHERE i.order_id = o.id AND i.notes != '')
+    OR EXISTS (SELECT 1 FROM order_events e WHERE e.order_id = o.id AND e.kind = 'renamed' AND (e.from_val != '' OR e.to_val != '')))
+ORDER BY COALESCE(o.closed_at, o.created_at), o.id
+LIMIT sqlc.arg(max_rows);

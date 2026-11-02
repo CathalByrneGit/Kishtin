@@ -1444,6 +1444,52 @@
         ],
         "type": "object"
       },
+      "CustomerDetailsPreview": {
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "days": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "orders": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days",
+          "orders",
+          "notes"
+        ],
+        "type": "object"
+      },
+      "CustomerDetailsResult": {
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "orders": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "orders"
+        ],
+        "type": "object"
+      },
       "DayTemp": {
         "additionalProperties": false,
         "properties": {
@@ -5849,6 +5895,10 @@
             "format": "int64",
             "type": "integer"
           },
+          "customer_details_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "max_upload_mb": {
             "format": "int64",
             "type": "integer"
@@ -5871,7 +5921,8 @@
           "backup_keep",
           "max_upload_mb",
           "preview_records",
-          "voice_audio_days"
+          "voice_audio_days",
+          "customer_details_days"
         ],
         "type": "object"
       },
@@ -7212,6 +7263,69 @@
         "summary": "Connect a till with its token: a Square access token or a SumUp API key (manager password)",
         "tags": [
           "Connections"
+        ]
+      }
+    },
+    "/customer-details": {
+      "get": {
+        "operationId": "preview-clear-customer-details",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerDetailsPreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Show how many orders would lose their customer's name and notes if cleared now, without changing anything",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/customer-details/clear": {
+      "post": {
+        "description": "Clears the customer's name and notes from orders closed more than customer_details_days ago (system settings), with their items' notes and the same words in their history, till copies, kept plans and voice replies. Kishtin also does this every hour.",
+        "operationId": "clear-customer-details",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerDetailsResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Clear customers' names and order notes now (manager password); cannot be undone",
+        "tags": [
+          "Settings"
         ]
       }
     },

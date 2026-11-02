@@ -137,7 +137,7 @@ func (s *Service) System() *Group[settings.System] {
 		normalize:  func(v settings.System) settings.System { return v },
 		validate:   settings.System.Validate,
 		lessStrict: func(_, _ settings.System) []string { return nil },
-		notes: func(_ context.Context, _ *Service, _ store.Store, cur, next settings.System) ([]string, error) {
+		notes: func(ctx context.Context, s *Service, st store.Store, cur, next settings.System) ([]string, error) {
 			notes := []string{"The backup folder, listen address and TLS stay in kishtin.toml."}
 			switch {
 			case next.VoiceAudioDays > 0 && cur.VoiceAudioDays == 0:
@@ -146,6 +146,18 @@ func (s *Service) System() *Group[settings.System] {
 				notes = append(notes, "Voice commands will no longer be recorded, and kept recordings will be deleted within the hour.")
 			case next.VoiceAudioDays < cur.VoiceAudioDays:
 				notes = append(notes, fmt.Sprintf("Recordings older than %d days will be deleted within the hour.", next.VoiceAudioDays))
+			}
+			if next.CustomerDetailsDays == cur.CustomerDetailsDays {
+				return notes, nil
+			}
+			if next.CustomerDetailsDays == 0 {
+				notes = append(notes, "Customers' names and order notes will be kept for as long as the orders are. Say so in your privacy notice.")
+			} else {
+				n, err := st.Orders().OrdersWithCustomerDetails(ctx, s.clk.Now().AddDate(0, 0, -next.CustomerDetailsDays), maxPreviewCount)
+				if err != nil {
+					return nil, fmt.Errorf("find orders to clear: %w", err)
+				}
+				notes = append(notes, fmt.Sprintf("Customers' names and order notes will be cleared %d days after each order closes: %d orders now within the hour. This cannot be undone.", next.CustomerDetailsDays, len(n)))
 			}
 			return notes, nil
 		},

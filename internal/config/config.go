@@ -257,6 +257,7 @@ func (c Config) SystemSettings() settings.System {
 		BackupKeep:            c.Backup.Keep,
 		MaxUploadMB:           c.Files.MaxSizeMB,
 		PreviewRecords:        50,
+		CustomerDetailsDays:   settings.DefaultCustomerDetailsDays,
 	}
 }
 

@@ -126,7 +126,8 @@ var planTriggers = map[string]bool{events.KindOrder: true, events.KindMenu: true
 // RunPlanRecorder keeps a snapshot of the scheduler's plan whenever it
 // changes: after every order, menu or settings change, and on the
 // scheduler's re-plan timer, so courses going late are caught too. It
-// also deletes voice recordings past their keep date. It runs until ctx
+// also deletes voice recordings past their keep date, and clears
+// customers' names and order notes past theirs. It runs until ctx
 // ends.
 func (s *Service) RunPlanRecorder(ctx context.Context, log *slog.Logger) {
 	var ch <-chan events.Event
@@ -152,9 +153,15 @@ func (s *Service) RunPlanRecorder(ctx context.Context, log *slog.Logger) {
 		}
 	}
 	record("start")
-	if _, err := s.PurgeVoiceAudio(ctx); err != nil {
-		log.Warn("delete old voice recordings", "err", err)
+	purgeOld := func() {
+		if _, err := s.PurgeVoiceAudio(ctx); err != nil {
+			log.Warn("delete old voice recordings", "err", err)
+		}
+		if _, err := s.PurgeCustomerDetails(ctx); err != nil && ctx.Err() == nil {
+			log.Warn("clear old customer details", "err", err)
+		}
 	}
+	purgeOld()
 	for {
 		select {
 		case <-ctx.Done():
@@ -171,9 +178,7 @@ func (s *Service) RunPlanRecorder(ctx context.Context, log *slog.Logger) {
 			record("timer")
 			tick.Reset(every())
 		case <-purge.C:
-			if _, err := s.PurgeVoiceAudio(ctx); err != nil {
-				log.Warn("delete old voice recordings", "err", err)
-			}
+			purgeOld()
 		}
 	}
 }
