@@ -10,7 +10,7 @@ If you find a security problem in Kishtin, please report it privately, not in a 
 
 Kishtin is a small open-source project with no security team. Reports are read by the maintainer, who will reply on the report, agree a fix and a date to make it public, and credit you if you want.
 
-Please do not test against a restaurant's live system. Run your own copy: see [Installing Kishtin](docs/install.md) or [build from source](README.md#build-from-source).
+Please do not test against a restaurant's live system. Run your own copy: see [Installing Kishtin](docs/install.md) or [build from source](docs/developers.md#build-from-source).
 
 ## Supported versions
 
