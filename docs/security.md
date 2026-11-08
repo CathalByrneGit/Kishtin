@@ -114,4 +114,4 @@ So you know what is already handled:
 - Till tokens are kept in a file only Kishtin's account can read, and never go into backups or exports.
 - Nothing is sent off the computer unless a manager connects a till.
 
-To report a security problem in Kishtin itself, see [SECURITY.md](../SECURITY.md).
+To report a security problem in Kishtin itself, see [SECURITY.md](https://github.com/CathalByrneGit/Kishtin/blob/main/SECURITY.md).

@@ -1,0 +1,146 @@
+/* Kishtin documentation site. Light by default, like the kitchen screens:
+   bright, high contrast, strong type. Colours follow kit-ui's light and dark
+   themes. Fonts are Inter and JetBrains Mono (SIL OFL, see fonts/OFL.txt). */
+
+@font-face { font-family: "Inter"; src: url("../fonts/inter-var.woff2") format("woff2"); font-style: normal; font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../fonts/jetbrains-mono-var.woff2") format("woff2"); font-style: normal; font-weight: 100 800; font-display: swap; }
+
+:root {
+  --md-text-font: "Inter", system-ui, sans-serif;
+  --md-code-font: "JetBrains Mono", ui-monospace, monospace;
+}
+
+[data-md-color-scheme="default"] {
+  --k-bg: #ffffff;
+  --k-panel: #f5f6f8;
+  --k-panel-raised: #eceef2;
+  --k-rule: #d7dbe3;
+  --k-text: #181b24;
+  --k-muted: #4b5263;
+  --k-blue: #1d4ed8;
+  --k-blue-strong: #0a47c2;
+  --k-on-blue: #ffffff;
+  --md-default-bg-color: var(--k-bg);
+  --md-default-fg-color: var(--k-text);
+  --md-default-fg-color--light: var(--k-muted);
+  --md-default-fg-color--lighter: #6b7385;
+  --md-primary-fg-color: var(--k-bg);
+  --md-primary-fg-color--light: var(--k-panel);
+  --md-primary-fg-color--dark: var(--k-panel-raised);
+  --md-primary-bg-color: var(--k-text);
+  --md-primary-bg-color--light: var(--k-muted);
+  --md-accent-fg-color: var(--k-blue-strong);
+  --md-typeset-a-color: var(--k-blue);
+  --md-code-bg-color: var(--k-panel);
+  --md-code-fg-color: var(--k-text);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 230;
+  --k-bg: #0d0d12;
+  --k-panel: #16161d;
+  --k-panel-raised: #1e1e27;
+  --k-rule: #2e2e3a;
+  --k-text: #ececf1;
+  --k-muted: #a9abb8;
+  --k-blue: #60a5fa;
+  --k-blue-strong: #8ab8ff;
+  --k-on-blue: #0d0d12;
+  --md-default-bg-color: var(--k-bg);
+  --md-default-fg-color: var(--k-text);
+  --md-default-fg-color--light: var(--k-muted);
+  --md-default-fg-color--lighter: #80828f;
+  --md-primary-fg-color: var(--k-panel);
+  --md-primary-fg-color--light: var(--k-panel-raised);
+  --md-primary-fg-color--dark: var(--k-bg);
+  --md-primary-bg-color: var(--k-text);
+  --md-primary-bg-color--light: var(--k-muted);
+  --md-accent-fg-color: var(--k-blue-strong);
+  --md-typeset-a-color: var(--k-blue);
+  --md-code-bg-color: var(--k-panel);
+  --md-code-fg-color: var(--k-text);
+}
+
+.md-header,
+.md-tabs {
+  color: var(--k-text);
+  background: var(--md-primary-fg-color);
+  border-bottom: 1px solid var(--k-rule);
+  box-shadow: none;
+}
+.md-header__title { font-weight: 700; letter-spacing: -0.01em; }
+
+.md-typeset { font-size: 0.86rem; line-height: 1.65; }
+.md-typeset a { color: var(--k-blue); text-decoration-thickness: 0.06em; text-underline-offset: 0.18em; }
+.md-typeset a:hover,
+.md-nav__link:hover,
+.md-nav__link--active { color: var(--k-blue-strong); }
+.md-nav__item .md-nav__link--active { padding-left: 0.6rem; border-left: 3px solid var(--k-blue); background: var(--k-panel); font-weight: 600; }
+.md-nav__item--section > .md-nav__link { color: var(--k-text); font-weight: 700; letter-spacing: 0.01em; }
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 { color: var(--k-text); font-weight: 700; letter-spacing: -0.018em; }
+.md-typeset h1 { max-width: 26ch; margin-bottom: 0.65em; font-size: clamp(1.6rem, 3.5vw, 2.4rem); line-height: 1.1; }
+.md-typeset h2 { padding-bottom: 0.32em; border-bottom: 1px solid var(--k-rule); }
+.md-typeset h2:has(+ .md-typeset__scrollwrap, + .highlight) { padding-bottom: 0; border-bottom: 0; }
+.md-typeset img { border: 1px solid var(--k-rule); border-radius: 6px; }
+
+.md-typeset .eyebrow { margin: 0 0 0.8rem; color: var(--k-blue); font-family: var(--md-code-font); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.md-typeset .lead { max-width: 40rem; color: var(--k-muted); font-size: 1.05rem; }
+.md-typeset .hero-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 1.4rem 0 2rem; }
+.md-typeset .image-caption { margin: -0.65rem 0 2rem; color: var(--k-muted); font-size: 0.74rem; text-align: center; }
+
+.md-typeset .md-button { border: 2px solid var(--k-rule); border-radius: 6px; color: var(--k-text); font-weight: 600; }
+.md-typeset .md-button:hover,
+.md-typeset .md-button:focus { border-color: var(--k-blue); color: var(--k-blue-strong); background: var(--k-panel); }
+.md-typeset .md-button--primary { border-color: var(--k-blue); color: var(--k-on-blue); background: var(--k-blue); }
+.md-typeset .md-button--primary:hover,
+.md-typeset .md-button--primary:focus { border-color: var(--k-blue-strong); color: var(--k-on-blue); background: var(--k-blue-strong); }
+
+.md-typeset .signal-grid,
+.md-typeset .feature-grid { display: grid; gap: 1px; margin: 1.4rem 0 2.2rem; padding: 1px; border-radius: 6px; background: var(--k-rule); }
+.md-typeset .signal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.md-typeset .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.md-typeset .signal-grid section,
+.md-typeset .feature-grid section { min-width: 0; padding: 1rem 1.1rem; background: var(--k-bg); }
+.md-typeset .signal-grid section { display: flex; flex-direction: column; gap: 0.38rem; }
+.md-typeset .signal-grid strong { color: var(--k-blue); font-family: var(--md-code-font); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.md-typeset .signal-grid span,
+.md-typeset .feature-grid p { color: var(--k-muted); }
+.md-typeset .feature-grid section:hover { background: var(--k-panel); }
+.md-typeset .feature-grid h3 { margin: 0 0 0.42rem; font-size: 1rem; }
+.md-typeset .feature-grid h3 a { color: var(--k-text); text-decoration: none; }
+.md-typeset .feature-grid h3 a:hover { color: var(--k-blue-strong); }
+.md-typeset .feature-grid p { margin: 0; }
+
+.md-typeset .admonition,
+.md-typeset details { border-width: 1px; border-color: var(--k-rule); border-left-width: 4px; border-radius: 6px; background: var(--k-panel); box-shadow: none; }
+.md-typeset table:not([class]) { border: 1px solid var(--k-rule); border-radius: 6px; border-collapse: separate; font-size: 0.78rem; }
+.md-typeset table:not([class]) th { color: var(--k-text); background: var(--k-panel-raised); font-weight: 700; }
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td { padding: 0.6em 0.8em; border-color: var(--k-rule); vertical-align: top; }
+.md-typeset table:not([class]) tr:nth-child(even) { background: var(--k-panel); }
+.md-typeset code:not(pre code) { padding: 0.1em 0.3em; border: 1px solid var(--k-rule); border-radius: 3px; background: var(--md-code-bg-color); }
+.md-typeset .highlight pre { border: 1px solid var(--k-rule); border-radius: 6px; background: var(--k-panel); }
+
+::selection { color: var(--k-on-blue); background: var(--k-blue); }
+:focus-visible { outline: 3px solid var(--k-blue); outline-offset: 3px; }
+
+@media (max-width: 50rem) {
+  .md-typeset .signal-grid,
+  .md-typeset .feature-grid { grid-template-columns: 1fr; }
+  .md-typeset .hero-actions .md-button { width: 100%; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

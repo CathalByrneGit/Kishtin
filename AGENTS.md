@@ -408,6 +408,7 @@ make generate   # sqlc generate
 make migrate    # goose up for the configured backend
 make test-pg    # conformance suite against Postgres (needs a local Postgres)
 make test-duckdb # DuckDB backend tests (CGO build)
+make docs       # documentation site from docs/ with Zensical (published to GitHub Pages)
 ```
 
 ### Conventions
