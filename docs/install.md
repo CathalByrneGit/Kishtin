@@ -171,7 +171,7 @@ Run `kishtind startup off` first if Kishtin starts with the computer. Then delet
 
 Said plainly, so nobody is caught out:
 
-- No release has been published yet, so the install lines above do not work until the first `v*` tag is pushed (see Making a release). Until then, build from source as in the [README](https://github.com/CathalByrneGit/Kishtin/blob/main/README.md#build-from-source).
+- No release has been published yet, so the install lines above do not work until the first `v*` tag is pushed (see Making a release). Until then, [build from source](developers.md#build-from-source).
 - On Windows and a Mac, Kishtin starts when someone logs in, not at power-on, unless the computer logs in by itself (see [Start with the computer](#start-with-the-computer)). On Windows its window has to stay open.
 - Each tablet installs Kishtin's certificate once, by hand, following the steps on its screen. On an iPad that is three screens of Settings.
 - If the router gives the Kishtin computer a new address, tablets must be pointed at it again (Kishtin renews its own certificate by itself). Reserve the computer's address in the router to avoid this.

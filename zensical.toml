@@ -16,6 +16,7 @@ extra_css = ["assets/stylesheets/extra.css"]
 use_directory_urls = true
 nav = [
   {"Overview" = "index.md"},
+  {"What Kishtin does" = "features.md"},
   {"Start here" = [
     {"Getting started" = "getting-started.md"},
     {"Installing Kishtin" = "install.md"},
@@ -40,6 +41,9 @@ nav = [
   {"Tills" = [
     {"Orders from Square" = "square.md"},
     {"Sales from SumUp" = "sumup.md"},
+  ]},
+  {"For developers" = [
+    {"Building and developing Kishtin" = "developers.md"},
   ]},
   {"Releases" = [
     {"v0.1.0" = "releases/v0.1.0.md"},

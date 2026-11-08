@@ -2,7 +2,7 @@
 
 This guide is for the person setting Kishtin up in a restaurant: an owner, manager or head chef. You don't need to be technical. If you can install an app and follow a recipe, you can do this. Set aside about an hour, outside service.
 
-> **Before you start:** no Kishtin release has been published yet, so the install lines in Step 1 will not work until one is. Until then, Kishtin has to be built from its source code by someone technical; see the [README](https://github.com/CathalByrneGit/Kishtin/blob/main/README.md#build-from-source).
+> **Before you start:** no Kishtin release has been published yet, so the install lines in Step 1 will not work until one is. Until then, Kishtin has to be built from its source code by someone technical; see [Building Kishtin from source](developers.md#build-from-source).
 
 ## At a glance
 

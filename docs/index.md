@@ -29,6 +29,7 @@ description: Install Kishtin, then find the guide for HACCP records, the pass, t
 | Task | Start here |
 | --- | --- |
 | Set Kishtin up in a restaurant, step by step | [Getting started](getting-started.md) |
+| See everything Kishtin does, and what isn't built yet | [What Kishtin does](features.md) |
 | Install, update or uninstall it | [Installing Kishtin](install.md) |
 | Encrypt the computer, back up and restore | [Keeping the computer safe](security.md) |
 | Connect a tablet or phone | [Connecting a tablet or phone](screens.md#connecting-a-tablet-or-phone) |
@@ -43,6 +44,7 @@ description: Install Kishtin, then find the guide for HACCP records, the pass, t
 | Change limits, lists and settings | [Settings](settings.md) |
 | Let staff do manager jobs | [Permissions](permissions.md) |
 | Know what Kishtin keeps, for a privacy notice | [What Kishtin records](recording.md) |
+| Build from source or use the command line | [Building and developing Kishtin](developers.md) |
 
 ## What it does
 
