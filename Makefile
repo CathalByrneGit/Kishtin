@@ -4,7 +4,7 @@ OAPI_CODEGEN ?= $(GO) run github.com/doordash-oss/oapi-codegen-dd/v3/cmd/oapi-co
 SQLC ?= sqlc
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-.PHONY: build release-snapshot test test-cgo lint generate migrate dev frontend frontend-deps frontend-test test-pg test-duckdb
+.PHONY: build release-snapshot test test-cgo lint generate migrate dev frontend frontend-deps frontend-test test-pg test-duckdb docs docs-serve
 
 # The Go build embeds frontend/dist, so build the screens first.
 build: frontend
@@ -14,6 +14,15 @@ build: frontend
 # release locally. Needs goreleaser v2.
 release-snapshot:
 	goreleaser release --snapshot --clean
+
+# The documentation site (docs/ built with Zensical into website/site/).
+# Needs uv (https://docs.astral.sh/uv/); published by .github/workflows/docs.yml.
+UV ?= uv
+docs:
+	$(UV) run --project website --frozen zensical build --strict --clean -f zensical.toml
+
+docs-serve:
+	$(UV) run --project website --frozen zensical serve -f zensical.toml
 
 frontend-deps:
 	git submodule update --init frontend/vendor/kit-ui

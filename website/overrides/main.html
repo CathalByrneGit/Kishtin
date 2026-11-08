@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{#- Social previews: each page's own title and description when it has them. -#}
+{% block extrahead %}
+  {{ super() }}
+  {% set social_title = (page.meta.title if page.meta and page.meta.title else (page.title | striptags if page.title else config.site_name)) %}
+  {% set social_description = (page.meta.description if page.meta and page.meta.description else config.site_description) %}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ social_title }}">
+  <meta property="og:description" content="{{ social_description }}">
+  <meta property="og:url" content="{{ page.canonical_url or config.site_url }}">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta name="twitter:card" content="summary">
+{% endblock %}

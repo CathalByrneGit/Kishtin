@@ -52,6 +52,8 @@ Roadmap stages 1 to 7: the HACCP log, ported from the browser prototype; the men
 
 ## Install and run
 
+The guides are also at **[cathalbyrnegit.github.io/Kishtin](https://cathalbyrnegit.github.io/Kishtin/)**.
+
 Setting Kishtin up in a restaurant, and not technical? Start with **[Getting started](docs/getting-started.md)**: a step-by-step guide that also explains how Kishtin differs from cloud systems. Then [Keeping the Kishtin computer safe](docs/security.md): disk encryption, updates and backups. To report a security problem, see [SECURITY.md](SECURITY.md).
 
 On Windows, in PowerShell:
@@ -124,7 +126,11 @@ make test       # go test ./... (pure-Go SQLite)
 make test-cgo   # the same suite on the CGO SQLite driver
 make lint       # golangci-lint
 make generate   # sqlc queries, api/openapi.json, the CLI's API client and the screens' API types
+make docs       # the documentation site from docs/, into website/site/ (needs uv)
+make docs-serve # the same, served with live reload on :8000
 ```
+
+The documentation is published at **https://cathalbyrnegit.github.io/Kishtin/**, built from `docs/` with [Zensical](https://zensical.org) by `.github/workflows/docs.yml` on every push to `main`. Add a new page to `nav` in `zensical.toml`. Links to files outside `docs/` go to their GitHub address, so they work on the site too.
 
 Tests, fixtures and docs use synthetic data only.
 
