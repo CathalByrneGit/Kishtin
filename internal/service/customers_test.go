@@ -9,8 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cathalbyrnegit/kishtin/internal/diskfree"
 	"github.com/cathalbyrnegit/kishtin/internal/orders"
 	"github.com/cathalbyrnegit/kishtin/internal/settings"
+	"github.com/cathalbyrnegit/kishtin/internal/store"
 )
 
 func TestClearCustomerDetails(t *testing.T) {
@@ -100,4 +102,65 @@ func TestSystemSettingsFromBeforeCustomerDetails(t *testing.T) {
 	assert.Equal(t, settings.DefaultCustomerDetailsDays, s.CustomerDetailsDays, "settings saved before take the default")
 	require.NoError(t, s.UnmarshalJSON([]byte(`{"customer_details_days":0}`)))
 	assert.Zero(t, s.CustomerDetailsDays, "0 saved on purpose stays 0")
+}
+
+func TestStorageWarning(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	free := uint64(50 << 30)
+	f.svc.storage = StorageConfig{DataDir: t.TempDir(), Free: func(string) (diskfree.Space, error) {
+		return diskfree.Space{Free: free, Total: 100 << 30}, nil
+	}}
+	st, err := f.svc.Storage(ctx, f.cook)
+	require.NoError(t, err)
+	assert.Equal(t, StorageOK, st.Level)
+	assert.Empty(t, st.Warning)
+	td, err := f.svc.Today(ctx, f.cook)
+	require.NoError(t, err)
+	assert.Empty(t, td.StorageWarning)
+
+	free = 1 << 30
+	st, err = f.svc.Storage(ctx, f.cook)
+	require.NoError(t, err)
+	assert.Equal(t, StorageLow, st.Level)
+	assert.Contains(t, st.Warning, "1.0 GB left")
+
+	free = 100 << 20
+	td, err = f.svc.Today(ctx, f.cook)
+	require.NoError(t, err)
+	assert.Contains(t, td.StorageWarning, "almost full (100 MB left)")
+}
+
+func TestPurgePlanSnapshots(t *testing.T) {
+	k := setupKitchen(t)
+	ctx := context.Background()
+	old := time.Now().AddDate(0, 0, -200)
+	require.NoError(t, k.svc.st.Activity().AppendPlanSnapshot(ctx, store.PlanSnapshot{ID: "old", At: old, Trigger: "timer", Hash: "h", Body: []byte(`{}`)}))
+	k.clk.Set(time.Now())
+
+	n, err := k.svc.PurgePlanSnapshots(ctx)
+	require.NoError(t, err)
+	assert.Zero(t, n, "kept by default")
+
+	sys, err := k.svc.System().current(ctx, k.svc.st)
+	require.NoError(t, err)
+	next := sys.Value
+	next.PlanSnapshotDays = 10
+	bad, err := k.svc.System().Preview(ctx, k.manager, SettingsChange[settings.System]{Value: next, Reason: "Save space"})
+	require.NoError(t, err)
+	assert.Contains(t, bad.Problem, "between 30 and", "at least 30 days")
+	next.PlanSnapshotDays = 90
+	pv, err := k.svc.System().Preview(ctx, k.manager, SettingsChange[settings.System]{Value: next, Reason: "Save space"})
+	require.NoError(t, err)
+	assert.Contains(t, strings.Join(pv.Notes, " "), "older than 90 days will be removed: 1 now")
+	_, err = k.svc.System().Save(ctx, k.manager, SettingsChange[settings.System]{Value: next, Reason: "Save space"})
+	require.NoError(t, err)
+
+	n, err = k.svc.PurgePlanSnapshots(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, 1, n)
+	acts, err := k.svc.Activity(ctx, k.manager, ActivityQuery{Kinds: []string{ActivityPlansPurged}})
+	require.NoError(t, err)
+	require.Len(t, acts, 1)
+	assert.Equal(t, "1", acts[0].Detail["plans"])
 }

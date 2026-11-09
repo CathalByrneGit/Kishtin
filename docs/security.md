@@ -84,6 +84,14 @@ Kishtin backs up the database every 6 hours, on the same computer. That doesn't 
 - Old backups still hold customers' names and notes from before they were cleared. Delete old copies you no longer need.
 - **Setup › Backups** shows each backup on the computer with its check result. Once in a while, try restoring a copy on another computer (below).
 
+## Disk space
+
+Kishtin cannot save records or make backups on a full disk. **Settings › Disk space** shows how much room is left, and **Today** warns everyone when under 2 GB is left. If it does:
+
+- delete things you don't need from the computer (downloads, old files);
+- keep fewer backups (**Settings › Backups to keep**), after copying them off;
+- set **Settings › Keep scheduler plans** to a number of days, such as 365.
+
 ## Restoring from a backup
 
 On a new computer, or after the old one is repaired:

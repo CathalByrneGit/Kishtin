@@ -514,6 +514,10 @@ type ClientInterface interface {
 	SetStartup(ctx context.Context, options *SetStartupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetStartupResponse, error)
 	SetStartupWithResponse(ctx context.Context, options *SetStartupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetStartupResp, error)
 
+	// Storage How much disk space Kishtin's data takes and how much is left, with a warning when it is low
+	Storage(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*StorageResponse, error)
+	StorageWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*StorageResp, error)
+
 	// TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
 	TillStatus(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResponse, error)
 	TillStatusWithResponse(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResp, error)
@@ -8133,6 +8137,68 @@ func (c *Client) SetStartup(ctx context.Context, options *SetStartupRequestOptio
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/startup")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// Storage How much disk space Kishtin's data takes and how much is left, with a warning when it is low
+func (c *Client) Storage(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*StorageResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/storage",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*StorageResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(StorageErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "StorageErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(StorageResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "StorageResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/storage")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -20746,6 +20812,66 @@ func (c *Client) SetStartupWithResponse(ctx context.Context, options *SetStartup
 	}
 }
 
+// Storage How much disk space Kishtin's data takes and how much is left, with a warning when it is low
+func (c *Client) StorageWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*StorageResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/storage",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/storage")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &StorageResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(StorageResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "StorageResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(StorageErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "StorageErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
 func (c *Client) TillStatusWithResponse(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResp, error) {
 	var err error
@@ -23345,6 +23471,10 @@ type SetStartupResponse = StartupStatus
 
 type SetStartupErrorResponse = ErrorModel
 
+type StorageResponse = Storage
+
+type StorageErrorResponse = ErrorModel
+
 type TillStatusResponse = TillStatus
 
 type TillStatusErrorResponse = ErrorModel
@@ -24399,6 +24529,14 @@ type SetStartupResp struct {
 	StatusCode                        int
 	JSON200                           *SetStartupResponse
 	ApplicationProblemPlusJSONDefault *SetStartupErrorResponse
+}
+
+type StorageResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *StorageResponse
+	ApplicationProblemPlusJSONDefault *StorageErrorResponse
 }
 
 type TillStatusResp struct {
@@ -29245,6 +29383,21 @@ func (s StationPlan) Validate() error {
 	return errors
 }
 
+type Storage struct {
+	BackupsBytes  int64   `json:"backups_bytes"`
+	DatabaseBytes int64   `json:"database_bytes"`
+	FilesBytes    int64   `json:"files_bytes"`
+	FreeBytes     int64   `json:"free_bytes" validate:"gte=0"`
+	Level         string  `json:"level" validate:"required"`
+	PlanSnapshots int64   `json:"plan_snapshots"`
+	TotalBytes    int64   `json:"total_bytes" validate:"gte=0"`
+	Warning       *string `json:"warning,omitempty"`
+}
+
+func (s Storage) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
 type Suggestion struct {
 	Booklet   string             `json:"booklet" validate:"required"`
 	Checklist []ChecklistSection `json:"checklist,omitempty"`
@@ -29307,6 +29460,7 @@ type System struct {
 	BackupKeep            int64  `json:"backup_keep"`
 	CustomerDetailsDays   int64  `json:"customer_details_days"`
 	MaxUploadMb           int64  `json:"max_upload_mb"`
+	PlanSnapshotDays      int64  `json:"plan_snapshot_days"`
 	PreviewRecords        int64  `json:"preview_records"`
 	RestaurantName        string `json:"restaurant_name" validate:"required"`
 	VoiceAudioDays        int64  `json:"voice_audio_days"`
@@ -29548,6 +29702,7 @@ type TodayView struct {
 	RestaurantName    string          `json:"restaurant_name" validate:"required"`
 	Ring              string          `json:"ring" validate:"required"`
 	SignOff           SignOffStatus   `json:"sign_off"`
+	StorageWarning    *string         `json:"storage_warning,omitempty"`
 	Total             int64           `json:"total"`
 	Units             []UnitToday     `json:"units" validate:"required"`
 	WithoutAction     int64           `json:"without_action"`

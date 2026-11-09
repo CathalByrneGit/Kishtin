@@ -35,3 +35,9 @@ UPDATE voice_log SET user_name = @name WHERE user_id = @user_id;
 
 -- name: AnonymiseActivity :execrows
 UPDATE activity SET user_name = @name WHERE user_id = @user_id;
+
+-- name: PurgePlanSnapshots :execrows
+DELETE FROM plan_snapshots WHERE at < @before_us;
+
+-- name: CountPlanSnapshotsBefore :one
+SELECT COUNT(*) FROM plan_snapshots WHERE at < @before_us;

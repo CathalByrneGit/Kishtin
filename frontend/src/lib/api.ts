@@ -226,6 +226,7 @@ export const api = {
   users: () => json<Schemas["UsersOutBody"]>("GET", "/users"),
   previewAnonymise: (id: string) => json<Schemas["AnonymisePreview"]>("GET", `/users/${encodeURIComponent(id)}/anonymise`),
   anonymise: (id: string) => json<Schemas["AnonymiseResult"]>("POST", `/users/${encodeURIComponent(id)}/anonymise`),
+  storage: () => json<Schemas["Storage"]>("GET", "/storage"),
   previewClearCustomerDetails: () => json<Schemas["CustomerDetailsPreview"]>("GET", "/customer-details"),
   clearCustomerDetails: () => json<Schemas["CustomerDetailsResult"]>("POST", "/customer-details/clear"),
   createUser: (body: Schemas["NewUser"]) => json<Schemas["User"]>("POST", "/users", { body }),

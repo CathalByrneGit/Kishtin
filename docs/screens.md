@@ -252,6 +252,7 @@ For a manager, **Today** starts with a **Getting started** list until everything
 
 - **Restaurant**: the name, backup schedule and retention, largest upload, preview length, how long voice recordings are kept, and how many days after an order closes its customer's name and notes are cleared. These change through the same review as Setup. See [settings.md](settings.md#system-settings).
 - **Customer details**: whether customers' names and order notes are cleared and after how long, what clearing does and does not touch, and, when orders are due, **Clear now** (it asks first). A manager with the password. See [recording.md](recording.md#customers-names-and-order-notes).
+- **Disk space**: how much room is left on the Kishtin computer's disk, and what Kishtin's database, photos and backups take. When under 2 GB is left, **Today** shows everyone a warning, because Kishtin cannot save records or make backups on a full disk. Also `kishtin storage`.
 - **The Kishtin computer**: whether Kishtin starts by itself when the computer it runs on starts, with a switch to turn that on or off (a manager with the password), how it does it, and what it does not do (on Windows and a Mac it starts at login, not at power-on). See [Start with the computer](install.md#start-with-the-computer).
 - **This device**: which screen it shows (see [Kitchen screens](#kitchen-screens)), light, dark or system theme, high contrast, and unpairing.
 

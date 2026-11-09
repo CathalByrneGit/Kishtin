@@ -50,6 +50,8 @@ The plan is checked after every order, menu or settings change and on the schedu
 
 `kishtin plans --from 2026-10-24`, or `GET /api/kitchen/plans`. Head chef or manager.
 
+Plans are kept for good unless a manager sets **Settings › Keep scheduler plans** (`plan_snapshot_days`, at least 30). Then older plans are removed every hour, to save disk space; nothing from the last 30 days can be removed.
+
 ## Activity log
 
 Things staff and screens do that are not HACCP records or order events:
@@ -61,6 +63,7 @@ Things staff and screens do that are not HACCP records or order events:
 | `screen.connected`, `screen.disconnected` | which device and who was logged in; on disconnect, how many seconds it stayed connected. A screen that drops off the Wi-Fi shows as disconnected once the server notices, within about 20 seconds. |
 | `haccp.entered` | for each HACCP record: how it was entered (`form`, `voice`, `catch_up`, `paper`, `api`), when the check was done and when it was saved |
 | `staff.anonymised` | which leaver was anonymised, by whom, and how many entries changed |
+| `plans.purged` | kept scheduler plans removed after the days set: how many, and the days |
 | `orders.customer_details_cleared` | customers' names and order notes cleared: how many orders, the days kept, and who, or the server's hourly job |
 | `setup` | when Kishtin was set up, by which manager, and whether from the screens or `kishtind setup` |
 | `device.paired` | a tablet or phone paired by QR code: its name, its new device key, and the manager who made the code |
@@ -106,7 +109,7 @@ What it does not change:
 
 ## How long things are kept
 
-Voice recordings are kept for the days set (none by default), and customers' names and order notes for 30 days after the order closes unless you change it. Everything else is kept until the restaurant deletes the database. Backups made before details were cleared still hold them until the backups are deleted (Settings › Backups to keep). HACCP records should be kept for as long as your inspector and HACCP plan require; Irish Revenue rules require business records for six years.
+Voice recordings are kept for the days set (none by default), and customers' names and order notes for 30 days after the order closes unless you change it. Scheduler plans are kept for good unless you set a number of days. Everything else is kept until the restaurant deletes the database. Backups made before details were cleared still hold them until the backups are deleted (Settings › Backups to keep). HACCP records should be kept for as long as your inspector and HACCP plan require; Irish Revenue rules require business records for six years.
 
 ## What Kishtin does not record
 

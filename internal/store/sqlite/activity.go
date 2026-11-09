@@ -88,6 +88,16 @@ func (s *Store) LastPlanSnapshot(ctx context.Context) (store.PlanSnapshot, error
 	return snapshotFromRow(r), nil
 }
 
+func (s *Store) CountPlanSnapshotsBefore(ctx context.Context, before time.Time) (int, error) {
+	n, err := s.r.CountPlanSnapshotsBefore(ctx, us(before))
+	return int(n), mapErr(err)
+}
+
+func (s *Store) PurgePlanSnapshotsBefore(ctx context.Context, before time.Time) (int, error) {
+	n, err := s.w.PurgePlanSnapshots(ctx, us(before))
+	return int(n), mapErr(err)
+}
+
 func (s *Store) ListPlanSnapshots(ctx context.Context, from, to time.Time, limit int) ([]store.PlanSnapshot, error) {
 	lo, hi := bounds(from, to)
 	rows, err := s.r.ListPlanSnapshots(ctx, sqlitedb.ListPlanSnapshotsParams{FromUs: lo, ToUs: hi, MaxRows: maxRows(limit)})

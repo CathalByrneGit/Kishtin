@@ -170,6 +170,7 @@ func open(ctx context.Context, cfg config.Config, serving bool, startup service.
 		// Kept voice recordings, when system settings say to keep them.
 		VoiceAudioDir: filepath.Join(cfg.DataDir, "voice-audio"),
 		Events:        events.NewHub(),
+		Storage:       service.StorageConfig{DataDir: cfg.DataDir, Database: cfg.Store.DSN},
 		Backups: service.BackupConfig{
 			Dir:  cfg.Backup.Dir,
 			Open: func(ctx context.Context, path string) (store.Store, error) { return sqlite.OpenSnapshot(ctx, path) },

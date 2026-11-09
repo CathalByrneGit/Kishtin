@@ -19,6 +19,7 @@
   let previewN = $state("");
   let voiceDays = $state("");
   let customerDays = $state("");
+  let planDays = $state("");
 
   let review = $state<{ preview: Preview; value: Schemas["System"] } | null>(null);
   let saving = $state(false);
@@ -39,6 +40,18 @@
       startupError = message(err);
     }
   }
+
+  // Room left on the Kishtin computer's disk.
+  let storage = $state<Schemas["Storage"] | null>(null);
+  async function loadStorage() {
+    try {
+      storage = await api.storage();
+    } catch {
+      storage = null;
+    }
+  }
+  const gb = (n: number) => `${(n / 2 ** 30).toFixed(1)} GB`;
+  const mb = (n: number) => (n >= 2 ** 30 ? gb(n) : `${Math.max(0.1, n / 2 ** 20).toFixed(1)} MB`);
 
   // Customers' names and order notes, cleared after the days set.
   let customers = $state<Schemas["CustomerDetailsPreview"] | null>(null);
@@ -76,6 +89,7 @@
       startupAsked = true;
       void loadStartup();
       void loadCustomers();
+      void loadStorage();
     }
   });
 
@@ -102,6 +116,7 @@
     previewN = String(v.preview_records);
     voiceDays = String(v.voice_audio_days);
     customerDays = String(v.customer_details_days);
+    planDays = String(v.plan_snapshot_days);
   }
 
   async function load() {
@@ -132,7 +147,8 @@
     const p = whole(previewN);
     const vd = whole(voiceDays);
     const cd = whole(customerDays);
-    if (i === null || k === null || u === null || p === null || vd === null || cd === null) return "Every number must be a whole number.";
+    const pd = whole(planDays);
+    if (i === null || k === null || u === null || p === null || vd === null || cd === null || pd === null) return "Every number must be a whole number.";
     return {
       restaurant_name: name.trim(),
       backup_interval_minutes: i,
@@ -141,6 +157,7 @@
       preview_records: p,
       voice_audio_days: vd,
       customer_details_days: cd,
+      plan_snapshot_days: pd,
     };
   });
   const dirty = $derived(system !== null && typeof draft !== "string" && JSON.stringify(draft) !== JSON.stringify(system.value));
@@ -216,6 +233,10 @@
                 <span>Clear customers' names and order notes (days after the order closes, 0–2600; 0 keeps them)</span>
                 <TextInput bind:value={customerDays} disabled={!canEdit} />
               </label>
+              <label class="field">
+                <span>Keep scheduler plans (days, 30–3650; 0 keeps them all)</span>
+                <TextInput bind:value={planDays} disabled={!canEdit} />
+              </label>
             </div>
             {#if typeof draft === "string"}<Notice tone="error" message={draft} />{/if}
             {#if canEdit && dirty}
@@ -265,6 +286,33 @@
           <Spinner />
         {/if}
       </ManagerGate>
+
+      <h2 class="section-title">Disk space</h2>
+      {#if storage}
+        <Card padding="md">
+          <div class="stack">
+            <div class="row">
+              {#if storage.level === "ok"}
+                <Chip tone="success" uppercase={false}>{gb(storage.free_bytes)} free</Chip>
+              {:else if storage.level === "low"}
+                <Chip tone="warning" uppercase={false}>Getting full: {gb(storage.free_bytes)} free</Chip>
+              {:else if storage.level === "critical"}
+                <Chip tone="danger" uppercase={false}>Almost full: {mb(storage.free_bytes)} free</Chip>
+              {:else}
+                <Chip tone="neutral" uppercase={false}>Not known</Chip>
+              {/if}
+            </div>
+            {#if storage.warning}<Notice tone="error" message={storage.warning} />{/if}
+            <span>
+              Kishtin's database takes {mb(storage.database_bytes)}, photos and files {mb(storage.files_bytes)}, and backups {mb(storage.backups_bytes)}. It keeps
+              {storage.plan_snapshots} scheduler plans.
+            </span>
+            <span class="muted small">Kishtin cannot save records or make backups on a full disk. Today warns everyone when under 2 GB is left.</span>
+          </div>
+        </Card>
+      {:else}
+        <p class="muted">Disk space is shown to staff who are logged in.</p>
+      {/if}
 
       <h2 class="section-title">The Kishtin computer</h2>
       <ManagerGate what="Starting with the computer" action="settings.manage">

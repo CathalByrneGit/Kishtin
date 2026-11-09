@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/pressly/goose/v3"
 	"github.com/stretchr/testify/require"
@@ -123,7 +124,7 @@ func TestTriggersBlockEdits(t *testing.T) {
 	require.NoError(t, s.AppendEvent(ctx, orders.Event{ID: "e1", OrderID: "o1", Kind: orders.EventCreated, By: "x", ByName: "x"}))
 	require.NoError(t, s.AppendVoiceLog(ctx, voice.LogEntry{ID: "v1", UserID: "x", UserName: "x", Source: voice.SourceTyped, Transcript: "x", Outcome: voice.OutcomeDone, Reply: "x"}))
 	require.NoError(t, s.AppendActivity(ctx, store.Activity{ID: "a1", Kind: "login", UserID: "x", UserName: "x"}))
-	require.NoError(t, s.AppendPlanSnapshot(ctx, store.PlanSnapshot{ID: "p1", Trigger: "timer", Body: []byte("{}")}))
+	require.NoError(t, s.AppendPlanSnapshot(ctx, store.PlanSnapshot{ID: "p1", At: time.Now(), Trigger: "timer", Body: []byte("{}")}))
 	// A leaver's name, and the words that can hold a customer's name or an
 	// order's notes, are the only things that can change.
 	for _, q := range []string{
@@ -145,6 +146,7 @@ func TestTriggersBlockEdits(t *testing.T) {
 		"UPDATE plan_snapshots SET body = '[]', hash = 'edited'",
 		"UPDATE plan_snapshots SET at = 5",
 		"DELETE FROM plan_snapshots",
+		"DELETE FROM plan_snapshots WHERE id = 'p1'",
 		"UPDATE voice_log SET transcript = 'edited'",
 		"DELETE FROM voice_log",
 		"UPDATE order_events SET detail = 'edited', kind = 'voided'",

@@ -5814,6 +5814,53 @@
         ],
         "type": "object"
       },
+      "Storage": {
+        "additionalProperties": false,
+        "properties": {
+          "backups_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "database_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "files_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "free_bytes": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "level": {
+            "type": "string"
+          },
+          "plan_snapshots": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_bytes": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "warning": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "free_bytes",
+          "total_bytes",
+          "database_bytes",
+          "files_bytes",
+          "backups_bytes",
+          "plan_snapshots"
+        ],
+        "type": "object"
+      },
       "Suggestion": {
         "additionalProperties": false,
         "properties": {
@@ -5921,6 +5968,10 @@
             "format": "int64",
             "type": "integer"
           },
+          "plan_snapshot_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "preview_records": {
             "format": "int64",
             "type": "integer"
@@ -5940,7 +5991,8 @@
           "max_upload_mb",
           "preview_records",
           "voice_audio_days",
-          "customer_details_days"
+          "customer_details_days",
+          "plan_snapshot_days"
         ],
         "type": "object"
       },
@@ -6262,6 +6314,9 @@
           },
           "sign_off": {
             "$ref": "#/components/schemas/SignOffStatus"
+          },
+          "storage_warning": {
+            "type": "string"
           },
           "total": {
             "format": "int64",
@@ -11963,6 +12018,37 @@
         "summary": "Turn Kishtin starting with this computer on or off",
         "tags": [
           "Setup"
+        ]
+      }
+    },
+    "/storage": {
+      "get": {
+        "operationId": "storage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Storage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "How much disk space Kishtin's data takes and how much is left, with a warning when it is low",
+        "tags": [
+          "Settings"
         ]
       }
     },

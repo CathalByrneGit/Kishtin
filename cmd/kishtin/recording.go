@@ -274,3 +274,30 @@ func (c *cli) customerDetailsCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&yes, "yes", false, "clear without asking")
 	return cmd
 }
+
+func (c *cli) storageCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "storage",
+		Short: "How much disk space Kishtin's data takes and how much is left",
+		Long:  "storage shows the room left on the Kishtin computer's disk and what Kishtin's database, photos and backups take.\nIt warns when the disk is getting full: Kishtin cannot save records or make backups on a full disk.",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			st, err := c.api.Storage(cmd.Context())
+			if err != nil {
+				return apiErr(err)
+			}
+			return c.emit(st, func(w io.Writer) {
+				mb := func(n int64) string { return fmt.Sprintf("%.1f MB", float64(n)/(1<<20)) }
+				if st.Level == "unknown" {
+					fmt.Fprintln(w, "Disk space: this computer would not say.")
+				} else {
+					fmt.Fprintf(w, "Disk space: %.1f GB free of %.1f GB (%s)\n", float64(st.FreeBytes)/(1<<30), float64(st.TotalBytes)/(1<<30), st.Level)
+				}
+				if st.Warning != nil && *st.Warning != "" {
+					fmt.Fprintln(w, *st.Warning)
+				}
+				fmt.Fprintf(w, "Database: %s\nPhotos and files: %s\nBackups: %s\nKept scheduler plans: %d\n", mb(st.DatabaseBytes), mb(st.FilesBytes), mb(st.BackupsBytes), st.PlanSnapshots)
+			})
+		},
+	}
+}

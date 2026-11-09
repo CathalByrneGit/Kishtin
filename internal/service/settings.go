@@ -147,6 +147,17 @@ func (s *Service) System() *Group[settings.System] {
 			case next.VoiceAudioDays < cur.VoiceAudioDays:
 				notes = append(notes, fmt.Sprintf("Recordings older than %d days will be deleted within the hour.", next.VoiceAudioDays))
 			}
+			if next.PlanSnapshotDays != cur.PlanSnapshotDays {
+				if next.PlanSnapshotDays == 0 {
+					notes = append(notes, "Every kept scheduler plan will be kept, which takes more disk space over time.")
+				} else {
+					n, err := st.Activity().CountPlanSnapshotsBefore(ctx, s.clk.Now().AddDate(0, 0, -next.PlanSnapshotDays))
+					if err != nil {
+						return nil, fmt.Errorf("count old plans: %w", err)
+					}
+					notes = append(notes, fmt.Sprintf("Kept scheduler plans older than %d days will be removed: %d now, within the hour. Pass-time reports for those days will no longer say why courses were late. This cannot be undone.", next.PlanSnapshotDays, n))
+				}
+			}
 			if next.CustomerDetailsDays == cur.CustomerDetailsDays {
 				return notes, nil
 			}

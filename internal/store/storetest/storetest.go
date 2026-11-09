@@ -46,6 +46,7 @@ func Run(t *testing.T, newStore Factory) {
 		"ImportedVersions":        testImportedVersions,
 		"AnonymiseUser":           testAnonymiseUser,
 		"ClearCustomerDetails":    testClearCustomerDetails,
+		"PurgePlanSnapshots":      testPurgePlanSnapshots,
 	}
 	for name, fn := range kitchenTests() {
 		tests[name] = fn

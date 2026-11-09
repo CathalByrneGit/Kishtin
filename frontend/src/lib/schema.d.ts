@@ -1999,6 +1999,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How much disk space Kishtin's data takes and how much is left, with a warning when it is low */
+        get: operations["storage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tills/{till}": {
         parameters: {
             query?: never;
@@ -3848,6 +3865,22 @@ export interface components {
             name: string;
             station_id: string;
         };
+        Storage: {
+            /** Format: int64 */
+            backups_bytes: number;
+            /** Format: int64 */
+            database_bytes: number;
+            /** Format: int64 */
+            files_bytes: number;
+            /** Format: int64 */
+            free_bytes: number;
+            level: string;
+            /** Format: int64 */
+            plan_snapshots: number;
+            /** Format: int64 */
+            total_bytes: number;
+            warning?: string;
+        };
         Suggestion: {
             booklet: string;
             checklist?: components["schemas"]["ChecklistSection"][];
@@ -3883,6 +3916,8 @@ export interface components {
             customer_details_days: number;
             /** Format: int64 */
             max_upload_mb: number;
+            /** Format: int64 */
+            plan_snapshot_days: number;
             /** Format: int64 */
             preview_records: number;
             restaurant_name: string;
@@ -3977,6 +4012,7 @@ export interface components {
             restaurant_name: string;
             ring: string;
             sign_off: components["schemas"]["SignOffStatus"];
+            storage_warning?: string;
             /** Format: int64 */
             total: number;
             units: components["schemas"]["UnitToday"][];
@@ -7959,6 +7995,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StartupStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    storage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Storage"];
                 };
             };
             /** @description Error */

@@ -66,6 +66,10 @@ type System struct {
 	// customer is and what they are allergic to. Then they are cleared, with
 	// the copies kept with the order. 0 keeps them.
 	CustomerDetailsDays int `json:"customer_details_days"`
+	// PlanSnapshotDays is how many days kept scheduler plans are kept
+	// before they are removed to save disk space. 0, the default, keeps
+	// them all; otherwise at least 30.
+	PlanSnapshotDays int `json:"plan_snapshot_days"`
 }
 
 // DefaultCustomerDetailsDays is how long a new install keeps customer
@@ -93,6 +97,10 @@ const (
 	// CustomerDetailsDaysLimit is the longest customer details can be kept
 	// before they are cleared: about seven years, past Revenue's six.
 	CustomerDetailsDaysLimit = 2600
+	// Kept plans stay at least PlanSnapshotDaysMin days when they are
+	// cleared at all, so recent services can always be looked back on.
+	PlanSnapshotDaysMin   = 30
+	PlanSnapshotDaysLimit = 3650
 )
 
 // Validate checks the system settings.
@@ -121,6 +129,9 @@ func (s System) Validate() error {
 	}
 	if s.CustomerDetailsDays < 0 || s.CustomerDetailsDays > CustomerDetailsDaysLimit {
 		errs = append(errs, fmt.Errorf("customer_details_days must be between 0 (keep them) and %d", CustomerDetailsDaysLimit))
+	}
+	if s.PlanSnapshotDays != 0 && (s.PlanSnapshotDays < PlanSnapshotDaysMin || s.PlanSnapshotDays > PlanSnapshotDaysLimit) {
+		errs = append(errs, fmt.Errorf("plan_snapshot_days must be 0 (keep them all) or between %d and %d", PlanSnapshotDaysMin, PlanSnapshotDaysLimit))
 	}
 	return errors.Join(errs...)
 }

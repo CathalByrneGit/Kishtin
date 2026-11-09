@@ -91,6 +91,9 @@
   {#if !today}
     {#if !error}<Spinner />{/if}
   {:else}
+    {#if today.storage_warning}
+      <Notice tone="error" title="Disk nearly full" message={today.storage_warning} />
+    {/if}
     {#if today.sign_off.unsigned_days >= SIGN_OFF_DAYS && canWithPassword("haccp.sign_off") && today.sign_off.unsigned_from}
       <Notice
         tone="warning"
