@@ -234,7 +234,7 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and ru
 - **Permissions**: who may do what, per action: the roles and named staff allowed, and whether a PIN is enough. Managers may always do everything; staff, keys, permissions and fitness to work stay managers only. See [permissions.md](permissions.md).
 - **Staff**: add staff with a role and a PIN (managers also get a password of at least 10 characters), change roles, change a PIN or password, and deactivate or reactivate. Staff are never deleted, because records name who logged them. Once someone is deactivated, **Anonymise** replaces their name with "Former staff N" in the kitchen's logs, after showing what will change; HACCP records keep their name. See [recording.md](recording.md#leavers).
 - **Device keys**: make device keys and staff keys for the CLI. The key and pairing link are shown once. You can revoke a key.
-- **Backups**: the latest backup, the schedule, and every backup on the server with its record count, size, verify result and chain head. **Back up now** makes one straight away.
+- **Backups**: the latest backup, the schedule, and every backup on the Kishtin computer with why it was made (scheduled, before an upgrade, before a restore), its record count, size, verify result and chain head. **Back up now** makes one straight away. Photos of dockets and paper pages are kept in the same folder. Putting a backup back is done on the Kishtin computer with `kishtind restore`: see [Restoring from a backup](security.md#restoring-from-a-backup).
 
 ## Staff guides
 

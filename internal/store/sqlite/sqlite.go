@@ -42,9 +42,23 @@ var (
 	_ store.Backuper = (*Store)(nil)
 )
 
+// Options change how Open opens a database.
+type Options struct {
+	// BeforeUpgrade is called before migrations change a database that
+	// already holds data, with the schema version it is at. backup writes a
+	// consistent copy of the database as it is to a file that must not
+	// exist. An error stops the upgrade, and the database is left as it was.
+	BeforeUpgrade func(ctx context.Context, from int64, backup func(dest string) error) error
+}
+
 // Open opens (creating if needed) the database at path and applies any
 // pending migrations.
 func Open(ctx context.Context, path string) (*Store, error) {
+	return OpenWith(ctx, path, Options{})
+}
+
+// OpenWith is Open with options.
+func OpenWith(ctx context.Context, path string, opt Options) (*Store, error) {
 	if strings.ContainsAny(path, "?#") {
 		return nil, fmt.Errorf("open %s: the database path cannot contain ? or #", path)
 	}
@@ -57,6 +71,19 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	if err := writer.PingContext(ctx); err != nil {
 		writer.Close()
 		return nil, fmt.Errorf("open %s: %w", path, err)
+	}
+	if opt.BeforeUpgrade != nil {
+		from, pending, err := upgradeNeeded(ctx, writer)
+		if err == nil && pending && from > 0 {
+			err = opt.BeforeUpgrade(ctx, from, func(dest string) error { return vacuumInto(ctx, writer, dest) })
+			if err != nil {
+				err = fmt.Errorf("back up before upgrading the database: %w", err)
+			}
+		}
+		if err != nil {
+			writer.Close()
+			return nil, err
+		}
 	}
 	if err := Migrate(ctx, writer); err != nil {
 		writer.Close()
@@ -96,6 +123,28 @@ func OpenSnapshot(ctx context.Context, path string) (*Store, error) {
 	}
 	q := sqlitedb.New(db)
 	return &Store{writer: db, reader: db, w: q, r: q}, nil
+}
+
+// upgradeNeeded reports the schema version a database is at and whether
+// migrations are waiting to be applied.
+func upgradeNeeded(ctx context.Context, db *sql.DB) (int64, bool, error) {
+	sub, err := fs.Sub(migrations, "migrations")
+	if err != nil {
+		return 0, false, fmt.Errorf("load migrations: %w", err)
+	}
+	p, err := goose.NewProvider(goose.DialectSQLite3, db, sub)
+	if err != nil {
+		return 0, false, fmt.Errorf("load migrations: %w", err)
+	}
+	from, err := p.GetDBVersion(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("read database version: %w", err)
+	}
+	pending, err := p.HasPending(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("check for migrations: %w", err)
+	}
+	return from, pending, nil
 }
 
 // Migrate applies pending schema migrations.
@@ -156,10 +205,29 @@ func (s *Store) WithTx(ctx context.Context, fn func(tx store.Store) error) error
 
 // Backup writes a consistent copy of the database to dest with VACUUM INTO.
 func (s *Store) Backup(ctx context.Context, dest string) error {
+	return vacuumInto(ctx, s.writer, dest)
+}
+
+// SnapshotTo writes a consistent copy of the database at path to dest,
+// without applying migrations to it.
+func SnapshotTo(ctx context.Context, path, dest string) error {
+	if _, err := os.Stat(path); err != nil {
+		return fmt.Errorf("open %s: %w", path, err)
+	}
+	db, err := sql.Open(DriverName, dsn(path, false))
+	if err != nil {
+		return fmt.Errorf("open %s: %w", path, err)
+	}
+	defer db.Close()
+	db.SetMaxOpenConns(1)
+	return vacuumInto(ctx, db, dest)
+}
+
+func vacuumInto(ctx context.Context, db *sql.DB, dest string) error {
 	if _, err := os.Stat(dest); err == nil {
 		return fmt.Errorf("back up to %s: file already exists", dest)
 	}
-	if _, err := s.writer.ExecContext(ctx, "VACUUM INTO ?", dest); err != nil {
+	if _, err := db.ExecContext(ctx, "VACUUM INTO ?", dest); err != nil {
 		return fmt.Errorf("back up to %s: %w", dest, err)
 	}
 	return nil

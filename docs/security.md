@@ -77,7 +77,8 @@ Use the Kishtin computer for Kishtin, not for email or browsing: most attacks st
 
 Kishtin backs up the database every 6 hours, on the same computer. That doesn't help if the computer is stolen, breaks or catches fire.
 
-- **Every week**, copy the `backups` and `files` folders from Kishtin's data folder to a USB stick or another computer. See **Setup › Backups** for where they are.
+- **Every week**, copy the `backups` folder from Kishtin's data folder to a USB stick or another computer. It holds the database backups and, in `backups/files`, every photo of a docket or paper page. See **Setup › Backups** for where it is.
+- Kishtin also makes a backup by itself **before a new version changes the database** (`before-upgrade-….db`), and keeps the last three, so an update that goes wrong can be undone.
 - **Encrypt the USB stick**: on Windows right-click it and choose **Turn on BitLocker** (BitLocker To Go, Pro editions), or on a Mac erase it in **Disk Utility** choosing an **Encrypted** format. Backups hold everything listed above except the till tokens and the certificate authority.
 - Keep the stick away from the computer, and use two in turn, so a fire or theft doesn't take both.
 - Old backups still hold customers' names and notes from before they were cleared. Delete old copies you no longer need.
@@ -87,15 +88,25 @@ Kishtin backs up the database every 6 hours, on the same computer. That doesn't 
 
 On a new computer, or after the old one is repaired:
 
+**On the same computer** (an update went wrong, or records were lost):
+
+1. Stop Kishtin: open PowerShell or Terminal and run `kishtind startup stop`, or close Kishtin's window.
+2. Run `kishtind restore`. It picks the newest backup, checks it, says what will happen (including how many records the backup is missing compared with now), and asks you to type **yes**.
+3. Start Kishtin again (`kishtind startup on`, or `kishtind`), and run **Exports › Verify**.
+
+To choose another backup, name it: `kishtind restore before-upgrade-20261102T013047Z.db`. **Setup › Backups** and `kishtin backup list` show what there is. The database a restore replaces is kept as `before-restore-….db`, so a restore can itself be undone.
+
+**On a new computer:**
+
 1. [Install Kishtin](install.md), but say **no** to starting with the computer for now, and don't start it.
-2. Make Kishtin's data folder: `C:\Users\<you>\.kishtin` on Windows, `.kishtin` in your home folder on a Mac or Linux.
-3. Copy the latest backup (a file such as `kishtin-20261102T013047Z.db`) into it and rename it `kishtin.db`. Copy the `files` folder in beside it.
-4. Start Kishtin (`kishtind`) and log in as before. **Exports › Verify** checks the records and photos came back whole.
-5. Turn on starting with the computer: `kishtind startup on`.
-6. Connect each tablet again with a QR code. The new computer has a new certificate, so tablets must trust it again.
-7. Connect the till again in **Setup › Connections**: till tokens are never in backups.
+2. Plug in the USB stick and run `kishtind restore` with the path to the newest backup on it, for example `kishtind restore E:\backups\kishtin-20261102T013047Z.db`. It puts back the database and the photos in the `files` folder beside the backup.
+3. Start Kishtin (`kishtind startup on`) and log in as before. **Exports › Verify** checks the records and photos came back whole.
+4. Connect each tablet again with a QR code. The new computer has a new certificate, so tablets must trust it again.
+5. Connect the till again in **Setup › Connections**: till tokens are never in backups.
 
 Everything in the backup comes back: records, staff and their PINs, the menu, orders and settings. Anything logged after the backup was made is lost, which is why backups are copied off every week.
+
+Restore checks the backup before changing anything: it must match its `.sha256` file and its HACCP chain must be whole. A damaged backup is refused, and nothing is changed.
 
 ## If the computer is lost or stolen
 

@@ -457,7 +457,8 @@ func (c *cli) backupCmd() *cobra.Command {
 				if b.Verified {
 					fmt.Fprintf(w, "Verified: %d HACCP records, chain head %s\n", b.Records, b.HeadHash)
 				}
-				fmt.Fprintln(w, "This copy is on the server machine. Copy it somewhere else to protect against losing that machine.")
+				fmt.Fprintf(w, "Photos and files kept with it: %d (%d new)\n", b.Files, b.FilesAdded)
+				fmt.Fprintln(w, "This copy is on the Kishtin computer. Copy the backup folder somewhere else to protect against losing that computer.")
 			})
 		},
 	}
@@ -471,9 +472,17 @@ func (c *cli) backupCmd() *cobra.Command {
 			return c.emit(res, func(w io.Writer) {
 				var rows [][]string
 				for _, b := range res.Backups {
-					rows = append(rows, []string{local(b.TakenAt), strconv.FormatInt(b.Size, 10), b.Name, b.Sha256})
+					check := "not checked"
+					if b.Checked {
+						check = fmt.Sprintf("%d records, fail", b.Records)
+						if b.Verified {
+							check = fmt.Sprintf("%d records, pass", b.Records)
+						}
+					}
+					rows = append(rows, []string{local(b.TakenAt), strings.ReplaceAll(b.Kind, "_", " "), check, strconv.FormatInt(b.Size, 10), b.Name})
 				}
-				table(w, "TAKEN\tBYTES\tFILE\tSHA-256", rows)
+				table(w, "TAKEN\tWHY\tCHECK\tBYTES\tFILE", rows)
+				fmt.Fprintln(w, "To put one back: kishtind restore FILE, on the Kishtin computer with Kishtin stopped.")
 			})
 		},
 	}

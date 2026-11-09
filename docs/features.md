@@ -28,7 +28,7 @@ Roadmap stages 1 to 7: the HACCP log; the menu with stations and equipment; orde
 - **Live sync**: every open screen shows new records straight away.
 - **Exports**: CSV of records and the limit history, and a PDF inspection pack, each with record IDs and hashes.
 - **Record books**: official HACCP booklets filled in from the records for a month, with missed checks marked. Bundles per country (Ireland's FSAI Safe Catering booklets SC1 to SC9, and a general set for any country), which a manager can change in Setup › Food safety › HACCP records. A manager signs off each period, which fills the booklets' manager check line. Kishtin compares your copy of a booklet with its template, checks the publisher for new editions when asked, and brings in old paper pages from a photo. An optional local model can suggest columns and read photos. See [Record books](record-books.md).
-- **Backups** on a schedule. Each copy is verified and gets a `.sha256` file.
+- **Backups** on a schedule, and before a new version changes the database. Each copy is verified and gets a `.sha256` file, and photos are kept with them. `kishtind restore` checks a backup and puts it back, keeping what it replaced. See [Restoring from a backup](security.md#restoring-from-a-backup).
 - **Checks logged later**: any check can be logged with the time it was done and who did it, and **Catch up** lists the daily checks with no record so they can be filled in together. See [HACCP log](haccp.md#checks-logged-later).
 - **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts. A forgotten manager password can be reset with `kishtind reset-password` on the Kishtin computer itself.
 - **Starts with the computer**: the installer offers it, and it can be turned on in Settings or with `kishtind startup on`. It uses Task Scheduler on Windows, a LaunchAgent on macOS and a systemd user service on Linux. See [Installing Kishtin](install.md#start-with-the-computer).
@@ -47,6 +47,6 @@ Roadmap stages 1 to 7: the HACCP log; the menu with stations and equipment; orde
 - Ticket progress written back to Square, and menu sync from the Square catalog.
 - Scheduler service profiles, replaying a service under new settings, and a fixed pace between courses.
 - Postgres and DuckDB backends. Only SQLite is built.
-- Off-site backups. Kishtin writes backups on the server machine. Copying them somewhere else is up to you.
+- Off-site backups. Kishtin writes backups, with the photos, on the Kishtin computer. Copying the backup folder somewhere else is up to you.
 - Saving while the server is unreachable. Screens keep showing the last data with a "Not connected" notice, but new records cannot be saved until the connection is back.
 - Printable batch labels.

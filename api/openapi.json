@@ -405,7 +405,21 @@
       "Backup": {
         "additionalProperties": false,
         "properties": {
+          "checked": {
+            "type": "boolean"
+          },
+          "files": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "files_added": {
+            "format": "int64",
+            "type": "integer"
+          },
           "head_hash": {
+            "type": "string"
+          },
+          "kind": {
             "type": "string"
           },
           "name": {
@@ -441,7 +455,11 @@
           "taken_at",
           "records",
           "head_hash",
-          "verified"
+          "verified",
+          "checked",
+          "kind",
+          "files",
+          "files_added"
         ],
         "type": "object"
       },

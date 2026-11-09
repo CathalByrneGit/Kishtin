@@ -41,7 +41,9 @@
 
   const when = (t: string) => `${shortDate(dublinDate(new Date(t)))} ${new Date(t).getFullYear()}, ${dublinTime(t)}`;
   const size = (n: number) => (n >= 1 << 20 ? `${(n / (1 << 20)).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
-  const latest = $derived(backups?.[0] ?? null);
+  const WHY: Record<string, string> = { scheduled: "Scheduled", before_upgrade: "Before an upgrade", before_restore: "Before a restore" };
+  const scheduled = $derived(backups?.filter((b) => b.kind === "scheduled") ?? []);
+  const latest = $derived(scheduled[0] ?? null);
   const schedule = $derived(
     !system ? "" : system.backup_interval_minutes === 0 ? "Off" : system.backup_interval_minutes % 60 === 0 ? `Every ${system.backup_interval_minutes / 60} h` : `Every ${system.backup_interval_minutes} min`,
   );
@@ -52,8 +54,10 @@
     <div>
       <h1>Backups</h1>
       <p>
-        Each backup is a consistent copy of the database, verified after it is written, with a <code>.sha256</code> file beside it. Backups stay
-        on this server. Copy them, and the <code>files/</code> folder of dockets, somewhere else yourself.
+        Each backup is a consistent copy of the database, verified after it is written, with a <code>.sha256</code> file beside it. Photos of
+        dockets and paper pages are kept in the same folder. Backups stay on this computer: copy the whole backup folder somewhere else
+        yourself. Kishtin also backs up before a new version changes the database. To put a backup back, run
+        <code>kishtind restore</code> on this computer.
       </p>
     </div>
     {#if can("backup")}
@@ -67,9 +71,9 @@
       {#if !error}<Spinner />{/if}
     {:else}
       <div class="metrics">
-        <MetricCard label="Latest backup" value={latest ? when(latest.taken_at) : "None yet"} meta={latest ? `${latest.records} records` : "Back up now to make the first"} tone={latest ? (latest.verified ? "success" : "danger") : "warning"} />
+        <MetricCard label="Latest backup" value={latest ? when(latest.taken_at) : "None yet"} meta={latest ? (latest.checked ? `${latest.records} records` : "Not checked") : "Back up now to make the first"} tone={latest ? (latest.verified ? "success" : latest.checked ? "danger" : "warning") : "warning"} />
         <MetricCard label="Schedule" value={schedule} meta="Change it in Settings" />
-        <MetricCard label="Kept" value={system?.backup_keep === 0 ? "Every backup" : `Newest ${system?.backup_keep ?? ""}`} meta={`${backups.length} on the server now`} />
+        <MetricCard label="Kept" value={system?.backup_keep === 0 ? "Every backup" : `Newest ${system?.backup_keep ?? ""}`} meta={`${scheduled.length} on this computer now`} />
       </div>
 
       <Card padding="none">
@@ -79,6 +83,7 @@
           <Table unsorted ariaLabel="Backups">
             {#snippet header()}
               <TableHeaderCell label="Taken" />
+              <TableHeaderCell label="Why" />
               <TableHeaderCell label="File" />
               <TableHeaderCell label="Records" />
               <TableHeaderCell label="Size" />
@@ -88,12 +93,21 @@
             {#each backups as b (b.name)}
               <tr>
                 <td class="nowrap">{when(b.taken_at)}</td>
+                <td class="nowrap">{WHY[b.kind] ?? b.kind}</td>
                 <td><code title={b.path}>{b.name}</code></td>
-                <td class="num">{b.records}</td>
+                <td class="num">{b.checked ? b.records : "–"}</td>
                 <td class="num nowrap">{size(b.size)}</td>
-                <td><Chip tone={b.verified ? "success" : "danger"} uppercase={false}>{b.verified ? "Pass" : "Fail"}</Chip></td>
                 <td>
-                  <span class="hash"><code>{b.head_hash.slice(0, 16)}…</code><CopyButton text={b.head_hash} ariaLabel="Copy chain head" /></span>
+                  {#if b.checked}
+                    <Chip tone={b.verified ? "success" : "danger"} uppercase={false}>{b.verified ? "Pass" : "Fail"}</Chip>
+                  {:else}
+                    <Chip tone="neutral" uppercase={false}>Not checked</Chip>
+                  {/if}
+                </td>
+                <td>
+                  {#if b.head_hash}
+                    <span class="hash"><code>{b.head_hash.slice(0, 16)}…</code><CopyButton text={b.head_hash} ariaLabel="Copy chain head" /></span>
+                  {/if}
                 </td>
               </tr>
             {/each}

@@ -24797,14 +24797,18 @@ type AvailabilityBody struct {
 }
 
 type Backup struct {
-	HeadHash string    `json:"head_hash" validate:"required"`
-	Name     string    `json:"name" validate:"required"`
-	Path     string    `json:"path" validate:"required"`
-	Records  int64     `json:"records"`
-	Sha256   string    `json:"sha256" validate:"required"`
-	Size     int64     `json:"size"`
-	TakenAt  time.Time `json:"taken_at" validate:"required"`
-	Verified bool      `json:"verified"`
+	Checked    bool      `json:"checked"`
+	Files      int64     `json:"files"`
+	FilesAdded int64     `json:"files_added"`
+	HeadHash   string    `json:"head_hash" validate:"required"`
+	Kind       string    `json:"kind" validate:"required"`
+	Name       string    `json:"name" validate:"required"`
+	Path       string    `json:"path" validate:"required"`
+	Records    int64     `json:"records"`
+	Sha256     string    `json:"sha256" validate:"required"`
+	Size       int64     `json:"size"`
+	TakenAt    time.Time `json:"taken_at" validate:"required"`
+	Verified   bool      `json:"verified"`
 }
 
 func (b Backup) Validate() error {

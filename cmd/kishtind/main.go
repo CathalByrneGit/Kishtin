@@ -61,7 +61,7 @@ func rootCmd() *cobra.Command {
 		},
 	}
 	root.PersistentFlags().StringVar(&cfgPath, "config", "", "path to kishtin.toml (default $KISHTIN_CONFIG, then <data dir>/kishtin.toml)")
-	root.AddCommand(setupCmd(&cfgPath), resetPasswordCmd(&cfgPath), startupCmd(&cfgPath), migrateCmd(&cfgPath), openapiCmd(), licensesCmd())
+	root.AddCommand(setupCmd(&cfgPath), resetPasswordCmd(&cfgPath), startupCmd(&cfgPath), migrateCmd(&cfgPath), restoreCmd(&cfgPath), openapiCmd(), licensesCmd())
 	return root
 }
 
@@ -120,7 +120,7 @@ func open(ctx context.Context, cfg config.Config, serving bool, startup service.
 		_ = lock.Unlock()
 		return nil, err
 	}
-	st, err = sqlite.Open(ctx, cfg.Store.DSN)
+	st, err = sqlite.OpenWith(ctx, cfg.Store.DSN, sqlite.Options{BeforeUpgrade: backupBeforeUpgrade(cfg)})
 	if err != nil {
 		return fail(err)
 	}

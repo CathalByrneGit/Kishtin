@@ -2384,7 +2384,13 @@ export interface components {
             available: boolean;
         };
         Backup: {
+            checked: boolean;
+            /** Format: int64 */
+            files: number;
+            /** Format: int64 */
+            files_added: number;
             head_hash: string;
+            kind: string;
             name: string;
             path: string;
             /** Format: int64 */
