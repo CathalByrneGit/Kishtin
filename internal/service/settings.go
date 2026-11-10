@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -442,8 +443,11 @@ func guidanceNotes(ctx context.Context, _ *Service, st store.Store, cur, next ha
 
 // listNotes lists limits and recent records that use names the new lists
 // do not have.
-func listNotes(ctx context.Context, s *Service, st store.Store, _, next haccp.Lists) ([]string, error) {
+func listNotes(ctx context.Context, s *Service, st store.Store, cur, next haccp.Lists) ([]string, error) {
 	out := []string{"Saved records keep the names they were logged with."}
+	if !reflect.DeepEqual(cur.Closed.Normalize(), next.Closed.Normalize()) {
+		out = append(out, "No checks are due on a closed day, so none show as missed on Today, in the record books, reports or Catch up. This applies to past days too: a past closed day prints \"closed\" where it printed \"missed\". No record changes, and a check logged on a closed day still counts. Periods already signed off keep the counts they were signed with.")
+	}
 	rules, err := s.Rules().current(ctx, st)
 	if err != nil {
 		return nil, err

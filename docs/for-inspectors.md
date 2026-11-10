@@ -57,7 +57,7 @@ Kitchens do not always log a check the moment it is done. Kishtin lets staff say
 
 ## What Kishtin does not do
 
-- It does not know which days the restaurant was closed, so a fridge check on a closed day shows as missed. Note closed days in the manager's sign-off.
+- It knows which days the restaurant was closed only if a manager sets them (weekly closed days and closed dates). A check with no reading on such a day prints "closed", not "missed". The list of closed days is versioned, with who changed it, when and why.
 - It does not record the health questions or declaration for fitness to work: keep the signed form on paper.
 - Some booklet columns it does not record, such as SC4 "Time into hot hold", print blank, and the booklet says which.
 - It does not print onto the official PDF pages. It draws its own pages in the same layout.

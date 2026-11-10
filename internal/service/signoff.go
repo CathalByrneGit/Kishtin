@@ -137,7 +137,7 @@ func (s *Service) previewSignOff(ctx context.Context, st store.Store, in SignOff
 	}
 	res := books.ReviewPeriod(books.ReviewInput{
 		From: from, To: to, Loc: clock.Dublin, Now: s.clk.Now(), Since: since,
-		Records: recs, Units: lists.Value.Units,
+		Records: recs, Units: lists.Value.Units, Closed: lists.Value.Closed,
 	})
 	pv := SignOffPreview{
 		From: from.Format(haccp.DateLayout), To: to.Format(haccp.DateLayout), ReviewResult: res,

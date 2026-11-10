@@ -208,6 +208,7 @@ func (s *Service) RecordBook(ctx context.Context, p *auth.Principal, ref, month 
 	b, err := books.Build(books.Input{
 		Template: tpl, Bundle: rb.Bundle, Year: start.Year(), Month: start.Month(), Loc: clock.Dublin,
 		Now: now, Since: since, Records: recs, Units: lists.Value.Units, Sections: sections, Roles: roles,
+		Closed: lists.Value.Closed,
 	})
 	if err != nil {
 		return books.Book{}, fmt.Errorf("fill %s: %w", tpl.Code, err)

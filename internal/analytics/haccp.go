@@ -22,6 +22,8 @@ type HACCPInput struct {
 	Records       []haccp.Record
 	Units         []haccp.Unit
 	CleaningTasks []haccp.CleaningTask
+	// Closed are the days the restaurant is closed, when nothing is due.
+	Closed haccp.ClosedDays
 	// Limits is the limit history, for each unit's limit now.
 	Limits []haccp.LimitVersion
 	// CleaningDoneBefore gives, per cleaning task done every N days (lower
@@ -134,7 +136,7 @@ func BuildHACCP(in HACCPInput) HACCPReport {
 	}
 
 	// Missed checks, as the record books count them.
-	review := books.ReviewPeriod(books.ReviewInput{From: start, To: end.AddDate(0, 0, -1), Loc: loc, Now: in.Now, Since: in.Since, Records: in.Records, Units: in.Units})
+	review := books.ReviewPeriod(books.ReviewInput{From: start, To: end.AddDate(0, 0, -1), Loc: loc, Now: in.Now, Since: in.Since, Records: in.Records, Units: in.Units, Closed: in.Closed})
 	missedDay := map[time.Weekday]int{}
 	missedUnit := map[string]int{}
 	for _, g := range review.Missed {
@@ -196,8 +198,12 @@ func BuildHACCP(in HACCPInput) HACCPReport {
 			if !t.Daily() {
 				continue
 			}
+			did := cleaned[d.Format(haccp.DateLayout)+"\x00"+strings.ToLower(t.Task)]
+			if !did && in.Closed.On(d.Format(haccp.DateLayout)) {
+				continue
+			}
 			r.CleaningDue++
-			if cleaned[d.Format(haccp.DateLayout)+"\x00"+strings.ToLower(t.Task)] {
+			if did {
 				r.CleaningDone++
 			} else {
 				missedTask[t.Task]++

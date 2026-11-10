@@ -44,6 +44,7 @@
   function slotChip(s: Schemas["SlotToday"]): { label: string; tone: ChipTone } {
     if (s.record) return { label: temp(s.record.reading.temp_c), tone: outcomeStyle(s.record.outcome).tone };
     if (s.status === "missed") return { label: "Missed", tone: "warning" };
+    if (s.status === "closed") return { label: "Closed", tone: "neutral" };
     return { label: "Due", tone: "neutral" };
   }
 
@@ -91,6 +92,9 @@
   {#if !today}
     {#if !error}<Spinner />{/if}
   {:else}
+    {#if today.closed}
+      <Notice tone="info" title="Closed today" message="The restaurant is set as closed today, so no checks are due. A check you log anyway still counts. A manager changes closed days in Setup › Food safety › Fridges and tasks." />
+    {/if}
     {#if today.storage_warning}
       <Notice tone="error" title="Disk nearly full" message={today.storage_warning} />
     {/if}

@@ -25505,6 +25505,42 @@ func (c CleaningToday) Validate() error {
 	return errors
 }
 
+type ClosedDate struct {
+	From string  `json:"from" validate:"required"`
+	Note *string `json:"note,omitempty"`
+	To   string  `json:"to" validate:"required"`
+}
+
+func (c ClosedDate) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type ClosedDays struct {
+	Dates    []ClosedDate `json:"dates" validate:"required"`
+	Weekdays []string     `json:"weekdays" validate:"required"`
+}
+
+func (c ClosedDays) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Dates, "required"); err != nil {
+		errors = errors.Append("Dates", err)
+	}
+	for i, item := range c.Dates {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Dates[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(c.Weekdays, "required"); err != nil {
+		errors = errors.Append("Weekdays", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
 type CollectionBoard struct {
 	Preparing  []CollectionOrder `json:"preparing" validate:"required"`
 	Ready      []CollectionOrder `json:"ready" validate:"required"`
@@ -27122,6 +27158,7 @@ func (l Limits) Validate() error {
 
 type Lists struct {
 	CleaningTasks     []CleaningTask `json:"cleaning_tasks" validate:"required"`
+	Closed            *ClosedDays    `json:"closed,omitempty"`
 	CorrectiveActions []ActionPreset `json:"corrective_actions,omitempty"`
 	FoodCategories    []string       `json:"food_categories" validate:"required"`
 	Units             []Unit         `json:"units" validate:"required"`
@@ -27136,6 +27173,13 @@ func (l Lists) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("CleaningTasks[%d]", i), err)
+			}
+		}
+	}
+	if l.Closed != nil {
+		if v, ok := any(l.Closed).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Closed", err)
 			}
 		}
 	}
@@ -29693,6 +29737,7 @@ type Timing struct {
 type TodayView struct {
 	Batches           []BatchToday    `json:"batches" validate:"required"`
 	Cleaning          []CleaningToday `json:"cleaning" validate:"required"`
+	Closed            *bool           `json:"closed,omitempty"`
 	CorrectiveActions []ActionPreset  `json:"corrective_actions" validate:"required"`
 	Date              string          `json:"date" validate:"required"`
 	Done              int64           `json:"done"`

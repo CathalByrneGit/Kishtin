@@ -1035,6 +1035,47 @@
         ],
         "type": "object"
       },
+      "ClosedDate": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "ClosedDays": {
+        "additionalProperties": false,
+        "properties": {
+          "dates": {
+            "items": {
+              "$ref": "#/components/schemas/ClosedDate"
+            },
+            "type": "array"
+          },
+          "weekdays": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "weekdays",
+          "dates"
+        ],
+        "type": "object"
+      },
       "CollectionBoard": {
         "additionalProperties": false,
         "properties": {
@@ -3153,6 +3194,9 @@
               "$ref": "#/components/schemas/CleaningTask"
             },
             "type": "array"
+          },
+          "closed": {
+            "$ref": "#/components/schemas/ClosedDays"
           },
           "corrective_actions": {
             "items": {
@@ -6278,6 +6322,9 @@
               "$ref": "#/components/schemas/CleaningToday"
             },
             "type": "array"
+          },
+          "closed": {
+            "type": "boolean"
           },
           "corrective_actions": {
             "items": {

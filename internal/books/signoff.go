@@ -37,6 +37,8 @@ type ReviewInput struct {
 	// corrections, in any order.
 	Records []haccp.Record
 	Units   []haccp.Unit
+	// Closed are the days the restaurant is closed, when nothing is missed.
+	Closed haccp.ClosedDays
 }
 
 // ReviewResult is what a period holds, for a manager to check before
@@ -84,7 +86,7 @@ func ReviewPeriod(in ReviewInput) ReviewResult {
 	}
 	first, last := start.Format(haccp.DateLayout), end.AddDate(0, 0, -1).Format(haccp.DateLayout)
 	for m := time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, loc); m.Before(end); m = m.AddDate(0, 1, 0) {
-		b, err := Build(Input{Template: reviewGrid, Year: m.Year(), Month: m.Month(), Loc: loc, Now: in.Now, Since: in.Since, Records: in.Records, Units: in.Units})
+		b, err := Build(Input{Template: reviewGrid, Year: m.Year(), Month: m.Month(), Loc: loc, Now: in.Now, Since: in.Since, Records: in.Records, Units: in.Units, Closed: in.Closed})
 		if err != nil {
 			continue // the review grid is fixed and always valid
 		}

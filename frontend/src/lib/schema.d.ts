@@ -2568,6 +2568,15 @@ export interface components {
             schedule?: components["schemas"]["TaskSchedule"];
             task: string;
         };
+        ClosedDate: {
+            from: string;
+            note?: string;
+            to: string;
+        };
+        ClosedDays: {
+            dates: components["schemas"]["ClosedDate"][];
+            weekdays: string[];
+        };
         CollectionBoard: {
             preparing: components["schemas"]["CollectionOrder"][];
             ready: components["schemas"]["CollectionOrder"][];
@@ -3181,6 +3190,7 @@ export interface components {
         };
         Lists: {
             cleaning_tasks: components["schemas"]["CleaningTask"][];
+            closed?: components["schemas"]["ClosedDays"];
             corrective_actions?: components["schemas"]["ActionPreset"][];
             food_categories: string[];
             units: components["schemas"]["Unit"][];
@@ -4000,6 +4010,7 @@ export interface components {
         TodayView: {
             batches: components["schemas"]["BatchToday"][];
             cleaning: components["schemas"]["CleaningToday"][];
+            closed?: boolean;
             corrective_actions: components["schemas"]["ActionPreset"][];
             date: string;
             /** Format: int64 */

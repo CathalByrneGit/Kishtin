@@ -36,6 +36,18 @@ Temperatures are compared to 0.1°C. A reading exactly on the limit passes. Frid
 
 A **fail** always needs a corrective action before it can be saved. A **borderline** record needs one too, unless the food-safety rules say otherwise (see [settings.md](settings.md#food-safety-rules)). Each record stores the rules version that applied. Check a reading first, without saving, with `kishtin haccp log … --dry-run` or `POST /api/haccp/check`.
 
+## Closed days
+
+No checks are due on a day the restaurant is closed. Set them in **Setup › Food safety › Fridges and tasks › Closed days**: tick the days closed every week, and add holidays and other closed dates (one day or a run of days, with a note such as "Christmas").
+
+- On a closed day, **Today** says "Closed today" and shows each check as Closed, not Due or Missed.
+- The record books print "closed" for a check with no reading, the HACCP report does not count it as missed, and **Catch up** does not list it.
+- A check logged on a closed day still counts and prints as usual. Fridges keep running when you are closed: if your HACCP plan says to check them anyway, leave the day open or log the checks.
+- It applies to past days too, because it only changes what counts as missed. No record changes. A period a manager already signed off keeps the counts it was signed with.
+- Like the other lists, the change is previewed, needs a reason and a manager, and is versioned.
+
+Weekly and longer cleaning tasks still fall due on their day; do them on the next open day.
+
 ## Checks logged later
 
 Kitchens do not always log a check the moment it is done. Any record can say when its check was done and who did it:
