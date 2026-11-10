@@ -14,8 +14,9 @@ import (
 
 func TestServeUI(t *testing.T) {
 	ui := fstest.MapFS{
-		"index.html":      {Data: []byte("<!doctype html><title>Kishtin</title>")},
-		"assets/app-1.js": {Data: []byte("console.log(1)")},
+		"index.html":           {Data: []byte("<!doctype html><title>Kishtin</title>")},
+		"assets/app-1.js":      {Data: []byte("console.log(1)")},
+		"manifest.webmanifest": {Data: []byte(`{"name":"Kishtin"}`)},
 	}
 	h, err := New(nil, slog.New(slog.DiscardHandler), ui)
 	require.NoError(t, err)
@@ -40,6 +41,10 @@ func TestServeUI(t *testing.T) {
 	res, body = get("/assets/app-1.js")
 	assert.Equal(t, "console.log(1)", body)
 	assert.Contains(t, res.Header.Get("Cache-Control"), "immutable")
+
+	res, body = get("/manifest.webmanifest")
+	assert.Equal(t, `{"name":"Kishtin"}`, body)
+	assert.Equal(t, "application/manifest+json", res.Header.Get("Content-Type"), "so a tablet can add Kishtin to its home screen")
 
 	_, body = get("/records")
 	assert.Contains(t, body, "<title>Kishtin</title>", "app paths get index.html")

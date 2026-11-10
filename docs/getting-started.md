@@ -129,6 +129,8 @@ Why: the browser only allows the microphone (for voice) and keeping the screen a
 
 The tablet notices by itself when the certificate is in place, connects, and shows **Who is logging in?**. The Kishtin computer says the tablet is connected. Staff tap their name and enter their PIN.
 
+**Make it an app on the tablet.** Once a tablet is connected, add Kishtin to its home screen so it opens full screen from its own icon: on an iPad, tap Share, then **Add to Home Screen**; on Android, open the menu, then **Add to Home screen**. See [Add Kishtin to the home screen](screens.md#add-kishtin-to-the-home-screen).
+
 ## Step 6: Tell Kishtin about your kitchen
 
 Go through these once. Everything can be changed later.

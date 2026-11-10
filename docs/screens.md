@@ -248,6 +248,16 @@ For a manager, **Today** starts with a **Getting started** list until everything
 
 ![Getting started list](screenshots/getting-started-list.png)
 
+## Add Kishtin to the home screen
+
+A tablet or phone can open Kishtin like an app: full screen, with its own icon, and no browser bars taking up room. Do it once per device, after it is connected:
+
+- **iPad or iPhone** (Safari): tap the Share button, then **Add to Home Screen**, then **Add**.
+- **Android** (Chrome): open the menu (⋮), then **Add to Home screen** or **Install app**.
+- **A computer** (Chrome or Edge): the install icon at the right of the address bar, or the menu, then **Install Kishtin**.
+
+Open Kishtin from the new icon from then on. It is still the same Kishtin on the restaurant's computer: nothing is installed from a store, and it needs the kitchen Wi-Fi as before. The device stays paired.
+
 ## Settings
 
 - **Restaurant**: the name, backup schedule and retention, largest upload, preview length, how long voice recordings are kept, and how many days after an order closes its customer's name and notes are cleared. These change through the same review as Setup. See [settings.md](settings.md#system-settings).
