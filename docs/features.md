@@ -31,6 +31,7 @@ Roadmap stages 1 to 7: the HACCP log; the menu with stations and equipment; orde
 - **Backups** on a schedule, and before a new version changes the database. Each copy is verified and gets a `.sha256` file, and photos are kept with them. `kishtind restore` checks a backup and puts it back, keeping what it replaced. See [Restoring from a backup](security.md#restoring-from-a-backup).
 - **Opens like an app**: a tablet or phone can add Kishtin to its home screen and open it full screen from its own icon. See [Add Kishtin to the home screen](screens.md#add-kishtin-to-the-home-screen).
 - **Logging without a connection**: when a tablet or phone cannot reach the Kishtin computer, a check can be kept on the device and is sent when the connection is back. See [HACCP log](haccp.md#logging-without-a-connection).
+- **Privacy notice templates** for staff and customers, written from what Kishtin keeps. See [Privacy notice templates](privacy-notice.md).
 - **Printable batch labels**: a batch label record prints as a label for the tub (product, made on, use by, who made it, record number), for a label printer or on A4. See [HACCP log](haccp.md#printing-batch-labels).
 - **Closed days**: weekly closed days and closed dates, so checks are not due, and not missed, when the restaurant is shut. See [HACCP log](haccp.md#closed-days).
 - **Checks logged later**: any check can be logged with the time it was done and who did it, and **Catch up** lists the daily checks with no record so they can be filled in together. See [HACCP log](haccp.md#checks-logged-later).

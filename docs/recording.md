@@ -2,7 +2,7 @@
 
 Kishtin keeps most of what happens in the kitchen, even where nothing uses it yet, so future reports (and the restaurant's own questions) can look back on past services. Everything stays in the database file on the restaurant's machine. Nothing is sent anywhere.
 
-This page lists what is kept, so staff can be told and a privacy notice can be written from it.
+This page lists what is kept, so staff can be told and a privacy notice can be written from it. [Privacy notice templates](privacy-notice.md) has one for staff and one for customers, ready to fill in.
 
 ## HACCP records
 
