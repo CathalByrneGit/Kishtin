@@ -2,6 +2,7 @@ package report
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 	"time"
 
@@ -63,4 +64,30 @@ func TestBookHelpers(t *testing.T) {
 	assert.NotNil(t, tint)
 	_, tint = flagged(books.Cell{Text: "3.4"})
 	assert.Nil(t, tint)
+}
+
+func TestWriteLabel(t *testing.T) {
+	rec := haccp.Record{ID: "r1", Seq: 42, Type: haccp.RecordBatchLabel, Outcome: haccp.OutcomeRecorded, LoggedByName: "Aoife Chef",
+		LoggedAt: time.Date(2026, 11, 10, 9, 30, 0, 0, time.UTC),
+		Reading:  haccp.Reading{Product: "Grape soda syrup with a very long name that must shrink to fit", MadeOn: "2026-11-10", UseBy: "2026-11-15"}}
+	for _, sz := range LabelSizes {
+		var out bytes.Buffer
+		require.NoError(t, WriteLabel(Label{Record: rec, Size: sz}, &out), sz.ID)
+		assert.True(t, bytes.HasPrefix(out.Bytes(), []byte("%PDF-")), sz.ID)
+		if sz.ID != "a4" {
+			// The page is the label, wider than tall: 1 mm is 72/25.4 points.
+			box := fmt.Sprintf("/MediaBox [0 0 %.2f %.2f]", sz.W*72/25.4, sz.H*72/25.4)
+			assert.Contains(t, out.String(), box, sz.ID)
+		}
+	}
+	def, ok := FindLabelSize("")
+	require.True(t, ok)
+	assert.Equal(t, "62x29", def.ID)
+	_, ok = FindLabelSize("huge")
+	assert.False(t, ok)
+	assert.Equal(t, "Sun 15 Nov 2026", labelDate("2026-11-15"))
+
+	notLabel := rec
+	notLabel.Type = haccp.RecordFridge
+	assert.Error(t, WriteLabel(Label{Record: notLabel, Size: def}, &bytes.Buffer{}))
 }

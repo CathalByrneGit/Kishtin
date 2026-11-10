@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LabelButton from "../components/LabelButton.svelte";
   import GettingStarted from "../components/GettingStarted.svelte";
   import { dueToday, scheduleStatus } from "../lib/cleaning";
   import { can, canWithPassword } from "../lib/can.svelte";
@@ -289,6 +290,7 @@
                     <strong>{b.record.reading.product}</strong>
                     <span class="muted small">{details(b.record)}</span>
                   </div>
+                  <LabelButton recordId={b.record.id} seq={b.record.seq} product={b.record.reading.product ?? ""} />
                   {#if b.status === "expired"}
                     <Chip tone="danger" uppercase={false}>Expired</Chip>
                   {:else if b.status === "use_today"}

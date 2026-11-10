@@ -202,6 +202,10 @@ type ClientInterface interface {
 	GetRecord(ctx context.Context, options *GetRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordResponse, error)
 	GetRecordWithResponse(ctx context.Context, options *GetRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordResp, error)
 
+	// BatchLabelPdf A batch label record as a label to print (PDF)
+	BatchLabelPdf(ctx context.Context, options *BatchLabelPdfRequestOptions, reqEditors ...runtime.RequestEditorFn) (*BatchLabelPdfResponse, error)
+	BatchLabelPdfWithResponse(ctx context.Context, options *BatchLabelPdfRequestOptions, reqEditors ...runtime.RequestEditorFn) (*BatchLabelPdfResp, error)
+
 	// SignOff Sign off the HACCP records for a period (manager password)
 	SignOff(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResponse, error)
 	SignOffWithResponse(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResp, error)
@@ -3197,6 +3201,60 @@ func (c *Client) GetRecord(ctx context.Context, options *GetRecordRequestOptions
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/records/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// BatchLabelPdf A batch label record as a label to print (PDF)
+func (c *Client) BatchLabelPdf(ctx context.Context, options *BatchLabelPdfRequestOptions, reqEditors ...runtime.RequestEditorFn) (*BatchLabelPdfResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"size": {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/haccp/records/{id}/label",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*BatchLabelPdfResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(BatchLabelPdfErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "BatchLabelPdfErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		result := BatchLabelPdfResponse(bodyBytes)
+		return &result, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/records/{id}/label")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -10534,6 +10592,59 @@ func (o *GetRecordRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
+// BatchLabelPdfRequestOptions is the options needed to make a request to BatchLabelPdf.
+type BatchLabelPdfRequestOptions struct {
+	PathParams *BatchLabelPdfPath
+	Query      *BatchLabelPdfQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *BatchLabelPdfRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *BatchLabelPdfRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *BatchLabelPdfRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *BatchLabelPdfRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *BatchLabelPdfRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
 // SignOffRequestOptions is the options needed to make a request to SignOff.
 type SignOffRequestOptions struct {
 	Body *SignOffBody
@@ -16048,6 +16159,57 @@ func (c *Client) GetRecordWithResponse(ctx context.Context, options *GetRecordRe
 					ContentType:   resp.Headers.Get("Content-Type"),
 					ContentLength: len(bodyBytes),
 					TargetType:    "GetRecordErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
+// BatchLabelPdf A batch label record as a label to print (PDF)
+func (c *Client) BatchLabelPdfWithResponse(ctx context.Context, options *BatchLabelPdfRequestOptions, reqEditors ...runtime.RequestEditorFn) (*BatchLabelPdfResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/records/{id}/label",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/records/{id}/label")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &BatchLabelPdfResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.Headers200 = &BatchLabelPdfResp200Headers{
+			ContentDisposition: resp.Headers.Get("Content-Disposition"),
+			ContentType:        resp.Headers.Get("Content-Type"),
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(BatchLabelPdfErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "BatchLabelPdfErrorResponse",
 					Body:          bodyBytes,
 					Err:           err,
 				}
@@ -22332,6 +22494,14 @@ func (g GetRecordPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(g))
 }
 
+type BatchLabelPdfPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (b BatchLabelPdfPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(b))
+}
+
 type RevokeKeyPath struct {
 	ID string `json:"id" validate:"required"`
 }
@@ -22927,6 +23097,11 @@ func (l ListRecordsQuery) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(l))
 }
 
+type BatchLabelPdfQuery struct {
+	// Size 62x29, 100x50 or a4.
+	Size *string `json:"size,omitempty"`
+}
+
 type PreviewSignOffQuery struct {
 	// From First day, Dublin time. Leave out to start the day after the last sign-off.
 	From *string `json:"from,omitempty"`
@@ -23160,6 +23335,10 @@ type LogRecordErrorResponse = ErrorModel
 type GetRecordResponse = Record
 
 type GetRecordErrorResponse = ErrorModel
+
+type BatchLabelPdfResponse = []byte
+
+type BatchLabelPdfErrorResponse = ErrorModel
 
 type SignOffResponse = Record
 
@@ -23906,6 +24085,19 @@ type GetRecordResp struct {
 	StatusCode                        int
 	JSON200                           *GetRecordResponse
 	ApplicationProblemPlusJSONDefault *GetRecordErrorResponse
+}
+
+type BatchLabelPdfResp200Headers struct {
+	ContentDisposition string `header:"Content-Disposition"`
+	ContentType        string `header:"Content-Type"`
+}
+
+type BatchLabelPdfResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	Headers200                        *BatchLabelPdfResp200Headers
+	ApplicationProblemPlusJSONDefault *BatchLabelPdfErrorResponse
 }
 
 type SignOffResp struct {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LabelButton from "./LabelButton.svelte";
   import { Button, Chip, CopyButton, IconButton, Notice } from "@kenn-io/kit-ui";
   import { FileText, PenLine, X } from "@lucide/svelte";
   import { api, message, type HaccpRecord } from "../lib/api";
@@ -136,6 +137,9 @@
   </div>
 
   <footer>
+    {#if record.type === "batch_label"}
+      <LabelButton recordId={record.id} seq={record.seq} product={record.reading.product ?? ""} />
+    {/if}
     <Button label="Correct this record" onclick={() => openLog({ type: record.type, corrects: record })}>
       <PenLine size={16} />
     </Button>

@@ -22,7 +22,7 @@ var recordTypes = []string{"fridge", "freezer", "delivery", "cook", "reheat", "c
 
 func (c *cli) haccpCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "haccp", Short: "Log, list, verify and export HACCP records"}
-	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd(), c.booksCmd(), c.bookCmd(), c.signOffCmd(), c.editionsCmd(), c.paperCmd(), c.catchUpCmd())
+	cmd.AddCommand(c.todayCmd(), c.logCmd(), c.listCmd(), c.showCmd(), c.verifyCmd(), c.exportCmd(), c.booksCmd(), c.bookCmd(), c.signOffCmd(), c.editionsCmd(), c.paperCmd(), c.catchUpCmd(), c.labelCmd())
 	return cmd
 }
 
@@ -612,5 +612,38 @@ func (c *cli) exportCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&types, "type", nil, "only these record types")
 	cmd.Flags().BoolVar(&fails, "fails", false, "only failed and borderline records")
 	cmd.Flags().BoolVar(&pdf, "pdf", false, "write the PDF inspection pack instead of CSV (needs -o)")
+	return cmd
+}
+
+func (c *cli) labelCmd() *cobra.Command {
+	var outPath, size string
+	cmd := &cobra.Command{
+		Use:   "label ID -o FILE",
+		Short: "Write a batch label record as a label to print (PDF)",
+		Long: "label writes a batch label record as a PDF the size of a label: the product, when it was made, its use-by\n" +
+			"date in large type, who made it and the record number. Sizes: 62x29 (default) and 100x50 millimetres for\n" +
+			"a label printer, or a4 for one label on an A4 page to cut out. ID is from kishtin haccp list --json.",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if outPath == "" || outPath == "-" {
+				return fmt.Errorf("a label needs -o FILE")
+			}
+			opts := &client.BatchLabelPdfRequestOptions{PathParams: &client.BatchLabelPdfPath{ID: args[0]}}
+			if size != "" {
+				opts.Query = &client.BatchLabelPdfQuery{Size: &size}
+			}
+			res, err := c.api.BatchLabelPdf(cmd.Context(), opts)
+			if err != nil {
+				return apiErr(err)
+			}
+			if err := os.WriteFile(outPath, *res, 0o600); err != nil {
+				return err
+			}
+			fmt.Fprintf(c.out, "%s written.\n", outPath)
+			return nil
+		},
+	}
+	cmd.Flags().StringVarP(&outPath, "output", "o", "", "file to write the label to")
+	cmd.Flags().StringVar(&size, "size", "", "62x29 (default), 100x50 or a4")
 	return cmd
 }

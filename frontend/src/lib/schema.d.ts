@@ -725,6 +725,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/haccp/records/{id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A batch label record as a label to print (PDF)
+         * @description The product, when it was made, its use-by date, who made it and the record number, on a page the size of the label. Sizes: 62x29 (default) and 100x50 millimetres for a label printer, or a4 for one label on an A4 page to cut out.
+         */
+        get: operations["batch-label-pdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/haccp/sign-offs": {
         parameters: {
             query?: never;
@@ -5528,6 +5548,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Record"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "batch-label-pdf": {
+        parameters: {
+            query?: {
+                /** @description 62x29, 100x50 or a4. */
+                size?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The label. */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    "Content-Type"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
             /** @description Error */

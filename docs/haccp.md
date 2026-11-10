@@ -82,6 +82,21 @@ Not kept offline: corrections, a delivery's docket photo, and fitness to work (h
 
 Once a device has opened Kishtin with a connection, it can open it again without one, so the form is there when needed.
 
+## Printing batch labels
+
+A batch label record prints as a label to stick on the tub. Tap **Print label** beside a batch in **Today › Batches in use**, or on a batch label in **Records**.
+
+The label shows the product, the day it was made, **USE BY** and its date in large type, who made it, and the record number, so a tub can be traced back to its record.
+
+Choose the size next to the button; the device remembers it:
+
+- **62 × 29 mm** and **100 × 50 mm**, for a label printer. The page is exactly the size of the label.
+- **A4 page, to cut out**, for an ordinary printer: one label at the top of the page with a line to cut along.
+
+The label opens as a PDF in a new tab; print it from there. The label printer must already be set up on that device: Kishtin does not find or set up printers. `kishtin haccp label ID -o label.pdf --size 62x29`, or `GET /api/haccp/records/{id}/label?size=62x29`.
+
+The label is a copy of the record. If the record was wrong, correct it and print the correction's label.
+
 ## Weekly and longer tasks
 
 A cleaning task can be due less often than every day: beer line cleaning every week, an ice machine every two weeks, extractor filters every four weeks. Set **How often** on the task in **Setup › Food safety › Fridges and tasks** (or `every_days` in the lists).

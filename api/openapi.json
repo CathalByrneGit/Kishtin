@@ -8880,6 +8880,72 @@
         ]
       }
     },
+    "/haccp/records/{id}/label": {
+      "get": {
+        "description": "The product, when it was made, its use-by date, who made it and the record number, on a page the size of the label. Sizes: 62x29 (default) and 100x50 millimetres for a label printer, or a4 for one label on an A4 page to cut out.",
+        "operationId": "batch-label-pdf",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "62x29, 100x50 or a4.",
+            "explode": false,
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "description": "62x29, 100x50 or a4.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "contentMediaType": "application/octet-stream",
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The label.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "A batch label record as a label to print (PDF)",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
     "/haccp/sign-offs": {
       "post": {
         "description": "Saves a sign-off record in the hash chain with what the period held when it was signed. It fills the manager or supervisor check line of every record book. A period with missed checks or readings without a corrective action needs a note.",
