@@ -63,10 +63,15 @@ make test       # go test ./... (pure-Go SQLite)
 make test-cgo   # the same suite on the CGO SQLite driver
 make lint       # golangci-lint
 make generate   # sqlc queries, api/openapi.json, the CLI's API client and the screens' API types
+make e2e        # browser tests of the screens against a real kishtind (needs: cd e2e && bunx playwright install chromium)
 make docs       # the documentation site from docs/, into website/site/ (needs uv)
 make docs-serve # the same, served with live reload on :8000
 ```
 
 The documentation is published at **https://cathalbyrnegit.github.io/Kishtin/**, built from `docs/` with [Zensical](https://zensical.org) by `.github/workflows/docs.yml` on every push to `main`. Add a new page to `nav` in `zensical.toml`. Links to files outside `docs/` go to their GitHub address, so they work on the site too.
+
+`GET /healthz` answers `{"status":"ok","version":"…"}` without a key, for monitoring and scripts: it says only that Kishtin is up and can read its database.
+
+CI also checks the Go code against the Go vulnerability database every week (`.github/workflows/vuln.yml`), and Dependabot opens weekly pull requests for out-of-date dependencies.
 
 Tests, fixtures and docs use synthetic data only.

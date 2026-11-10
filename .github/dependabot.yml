@@ -1,0 +1,28 @@
+# Weekly pull requests for out-of-date dependencies, grouped so there is
+# one per area rather than one per package. Each still runs CI, and a
+# person merges it.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      go: { patterns: ["*"] }
+  - package-ecosystem: bun
+    directory: /frontend
+    schedule: { interval: weekly }
+    groups:
+      frontend: { patterns: ["*"] }
+  - package-ecosystem: bun
+    directory: /e2e
+    schedule: { interval: weekly }
+    groups:
+      e2e: { patterns: ["*"] }
+  - package-ecosystem: uv
+    directory: /website
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      actions: { patterns: ["*"] }

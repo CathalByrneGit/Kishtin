@@ -4,7 +4,7 @@ OAPI_CODEGEN ?= $(GO) run github.com/doordash-oss/oapi-codegen-dd/v3/cmd/oapi-co
 SQLC ?= sqlc
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-.PHONY: build release-snapshot test test-cgo lint generate migrate dev frontend frontend-deps frontend-test test-pg test-duckdb docs docs-serve
+.PHONY: build release-snapshot test test-cgo lint generate migrate dev frontend frontend-deps frontend-test test-pg test-duckdb docs docs-serve e2e
 
 # The Go build embeds frontend/dist, so build the screens first.
 build: frontend
@@ -23,6 +23,11 @@ docs:
 
 docs-serve:
 	$(UV) run --project website --frozen zensical serve -f zensical.toml
+
+# Browser tests of the screens against a real kishtind with a synthetic
+# kitchen. Needs the Playwright browser once: cd e2e && bunx playwright install chromium
+e2e: build
+	cd e2e && $(BUN) install --frozen-lockfile && $(BUN) x playwright test
 
 frontend-deps:
 	git submodule update --init frontend/vendor/kit-ui

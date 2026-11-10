@@ -60,6 +60,8 @@ sboms:
       - --exclude=./bin
       - --exclude=./frontend/dist
       - --exclude=./frontend/vendor
+      - --exclude=./e2e
+      - --exclude=./website
       - --select-catalogers=+javascript-package-cataloger
       - --output=spdx-json=$document
 

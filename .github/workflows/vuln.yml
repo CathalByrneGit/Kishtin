@@ -1,0 +1,29 @@
+name: Vulnerabilities
+
+# Checks the Go code that Kishtin actually calls against the Go
+# vulnerability database: every week, when dependencies change, and on
+# demand. It is separate from CI so a newly published advisory does not
+# turn an unrelated pull request red.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  push:
+    branches: [main]
+    paths: ["go.mod", "go.sum"]
+  pull_request:
+    paths: ["go.mod", "go.sum", ".github/workflows/vuln.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...

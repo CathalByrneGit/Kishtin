@@ -211,6 +211,7 @@ func serve(ctx context.Context, cfgPath string) error {
 		}
 	}()
 
+	web.AppVersion = version
 	h, err := web.New(a.svc, log, frontend.Files())
 	if err != nil {
 		return err
