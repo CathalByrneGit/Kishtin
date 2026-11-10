@@ -27570,6 +27570,7 @@ func (n NewOrder) Validate() error {
 }
 
 type NewRecord struct {
+	ClientID         *string `json:"client_id,omitempty" validate:"omitempty,max=64"`
 	CorrectionReason *string `json:"correction_reason,omitempty"`
 	CorrectiveAction *string `json:"corrective_action,omitempty"`
 	Corrects         *string `json:"corrects,omitempty"`
@@ -27579,6 +27580,11 @@ type NewRecord struct {
 
 func (n NewRecord) Validate() error {
 	var errors runtime.ValidationErrors
+	if n.ClientID != nil {
+		if err := typesValidator.Var(n.ClientID, "omitempty,max=64"); err != nil {
+			errors = errors.Append("ClientID", err)
+		}
+	}
 	if v, ok := any(n.Reading).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
 			errors = errors.Append("Reading", err)

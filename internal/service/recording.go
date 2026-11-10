@@ -47,6 +47,9 @@ const (
 	SourceVoice   = "voice"
 	SourceCatchUp = "catch_up"
 	SourcePaper   = "paper"
+	// SourceOffline is a check kept on a device while Kishtin could not be
+	// reached, and sent when the connection came back.
+	SourceOffline = "offline"
 )
 
 type sourceKey struct{}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import KeptChecks from "../components/KeptChecks.svelte";
   import { Button, Chip, IconButton, Modal, Notice, ThemeToggle, Toggle, getHighContrast, setHighContrast } from "@kenn-io/kit-ui";
   import { ChefHat, ClipboardPlus, House, Menu, ReceiptText } from "@lucide/svelte";
   import { onMount } from "svelte";
@@ -99,11 +100,12 @@
         tone="warning"
         title="Not connected"
         message={live.lastSeen
-          ? `Showing what was on screen at ${dublinTime(live.lastSeen)}. Nothing can be saved until the connection is back.`
-          : "Cannot reach the Kishtin server. Nothing can be saved until the connection is back."}
+          ? `Showing what was on screen at ${dublinTime(live.lastSeen)}. A check can be kept on this device and sent when the connection is back; nothing else can be saved.`
+          : "Cannot reach the Kishtin server. A check can be kept on this device and sent when the connection is back; nothing else can be saved."}
       />
     </div>
   {/if}
+  <KeptChecks />
 
   <div class="voicebar">
     <VoiceBar big={screen.kind !== "phone"} touch keys wake />

@@ -72,6 +72,12 @@ type File struct {
 	UploadedAt   int64
 }
 
+type HaccpClientID struct {
+	ClientID string
+	RecordID string
+	At       int64
+}
+
 type HaccpRecord struct {
 	ID               string
 	Seq              int64

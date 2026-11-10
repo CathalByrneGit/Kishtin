@@ -43,6 +43,7 @@
   import { api } from "./lib/api";
   import { dublinDate, dublinTime, longDate } from "./lib/format";
   import { connect, disconnect, live, onChange } from "./lib/live.svelte";
+  import KeptChecks from "./components/KeptChecks.svelte";
   import { closeLog, logDrawer, openLog } from "./lib/logdrawer.svelte";
   import { initRouter, navigate, route } from "./lib/router.svelte";
   import { screen } from "./lib/screen.svelte";
@@ -378,11 +379,12 @@
             tone="warning"
             title="Not connected"
             message={live.lastSeen
-              ? `Showing what was on screen at ${dublinTime(live.lastSeen)}. New records cannot be saved until the connection is back.`
-              : "Cannot reach the Kishtin server. New records cannot be saved until the connection is back."}
+              ? `Showing what was on screen at ${dublinTime(live.lastSeen)}. A check can be kept on this device and sent when the connection is back; nothing else can be saved.`
+              : "Cannot reach the Kishtin server. A check can be kept on this device and sent when the connection is back; nothing else can be saved."}
           />
         </div>
       {/if}
+      <KeptChecks />
 
       <main>
         {#if route.path === "/pass"}

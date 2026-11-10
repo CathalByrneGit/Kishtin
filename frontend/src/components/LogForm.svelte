@@ -32,6 +32,8 @@
   import { title as recordTitle, typeLabel } from "../lib/labels";
   import { addDays, coolingTimes, dublinDate, dublinTime, dublinToDate, isClock, longDate, normaliseClock, parseTemp } from "../lib/format";
   import { live, onChange } from "../lib/live.svelte";
+  import { keep, LISTS_KEY } from "../lib/kept.svelte";
+  import { load as loadLocal, save as saveLocal } from "../lib/storage";
   import { session } from "../lib/session.svelte";
 
   interface Props {
@@ -112,6 +114,8 @@
   let topicList = $state<{ title?: string; items: string[] }[]>([]);
 
   let verdict = $state<Check | null>(null);
+  /** unreachable is set when Kishtin could not be asked to check a reading. */
+  let unreachable = $state(false);
   let verdictError = $state("");
   let saving = $state(false);
   let fileInput = $state<HTMLInputElement | undefined>();
@@ -119,10 +123,23 @@
   async function loadLists() {
     try {
       lists = (await api.lists()).value;
-      if (!unit && lists.units[0]) unit = lists.units[0].name;
-      if (!task && lists.cleaning_tasks[0]) task = lists.cleaning_tasks[0].task;
+      // Kept on the device so the form still knows the fridges and tasks
+      // when Kishtin cannot be reached.
+      saveLocal(LISTS_KEY, JSON.stringify(lists));
     } catch (err) {
       verdictError = message(err);
+      if (err instanceof OfflineError) {
+        unreachable = true;
+        try {
+          lists = JSON.parse(loadLocal(LISTS_KEY) ?? "null") as Lists | null;
+        } catch {
+          lists = null;
+        }
+      }
+    }
+    if (lists) {
+      if (!unit && lists.units[0]) unit = lists.units[0].name;
+      if (!task && lists.cleaning_tasks[0]) task = lists.cleaning_tasks[0].task;
     }
   }
 
@@ -323,9 +340,11 @@
     try {
       verdict = await api.check(body);
       verdictError = "";
+      unreachable = false;
     } catch (err) {
       verdict = null;
       verdictError = message(err);
+      unreachable = err instanceof OfflineError;
     }
   }, 300);
 
@@ -351,6 +370,59 @@
       (!correcting || correctionReason.trim() !== "") &&
       !saving,
   );
+
+  // With Kishtin out of reach, a check can be kept on this device and sent
+  // later. Not corrections (the original must be read), not a delivery with
+  // a docket photo (it cannot be uploaded), and not fitness to work, which
+  // is health information and stays off the device.
+  const offline = $derived(unreachable || live.status === "offline");
+  const canKeep = $derived(offline && !verdict && "record" in draft && takenAt !== "bad" && !correcting && !docket && kind !== "fitness" && !saving);
+
+  function clearForm() {
+    tempText = "";
+    action = "";
+    notes = "";
+    correctionReason = "";
+    cutoffText = "";
+    whenTime = "";
+    docket = null;
+    if (kind !== "temp") {
+      food = "";
+      product = "";
+      supplier = "";
+      cookedAt = "";
+      fridgeAt = "";
+      packagingOk = false;
+      inDate = false;
+      batchCode = "";
+      deliveryUseBy = null;
+      vehicle = "";
+      customer = "";
+      separated = "";
+      staffName = "";
+      topics = [];
+      course = "";
+      provider = "";
+      fit = "";
+    }
+  }
+
+  function keepHere() {
+    if (!("record" in draft)) return;
+    const body = full(draft.record);
+    if (action.trim()) body.corrective_action = action.trim();
+    const rd = body.reading;
+    const what = rd.unit ?? rd.food ?? rd.product ?? rd.task ?? rd.staff ?? "";
+    const label = [typeLabel(body.type), what, rd.temp_c !== undefined ? `${rd.temp_c}°C` : ""].filter(Boolean).join(" · ");
+    if (keep(body, label)) {
+      live.saveFailed = true;
+      showFlash("Kept on this device. It is not in Kishtin until the connection is back.", { tone: "warning", durationMs: 8000 });
+      clearForm();
+      onsaved();
+    } else {
+      showFlash("This device could not keep the check. Write it down, and log it when the connection is back.", { tone: "danger", durationMs: 10000 });
+    }
+  }
 
   async function pickPhoto(e: Event) {
     const file = (e.currentTarget as HTMLInputElement).files?.[0];
@@ -380,35 +452,14 @@
       await api.log(body);
       live.saveFailed = false;
       showFlash("Saved", { tone: "success" });
-      tempText = "";
-      action = "";
-      notes = "";
-      correctionReason = "";
-      cutoffText = "";
-      whenTime = "";
-      docket = null;
-      if (kind !== "temp") {
-        food = "";
-        product = "";
-        supplier = "";
-        cookedAt = "";
-        fridgeAt = "";
-        packagingOk = false;
-        inDate = false;
-        batchCode = "";
-        deliveryUseBy = null;
-        vehicle = "";
-        customer = "";
-        separated = "";
-        staffName = "";
-        topics = [];
-        course = "";
-        provider = "";
-        fit = "";
-      }
+      clearForm();
       onsaved();
     } catch (err) {
-      if (err instanceof OfflineError) live.saveFailed = true;
+      if (err instanceof OfflineError) {
+        live.saveFailed = true;
+        unreachable = true;
+        verdict = null;
+      }
       showFlash(message(err), { tone: "danger", durationMs: 8000 });
     } finally {
       saving = false;
@@ -680,6 +731,16 @@
     <Notice tone={verdictTone} toneLabel={verdictTitle} message={verdict.result.reason + (limitSource ? ` ${limitSource}.` : "")} />
   {:else if "missing" in draft}
     <Notice tone="info" message={draft.missing} />
+  {:else if canKeep}
+    <Notice
+      tone="warning"
+      title="Not connected to Kishtin"
+      message="You can keep this check on this device. It is sent to Kishtin when the connection is back and you are logged in here. Until then it is not a record, and Kishtin has not checked it against the limit."
+    />
+    <div class="field">
+      <span>If the reading is out of limit, what did you do? (Kishtin asks again if it needs this)</span>
+      <textarea class="text-area" bind:value={action} aria-label="Corrective action, if out of limit" placeholder="Leave empty if the reading is fine"></textarea>
+    </div>
   {:else if verdictError}
     <Notice tone="error" message={verdictError} />
   {/if}
@@ -699,7 +760,11 @@
   {/if}
 
   <span class="muted">Logging as {session.user?.name}.</span>
-  <Button tone="success" surface="solid" label={saving ? "Saving…" : correcting ? "Save correction" : "Save record"} disabled={!canSave} onclick={save} />
+  {#if canKeep}
+    <Button tone="info" surface="solid" label="Keep on this device" onclick={keepHere} />
+  {:else}
+    <Button tone="success" surface="solid" label={saving ? "Saving…" : correcting ? "Save correction" : "Save record"} disabled={!canSave} onclick={save} />
+  {/if}
 </div>
 
 <style>

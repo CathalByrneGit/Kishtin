@@ -3676,6 +3676,10 @@
       "NewRecord": {
         "additionalProperties": false,
         "properties": {
+          "client_id": {
+            "maxLength": 64,
+            "type": "string"
+          },
           "correction_reason": {
             "type": "string"
           },

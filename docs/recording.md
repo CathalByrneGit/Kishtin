@@ -61,7 +61,7 @@ Things staff and screens do that are not HACCP records or order events:
 | `dish.sold_out`, `dish.back_on` | which dish, who, which device |
 | `login`, `logout` | who, which device, PIN or password |
 | `screen.connected`, `screen.disconnected` | which device and who was logged in; on disconnect, how many seconds it stayed connected. A screen that drops off the Wi-Fi shows as disconnected once the server notices, within about 20 seconds. |
-| `haccp.entered` | for each HACCP record: how it was entered (`form`, `voice`, `catch_up`, `paper`, `api`), when the check was done and when it was saved |
+| `haccp.entered` | for each HACCP record: how it was entered (`form`, `voice`, `catch_up`, `paper`, `offline`, `api`), when the check was done and when it was saved |
 | `staff.anonymised` | which leaver was anonymised, by whom, and how many entries changed |
 | `plans.purged` | kept scheduler plans removed after the days set: how many, and the days |
 | `orders.customer_details_cleared` | customers' names and order notes cleared: how many orders, the days kept, and who, or the server's hourly job |
@@ -110,6 +110,10 @@ What it does not change:
 ## How long things are kept
 
 Voice recordings are kept for the days set (none by default), and customers' names and order notes for 30 days after the order closes unless you change it. Scheduler plans are kept for good unless you set a number of days. Everything else is kept until the restaurant deletes the database. Backups made before details were cleared still hold them until the backups are deleted (Settings › Backups to keep). HACCP records should be kept for as long as your inspector and HACCP plan require; Irish Revenue rules require business records for six years.
+
+## On each tablet and phone
+
+A device keeps, in its browser's own storage: its device key and who is logged in, the screen it shows and its theme, the list of fridges and cleaning tasks (so a check can be logged without a connection), and any checks kept while Kishtin could not be reached, with the name of who kept them, until they are sent. Clearing the device's browser data removes all of it.
 
 ## What Kishtin does not record
 

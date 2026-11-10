@@ -164,3 +164,38 @@ func TestPurgePlanSnapshots(t *testing.T) {
 	require.Len(t, acts, 1)
 	assert.Equal(t, "1", acts[0].Detail["plans"])
 }
+
+func TestLogRecordOnceForAClientID(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	nr := fridge(3.4)
+	nr.ClientID = "0192f6a0-synthetic-queue-id"
+	first, err := f.svc.LogRecord(ctx, f.cook, nr)
+	require.NoError(t, err)
+	again, err := f.svc.LogRecord(ctx, f.cook, nr)
+	require.NoError(t, err)
+	assert.Equal(t, first.ID, again.ID, "sent twice, saved once")
+	recs, err := f.svc.ListRecords(ctx, f.cook, RecordQuery{})
+	require.NoError(t, err)
+	assert.Len(t, recs, 1)
+
+	nr.ClientID = "another-id"
+	other, err := f.svc.LogRecord(ctx, f.cook, nr)
+	require.NoError(t, err)
+	assert.NotEqual(t, first.ID, other.ID)
+
+	// A failed reading kept offline is still refused without an action,
+	// and is not remembered, so it can be sent again with one.
+	bad := fridge(9.5)
+	bad.ClientID = "needs-action"
+	_, err = f.svc.LogRecord(ctx, f.cook, bad)
+	assert.Equal(t, KindInvalid, KindOf(err))
+	bad.CorrectiveAction = "Moved food to the prep fridge"
+	_, err = f.svc.LogRecord(ctx, f.cook, bad)
+	require.NoError(t, err)
+
+	acts, err := f.svc.Activity(ctx, f.manager, ActivityQuery{Kinds: []string{ActivityHACCPEntered}})
+	require.NoError(t, err)
+	require.Len(t, acts, 3)
+	assert.Equal(t, SourceOffline, acts[0].Detail["source"])
+}

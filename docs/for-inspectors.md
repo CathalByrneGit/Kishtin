@@ -42,6 +42,7 @@ Kitchens do not always log a check the moment it is done. Kishtin lets staff say
 - Such a record shows at the time the check was done, with the name given. The printed booklets do not mark it as late.
 - The record also keeps when it was saved and by whom. The record's details show this, and the CSV export has both times, so an inspector can see the difference.
 - A time in the future is refused. Whether staff may log earlier checks at all, and whether anything may be added to a period a manager has already signed off, are the restaurant's permissions to set.
+- A check logged on a tablet while it could not reach the Kishtin computer is kept on the tablet and saved when the connection is back, at the time the check was done. The activity log marks it as entered offline.
 - **Missed checks are never filled in.** A fridge check that was due and has no reading prints as "missed".
 
 ## Showing records during an inspection

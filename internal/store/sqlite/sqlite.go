@@ -408,6 +408,15 @@ func (s *Store) ListRecords(ctx context.Context, f store.RecordFilter) ([]haccp.
 	return recordsFromRows(rows)
 }
 
+func (s *Store) SaveClientID(ctx context.Context, clientID, recordID string, at time.Time) error {
+	return mapErr(s.w.SaveClientID(ctx, sqlitedb.SaveClientIDParams{ClientID: clientID, RecordID: recordID, At: us(at)}))
+}
+
+func (s *Store) RecordIDByClientID(ctx context.Context, clientID string) (string, error) {
+	id, err := s.r.RecordIDByClientID(ctx, clientID)
+	return id, mapErr(err)
+}
+
 func (s *Store) EachRecord(ctx context.Context, fn func(haccp.Record) error) error {
 	const page = 500
 	var after int64

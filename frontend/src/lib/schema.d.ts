@@ -3318,6 +3318,7 @@ export interface components {
             table?: string;
         };
         NewRecord: {
+            client_id?: string;
             correction_reason?: string;
             corrective_action?: string;
             corrects?: string;

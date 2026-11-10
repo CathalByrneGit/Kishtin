@@ -65,3 +65,9 @@ WHERE logged_at >= @from_us AND logged_at < @to_us
   AND (CAST(@outcomes_csv AS TEXT) = '' OR instr(',' || @outcomes_csv || ',', ',' || outcome || ',') > 0)
 ORDER BY done_at DESC, seq DESC
 LIMIT @max_rows;
+
+-- name: SaveClientID :exec
+INSERT INTO haccp_client_ids (client_id, record_id, at) VALUES (?, ?, ?);
+
+-- name: RecordIDByClientID :one
+SELECT record_id FROM haccp_client_ids WHERE client_id = ?;

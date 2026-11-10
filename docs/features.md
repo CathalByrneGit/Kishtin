@@ -30,6 +30,7 @@ Roadmap stages 1 to 7: the HACCP log; the menu with stations and equipment; orde
 - **Record books**: official HACCP booklets filled in from the records for a month, with missed checks marked. Bundles per country (Ireland's FSAI Safe Catering booklets SC1 to SC9, and a general set for any country), which a manager can change in Setup › Food safety › HACCP records. A manager signs off each period, which fills the booklets' manager check line. Kishtin compares your copy of a booklet with its template, checks the publisher for new editions when asked, and brings in old paper pages from a photo. An optional local model can suggest columns and read photos. See [Record books](record-books.md).
 - **Backups** on a schedule, and before a new version changes the database. Each copy is verified and gets a `.sha256` file, and photos are kept with them. `kishtind restore` checks a backup and puts it back, keeping what it replaced. See [Restoring from a backup](security.md#restoring-from-a-backup).
 - **Opens like an app**: a tablet or phone can add Kishtin to its home screen and open it full screen from its own icon. See [Add Kishtin to the home screen](screens.md#add-kishtin-to-the-home-screen).
+- **Logging without a connection**: when a tablet or phone cannot reach the Kishtin computer, a check can be kept on the device and is sent when the connection is back. See [HACCP log](haccp.md#logging-without-a-connection).
 - **Closed days**: weekly closed days and closed dates, so checks are not due, and not missed, when the restaurant is shut. See [HACCP log](haccp.md#closed-days).
 - **Checks logged later**: any check can be logged with the time it was done and who did it, and **Catch up** lists the daily checks with no record so they can be filled in together. See [HACCP log](haccp.md#checks-logged-later).
 - **Staff login**: PIN on shared kitchen devices, password for manager actions, API keys for the CLI and scripts. A forgotten manager password can be reset with `kishtind reset-password` on the Kishtin computer itself.
@@ -50,5 +51,5 @@ Roadmap stages 1 to 7: the HACCP log; the menu with stations and equipment; orde
 - Scheduler service profiles, replaying a service under new settings, and a fixed pace between courses.
 - Postgres and DuckDB backends. Only SQLite is built.
 - Off-site backups. Kishtin writes backups, with the photos, on the Kishtin computer. Copying the backup folder somewhere else is up to you.
-- Saving while the server is unreachable. Screens keep showing the last data with a "Not connected" notice, but new records cannot be saved until the connection is back.
+- Saving anything but HACCP checks while the Kishtin computer is unreachable. Checks can be kept on the device and sent later; orders, the pass and settings cannot be changed until the connection is back, and screens show the last data with a "Not connected" notice.
 - Printable batch labels.

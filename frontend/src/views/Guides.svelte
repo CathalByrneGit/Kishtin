@@ -35,6 +35,7 @@
         "Fridges 5°C or below. Freezers −18°C or colder.",
         "Read the thermometer. Never guess or round down.",
         "Today shows each check as Due, done, or Missed.",
+        "No connection? Tap Keep on this device. It is sent when the connection is back: check the banner has gone.",
       ],
     },
     {

@@ -73,3 +73,27 @@ test("a cook cannot fire a course; the head chef fires mains and the grill sees 
   await expect(page.getByText("Synthetic burger").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /^Start/ }).first()).toBeVisible();
 });
+
+test("with Kishtin out of reach, a check is kept on the device and sent when it is back", async ({ page, context }) => {
+  await pair(page);
+  await loginWithPIN(page, "Liam Cook", "1234");
+  await expect(page.getByText("Table 4")).toBeVisible();
+
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Log check" }).click();
+  await page.getByPlaceholder("0.0").fill("4.2");
+  await expect(page.getByText("Not connected to Kishtin")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save record" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Keep on this device" }).click();
+  await expect(page.getByText("1 check is kept on this device and not in Kishtin yet.")).toBeVisible();
+
+  // It survives the page being reloaded, which the app's kept files allow.
+  await page.reload();
+  await expect(page.getByText("1 check is kept on this device and not in Kishtin yet.")).toBeVisible();
+
+  await context.setOffline(false);
+  await expect(page.getByText("1 kept check saved in Kishtin")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("kept on this device and not in Kishtin yet")).toHaveCount(0);
+  await page.getByRole("link", { name: "Today" }).click();
+  await expect(page.getByText("4.2°C").first()).toBeVisible();
+});

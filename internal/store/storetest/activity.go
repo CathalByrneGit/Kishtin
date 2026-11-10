@@ -226,3 +226,15 @@ func testPurgePlanSnapshots(t *testing.T, s store.Store) {
 	require.Len(t, left, 1)
 	assert.Equal(t, "new-1", left[0].ID)
 }
+
+func testClientIDs(t *testing.T, s store.Store) {
+	ctx := context.Background()
+	h := s.HACCP()
+	_, err := h.RecordIDByClientID(ctx, "c1")
+	require.ErrorIs(t, err, store.ErrNotFound)
+	require.NoError(t, h.SaveClientID(ctx, "c1", "rec-1", t0))
+	id, err := h.RecordIDByClientID(ctx, "c1")
+	require.NoError(t, err)
+	assert.Equal(t, "rec-1", id)
+	assert.ErrorIs(t, h.SaveClientID(ctx, "c1", "rec-2", t0), store.ErrConflict, "one record per client ID")
+}

@@ -67,6 +67,21 @@ A correction keeps the time of the record it corrects, unless it gives a differe
 Records brought in from paper keep the photo of the page, when the check was done and the name written on the paper. See [record-books.md](record-books.md#bringing-in-paper-records).
 
 
+## Logging without a connection
+
+Wi-Fi drops in walk-in fridges and cellars. When a tablet or phone cannot reach the Kishtin computer, the log form says **Not connected to Kishtin** and offers **Keep on this device** in place of **Save record**.
+
+- The check is kept on that device, with the time it was done. A banner on every screen says how many checks are kept **and not in Kishtin yet**. A kept check is not a HACCP record until Kishtin has saved it.
+- When the connection is back and the person who kept it is logged in on that device, it is sent by itself (or tap **Send to Kishtin now**). It is saved as a normal record, at the time the check was done, in that person's name. The activity log notes it was entered `offline`.
+- Kishtin cannot check a reading against its limit while out of reach. The form asks what you did if the reading is out of limit. If Kishtin finds the reading failed and no action was given, it does not save it: the banner shows why, and you add the action there and send again.
+- A check sent twice (the tablet never heard back the first time) is saved once.
+- Only the person who kept a check sends it, so the record shows who did it. If someone else is logged in, the banner names who must log in.
+- A device keeps at most 200 checks. Clearing the browser's data loses kept checks, as does a private browsing window when it is closed: send them first.
+
+Not kept offline: corrections, a delivery's docket photo, and fitness to work (health information stays off the device). Orders, the pass and settings need the connection.
+
+Once a device has opened Kishtin with a connection, it can open it again without one, so the form is there when needed.
+
 ## Weekly and longer tasks
 
 A cleaning task can be due less often than every day: beer line cleaning every week, an ice machine every two weeks, extractor filters every four weeks. Set **How often** on the task in **Setup › Food safety › Fridges and tasks** (or `every_days` in the lists).

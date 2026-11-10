@@ -86,6 +86,11 @@ type HACCPStore interface {
 	// EachRecord calls fn for every record in sequence order. It stops at
 	// the first error fn returns.
 	EachRecord(ctx context.Context, fn func(haccp.Record) error) error
+	// SaveClientID remembers the ID a device gave a record it sent, and
+	// RecordIDByClientID finds the record saved for one (ErrNotFound when
+	// there is none), so a check sent twice is saved once.
+	SaveClientID(ctx context.Context, clientID, recordID string, at time.Time) error
+	RecordIDByClientID(ctx context.Context, clientID string) (string, error)
 
 	AppendLimitVersion(ctx context.Context, lv haccp.LimitVersion) error
 	GetLimitVersion(ctx context.Context, id string) (haccp.LimitVersion, error)
