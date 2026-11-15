@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
   import ManagerGate from "../../components/ManagerGate.svelte";
   import ScreenPicker from "../../components/ScreenPicker.svelte";
+  import LanguagePicker from "../../components/LanguagePicker.svelte";
   import ReviewChanges, { type Preview } from "../../components/ReviewChanges.svelte";
   import { api, message, type Schemas } from "../../lib/api";
   import { onChange } from "../../lib/live.svelte";
@@ -351,6 +352,8 @@
       <Card padding="md">
         <div class="stack">
           <ScreenPicker />
+          <LanguagePicker />
+          <span class="muted small">The language of the staff screens for you on this device: logging in, logging checks, Today on a phone and the staff guides. The rest of Kishtin, what it says about a reading, and voice commands are in English.</span>
           <div class="field">
             <span>Theme</span>
             <ThemeToggle variant="segmented" block />

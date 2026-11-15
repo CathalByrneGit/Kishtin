@@ -85,15 +85,41 @@ test("with Kishtin out of reach, a check is kept on the device and sent when it 
   await expect(page.getByText("Not connected to Kishtin")).toBeVisible();
   await expect(page.getByRole("button", { name: "Save record" })).toHaveCount(0);
   await page.getByRole("button", { name: "Keep on this device" }).click();
-  await expect(page.getByText("1 check is kept on this device and not in Kishtin yet.")).toBeVisible();
+  await expect(page.getByText("Checks kept on this device and not in Kishtin yet: 1.")).toBeVisible();
 
   // It survives the page being reloaded, which the app's kept files allow.
   await page.reload();
-  await expect(page.getByText("1 check is kept on this device and not in Kishtin yet.")).toBeVisible();
+  await expect(page.getByText("Checks kept on this device and not in Kishtin yet: 1.")).toBeVisible();
 
   await context.setOffline(false);
-  await expect(page.getByText("1 kept check saved in Kishtin")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Kept checks saved in Kishtin: 1")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("kept on this device and not in Kishtin yet")).toHaveCount(0);
   await page.getByRole("link", { name: "Today" }).click();
   await expect(page.getByText("4.2°C").first()).toBeVisible();
+});
+
+test("a cook reads the staff screens in their own language; the next person still gets English", async ({ page }) => {
+  await pair(page);
+  await loginWithPIN(page, "Liam Cook", "1234");
+  await page.getByRole("link", { name: "Staff guides" }).click();
+  await page.getByRole("radio", { name: "Polski" }).click();
+  await expect(page.getByRole("heading", { name: "Kontrole lodówek i zamrażarek" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Log check" }).click();
+  await expect(page.getByRole("button", { name: "Lodówka / zamrażarka" })).toBeVisible();
+  await page.getByPlaceholder("0.0").fill("3.9");
+  await expect(page.getByText("W normie", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Zapisz", exact: true }).click();
+  await expect(page.getByText("Zapisano").first()).toBeVisible();
+
+  // The choice is Liam's on this device: the login screen and the head chef stay in English.
+  await page.evaluate(() => sessionStorage.clear());
+  await page.reload();
+  if (!(await page.getByText("Who is logging in?").isVisible().catch(() => false))) {
+    await page.getByRole("button", { name: /Switch staff|Log out/ }).first().click();
+  }
+  await expect(page.getByText("Who is logging in?")).toBeVisible();
+  await loginWithPIN(page, "Aoife Chef", "2222");
+  await page.getByRole("button", { name: "Log check" }).click();
+  await expect(page.getByRole("button", { name: "Fridge / freezer" })).toBeVisible();
 });

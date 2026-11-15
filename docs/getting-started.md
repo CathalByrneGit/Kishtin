@@ -150,6 +150,8 @@ On each tablet, open the menu (☰) at the top right, or **Settings › This dev
 
 ![The pass](screenshots/pass.png)
 
+**Staff who read another language.** The login screen, the log form and the staff guides can be shown in Polish, Portuguese or Spanish: each person picks theirs from the menu (☰). See [Languages](screens.md#languages).
+
 ## Step 8: Print the staff guides
 
 Open **Staff guides** (in the sidebar, near Settings). It has one-page guides in large type: logging in, fridge checks, what to do when a reading fails, deliveries, cooking and cooling, cleaning, the station screen, voice, and allergens. **Print all**, or **Print** one, and pin them up where the work happens. They use the same words as the buttons.

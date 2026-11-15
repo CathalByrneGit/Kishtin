@@ -248,6 +248,27 @@ For a manager, **Today** starts with a **Getting started** list until everything
 
 ![Getting started list](screenshots/getting-started-list.png)
 
+## Languages
+
+The staff screens can be read in **English, Polish (Polski), Portuguese (Português) or Spanish (Español)**. Each person chooses their own on a shared device, so two cooks on one tablet each read their own language. Choose it:
+
+- on the login screen, for the device before anyone logs in;
+- from the menu (☰) on a kitchen screen, or in **Settings › This device** or **Staff guides** on a computer, for yourself on that device.
+
+What is translated: logging in, the log form for everyday checks, Today on a phone, the banner for checks kept without a connection, and the staff guides (which print in the chosen language).
+
+What stays in English, said plainly:
+
+- everything a manager uses: Setup, the pass and station screens, records, record books, reports and exports;
+- what Kishtin says about a reading ("9.5°C is above the 5°C limit"), and its error messages. The result itself (Pass, Borderline, Fail) is translated;
+- training and fitness-to-work forms;
+- voice commands, which Kishtin understands only in English;
+- the names of fridges, tasks and dishes, which are whatever a manager typed.
+
+The translations were made by software and **have not been checked by native-speaking kitchen staff**. Ask someone who speaks the language to read the staff guides and the log form before relying on them, and tell us what is wrong. Records are the same whatever language they were logged in.
+
+For developers: the text is in `frontend/src/lib/i18n/`. English is the key; each language is one file, and the build fails if a language is missing a line. To add a language, copy `es.ts`, translate it, and add it to `LANGUAGES` in `i18n.svelte.ts`.
+
 ## Add Kishtin to the home screen
 
 A tablet or phone can open Kishtin like an app: full screen, with its own icon, and no browser bars taking up room. Do it once per device, after it is connected:

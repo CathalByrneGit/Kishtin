@@ -32,7 +32,7 @@ test("only the person who kept a check sends it", () => {
   expect(mine(list, "u1").map((x) => x.id)).toEqual(["a", "c"]);
   expect(mine(list, undefined)).toEqual([]);
   expect(others(list, "u1")).toEqual(["Aoife Chef"]);
-  expect(summary([], "u1")).toBe("");
-  expect(summary([list[0]!], "u1")).toBe("1 check is kept on this device and not in Kishtin yet.");
-  expect(summary(list, "u1")).toBe("3 checks are kept on this device and not in Kishtin yet. Aoife Chef must log in here to send theirs.");
+  expect(summary([], "u1")).toEqual({ count: 0, others: [] });
+  expect(summary([list[0]!], "u1")).toEqual({ count: 1, others: [] });
+  expect(summary(list, "u1")).toEqual({ count: 3, others: ["Aoife Chef"] });
 });

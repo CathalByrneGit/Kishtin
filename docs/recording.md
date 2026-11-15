@@ -113,7 +113,7 @@ Voice recordings are kept for the days set (none by default), and customers' nam
 
 ## On each tablet and phone
 
-A device keeps, in its browser's own storage: its device key and who is logged in, the screen it shows and its theme, the list of fridges and cleaning tasks (so a check can be logged without a connection), and any checks kept while Kishtin could not be reached, with the name of who kept them, until they are sent. Clearing the device's browser data removes all of it.
+A device keeps, in its browser's own storage: its device key and who is logged in, the screen it shows, its theme and each person's language, the list of fridges and cleaning tasks (so a check can be logged without a connection), and any checks kept while Kishtin could not be reached, with the name of who kept them, until they are sent. Clearing the device's browser data removes all of it.
 
 ## What Kishtin does not record
 

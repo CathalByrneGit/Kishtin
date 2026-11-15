@@ -57,12 +57,7 @@ export function others(list: KeptCheck[], userId: string | undefined): string[] 
   return [...new Set(list.filter((k) => k.userId !== userId).map((k) => k.userName))];
 }
 
-/** summary is the one line the banner shows. */
-export function summary(list: KeptCheck[], userId: string | undefined): string {
-  const n = list.length;
-  if (n === 0) return "";
-  const who = others(list, userId);
-  let s = `${n} ${n === 1 ? "check is" : "checks are"} kept on this device and not in Kishtin yet.`;
-  if (who.length > 0) s += ` ${who.join(" and ")} must log in here to send theirs.`;
-  return s;
+/** summary is what the banner says: how many are kept, and who else must log in. */
+export function summary(list: KeptCheck[], userId: string | undefined): { count: number; others: string[] } {
+  return { count: list.length, others: others(list, userId) };
 }
