@@ -9,7 +9,7 @@ For developers and anyone running Kishtin from source. Restaurant owners install
 
 ## Build from source
 
-You need Go 1.27 or later, Bun 1.4.4 and git (the kit-ui component library is a git submodule).
+You need Go 1.27.4 or later, Bun 1.4.4 and git (the kit-ui component library is a git submodule).
 
 ```sh
 git submodule update --init       # fetches frontend/vendor/kit-ui
