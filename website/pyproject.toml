@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "Builds Kishtin's documentation site. Not part of the Kishtin programs."
 requires-python = ">=3.12"
 dependencies = [
-  "zensical==0.1.0",
+  "zensical==0.1.1",
 ]
 
 [tool.uv]
