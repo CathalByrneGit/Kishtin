@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LabelButton from "../components/LabelButton.svelte";
   import GettingStarted from "../components/GettingStarted.svelte";
   import { dueToday, scheduleStatus } from "../lib/cleaning";
   import { can, canWithPassword } from "../lib/can.svelte";
@@ -44,6 +45,7 @@
   function slotChip(s: Schemas["SlotToday"]): { label: string; tone: ChipTone } {
     if (s.record) return { label: temp(s.record.reading.temp_c), tone: outcomeStyle(s.record.outcome).tone };
     if (s.status === "missed") return { label: "Missed", tone: "warning" };
+    if (s.status === "closed") return { label: "Closed", tone: "neutral" };
     return { label: "Due", tone: "neutral" };
   }
 
@@ -91,6 +93,12 @@
   {#if !today}
     {#if !error}<Spinner />{/if}
   {:else}
+    {#if today.closed}
+      <Notice tone="info" title="Closed today" message="The restaurant is set as closed today, so no checks are due. A check you log anyway still counts. A manager changes closed days in Setup › Food safety › Fridges and tasks." />
+    {/if}
+    {#if today.storage_warning}
+      <Notice tone="error" title="Disk nearly full" message={today.storage_warning} />
+    {/if}
     {#if today.sign_off.unsigned_days >= SIGN_OFF_DAYS && canWithPassword("haccp.sign_off") && today.sign_off.unsigned_from}
       <Notice
         tone="warning"
@@ -282,6 +290,7 @@
                     <strong>{b.record.reading.product}</strong>
                     <span class="muted small">{details(b.record)}</span>
                   </div>
+                  <LabelButton recordId={b.record.id} seq={b.record.seq} product={b.record.reading.product ?? ""} />
                   {#if b.status === "expired"}
                     <Chip tone="danger" uppercase={false}>Expired</Chip>
                   {:else if b.status === "use_today"}

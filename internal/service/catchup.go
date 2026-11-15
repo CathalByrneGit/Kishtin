@@ -143,7 +143,7 @@ func (s *Service) CatchUpGaps(ctx context.Context, p *auth.Principal, fromDay, t
 		units[strings.ToLower(u.Name)] = u
 	}
 	res := books.ReviewPeriod(books.ReviewInput{
-		From: from, To: to, Loc: clock.Dublin, Now: s.clk.Now(), Since: since, Records: recs, Units: lists.Value.Units,
+		From: from, To: to, Loc: clock.Dublin, Now: s.clk.Now(), Since: since, Records: recs, Units: lists.Value.Units, Closed: lists.Value.Closed,
 	})
 	for _, g := range res.Missed {
 		u := units[strings.ToLower(g.Unit)]
@@ -164,7 +164,7 @@ func (s *Service) CatchUpGaps(ctx context.Context, p *auth.Principal, fromDay, t
 	for d := from; d.Before(today) && !d.After(to); d = d.AddDate(0, 0, 1) {
 		day := d.Format(haccp.DateLayout)
 		for _, t := range lists.Value.CleaningTasks {
-			if t.Daily() && !done[day+"\x00"+strings.ToLower(t.Task)] {
+			if t.Daily() && !done[day+"\x00"+strings.ToLower(t.Task)] && !lists.Value.Closed.On(day) {
 				out.Gaps = append(out.Gaps, CatchUpGap{Date: day, Type: haccp.RecordCleaning, Task: t.Task, Area: t.Area, SignedOff: signed[day]})
 			}
 		}

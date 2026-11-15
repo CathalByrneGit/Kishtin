@@ -129,6 +129,8 @@ Why: the browser only allows the microphone (for voice) and keeping the screen a
 
 The tablet notices by itself when the certificate is in place, connects, and shows **Who is logging in?**. The Kishtin computer says the tablet is connected. Staff tap their name and enter their PIN.
 
+**Make it an app on the tablet.** Once a tablet is connected, add Kishtin to its home screen so it opens full screen from its own icon: on an iPad, tap Share, then **Add to Home Screen**; on Android, open the menu, then **Add to Home screen**. See [Add Kishtin to the home screen](screens.md#add-kishtin-to-the-home-screen).
+
 ## Step 6: Tell Kishtin about your kitchen
 
 Go through these once. Everything can be changed later.
@@ -148,6 +150,8 @@ On each tablet, open the menu (☰) at the top right, or **Settings › This dev
 
 ![The pass](screenshots/pass.png)
 
+**Staff who read another language.** The login screen, the log form and the staff guides can be shown in Polish, Portuguese or Spanish: each person picks theirs from the menu (☰). See [Languages](screens.md#languages).
+
 ## Step 8: Print the staff guides
 
 Open **Staff guides** (in the sidebar, near Settings). It has one-page guides in large type: logging in, fridge checks, what to do when a reading fails, deliveries, cooking and cooling, cleaning, the station screen, voice, and allergens. **Print all**, or **Print** one, and pin them up where the work happens. They use the same words as the buttons.
@@ -161,7 +165,7 @@ Before you rely on Kishtin instead of the paper booklets, ask your environmental
 - **Kishtin starts by itself** when you log in to the computer, if you said yes in Step 2. If you said no, start it after every restart: open PowerShell or Terminal, type `kishtind`, press Enter.
 - **Fridge checks and cleaning** are on **Today**. Tap **Log check** to record one. A reading out of limit asks what you did about it.
 - **Keep the computer safe.** Turn on disk encryption and automatic updates once: see [Keeping the Kishtin computer safe](security.md).
-- **Copy the backups every week.** Kishtin makes a backup every 6 hours, but it is on the same computer. Copy the `backups` and `files` folders from Kishtin's data folder (`C:\Users\<you>\.kishtin` on Windows, `.kishtin` in your home folder on a Mac) to a USB stick or another computer. See **Setup › Backups** for where they are.
+- **Copy the backups every week.** Kishtin makes a backup every 6 hours, but it is on the same computer. Copy the `backups` folder, which holds the database backups and the photos, from Kishtin's data folder (`C:\Users\<you>\.kishtin` on Windows, `.kishtin` in your home folder on a Mac) to a USB stick or another computer. See **Setup › Backups** for where they are.
 
 ![Today](screenshots/today.png)
 

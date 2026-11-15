@@ -2,9 +2,14 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"io/fs"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/pressly/goose/v3"
 	"github.com/stretchr/testify/require"
 
 	"github.com/cathalbyrnegit/kishtin/internal/haccp"
@@ -51,6 +56,64 @@ func TestSnapshotIsReadOnly(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestBackupBeforeUpgrade(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "kishtin.db")
+	var calls []int64
+	opt := Options{BeforeUpgrade: func(_ context.Context, from int64, backup func(string) error) error {
+		calls = append(calls, from)
+		return backup(filepath.Join(dir, "before.db"))
+	}}
+
+	// A database from an older Kishtin: only the first migrations applied.
+	db, err := sql.Open(DriverName, dsn(path, false))
+	require.NoError(t, err)
+	sub, err := fs.Sub(migrations, "migrations")
+	require.NoError(t, err)
+	p, err := goose.NewProvider(goose.DialectSQLite3, db, sub)
+	require.NoError(t, err)
+	_, err = p.UpTo(ctx, 3)
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
+	s, err := OpenWith(ctx, path, opt)
+	require.NoError(t, err)
+	require.NoError(t, s.Close())
+	require.Equal(t, []int64{3}, calls, "backed up once, at the version it was")
+	snap, err := OpenSnapshot(ctx, filepath.Join(dir, "before.db"))
+	require.NoError(t, err, "the copy opens")
+	require.NoError(t, snap.Close())
+
+	// Up to date: nothing to back up. A new database: nothing to lose.
+	s, err = OpenWith(ctx, path, opt)
+	require.NoError(t, err)
+	require.NoError(t, s.Close())
+	s, err = OpenWith(ctx, filepath.Join(dir, "new.db"), opt)
+	require.NoError(t, err)
+	require.NoError(t, s.Close())
+	require.Len(t, calls, 1)
+
+	// A backup that fails stops the upgrade and leaves the database alone.
+	old := filepath.Join(dir, "old.db")
+	db, err = sql.Open(DriverName, dsn(old, false))
+	require.NoError(t, err)
+	p, err = goose.NewProvider(goose.DialectSQLite3, db, sub)
+	require.NoError(t, err)
+	_, err = p.UpTo(ctx, 3)
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+	_, err = OpenWith(ctx, old, Options{BeforeUpgrade: func(context.Context, int64, func(string) error) error { return errors.New("disk full") }})
+	require.ErrorContains(t, err, "disk full")
+	db, err = sql.Open(DriverName, dsn(old, false))
+	require.NoError(t, err)
+	from, pending, err := upgradeNeeded(ctx, db)
+	require.NoError(t, err)
+	require.True(t, pending)
+	require.EqualValues(t, 3, from)
+	require.NoError(t, db.Close())
+}
+
 func TestTriggersBlockEdits(t *testing.T) {
 	ctx := context.Background()
 	s := newStore(t).(*Store)
@@ -61,7 +124,7 @@ func TestTriggersBlockEdits(t *testing.T) {
 	require.NoError(t, s.AppendEvent(ctx, orders.Event{ID: "e1", OrderID: "o1", Kind: orders.EventCreated, By: "x", ByName: "x"}))
 	require.NoError(t, s.AppendVoiceLog(ctx, voice.LogEntry{ID: "v1", UserID: "x", UserName: "x", Source: voice.SourceTyped, Transcript: "x", Outcome: voice.OutcomeDone, Reply: "x"}))
 	require.NoError(t, s.AppendActivity(ctx, store.Activity{ID: "a1", Kind: "login", UserID: "x", UserName: "x"}))
-	require.NoError(t, s.AppendPlanSnapshot(ctx, store.PlanSnapshot{ID: "p1", Trigger: "timer", Body: []byte("{}")}))
+	require.NoError(t, s.AppendPlanSnapshot(ctx, store.PlanSnapshot{ID: "p1", At: time.Now(), Trigger: "timer", Body: []byte("{}")}))
 	// A leaver's name, and the words that can hold a customer's name or an
 	// order's notes, are the only things that can change.
 	for _, q := range []string{
@@ -83,6 +146,7 @@ func TestTriggersBlockEdits(t *testing.T) {
 		"UPDATE plan_snapshots SET body = '[]', hash = 'edited'",
 		"UPDATE plan_snapshots SET at = 5",
 		"DELETE FROM plan_snapshots",
+		"DELETE FROM plan_snapshots WHERE id = 'p1'",
 		"UPDATE voice_log SET transcript = 'edited'",
 		"DELETE FROM voice_log",
 		"UPDATE order_events SET detail = 'edited', kind = 'voided'",

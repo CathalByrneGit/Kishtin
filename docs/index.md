@@ -43,7 +43,7 @@ description: Install Kishtin, then find the guide for HACCP records, the pass, t
 | Bring in orders from the till | [Square](square.md) · [SumUp](sumup.md) |
 | Change limits, lists and settings | [Settings](settings.md) |
 | Let staff do manager jobs | [Permissions](permissions.md) |
-| Know what Kishtin keeps, for a privacy notice | [What Kishtin records](recording.md) |
+| Know what Kishtin keeps, and write a privacy notice | [What Kishtin records](recording.md) · [Privacy notice templates](privacy-notice.md) |
 | Build from source or use the command line | [Building and developing Kishtin](developers.md) |
 
 ## What it does

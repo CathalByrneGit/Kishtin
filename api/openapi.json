@@ -405,7 +405,21 @@
       "Backup": {
         "additionalProperties": false,
         "properties": {
+          "checked": {
+            "type": "boolean"
+          },
+          "files": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "files_added": {
+            "format": "int64",
+            "type": "integer"
+          },
           "head_hash": {
+            "type": "string"
+          },
+          "kind": {
             "type": "string"
           },
           "name": {
@@ -441,7 +455,11 @@
           "taken_at",
           "records",
           "head_hash",
-          "verified"
+          "verified",
+          "checked",
+          "kind",
+          "files",
+          "files_added"
         ],
         "type": "object"
       },
@@ -1014,6 +1032,47 @@
         },
         "required": [
           "task"
+        ],
+        "type": "object"
+      },
+      "ClosedDate": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "ClosedDays": {
+        "additionalProperties": false,
+        "properties": {
+          "dates": {
+            "items": {
+              "$ref": "#/components/schemas/ClosedDate"
+            },
+            "type": "array"
+          },
+          "weekdays": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "weekdays",
+          "dates"
         ],
         "type": "object"
       },
@@ -3136,6 +3195,9 @@
             },
             "type": "array"
           },
+          "closed": {
+            "$ref": "#/components/schemas/ClosedDays"
+          },
           "corrective_actions": {
             "items": {
               "$ref": "#/components/schemas/ActionPreset"
@@ -3614,6 +3676,10 @@
       "NewRecord": {
         "additionalProperties": false,
         "properties": {
+          "client_id": {
+            "maxLength": 64,
+            "type": "string"
+          },
           "correction_reason": {
             "type": "string"
           },
@@ -5796,6 +5862,53 @@
         ],
         "type": "object"
       },
+      "Storage": {
+        "additionalProperties": false,
+        "properties": {
+          "backups_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "database_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "files_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "free_bytes": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "level": {
+            "type": "string"
+          },
+          "plan_snapshots": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_bytes": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "warning": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "free_bytes",
+          "total_bytes",
+          "database_bytes",
+          "files_bytes",
+          "backups_bytes",
+          "plan_snapshots"
+        ],
+        "type": "object"
+      },
       "Suggestion": {
         "additionalProperties": false,
         "properties": {
@@ -5903,6 +6016,10 @@
             "format": "int64",
             "type": "integer"
           },
+          "plan_snapshot_days": {
+            "format": "int64",
+            "type": "integer"
+          },
           "preview_records": {
             "format": "int64",
             "type": "integer"
@@ -5922,7 +6039,8 @@
           "max_upload_mb",
           "preview_records",
           "voice_audio_days",
-          "customer_details_days"
+          "customer_details_days",
+          "plan_snapshot_days"
         ],
         "type": "object"
       },
@@ -6209,6 +6327,9 @@
             },
             "type": "array"
           },
+          "closed": {
+            "type": "boolean"
+          },
           "corrective_actions": {
             "items": {
               "$ref": "#/components/schemas/ActionPreset"
@@ -6244,6 +6365,9 @@
           },
           "sign_off": {
             "$ref": "#/components/schemas/SignOffStatus"
+          },
+          "storage_warning": {
+            "type": "string"
           },
           "total": {
             "format": "int64",
@@ -8751,6 +8875,72 @@
           }
         },
         "summary": "Get one HACCP record",
+        "tags": [
+          "HACCP"
+        ]
+      }
+    },
+    "/haccp/records/{id}/label": {
+      "get": {
+        "description": "The product, when it was made, its use-by date, who made it and the record number, on a page the size of the label. Sizes: 62x29 (default) and 100x50 millimetres for a label printer, or a4 for one label on an A4 page to cut out.",
+        "operationId": "batch-label-pdf",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "62x29, 100x50 or a4.",
+            "explode": false,
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "description": "62x29, 100x50 or a4.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "contentMediaType": "application/octet-stream",
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The label.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "A batch label record as a label to print (PDF)",
         "tags": [
           "HACCP"
         ]
@@ -11945,6 +12135,37 @@
         "summary": "Turn Kishtin starting with this computer on or off",
         "tags": [
           "Setup"
+        ]
+      }
+    },
+    "/storage": {
+      "get": {
+        "operationId": "storage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Storage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "How much disk space Kishtin's data takes and how much is left, with a warning when it is low",
+        "tags": [
+          "Settings"
         ]
       }
     },

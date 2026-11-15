@@ -182,6 +182,11 @@ export const api = {
   saveRecordBookSettings: (body: Schemas["SettingsChangeRecordBookSettings"]) =>
     json<Schemas["VersionedRecordBookSettings"]>("PUT", "/settings/record_books", { body }),
   book: (ref: string, month: string) => json<Schemas["Book"]>("GET", `/haccp/books/${encodeURIComponent(ref)}`, { query: { month } }),
+  /** labelPDF is a batch label record as a PDF the size of a label. */
+  labelPDF: async (id: string, size: string): Promise<Blob> => {
+    const res = await send("GET", `/haccp/records/${encodeURIComponent(id)}/label`, { query: { size } });
+    return res.blob();
+  },
   bookPDF: async (ref: string, month: string): Promise<ExportResult> => {
     const res = await send("GET", `/haccp/books/${encodeURIComponent(ref)}/pdf`, { query: { month } });
     const cd = res.headers.get("Content-Disposition") ?? "";
@@ -226,6 +231,7 @@ export const api = {
   users: () => json<Schemas["UsersOutBody"]>("GET", "/users"),
   previewAnonymise: (id: string) => json<Schemas["AnonymisePreview"]>("GET", `/users/${encodeURIComponent(id)}/anonymise`),
   anonymise: (id: string) => json<Schemas["AnonymiseResult"]>("POST", `/users/${encodeURIComponent(id)}/anonymise`),
+  storage: () => json<Schemas["Storage"]>("GET", "/storage"),
   previewClearCustomerDetails: () => json<Schemas["CustomerDetailsPreview"]>("GET", "/customer-details"),
   clearCustomerDetails: () => json<Schemas["CustomerDetailsResult"]>("POST", "/customer-details/clear"),
   createUser: (body: Schemas["NewUser"]) => json<Schemas["User"]>("POST", "/users", { body }),

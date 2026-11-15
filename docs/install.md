@@ -97,12 +97,12 @@ Before you rely on Kishtin, turn on disk encryption, give Kishtin its own comput
 
 ## Update
 
-Run the same install line again. It replaces the two programs and leaves the data alone. Take a backup in **Setup › Backups** before a big update.
+Run the same install line again. It replaces the two programs and leaves the data alone.
 
 - If Kishtin starts with the computer, the installer stops it, replaces the programs and starts it again.
 - If you started Kishtin by hand, stop it first (press Ctrl C in its window), and start `kishtind` again afterwards.
 
-Kishtin brings the database up to date when it starts.
+Kishtin brings the database up to date when it starts. Before it changes anything, it backs the database up into the backup folder as `before-upgrade-….db` (it keeps the last three); if that backup cannot be made, it stops without changing the database. To go back, see [Restoring from a backup](security.md#restoring-from-a-backup).
 
 `kishtind --version` shows which version is installed.
 

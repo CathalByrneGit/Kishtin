@@ -160,6 +160,12 @@ func (s *Service) RunPlanRecorder(ctx context.Context, log *slog.Logger) {
 		if _, err := s.PurgeCustomerDetails(ctx); err != nil && ctx.Err() == nil {
 			log.Warn("clear old customer details", "err", err)
 		}
+		if _, err := s.PurgePlanSnapshots(ctx); err != nil && ctx.Err() == nil {
+			log.Warn("remove old plans", "err", err)
+		}
+		if st := s.storageLevel(); st.Warning != "" {
+			log.Warn(st.Warning)
+		}
 	}
 	purgeOld()
 	for {

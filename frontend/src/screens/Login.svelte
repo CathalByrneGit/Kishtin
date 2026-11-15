@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LanguagePicker from "../components/LanguagePicker.svelte";
+  import { t } from "../lib/i18n.svelte";
   import { Button, Notice, Spinner, TextInput } from "@kenn-io/kit-ui";
   import { Delete } from "@lucide/svelte";
   import { onMount } from "svelte";
@@ -78,11 +80,11 @@
 
 <div class="page kitchen">
   {#if !picked}
-    <h1>{passwordOnly ? "Password login" : "Who is logging in?"}</h1>
+    <h1>{passwordOnly ? t("Password login") : t("Who is logging in?")}</h1>
     {#if staff === null}
       <Spinner />
     {:else if staff.length === 0 && !error}
-      <Notice tone="info" title="No staff" message="No staff can log in here yet. A manager adds staff with kishtin staff add." />
+      <Notice tone="info" title="No staff" message={t("No staff can log in here yet. A manager adds staff in Setup.")} />
     {:else}
       <div class="people">
         {#each staff as s (s.id)}
@@ -93,7 +95,8 @@
     {#if error}<Notice tone="error" message={error} />{/if}
     {#if !passwordOnly}
       <div class="footer">
-        <Button label="Unpair this device" onclick={unpairDevice} />
+        <LanguagePicker />
+        <Button label={t("Unpair this device")} onclick={unpairDevice} />
       </div>
     {/if}
   {:else}
@@ -107,11 +110,11 @@
         }}
       >
         <label class="field">
-          <span>Password</span>
+          <span>{t("Password")}</span>
           <TextInput type="password" bind:value={pw} autocomplete="current-password" autofocus />
         </label>
         {#if error}<Notice tone="error" message={error} />{/if}
-        <Button type="submit" tone="info" surface="solid" label={busy ? "Logging in…" : "Log in"} disabled={busy || !pw} />
+        <Button type="submit" tone="info" surface="solid" label={busy ? t("Logging in…") : t("Log in")} disabled={busy || !pw} />
       </form>
       {#if forgot}
         <Notice
@@ -133,16 +136,16 @@
         {#each digits as d (d)}
           <Button label={d} onclick={() => press(d)} />
         {/each}
-        <Button label="Clear" onclick={() => (pin = "")} />
+        <Button label={t("Clear")} onclick={() => (pin = "")} />
         <Button label="0" onclick={() => press("0")} />
-        <Button ariaLabel="Delete last digit" label="" onclick={() => (pin = pin.slice(0, -1))}><Delete size={22} /></Button>
+        <Button ariaLabel={t("Delete last digit")} label="" onclick={() => (pin = pin.slice(0, -1))}><Delete size={22} /></Button>
       </div>
-      <Button tone="info" surface="solid" label={busy ? "Logging in…" : "Log in"} disabled={busy || pin.length < 4} onclick={login} />
+      <Button tone="info" surface="solid" label={busy ? t("Logging in…") : t("Log in")} disabled={busy || pin.length < 4} onclick={login} />
       {#if picked.has_password}
-        <Button label="Use manager password instead" onclick={() => (passwordMode = true)} />
+        <Button label={t("Use manager password instead")} onclick={() => (passwordMode = true)} />
       {/if}
     {/if}
-    <Button label="Someone else" onclick={() => (picked = null)} />
+    <Button label={t("Someone else")} onclick={() => (picked = null)} />
   {/if}
 </div>
 

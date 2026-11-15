@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"io"
+	"strings"
 
 	"github.com/cathalbyrnegit/kishtin/internal/auth"
 	"github.com/cathalbyrnegit/kishtin/internal/clock"
@@ -62,4 +63,28 @@ func (s *Service) ExportPackPDF(ctx context.Context, p *auth.Principal, q Record
 		Limits:   limits,
 	}, w)
 	return sum, err
+}
+
+// BatchLabelPDF writes a batch label record as a label to print, in one of
+// report.LabelSizes ("" is the default), and returns the record.
+func (s *Service) BatchLabelPDF(ctx context.Context, p *auth.Principal, id, size string, w io.Writer) (haccp.Record, error) {
+	r, err := s.GetRecord(ctx, p, id)
+	if err != nil {
+		return haccp.Record{}, err
+	}
+	if r.Type != haccp.RecordBatchLabel {
+		return r, newErr(KindInvalid, "record %d is not a batch label: only batch labels print as labels", r.Seq)
+	}
+	sz, ok := report.FindLabelSize(size)
+	if !ok {
+		ids := make([]string, len(report.LabelSizes))
+		for i, s := range report.LabelSizes {
+			ids[i] = s.ID
+		}
+		return r, newErr(KindInvalid, "label size %q is not one of %s", size, strings.Join(ids, ", "))
+	}
+	if err := report.WriteLabel(report.Label{Record: r, Size: sz, Loc: clock.Dublin}, w); err != nil {
+		return r, err
+	}
+	return r, nil
 }

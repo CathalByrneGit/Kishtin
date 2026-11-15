@@ -27,6 +27,7 @@ func (s *Server) routes() {
 	s.authRoutes()
 	s.haccpRoutes()
 	s.packRoute()
+	s.labelRoute()
 	s.bookRoutes()
 	s.signOffRoutes()
 	s.copyRoutes()
@@ -367,6 +368,35 @@ type pdfOut struct {
 	ChainHead          string `header:"X-Kishtin-Chain-Head"`
 	ChainOK            bool   `header:"X-Kishtin-Chain-OK"`
 	Body               []byte
+}
+
+type labelOut struct {
+	ContentType        string `header:"Content-Type"`
+	ContentDisposition string `header:"Content-Disposition"`
+	Body               []byte
+}
+
+func (s *Server) labelRoute() {
+	huma.Register(s.api, huma.Operation{
+		OperationID: "batch-label-pdf", Method: http.MethodGet, Path: "/haccp/records/{id}/label", Tags: []string{"HACCP"},
+		Summary:     "A batch label record as a label to print (PDF)",
+		Description: "The product, when it was made, its use-by date, who made it and the record number, on a page the size of the label. Sizes: 62x29 (default) and 100x50 millimetres for a label printer, or a4 for one label on an A4 page to cut out.",
+		Responses: map[string]*huma.Response{"200": {
+			Description: "The label.",
+			Content:     map[string]*huma.MediaType{"application/pdf": {Schema: &huma.Schema{Type: "string", Format: "binary"}}},
+		}},
+	}, wrap(s, func(ctx context.Context, in *struct {
+		ID   string `path:"id"`
+		Size string `query:"size" doc:"62x29, 100x50 or a4."`
+	}) (*labelOut, error) {
+		var buf bytes.Buffer
+		r, err := s.svc.BatchLabelPDF(ctx, principal(ctx), in.ID, in.Size, &buf)
+		if err != nil {
+			return nil, err
+		}
+		name := safeFilename(fmt.Sprintf("label-%d.pdf", r.Seq))
+		return &labelOut{ContentType: "application/pdf", ContentDisposition: fmt.Sprintf("inline; filename=%q", name), Body: buf.Bytes()}, nil
+	}))
 }
 
 func (s *Server) packRoute() {

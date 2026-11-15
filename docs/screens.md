@@ -234,7 +234,7 @@ Everyone can see **Menu**, **Scheduler**, **Fridges and tasks**, **Limits and ru
 - **Permissions**: who may do what, per action: the roles and named staff allowed, and whether a PIN is enough. Managers may always do everything; staff, keys, permissions and fitness to work stay managers only. See [permissions.md](permissions.md).
 - **Staff**: add staff with a role and a PIN (managers also get a password of at least 10 characters), change roles, change a PIN or password, and deactivate or reactivate. Staff are never deleted, because records name who logged them. Once someone is deactivated, **Anonymise** replaces their name with "Former staff N" in the kitchen's logs, after showing what will change; HACCP records keep their name. See [recording.md](recording.md#leavers).
 - **Device keys**: make device keys and staff keys for the CLI. The key and pairing link are shown once. You can revoke a key.
-- **Backups**: the latest backup, the schedule, and every backup on the server with its record count, size, verify result and chain head. **Back up now** makes one straight away.
+- **Backups**: the latest backup, the schedule, and every backup on the Kishtin computer with why it was made (scheduled, before an upgrade, before a restore), its record count, size, verify result and chain head. **Back up now** makes one straight away. Photos of dockets and paper pages are kept in the same folder. Putting a backup back is done on the Kishtin computer with `kishtind restore`: see [Restoring from a backup](security.md#restoring-from-a-backup).
 
 ## Staff guides
 
@@ -248,10 +248,42 @@ For a manager, **Today** starts with a **Getting started** list until everything
 
 ![Getting started list](screenshots/getting-started-list.png)
 
+## Languages
+
+The staff screens can be read in **English, Polish (Polski), Portuguese (Português) or Spanish (Español)**. Each person chooses their own on a shared device, so two cooks on one tablet each read their own language. Choose it:
+
+- on the login screen, for the device before anyone logs in;
+- from the menu (☰) on a kitchen screen, or in **Settings › This device** or **Staff guides** on a computer, for yourself on that device.
+
+What is translated: logging in, the log form for everyday checks, Today on a phone, the banner for checks kept without a connection, and the staff guides (which print in the chosen language).
+
+What stays in English, said plainly:
+
+- everything a manager uses: Setup, the pass and station screens, records, record books, reports and exports;
+- what Kishtin says about a reading ("9.5°C is above the 5°C limit"), and its error messages. The result itself (Pass, Borderline, Fail) is translated;
+- training and fitness-to-work forms;
+- voice commands, which Kishtin understands only in English;
+- the names of fridges, tasks and dishes, which are whatever a manager typed.
+
+The translations were made by software and **have not been checked by native-speaking kitchen staff**. Ask someone who speaks the language to read the staff guides and the log form before relying on them, and tell us what is wrong. Records are the same whatever language they were logged in.
+
+For developers: the text is in `frontend/src/lib/i18n/`. English is the key; each language is one file, and the build fails if a language is missing a line. To add a language, copy `es.ts`, translate it, and add it to `LANGUAGES` in `i18n.svelte.ts`.
+
+## Add Kishtin to the home screen
+
+A tablet or phone can open Kishtin like an app: full screen, with its own icon, and no browser bars taking up room. Do it once per device, after it is connected:
+
+- **iPad or iPhone** (Safari): tap the Share button, then **Add to Home Screen**, then **Add**.
+- **Android** (Chrome): open the menu (⋮), then **Add to Home screen** or **Install app**.
+- **A computer** (Chrome or Edge): the install icon at the right of the address bar, or the menu, then **Install Kishtin**.
+
+Open Kishtin from the new icon from then on. It is still the same Kishtin on the restaurant's computer: nothing is installed from a store, and it needs the kitchen Wi-Fi as before. The device stays paired.
+
 ## Settings
 
 - **Restaurant**: the name, backup schedule and retention, largest upload, preview length, how long voice recordings are kept, and how many days after an order closes its customer's name and notes are cleared. These change through the same review as Setup. See [settings.md](settings.md#system-settings).
 - **Customer details**: whether customers' names and order notes are cleared and after how long, what clearing does and does not touch, and, when orders are due, **Clear now** (it asks first). A manager with the password. See [recording.md](recording.md#customers-names-and-order-notes).
+- **Disk space**: how much room is left on the Kishtin computer's disk, and what Kishtin's database, photos and backups take. When under 2 GB is left, **Today** shows everyone a warning, because Kishtin cannot save records or make backups on a full disk. Also `kishtin storage`.
 - **The Kishtin computer**: whether Kishtin starts by itself when the computer it runs on starts, with a switch to turn that on or off (a manager with the password), how it does it, and what it does not do (on Windows and a Mac it starts at login, not at power-on). See [Start with the computer](install.md#start-with-the-computer).
 - **This device**: which screen it shows (see [Kitchen screens](#kitchen-screens)), light, dark or system theme, high contrast, and unpairing.
 

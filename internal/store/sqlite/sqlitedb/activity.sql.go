@@ -60,6 +60,17 @@ func (q *Queries) AnonymiseVoiceLog(ctx context.Context, arg AnonymiseVoiceLogPa
 	return result.RowsAffected()
 }
 
+const countPlanSnapshotsBefore = `-- name: CountPlanSnapshotsBefore :one
+SELECT COUNT(*) FROM plan_snapshots WHERE at < ?1
+`
+
+func (q *Queries) CountPlanSnapshotsBefore(ctx context.Context, beforeUs int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPlanSnapshotsBefore, beforeUs)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countUserMentions = `-- name: CountUserMentions :one
 SELECT
     (SELECT count(*) FROM order_events WHERE by_user = ?1) AS order_events,
@@ -259,4 +270,16 @@ func (q *Queries) ListPlanSnapshots(ctx context.Context, arg ListPlanSnapshotsPa
 		return nil, err
 	}
 	return items, nil
+}
+
+const purgePlanSnapshots = `-- name: PurgePlanSnapshots :execrows
+DELETE FROM plan_snapshots WHERE at < ?1
+`
+
+func (q *Queries) PurgePlanSnapshots(ctx context.Context, beforeUs int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, purgePlanSnapshots, beforeUs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }

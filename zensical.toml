@@ -37,6 +37,7 @@ nav = [
     {"Settings" = "settings.md"},
     {"Permissions" = "permissions.md"},
     {"What Kishtin records" = "recording.md"},
+    {"Privacy notice templates" = "privacy-notice.md"},
   ]},
   {"Tills" = [
     {"Orders from Square" = "square.md"},

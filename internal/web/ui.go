@@ -30,6 +30,9 @@ func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
 	}
 	h := w.Header()
 	h.Set("Content-Security-Policy", uiCSP)
+	if strings.HasSuffix(name, ".webmanifest") {
+		h.Set("Content-Type", "application/manifest+json")
+	}
 	if strings.HasPrefix(name, "assets/") {
 		h.Set("Cache-Control", "public, max-age=31536000, immutable")
 	} else {

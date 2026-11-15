@@ -1,4 +1,7 @@
 <script lang="ts">
+  import LanguagePicker from "../components/LanguagePicker.svelte";
+  import { t } from "../lib/i18n.svelte";
+  import KeptChecks from "../components/KeptChecks.svelte";
   import { Button, Chip, IconButton, Modal, Notice, ThemeToggle, Toggle, getHighContrast, setHighContrast } from "@kenn-io/kit-ui";
   import { ChefHat, ClipboardPlus, House, Menu, ReceiptText } from "@lucide/svelte";
   import { onMount } from "svelte";
@@ -46,9 +49,9 @@
 
   const tabs = $derived(
     [
-      { id: "today" as Tab, label: "Today", icon: House },
-      { id: "log" as Tab, label: "Log check", icon: ClipboardPlus },
-      ...(canTakeOrders() ? [{ id: "order" as Tab, label: "New order", icon: ReceiptText }] : []),
+      { id: "today" as Tab, label: t("Today"), icon: House },
+      { id: "log" as Tab, label: t("Log check"), icon: ClipboardPlus },
+      ...(canTakeOrders() ? [{ id: "order" as Tab, label: t("New order"), icon: ReceiptText }] : []),
       { id: "pass" as Tab, label: "Pass", icon: ChefHat },
     ],
   );
@@ -99,11 +102,12 @@
         tone="warning"
         title="Not connected"
         message={live.lastSeen
-          ? `Showing what was on screen at ${dublinTime(live.lastSeen)}. Nothing can be saved until the connection is back.`
-          : "Cannot reach the Kishtin server. Nothing can be saved until the connection is back."}
+          ? `Showing what was on screen at ${dublinTime(live.lastSeen)}. A check can be kept on this device and sent when the connection is back; nothing else can be saved.`
+          : "Cannot reach the Kishtin server. A check can be kept on this device and sent when the connection is back; nothing else can be saved."}
       />
     </div>
   {/if}
+  <KeptChecks />
 
   <div class="voicebar">
     <VoiceBar big={screen.kind !== "phone"} touch keys wake />
@@ -155,9 +159,10 @@
   <Modal title="This screen" onclose={() => (menuOpen = false)} maxWidth="520px">
     <div class="stack menu">
       <div class="row between">
-        <span>Logged in as <strong>{session.user?.name}</strong></span>
-        <Button label="Switch staff" onclick={switchStaff} />
+        <span>{t("Logged in as")} <strong>{session.user?.name}</strong></span>
+        <Button label={t("Switch staff")} onclick={switchStaff} />
       </div>
+      <LanguagePicker />
       <ScreenPicker onchanged={() => (menuOpen = false)} />
       <div class="field">
         <span>Theme</span>

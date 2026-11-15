@@ -116,4 +116,10 @@ func (s *Server) recordingRoutes() {
 	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.CustomerDetailsResult], error) {
 		return reply(s.svc.ClearCustomerDetails(ctx, principal(ctx)))
 	}))
+	huma.Register(s.api, huma.Operation{
+		OperationID: "storage", Method: http.MethodGet, Path: "/storage", Tags: []string{"Settings"},
+		Summary: "How much disk space Kishtin's data takes and how much is left, with a warning when it is low",
+	}, wrap(s, func(ctx context.Context, _ *struct{}) (*out[service.Storage], error) {
+		return reply(s.svc.Storage(ctx, principal(ctx)))
+	}))
 }

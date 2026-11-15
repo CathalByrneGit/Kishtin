@@ -88,6 +88,7 @@ func (s *Service) ReportHACCP(ctx context.Context, p *auth.Principal, fromDay, t
 	return analytics.BuildHACCP(analytics.HACCPInput{
 		From: from, To: to, Loc: clock.Dublin, Now: s.clk.Now(), Since: since, Records: recs,
 		Units: lists.Value.Units, CleaningTasks: lists.Value.CleaningTasks, Limits: limits, CleaningDoneBefore: before,
+		Closed: lists.Value.Closed,
 	}), nil
 }
 

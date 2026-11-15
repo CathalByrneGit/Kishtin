@@ -74,6 +74,7 @@ type Service struct {
 	files   *files.Store
 	lockout *auth.Lockout
 	backups BackupConfig
+	storage StorageConfig
 	// systemDefaults are the system settings from kishtin.toml, used until
 	// a change is saved.
 	systemDefaults settings.System
@@ -108,6 +109,8 @@ type Options struct {
 	Clock   clock.Clock
 	Files   *files.Store
 	Backups BackupConfig
+	// Storage says where the data is kept, for the disk space warning.
+	Storage StorageConfig
 	// System is the starting system settings, from kishtin.toml.
 	System settings.System
 	// Events receives a notice of every change, for live screens.
@@ -177,7 +180,7 @@ func New(o Options) *Service {
 		sq.New = o.NewSquare
 	}
 	pos[TillSquare] = sq
-	return &Service{pos: pos, wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, systemDefaults: sys, events: o.Events, speech: o.Speech,
+	return &Service{pos: pos, wakeWords: wake, st: o.Store, clk: clk, files: o.Files, lockout: auth.NewLockout(), backups: o.Backups, storage: o.Storage, systemDefaults: sys, events: o.Events, speech: o.Speech,
 		creds: o.Credentials, ai: o.AI, fetch: o.Fetch, voiceAudioDir: o.VoiceAudioDir, tablets: o.Tablets, startup: o.Startup}
 }
 

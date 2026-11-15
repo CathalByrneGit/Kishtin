@@ -38,7 +38,7 @@ make test lint                # Go tests and golangci-lint
 make docs-serve               # this documentation, with live reload on :8000
 ```
 
-Go 1.27 or later and Bun 1.4.4. The rest of the commands are in [Building and developing Kishtin](docs/developers.md#development). [AGENTS.md](AGENTS.md) has the plan and the rules for contributors and coding agents. Tests, fixtures and docs use synthetic data only.
+Go 1.27.4 or later and Bun 1.4.4. The rest of the commands are in [Building and developing Kishtin](docs/developers.md#development). [AGENTS.md](AGENTS.md) has the plan and the rules for contributors and coding agents. Tests, fixtures and docs use synthetic data only.
 
 ## Security
 

@@ -371,6 +371,50 @@ func TestBackups(t *testing.T) {
 	require.Len(t, list, 2, "only the newest two are kept")
 	assert.Equal(t, last.Name, list[0].Name)
 	assert.Equal(t, last.SHA256, list[0].SHA256)
+	assert.Equal(t, BackupScheduled, list[0].Kind)
+	assert.True(t, list[0].Checked)
+	assert.True(t, list[0].Verified, "the list remembers what the check found")
+	assert.Equal(t, 1, list[0].Records)
+	assert.Equal(t, last.HeadHash, list[0].HeadHash)
+
+	// Backups made before an upgrade are listed, and not counted against
+	// the scheduled backups kept.
+	safety := SafetyBackupPath(filepath.Dir(last.Path), BackupBeforeUpgrade, f.clk.Now())
+	require.NoError(t, os.WriteFile(safety, []byte("x"), 0o600))
+	_, err = SealBackup(safety)
+	require.NoError(t, err)
+	_, err = f.svc.BackupNow(ctx, f.manager)
+	require.NoError(t, err)
+	list, err = f.svc.ListBackups(ctx, f.manager)
+	require.NoError(t, err)
+	require.Len(t, list, 3)
+	kinds := map[string]int{}
+	for _, b := range list {
+		kinds[b.Kind]++
+	}
+	assert.Equal(t, map[string]int{BackupScheduled: 2, BackupBeforeUpgrade: 1}, kinds)
+	ok, err := CheckBackupFile(safety)
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestBackupKeepsFiles(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	b, err := f.svc.BackupNow(ctx, f.manager)
+	require.NoError(t, err)
+	assert.Zero(t, b.Files)
+	tinyPNG := []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d, 'I', 'H', 'D', 'R', 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0}
+	_, err = f.svc.files.Put(bytes.NewReader(tinyPNG), 1<<20)
+	require.NoError(t, err)
+	f.clk.Advance(time.Hour)
+	b, err = f.svc.BackupNow(ctx, f.manager)
+	require.NoError(t, err)
+	assert.Equal(t, 1, b.Files)
+	assert.Equal(t, 1, b.FilesAdded)
+	entries, err := os.ReadDir(filepath.Join(filepath.Dir(b.Path), BackupFilesDir))
+	require.NoError(t, err)
+	assert.Len(t, entries, 1)
 }
 
 func TestUsers(t *testing.T) {

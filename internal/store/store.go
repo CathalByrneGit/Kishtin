@@ -86,6 +86,11 @@ type HACCPStore interface {
 	// EachRecord calls fn for every record in sequence order. It stops at
 	// the first error fn returns.
 	EachRecord(ctx context.Context, fn func(haccp.Record) error) error
+	// SaveClientID remembers the ID a device gave a record it sent, and
+	// RecordIDByClientID finds the record saved for one (ErrNotFound when
+	// there is none), so a check sent twice is saved once.
+	SaveClientID(ctx context.Context, clientID, recordID string, at time.Time) error
+	RecordIDByClientID(ctx context.Context, clientID string) (string, error)
 
 	AppendLimitVersion(ctx context.Context, lv haccp.LimitVersion) error
 	GetLimitVersion(ctx context.Context, id string) (haccp.LimitVersion, error)
@@ -353,4 +358,10 @@ type ActivityStore interface {
 	// ListPlanSnapshots returns snapshots between from and to (zero leaves
 	// that end open), oldest first, at most limit (0 means no cap).
 	ListPlanSnapshots(ctx context.Context, from, to time.Time, limit int) ([]PlanSnapshot, error)
+	// CountPlanSnapshotsBefore counts the snapshots kept before a time.
+	CountPlanSnapshotsBefore(ctx context.Context, before time.Time) (int, error)
+	// PurgePlanSnapshotsBefore removes every snapshot kept before a time,
+	// which must be more than 30 days ago, and returns how many. It is the
+	// one way kept plans are removed: a single snapshot cannot be.
+	PurgePlanSnapshotsBefore(ctx context.Context, before time.Time) (int, error)
 }

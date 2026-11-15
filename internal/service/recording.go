@@ -37,7 +37,7 @@ var ActivityKinds = []string{
 	ActivityLogin, ActivityLogout, ActivityScreenConnected, ActivityScreenDisconnected,
 	ActivitySoldOut, ActivityBackOn, ActivityHACCPEntered, ActivityStaffAnonymised, ActivitySetup, ActivityDevicePaired,
 	ActivityPasswordRecovered, ActivityStartupChanged, ActivityLearnedReset,
-	ActivityAllergensChanged, ActivityCustomerDetailsCleared,
+	ActivityAllergensChanged, ActivityCustomerDetailsCleared, ActivityPlansPurged,
 }
 
 // How a HACCP record was entered, kept in the activity log.
@@ -47,6 +47,9 @@ const (
 	SourceVoice   = "voice"
 	SourceCatchUp = "catch_up"
 	SourcePaper   = "paper"
+	// SourceOffline is a check kept on a device while Kishtin could not be
+	// reached, and sent when the connection came back.
+	SourceOffline = "offline"
 )
 
 type sourceKey struct{}

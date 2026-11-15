@@ -85,6 +85,7 @@ func New(svc *service.Service, log *slog.Logger, ui fs.FS) (*Server, error) {
 	s.specJSON = spec
 	mux.HandleFunc("GET /api/openapi.json", s.serveSpec)
 	mux.HandleFunc("GET /api/events", s.serveEvents)
+	mux.HandleFunc("GET /healthz", s.serveHealth)
 	s.joinRoutes()
 	if ui != nil {
 		mux.HandleFunc("GET /", s.serveUI)

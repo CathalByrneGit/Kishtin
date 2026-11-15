@@ -65,3 +65,33 @@ func TestOpenMissing(t *testing.T) {
 	_, err = s.Open(string(bytes.Repeat([]byte("a"), 64)))
 	assert.ErrorIs(t, err, ErrNotFound)
 }
+
+func TestMirrorAndRestore(t *testing.T) {
+	s, err := New(t.TempDir())
+	require.NoError(t, err)
+	saved, err := s.Put(bytes.NewReader(pngBytes), 1<<20)
+	require.NoError(t, err)
+
+	dest := filepath.Join(t.TempDir(), "files")
+	total, added, err := s.Mirror(dest)
+	require.NoError(t, err)
+	assert.Equal(t, 1, total)
+	assert.Equal(t, 1, added)
+	total, added, err = s.Mirror(dest)
+	require.NoError(t, err)
+	assert.Equal(t, 1, total)
+	assert.Zero(t, added, "a file already there is left alone")
+	_, err = os.Stat(filepath.Join(dest, "tmp"))
+	assert.True(t, os.IsNotExist(err), "only stored files are copied")
+
+	// A new, empty store gets the file back from the mirror.
+	fresh, err := New(t.TempDir())
+	require.NoError(t, err)
+	n, err := fresh.Restore(dest)
+	require.NoError(t, err)
+	assert.Equal(t, 1, n)
+	require.NoError(t, fresh.Verify(saved.SHA256))
+	n, err = fresh.Restore(filepath.Join(t.TempDir(), "missing"))
+	require.NoError(t, err)
+	assert.Zero(t, n, "a backup with no files folder restores none")
+}

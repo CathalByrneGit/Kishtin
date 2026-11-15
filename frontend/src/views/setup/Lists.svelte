@@ -4,6 +4,7 @@
     Card,
     Checkbox,
     Chip,
+    DatePicker,
     IconButton,
     Notice,
     SegmentedControl,
@@ -19,6 +20,7 @@
   import ReviewChanges, { type Preview } from "../../components/ReviewChanges.svelte";
   import { api, message, type Lists, type Schemas } from "../../lib/api";
   import { everyOptions } from "../../lib/cleaning";
+  import { shortDate } from "../../lib/format";
   import { LOGGABLE_TYPES, TYPE_LABELS, typeLabel } from "../../lib/labels";
   import { onChange } from "../../lib/live.svelte";
   import { can } from "../../lib/can.svelte";
@@ -33,6 +35,20 @@
   let tasks = $state<Schemas["CleaningTask"][]>([]);
   let categories = $state<string[]>([]);
   let actions = $state<Schemas["ActionPreset"][]>([]);
+  let closedWeekdays = $state<string[]>([]);
+  let closedDates = $state<Schemas["ClosedDate"][]>([]);
+  let newClosedFrom = $state("");
+  let newClosedTo = $state("");
+  let newClosedNote = $state("");
+  const WEEKDAYS = [
+    { key: "mon", label: "Monday" },
+    { key: "tue", label: "Tuesday" },
+    { key: "wed", label: "Wednesday" },
+    { key: "thu", label: "Thursday" },
+    { key: "fri", label: "Friday" },
+    { key: "sat", label: "Saturday" },
+    { key: "sun", label: "Sunday" },
+  ];
 
   let newUnit = $state("");
   let newUnitKind = $state("fridge");
@@ -54,6 +70,8 @@
       tasks: l.cleaning_tasks.map((t) => ({ ...t })),
       categories: [...l.food_categories],
       actions: (l.corrective_actions ?? []).map((a) => ({ ...a })),
+      closedWeekdays: WEEKDAYS.map((w) => w.key).filter((k) => (l.closed?.weekdays ?? []).includes(k)),
+      closedDates: (l.closed?.dates ?? []).map((d) => ({ ...d })),
     };
   }
 
@@ -64,6 +82,8 @@
     tasks = n.tasks;
     categories = n.categories;
     actions = n.actions;
+    closedWeekdays = n.closedWeekdays;
+    closedDates = n.closedDates;
   }
 
   async function load() {
@@ -87,7 +107,7 @@
   });
 
   const dirty = $derived(
-    lists !== null && JSON.stringify(normalise(lists)) !== JSON.stringify({ units, tasks, categories, actions }),
+    lists !== null && JSON.stringify(normalise(lists)) !== JSON.stringify({ units, tasks, categories, actions, closedWeekdays, closedDates }),
   );
 
   function addUnit() {
@@ -111,6 +131,21 @@
     newCategory = "";
   }
 
+  function toggleWeekday(key: string, on: boolean) {
+    const next = on ? [...closedWeekdays, key] : closedWeekdays.filter((k) => k !== key);
+    closedWeekdays = WEEKDAYS.map((w) => w.key).filter((k) => next.includes(k));
+  }
+
+  function addClosedDate() {
+    if (!newClosedFrom) return;
+    const to = newClosedTo && newClosedTo >= newClosedFrom ? newClosedTo : newClosedFrom;
+    closedDates.push({ from: newClosedFrom, to, ...(newClosedNote.trim() ? { note: newClosedNote.trim() } : {}) });
+    closedDates.sort((a, b) => a.from.localeCompare(b.from));
+    newClosedFrom = "";
+    newClosedTo = "";
+    newClosedNote = "";
+  }
+
   function addAction() {
     if (!newAction.trim()) return;
     actions.push({ type: newActionType, text: newAction.trim() });
@@ -119,7 +154,7 @@
 
   async function reviewChanges() {
     if (!lists) return;
-    const value: Lists = { ...lists, units, cleaning_tasks: tasks, food_categories: categories, corrective_actions: actions };
+    const value: Lists = { ...lists, units, cleaning_tasks: tasks, food_categories: categories, corrective_actions: actions, closed: { weekdays: closedWeekdays, dates: closedDates } };
     try {
       review = { preview: await api.previewLists({ value, reason: "" }), value };
     } catch (err) {
@@ -292,6 +327,37 @@
           {/if}
         </Card>
       </div>
+
+      <Card padding="md" title="Closed days" meta="No checks are due on a day the restaurant is closed, so none show as missed. A check logged on a closed day still counts.">
+        <div class="stack">
+          <div class="row">
+            {#each WEEKDAYS as w (w.key)}
+              <Checkbox checked={closedWeekdays.includes(w.key)} label={w.label} disabled={!canEdit} onchange={(on) => toggleWeekday(w.key, on)} />
+            {/each}
+          </div>
+          <span class="muted small">Tick the days closed every week. Add holidays and other closed dates below.</span>
+          <div class="row">
+            {#each closedDates as d, i (d.from + d.to)}
+              <Chip uppercase={false}>
+                {d.from === d.to ? shortDate(d.from) : `${shortDate(d.from)} to ${shortDate(d.to)}`}{d.note ? `: ${d.note}` : ""}
+                {#if canEdit}
+                  <button type="button" class="chip-x" aria-label={`Remove closed date ${d.from}`} onclick={() => closedDates.splice(i, 1)}><X size={12} /></button>
+                {/if}
+              </Chip>
+            {:else}
+              <span class="muted">No other closed dates.</span>
+            {/each}
+          </div>
+          {#if canEdit}
+            <div class="add inset">
+              <label class="field"><span>First day closed</span><DatePicker value={newClosedFrom} onchange={(d) => (newClosedFrom = d)} ariaLabel="First day closed" /></label>
+              <label class="field"><span>Last day closed (if more than one)</span><DatePicker value={newClosedTo} onchange={(d) => (newClosedTo = d)} ariaLabel="Last day closed" /></label>
+              <TextInput bind:value={newClosedNote} placeholder="Why, such as Christmas" ariaLabel="Why closed" />
+              <Button label="Add" onclick={addClosedDate} disabled={!newClosedFrom}><Plus size={16} /></Button>
+            </div>
+          {/if}
+        </div>
+      </Card>
 
       <Card padding="none">
           <div class="table-head"><h2>Quick-pick corrective actions</h2><span class="muted">Offered when a reading is not a pass. Staff can always write their own.</span></div>

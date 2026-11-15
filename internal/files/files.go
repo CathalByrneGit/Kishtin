@@ -145,3 +145,87 @@ func (s *Store) Verify(sha string) error {
 	}
 	return nil
 }
+
+// Mirror makes dest hold every stored file, laid out as the store is, and
+// returns how many it holds and how many it added. Files are named by their
+// content, so one already there is left alone. A file is hard-linked when
+// dest is on the same disk, which takes no extra space, and copied
+// otherwise.
+func (s *Store) Mirror(dest string) (total, added int, err error) {
+	return mirror(s.root, dest)
+}
+
+// Restore copies into the store every file in a mirror that the store does
+// not have, and returns how many it added.
+func (s *Store) Restore(src string) (added int, err error) {
+	if _, err := os.Stat(src); errors.Is(err, os.ErrNotExist) {
+		return 0, nil
+	}
+	_, added, err = mirror(src, s.root)
+	return added, err
+}
+
+func mirror(src, dest string) (total, added int, err error) {
+	dirs, err := os.ReadDir(src)
+	if err != nil {
+		return 0, 0, fmt.Errorf("read %s: %w", src, err)
+	}
+	for _, d := range dirs {
+		if !d.IsDir() || len(d.Name()) != 2 {
+			continue
+		}
+		entries, err := os.ReadDir(filepath.Join(src, d.Name()))
+		if err != nil {
+			return total, added, fmt.Errorf("read %s: %w", filepath.Join(src, d.Name()), err)
+		}
+		for _, e := range entries {
+			if e.IsDir() || !ValidHash(e.Name()) {
+				continue
+			}
+			total++
+			to := filepath.Join(dest, d.Name(), e.Name())
+			if _, err := os.Stat(to); err == nil {
+				continue
+			}
+			if err := os.MkdirAll(filepath.Dir(to), 0o750); err != nil {
+				return total, added, fmt.Errorf("create %s: %w", filepath.Dir(to), err)
+			}
+			from := filepath.Join(src, d.Name(), e.Name())
+			if err := linkOrCopy(from, to); err != nil {
+				return total, added, err
+			}
+			added++
+		}
+	}
+	return total, added, nil
+}
+
+func linkOrCopy(from, to string) error {
+	if err := os.Link(from, to); err == nil {
+		return nil
+	}
+	in, err := os.Open(from)
+	if err != nil {
+		return fmt.Errorf("copy %s: %w", from, err)
+	}
+	defer in.Close()
+	tmp := to + ".part"
+	out, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o440)
+	if err != nil {
+		return fmt.Errorf("copy to %s: %w", to, err)
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		os.Remove(tmp)
+		return fmt.Errorf("copy to %s: %w", to, err)
+	}
+	if err := out.Close(); err != nil {
+		os.Remove(tmp)
+		return fmt.Errorf("copy to %s: %w", to, err)
+	}
+	if err := os.Rename(tmp, to); err != nil {
+		os.Remove(tmp)
+		return fmt.Errorf("copy to %s: %w", to, err)
+	}
+	return nil
+}

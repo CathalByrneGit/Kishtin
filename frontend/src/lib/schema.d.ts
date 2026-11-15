@@ -725,6 +725,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/haccp/records/{id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A batch label record as a label to print (PDF)
+         * @description The product, when it was made, its use-by date, who made it and the record number, on a page the size of the label. Sizes: 62x29 (default) and 100x50 millimetres for a label printer, or a4 for one label on an A4 page to cut out.
+         */
+        get: operations["batch-label-pdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/haccp/sign-offs": {
         parameters: {
             query?: never;
@@ -1999,6 +2019,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How much disk space Kishtin's data takes and how much is left, with a warning when it is low */
+        get: operations["storage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tills/{till}": {
         parameters: {
             query?: never;
@@ -2384,7 +2421,13 @@ export interface components {
             available: boolean;
         };
         Backup: {
+            checked: boolean;
+            /** Format: int64 */
+            files: number;
+            /** Format: int64 */
+            files_added: number;
             head_hash: string;
+            kind: string;
             name: string;
             path: string;
             /** Format: int64 */
@@ -2544,6 +2587,15 @@ export interface components {
             record?: components["schemas"]["Record"];
             schedule?: components["schemas"]["TaskSchedule"];
             task: string;
+        };
+        ClosedDate: {
+            from: string;
+            note?: string;
+            to: string;
+        };
+        ClosedDays: {
+            dates: components["schemas"]["ClosedDate"][];
+            weekdays: string[];
         };
         CollectionBoard: {
             preparing: components["schemas"]["CollectionOrder"][];
@@ -3158,6 +3210,7 @@ export interface components {
         };
         Lists: {
             cleaning_tasks: components["schemas"]["CleaningTask"][];
+            closed?: components["schemas"]["ClosedDays"];
             corrective_actions?: components["schemas"]["ActionPreset"][];
             food_categories: string[];
             units: components["schemas"]["Unit"][];
@@ -3285,6 +3338,7 @@ export interface components {
             table?: string;
         };
         NewRecord: {
+            client_id?: string;
             correction_reason?: string;
             corrective_action?: string;
             corrects?: string;
@@ -3842,6 +3896,22 @@ export interface components {
             name: string;
             station_id: string;
         };
+        Storage: {
+            /** Format: int64 */
+            backups_bytes: number;
+            /** Format: int64 */
+            database_bytes: number;
+            /** Format: int64 */
+            files_bytes: number;
+            /** Format: int64 */
+            free_bytes: number;
+            level: string;
+            /** Format: int64 */
+            plan_snapshots: number;
+            /** Format: int64 */
+            total_bytes: number;
+            warning?: string;
+        };
         Suggestion: {
             booklet: string;
             checklist?: components["schemas"]["ChecklistSection"][];
@@ -3877,6 +3947,8 @@ export interface components {
             customer_details_days: number;
             /** Format: int64 */
             max_upload_mb: number;
+            /** Format: int64 */
+            plan_snapshot_days: number;
             /** Format: int64 */
             preview_records: number;
             restaurant_name: string;
@@ -3959,6 +4031,7 @@ export interface components {
         TodayView: {
             batches: components["schemas"]["BatchToday"][];
             cleaning: components["schemas"]["CleaningToday"][];
+            closed?: boolean;
             corrective_actions: components["schemas"]["ActionPreset"][];
             date: string;
             /** Format: int64 */
@@ -3971,6 +4044,7 @@ export interface components {
             restaurant_name: string;
             ring: string;
             sign_off: components["schemas"]["SignOffStatus"];
+            storage_warning?: string;
             /** Format: int64 */
             total: number;
             units: components["schemas"]["UnitToday"][];
@@ -5474,6 +5548,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Record"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "batch-label-pdf": {
+        parameters: {
+            query?: {
+                /** @description 62x29, 100x50 or a4. */
+                size?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The label. */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    "Content-Type"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
             /** @description Error */
@@ -7953,6 +8063,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StartupStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    storage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Storage"];
                 };
             };
             /** @description Error */

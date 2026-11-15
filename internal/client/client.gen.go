@@ -202,6 +202,10 @@ type ClientInterface interface {
 	GetRecord(ctx context.Context, options *GetRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordResponse, error)
 	GetRecordWithResponse(ctx context.Context, options *GetRecordRequestOptions, reqEditors ...runtime.RequestEditorFn) (*GetRecordResp, error)
 
+	// BatchLabelPdf A batch label record as a label to print (PDF)
+	BatchLabelPdf(ctx context.Context, options *BatchLabelPdfRequestOptions, reqEditors ...runtime.RequestEditorFn) (*BatchLabelPdfResponse, error)
+	BatchLabelPdfWithResponse(ctx context.Context, options *BatchLabelPdfRequestOptions, reqEditors ...runtime.RequestEditorFn) (*BatchLabelPdfResp, error)
+
 	// SignOff Sign off the HACCP records for a period (manager password)
 	SignOff(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResponse, error)
 	SignOffWithResponse(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResp, error)
@@ -513,6 +517,10 @@ type ClientInterface interface {
 	// SetStartup Turn Kishtin starting with this computer on or off
 	SetStartup(ctx context.Context, options *SetStartupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetStartupResponse, error)
 	SetStartupWithResponse(ctx context.Context, options *SetStartupRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SetStartupResp, error)
+
+	// Storage How much disk space Kishtin's data takes and how much is left, with a warning when it is low
+	Storage(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*StorageResponse, error)
+	StorageWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*StorageResp, error)
 
 	// TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
 	TillStatus(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResponse, error)
@@ -3193,6 +3201,60 @@ func (c *Client) GetRecord(ctx context.Context, options *GetRecordRequestOptions
 	}
 
 	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/records/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
+// BatchLabelPdf A batch label record as a label to print (PDF)
+func (c *Client) BatchLabelPdf(ctx context.Context, options *BatchLabelPdfRequestOptions, reqEditors ...runtime.RequestEditorFn) (*BatchLabelPdfResponse, error) {
+	var err error
+
+	queryEncoding := map[string]runtime.QueryEncoding{
+		"size": {Style: "form", Explode: &[]bool{false}[0]},
+	}
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL:    c.apiClient.GetBaseURL() + "/haccp/records/{id}/label",
+		Method:        "GET",
+		Options:       options,
+		QueryEncoding: queryEncoding,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*BatchLabelPdfResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(BatchLabelPdfErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "BatchLabelPdfErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		result := BatchLabelPdfResponse(bodyBytes)
+		return &result, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/records/{id}/label")
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %w", err)
 	}
@@ -8139,6 +8201,68 @@ func (c *Client) SetStartup(ctx context.Context, options *SetStartupRequestOptio
 	return responseParser(ctx, resp)
 }
 
+// Storage How much disk space Kishtin's data takes and how much is left, with a warning when it is low
+func (c *Client) Storage(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*StorageResponse, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/storage",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*StorageResponse, error) {
+		bodyBytes := resp.Content
+		if resp.StatusCode != 200 {
+			target := new(StorageErrorResponse)
+			// Handle empty error response body gracefully - skip unmarshal if no content
+			if len(bodyBytes) > 0 {
+				if err = json.Unmarshal(bodyBytes, target); err != nil {
+					return nil, &runtime.ResponseDecodeError{
+						StatusCode:    resp.StatusCode,
+						ContentType:   resp.Headers.Get("Content-Type"),
+						ContentLength: len(bodyBytes),
+						TargetType:    "StorageErrorResponse",
+						Body:          bodyBytes,
+						Err:           err,
+					}
+				}
+			}
+			// Return error with (possibly empty) target
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
+		}
+		target := new(StorageResponse)
+		// Handle empty response body gracefully
+		if len(bodyBytes) == 0 {
+			return target, nil
+		}
+		if err = json.Unmarshal(bodyBytes, target); err != nil {
+			return nil, &runtime.ResponseDecodeError{
+				StatusCode:    resp.StatusCode,
+				ContentType:   resp.Headers.Get("Content-Type"),
+				ContentLength: len(bodyBytes),
+				TargetType:    "StorageResponse",
+				Body:          bodyBytes,
+				Err:           err,
+			}
+		}
+		return target, nil
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/storage")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	return responseParser(ctx, resp)
+}
+
 // TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
 func (c *Client) TillStatus(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResponse, error) {
 	var err error
@@ -10465,6 +10589,59 @@ func (o *GetRecordRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *GetRecordRequestOptions) GetHeader() (map[string]string, error) {
+	return nil, nil
+}
+
+// BatchLabelPdfRequestOptions is the options needed to make a request to BatchLabelPdf.
+type BatchLabelPdfRequestOptions struct {
+	PathParams *BatchLabelPdfPath
+	Query      *BatchLabelPdfQuery
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *BatchLabelPdfRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if o.PathParams != nil {
+		if v, ok := any(o.PathParams).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("PathParams", err)
+			}
+		}
+	}
+
+	if o.Query != nil {
+		if v, ok := any(o.Query).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Query", err)
+			}
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *BatchLabelPdfRequestOptions) GetPathParams() (map[string]any, error) {
+	return runtime.AsMap[any](o.PathParams)
+}
+
+// GetQuery returns the query params as a map.
+func (o *BatchLabelPdfRequestOptions) GetQuery() (map[string]any, error) {
+	return runtime.AsMap[any](o.Query)
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *BatchLabelPdfRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *BatchLabelPdfRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
@@ -15991,6 +16168,57 @@ func (c *Client) GetRecordWithResponse(ctx context.Context, options *GetRecordRe
 	}
 }
 
+// BatchLabelPdf A batch label record as a label to print (PDF)
+func (c *Client) BatchLabelPdfWithResponse(ctx context.Context, options *BatchLabelPdfRequestOptions, reqEditors ...runtime.RequestEditorFn) (*BatchLabelPdfResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/haccp/records/{id}/label",
+		Method:     "GET",
+		Options:    options,
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/haccp/records/{id}/label")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &BatchLabelPdfResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.Headers200 = &BatchLabelPdfResp200Headers{
+			ContentDisposition: resp.Headers.Get("Content-Disposition"),
+			ContentType:        resp.Headers.Get("Content-Type"),
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(BatchLabelPdfErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "BatchLabelPdfErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // SignOff Sign off the HACCP records for a period (manager password)
 func (c *Client) SignOffWithResponse(ctx context.Context, options *SignOffRequestOptions, reqEditors ...runtime.RequestEditorFn) (*SignOffResp, error) {
 	var err error
@@ -20746,6 +20974,66 @@ func (c *Client) SetStartupWithResponse(ctx context.Context, options *SetStartup
 	}
 }
 
+// Storage How much disk space Kishtin's data takes and how much is left, with a warning when it is low
+func (c *Client) StorageWithResponse(ctx context.Context, reqEditors ...runtime.RequestEditorFn) (*StorageResp, error) {
+	var err error
+	reqParams := runtime.RequestOptionsParameters{
+		RequestURL: c.apiClient.GetBaseURL() + "/storage",
+		Method:     "GET",
+	}
+
+	req, err := c.apiClient.CreateRequest(ctx, reqParams, reqEditors...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	resp, err := c.apiClient.ExecuteRequest(ctx, req, "/storage")
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+
+	out := &StorageResp{
+		HTTPResponse: resp.Raw,
+		Body:         resp.Content,
+		StatusCode:   resp.StatusCode,
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		out.JSON200 = new(StorageResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.JSON200); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "StorageResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, nil
+	default:
+		out.ApplicationProblemPlusJSONDefault = new(StorageErrorResponse)
+		bodyBytes := resp.Content
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, out.ApplicationProblemPlusJSONDefault); err != nil {
+				return out, &runtime.ResponseDecodeError{
+					StatusCode:    resp.StatusCode,
+					ContentType:   resp.Headers.Get("Content-Type"),
+					ContentLength: len(bodyBytes),
+					TargetType:    "StorageErrorResponse",
+					Body:          bodyBytes,
+					Err:           err,
+				}
+			}
+		}
+		return out, runtime.NewClientAPIError(fmt.Errorf("API error (status %d)", resp.StatusCode), runtime.WithStatusCode(resp.StatusCode))
+	}
+}
+
 // TillStatus Show whether order import from a till is on and working, recent till orders, and mappings
 func (c *Client) TillStatusWithResponse(ctx context.Context, options *TillStatusRequestOptions, reqEditors ...runtime.RequestEditorFn) (*TillStatusResp, error) {
 	var err error
@@ -22206,6 +22494,14 @@ func (g GetRecordPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(g))
 }
 
+type BatchLabelPdfPath struct {
+	ID string `json:"id" validate:"required"`
+}
+
+func (b BatchLabelPdfPath) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(b))
+}
+
 type RevokeKeyPath struct {
 	ID string `json:"id" validate:"required"`
 }
@@ -22801,6 +23097,11 @@ func (l ListRecordsQuery) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(l))
 }
 
+type BatchLabelPdfQuery struct {
+	// Size 62x29, 100x50 or a4.
+	Size *string `json:"size,omitempty"`
+}
+
 type PreviewSignOffQuery struct {
 	// From First day, Dublin time. Leave out to start the day after the last sign-off.
 	From *string `json:"from,omitempty"`
@@ -23034,6 +23335,10 @@ type LogRecordErrorResponse = ErrorModel
 type GetRecordResponse = Record
 
 type GetRecordErrorResponse = ErrorModel
+
+type BatchLabelPdfResponse = []byte
+
+type BatchLabelPdfErrorResponse = ErrorModel
 
 type SignOffResponse = Record
 
@@ -23344,6 +23649,10 @@ type GetStartupErrorResponse = ErrorModel
 type SetStartupResponse = StartupStatus
 
 type SetStartupErrorResponse = ErrorModel
+
+type StorageResponse = Storage
+
+type StorageErrorResponse = ErrorModel
 
 type TillStatusResponse = TillStatus
 
@@ -23776,6 +24085,19 @@ type GetRecordResp struct {
 	StatusCode                        int
 	JSON200                           *GetRecordResponse
 	ApplicationProblemPlusJSONDefault *GetRecordErrorResponse
+}
+
+type BatchLabelPdfResp200Headers struct {
+	ContentDisposition string `header:"Content-Disposition"`
+	ContentType        string `header:"Content-Type"`
+}
+
+type BatchLabelPdfResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	Headers200                        *BatchLabelPdfResp200Headers
+	ApplicationProblemPlusJSONDefault *BatchLabelPdfErrorResponse
 }
 
 type SignOffResp struct {
@@ -24401,6 +24723,14 @@ type SetStartupResp struct {
 	ApplicationProblemPlusJSONDefault *SetStartupErrorResponse
 }
 
+type StorageResp struct {
+	HTTPResponse                      *http.Response
+	Body                              []byte
+	StatusCode                        int
+	JSON200                           *StorageResponse
+	ApplicationProblemPlusJSONDefault *StorageErrorResponse
+}
+
 type TillStatusResp struct {
 	HTTPResponse                      *http.Response
 	Body                              []byte
@@ -24797,14 +25127,18 @@ type AvailabilityBody struct {
 }
 
 type Backup struct {
-	HeadHash string    `json:"head_hash" validate:"required"`
-	Name     string    `json:"name" validate:"required"`
-	Path     string    `json:"path" validate:"required"`
-	Records  int64     `json:"records"`
-	Sha256   string    `json:"sha256" validate:"required"`
-	Size     int64     `json:"size"`
-	TakenAt  time.Time `json:"taken_at" validate:"required"`
-	Verified bool      `json:"verified"`
+	Checked    bool      `json:"checked"`
+	Files      int64     `json:"files"`
+	FilesAdded int64     `json:"files_added"`
+	HeadHash   string    `json:"head_hash" validate:"required"`
+	Kind       string    `json:"kind" validate:"required"`
+	Name       string    `json:"name" validate:"required"`
+	Path       string    `json:"path" validate:"required"`
+	Records    int64     `json:"records"`
+	Sha256     string    `json:"sha256" validate:"required"`
+	Size       int64     `json:"size"`
+	TakenAt    time.Time `json:"taken_at" validate:"required"`
+	Verified   bool      `json:"verified"`
 }
 
 func (b Backup) Validate() error {
@@ -25356,6 +25690,42 @@ func (c CleaningToday) Validate() error {
 	}
 	if err := typesValidator.Var(c.Task, "required"); err != nil {
 		errors = errors.Append("Task", err)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
+
+type ClosedDate struct {
+	From string  `json:"from" validate:"required"`
+	Note *string `json:"note,omitempty"`
+	To   string  `json:"to" validate:"required"`
+}
+
+func (c ClosedDate) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(c))
+}
+
+type ClosedDays struct {
+	Dates    []ClosedDate `json:"dates" validate:"required"`
+	Weekdays []string     `json:"weekdays" validate:"required"`
+}
+
+func (c ClosedDays) Validate() error {
+	var errors runtime.ValidationErrors
+	if err := typesValidator.Var(c.Dates, "required"); err != nil {
+		errors = errors.Append("Dates", err)
+	}
+	for i, item := range c.Dates {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append(fmt.Sprintf("Dates[%d]", i), err)
+			}
+		}
+	}
+	if err := typesValidator.Var(c.Weekdays, "required"); err != nil {
+		errors = errors.Append("Weekdays", err)
 	}
 	if len(errors) == 0 {
 		return nil
@@ -26980,6 +27350,7 @@ func (l Limits) Validate() error {
 
 type Lists struct {
 	CleaningTasks     []CleaningTask `json:"cleaning_tasks" validate:"required"`
+	Closed            *ClosedDays    `json:"closed,omitempty"`
 	CorrectiveActions []ActionPreset `json:"corrective_actions,omitempty"`
 	FoodCategories    []string       `json:"food_categories" validate:"required"`
 	Units             []Unit         `json:"units" validate:"required"`
@@ -26994,6 +27365,13 @@ func (l Lists) Validate() error {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
 				errors = errors.Append(fmt.Sprintf("CleaningTasks[%d]", i), err)
+			}
+		}
+	}
+	if l.Closed != nil {
+		if v, ok := any(l.Closed).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				errors = errors.Append("Closed", err)
 			}
 		}
 	}
@@ -27384,6 +27762,7 @@ func (n NewOrder) Validate() error {
 }
 
 type NewRecord struct {
+	ClientID         *string `json:"client_id,omitempty" validate:"omitempty,max=64"`
 	CorrectionReason *string `json:"correction_reason,omitempty"`
 	CorrectiveAction *string `json:"corrective_action,omitempty"`
 	Corrects         *string `json:"corrects,omitempty"`
@@ -27393,6 +27772,11 @@ type NewRecord struct {
 
 func (n NewRecord) Validate() error {
 	var errors runtime.ValidationErrors
+	if n.ClientID != nil {
+		if err := typesValidator.Var(n.ClientID, "omitempty,max=64"); err != nil {
+			errors = errors.Append("ClientID", err)
+		}
+	}
 	if v, ok := any(n.Reading).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
 			errors = errors.Append("Reading", err)
@@ -29241,6 +29625,21 @@ func (s StationPlan) Validate() error {
 	return errors
 }
 
+type Storage struct {
+	BackupsBytes  int64   `json:"backups_bytes"`
+	DatabaseBytes int64   `json:"database_bytes"`
+	FilesBytes    int64   `json:"files_bytes"`
+	FreeBytes     int64   `json:"free_bytes" validate:"gte=0"`
+	Level         string  `json:"level" validate:"required"`
+	PlanSnapshots int64   `json:"plan_snapshots"`
+	TotalBytes    int64   `json:"total_bytes" validate:"gte=0"`
+	Warning       *string `json:"warning,omitempty"`
+}
+
+func (s Storage) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(s))
+}
+
 type Suggestion struct {
 	Booklet   string             `json:"booklet" validate:"required"`
 	Checklist []ChecklistSection `json:"checklist,omitempty"`
@@ -29303,6 +29702,7 @@ type System struct {
 	BackupKeep            int64  `json:"backup_keep"`
 	CustomerDetailsDays   int64  `json:"customer_details_days"`
 	MaxUploadMb           int64  `json:"max_upload_mb"`
+	PlanSnapshotDays      int64  `json:"plan_snapshot_days"`
 	PreviewRecords        int64  `json:"preview_records"`
 	RestaurantName        string `json:"restaurant_name" validate:"required"`
 	VoiceAudioDays        int64  `json:"voice_audio_days"`
@@ -29535,6 +29935,7 @@ type Timing struct {
 type TodayView struct {
 	Batches           []BatchToday    `json:"batches" validate:"required"`
 	Cleaning          []CleaningToday `json:"cleaning" validate:"required"`
+	Closed            *bool           `json:"closed,omitempty"`
 	CorrectiveActions []ActionPreset  `json:"corrective_actions" validate:"required"`
 	Date              string          `json:"date" validate:"required"`
 	Done              int64           `json:"done"`
@@ -29544,6 +29945,7 @@ type TodayView struct {
 	RestaurantName    string          `json:"restaurant_name" validate:"required"`
 	Ring              string          `json:"ring" validate:"required"`
 	SignOff           SignOffStatus   `json:"sign_off"`
+	StorageWarning    *string         `json:"storage_warning,omitempty"`
 	Total             int64           `json:"total"`
 	Units             []UnitToday     `json:"units" validate:"required"`
 	WithoutAction     int64           `json:"without_action"`

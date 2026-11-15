@@ -36,6 +36,18 @@ Temperatures are compared to 0.1°C. A reading exactly on the limit passes. Frid
 
 A **fail** always needs a corrective action before it can be saved. A **borderline** record needs one too, unless the food-safety rules say otherwise (see [settings.md](settings.md#food-safety-rules)). Each record stores the rules version that applied. Check a reading first, without saving, with `kishtin haccp log … --dry-run` or `POST /api/haccp/check`.
 
+## Closed days
+
+No checks are due on a day the restaurant is closed. Set them in **Setup › Food safety › Fridges and tasks › Closed days**: tick the days closed every week, and add holidays and other closed dates (one day or a run of days, with a note such as "Christmas").
+
+- On a closed day, **Today** says "Closed today" and shows each check as Closed, not Due or Missed.
+- The record books print "closed" for a check with no reading, the HACCP report does not count it as missed, and **Catch up** does not list it.
+- A check logged on a closed day still counts and prints as usual. Fridges keep running when you are closed: if your HACCP plan says to check them anyway, leave the day open or log the checks.
+- It applies to past days too, because it only changes what counts as missed. No record changes. A period a manager already signed off keeps the counts it was signed with.
+- Like the other lists, the change is previewed, needs a reason and a manager, and is versioned.
+
+Weekly and longer cleaning tasks still fall due on their day; do them on the next open day.
+
 ## Checks logged later
 
 Kitchens do not always log a check the moment it is done. Any record can say when its check was done and who did it:
@@ -54,6 +66,36 @@ A correction keeps the time of the record it corrects, unless it gives a differe
 
 Records brought in from paper keep the photo of the page, when the check was done and the name written on the paper. See [record-books.md](record-books.md#bringing-in-paper-records).
 
+
+## Logging without a connection
+
+Wi-Fi drops in walk-in fridges and cellars. When a tablet or phone cannot reach the Kishtin computer, the log form says **Not connected to Kishtin** and offers **Keep on this device** in place of **Save record**.
+
+- The check is kept on that device, with the time it was done. A banner on every screen says how many checks are kept **and not in Kishtin yet**. A kept check is not a HACCP record until Kishtin has saved it.
+- When the connection is back and the person who kept it is logged in on that device, it is sent by itself (or tap **Send to Kishtin now**). It is saved as a normal record, at the time the check was done, in that person's name. The activity log notes it was entered `offline`.
+- Kishtin cannot check a reading against its limit while out of reach. The form asks what you did if the reading is out of limit. If Kishtin finds the reading failed and no action was given, it does not save it: the banner shows why, and you add the action there and send again.
+- A check sent twice (the tablet never heard back the first time) is saved once.
+- Only the person who kept a check sends it, so the record shows who did it. If someone else is logged in, the banner names who must log in.
+- A device keeps at most 200 checks. Clearing the browser's data loses kept checks, as does a private browsing window when it is closed: send them first.
+
+Not kept offline: corrections, a delivery's docket photo, and fitness to work (health information stays off the device). Orders, the pass and settings need the connection.
+
+Once a device has opened Kishtin with a connection, it can open it again without one, so the form is there when needed.
+
+## Printing batch labels
+
+A batch label record prints as a label to stick on the tub. Tap **Print label** beside a batch in **Today › Batches in use**, or on a batch label in **Records**.
+
+The label shows the product, the day it was made, **USE BY** and its date in large type, who made it, and the record number, so a tub can be traced back to its record.
+
+Choose the size next to the button; the device remembers it:
+
+- **62 × 29 mm** and **100 × 50 mm**, for a label printer. The page is exactly the size of the label.
+- **A4 page, to cut out**, for an ordinary printer: one label at the top of the page with a line to cut along.
+
+The label opens as a PDF in a new tab; print it from there. The label printer must already be set up on that device: Kishtin does not find or set up printers. `kishtin haccp label ID -o label.pdf --size 62x29`, or `GET /api/haccp/records/{id}/label?size=62x29`.
+
+The label is a copy of the record. If the record was wrong, correct it and print the correction's label.
 
 ## Weekly and longer tasks
 

@@ -108,6 +108,7 @@ Dishes are not listed yet; they come with the menu (roadmap stage 2).
 | `max_upload_mb` | 15 | Largest docket or invoice file accepted (1–100). |
 | `preview_records` | 50 | How many recent records a limit preview re-scores (1–500). |
 | `voice_audio_days` | 0 | How many days recordings of spoken voice commands are kept on the server, then deleted (0–365). 0 keeps none. See [recording.md](recording.md#voice). |
+| `plan_snapshot_days` | 0 | How many days kept scheduler plans are kept before they are removed to save disk space (30–3650). 0 keeps them all. Pass-time reports for days removed can no longer say why courses were late. |
 | `customer_details_days` | 30 | How many days after an order closes its customer's name and notes are kept, then cleared (0–2600). 0 keeps them. See [recording.md](recording.md#customers-names-and-order-notes). |
 
 ![Settings](screenshots/settings.png)

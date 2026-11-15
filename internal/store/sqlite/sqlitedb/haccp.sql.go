@@ -476,6 +476,17 @@ func (q *Queries) ListRecordsOldest(ctx context.Context, arg ListRecordsOldestPa
 	return items, nil
 }
 
+const recordIDByClientID = `-- name: RecordIDByClientID :one
+SELECT record_id FROM haccp_client_ids WHERE client_id = ?
+`
+
+func (q *Queries) RecordIDByClientID(ctx context.Context, clientID string) (string, error) {
+	row := q.db.QueryRowContext(ctx, recordIDByClientID, clientID)
+	var record_id string
+	err := row.Scan(&record_id)
+	return record_id, err
+}
+
 const recordsAfterSeq = `-- name: RecordsAfterSeq :many
 SELECT id, seq, type, logged_by, logged_by_name, logged_at, reading, outcome, outcome_reason, limit_version_id, limit_scope, corrective_action, corrects, correction_reason, prev_hash, hash, rules_version_id, done_at FROM haccp_records WHERE seq > ? ORDER BY seq LIMIT ?
 `
@@ -525,4 +536,19 @@ func (q *Queries) RecordsAfterSeq(ctx context.Context, arg RecordsAfterSeqParams
 		return nil, err
 	}
 	return items, nil
+}
+
+const saveClientID = `-- name: SaveClientID :exec
+INSERT INTO haccp_client_ids (client_id, record_id, at) VALUES (?, ?, ?)
+`
+
+type SaveClientIDParams struct {
+	ClientID string
+	RecordID string
+	At       int64
+}
+
+func (q *Queries) SaveClientID(ctx context.Context, arg SaveClientIDParams) error {
+	_, err := q.db.ExecContext(ctx, saveClientID, arg.ClientID, arg.RecordID, arg.At)
+	return err
 }

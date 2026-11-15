@@ -120,6 +120,9 @@ type Input struct {
 	// Roles are staff members' roles by name, for a training record's
 	// "Position".
 	Roles map[string]string
+	// Closed are the days the restaurant is closed: a check with no reading
+	// on one prints "closed", not "missed".
+	Closed haccp.ClosedDays
 }
 
 // Build fills in a record book for a month.
@@ -426,6 +429,10 @@ func (b *builder) gridPage(units []gridUnit) Page {
 					for si, ch := range u.checks {
 						if e, ok := latest[slotKey{ui, d, si}]; ok {
 							row.Cells = append(row.Cells, Cell{Text: temp(e.Reading.TempC), Flag: flag(e.Outcome)})
+							continue
+						}
+						if u.listed && b.in.Closed.On(dayStart.Format(haccp.DateLayout)) {
+							row.Cells = append(row.Cells, Cell{Text: "closed"})
 							continue
 						}
 						if u.listed && b.missed(dayStart, u.checks, si) {

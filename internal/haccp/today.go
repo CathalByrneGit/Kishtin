@@ -11,6 +11,8 @@ const (
 	SlotDone   = "done"
 	SlotDue    = "due"
 	SlotMissed = "missed"
+	// SlotClosed is a check on a day the restaurant is closed: not due.
+	SlotClosed = "closed"
 )
 
 // Ring states for the day's compliance ring.
@@ -73,7 +75,10 @@ type BatchToday struct {
 // limit.
 type Today struct {
 	// Date is today's local date.
-	Date     string          `json:"date"`
+	Date string `json:"date"`
+	// Closed is true when the restaurant is closed today: no checks are
+	// due, and only checks logged anyway are counted.
+	Closed   bool            `json:"closed,omitempty"`
 	Units    []UnitToday     `json:"units"`
 	Cleaning []CleaningToday `json:"cleaning"`
 	Done     int             `json:"done"`
@@ -178,7 +183,8 @@ func BuildToday(in TodayInput) Today {
 	now := in.Now.In(loc)
 	nowMin := now.Hour()*60 + now.Minute()
 	day := now.Format(DateLayout)
-	t := Today{Date: day, Units: []UnitToday{}, Cleaning: []CleaningToday{}, NeedsAttention: []Record{}, Batches: []BatchToday{}}
+	closed := in.Lists.Closed.On(day)
+	t := Today{Date: day, Closed: closed, Units: []UnitToday{}, Cleaning: []CleaningToday{}, NeedsAttention: []Record{}, Batches: []BatchToday{}}
 
 	recs := ApplyCorrections(in.Records)
 
@@ -211,12 +217,17 @@ func BuildToday(in TodayInput) Today {
 					st.Status = SlotMissed
 				}
 			}
+			if closed {
+				st.Status = SlotClosed
+			}
 			if latest[i] != nil {
 				rec := latest[i].Record
 				st.Status, st.Record = SlotDone, &rec
 				t.Done++
 			}
-			t.Total++
+			if st.Status != SlotClosed {
+				t.Total++
+			}
 			ut.Slots = append(ut.Slots, st)
 		}
 		t.Units = append(t.Units, ut)
@@ -246,7 +257,10 @@ func BuildToday(in TodayInput) Today {
 		if c.Record != nil {
 			t.Done++
 		}
-		t.Total++
+		// On a closed day a daily task is not due; one done anyway counts.
+		if !closed || c.Record != nil || !ct.Daily() {
+			t.Total++
+		}
 		t.Cleaning = append(t.Cleaning, c)
 	}
 

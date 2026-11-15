@@ -204,6 +204,15 @@ func TestUnitGridPages(t *testing.T) {
 	assert.Len(t, b.Pages[1].Rows, 28, "February 2026")
 	assert.Equal(t, "Close", b.Pages[1].Columns[5].Label)
 	assert.Len(t, b.Gaps, 8*2*28+28, "every check in February was missed")
+
+	// Closed on Mondays and for the week of the 9th: 4 Mondays plus 6 more
+	// days print "closed" and are not missed.
+	closed := haccp.ClosedDays{Weekdays: []string{"mon"}, Dates: []haccp.ClosedDate{{From: "2026-02-09", To: "2026-02-15"}}}
+	b, err = Build(Input{Template: tpl, Bundle: bundle, Year: 2026, Month: time.February, Loc: dublin, Now: on(1, 0, 0), Units: units, Closed: closed})
+	require.NoError(t, err)
+	assert.Len(t, b.Gaps, (8*2+1)*(28-10))
+	assert.Equal(t, Cell{Text: "closed"}, b.Pages[0].Rows[1].Cells[1], "Monday 2 February")
+	assert.Equal(t, FlagMissed, b.Pages[0].Rows[2].Cells[1].Flag, "Tuesday 3 February")
 }
 
 func TestCooking(t *testing.T) {

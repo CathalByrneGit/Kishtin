@@ -144,3 +144,53 @@ func TestPermissionsCan(t *testing.T) {
 	}
 	assert.Len(t, Actions(), len(policy), "every action is on the permissions screen")
 }
+
+func TestCodes(t *testing.T) {
+	seen := map[string]bool{}
+	for range 50 {
+		c, err := NewCode()
+		require.NoError(t, err)
+		require.Regexp(t, `^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$`, c, "no 0, O, 1, I or L")
+		require.False(t, seen[c], "codes do not repeat")
+		seen[c] = true
+	}
+	assert.Equal(t, "K7PQM2XD9RTA", NormalCode("k7pq-m2xd 9rta"))
+	assert.Equal(t, NormalCode("K7PQ-M2XD-9RTA"), NormalCode(" k7pqm2xd9rta "))
+}
+
+func TestValidateName(t *testing.T) {
+	for name, ok := range map[string]bool{
+		"Máire Manager":         true,
+		"  Liam  ":              true,
+		"":                      false,
+		"   ":                   false,
+		strings.Repeat("a", 61): false,
+		strings.Repeat("é", 60): true,
+		"Liam\nCook":            false,
+		"Tab\there":             false,
+	} {
+		assert.Equal(t, ok, ValidateName(name) == nil, "%q", name)
+	}
+}
+
+func TestPermissionsNormalize(t *testing.T) {
+	pm := Permissions{Grants: []Grant{
+		{Action: ActManageMenu, Roles: []Role{RoleManager, RoleHeadChef, RoleHeadChef}, Users: []string{"u2", "u1", "u2"}},
+		{Action: ActSignOff, Roles: []Role{RoleHeadChef}, PIN: true},
+	}}.Normalize()
+	require.Len(t, pm.Grants, 2)
+	byAction := map[Action]Grant{}
+	for _, g := range pm.Grants {
+		byAction[g.Action] = g
+	}
+	menu := byAction[ActManageMenu]
+	assert.Equal(t, []Role{RoleHeadChef}, menu.Roles, "managers always may, so they are not listed; no duplicates")
+	assert.ElementsMatch(t, []string{"u1", "u2"}, menu.Users)
+	assert.True(t, byAction[ActSignOff].PIN)
+	assert.Equal(t, pm, pm.Normalize(), "normalising twice changes nothing")
+
+	// A grant that only repeats Kishtin's default says nothing new.
+	def := Grant{Action: ActManageMenu, Roles: []Role{}}
+	assert.True(t, def.Same())
+	assert.False(t, menu.Same())
+}

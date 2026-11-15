@@ -32,6 +32,9 @@
   import { title as recordTitle, typeLabel } from "../lib/labels";
   import { addDays, coolingTimes, dublinDate, dublinTime, dublinToDate, isClock, longDate, normaliseClock, parseTemp } from "../lib/format";
   import { live, onChange } from "../lib/live.svelte";
+  import { keep, LISTS_KEY } from "../lib/kept.svelte";
+  import { t, tAny } from "../lib/i18n.svelte";
+  import { load as loadLocal, save as saveLocal } from "../lib/storage";
   import { session } from "../lib/session.svelte";
 
   interface Props {
@@ -47,14 +50,14 @@
   const kinds = $derived(
     (
       [
-        { id: "temp", label: "Fridge / freezer" },
-        { id: "delivery", label: "Delivery" },
-        { id: "cook", label: "Cook / reheat" },
-        { id: "cooling", label: "Cooling" },
-        { id: "hot_hold", label: "Hot holding" },
-        { id: "batch_label", label: "Batch label" },
-        { id: "cleaning", label: "Cleaning" },
-        { id: "transport", label: "To a customer" },
+        { id: "temp", label: t("Fridge / freezer") },
+        { id: "delivery", label: t("Delivery") },
+        { id: "cook", label: t("Cook / reheat") },
+        { id: "cooling", label: t("Cooling") },
+        { id: "hot_hold", label: t("Hot holding") },
+        { id: "batch_label", label: t("Batch label") },
+        { id: "cleaning", label: t("Cleaning") },
+        { id: "transport", label: t("To a customer") },
         { id: "training", label: "Training", show: canInspect },
         { id: "fitness", label: "Fitness to work", show: can("haccp.fitness") },
       ] as { id: Kind; label: string; show?: boolean }[]
@@ -112,6 +115,8 @@
   let topicList = $state<{ title?: string; items: string[] }[]>([]);
 
   let verdict = $state<Check | null>(null);
+  /** unreachable is set when Kishtin could not be asked to check a reading. */
+  let unreachable = $state(false);
   let verdictError = $state("");
   let saving = $state(false);
   let fileInput = $state<HTMLInputElement | undefined>();
@@ -119,10 +124,23 @@
   async function loadLists() {
     try {
       lists = (await api.lists()).value;
-      if (!unit && lists.units[0]) unit = lists.units[0].name;
-      if (!task && lists.cleaning_tasks[0]) task = lists.cleaning_tasks[0].task;
+      // Kept on the device so the form still knows the fridges and tasks
+      // when Kishtin cannot be reached.
+      saveLocal(LISTS_KEY, JSON.stringify(lists));
     } catch (err) {
       verdictError = message(err);
+      if (err instanceof OfflineError) {
+        unreachable = true;
+        try {
+          lists = JSON.parse(loadLocal(LISTS_KEY) ?? "null") as Lists | null;
+        } catch {
+          lists = null;
+        }
+      }
+    }
+    if (lists) {
+      if (!unit && lists.units[0]) unit = lists.units[0].name;
+      if (!task && lists.cleaning_tasks[0]) task = lists.cleaning_tasks[0].task;
     }
   }
 
@@ -323,9 +341,11 @@
     try {
       verdict = await api.check(body);
       verdictError = "";
+      unreachable = false;
     } catch (err) {
       verdict = null;
       verdictError = message(err);
+      unreachable = err instanceof OfflineError;
     }
   }, 300);
 
@@ -351,6 +371,59 @@
       (!correcting || correctionReason.trim() !== "") &&
       !saving,
   );
+
+  // With Kishtin out of reach, a check can be kept on this device and sent
+  // later. Not corrections (the original must be read), not a delivery with
+  // a docket photo (it cannot be uploaded), and not fitness to work, which
+  // is health information and stays off the device.
+  const offline = $derived(unreachable || live.status === "offline");
+  const canKeep = $derived(offline && !verdict && "record" in draft && takenAt !== "bad" && !correcting && !docket && kind !== "fitness" && !saving);
+
+  function clearForm() {
+    tempText = "";
+    action = "";
+    notes = "";
+    correctionReason = "";
+    cutoffText = "";
+    whenTime = "";
+    docket = null;
+    if (kind !== "temp") {
+      food = "";
+      product = "";
+      supplier = "";
+      cookedAt = "";
+      fridgeAt = "";
+      packagingOk = false;
+      inDate = false;
+      batchCode = "";
+      deliveryUseBy = null;
+      vehicle = "";
+      customer = "";
+      separated = "";
+      staffName = "";
+      topics = [];
+      course = "";
+      provider = "";
+      fit = "";
+    }
+  }
+
+  function keepHere() {
+    if (!("record" in draft)) return;
+    const body = full(draft.record);
+    if (action.trim()) body.corrective_action = action.trim();
+    const rd = body.reading;
+    const what = rd.unit ?? rd.food ?? rd.product ?? rd.task ?? rd.staff ?? "";
+    const label = [typeLabel(body.type), what, rd.temp_c !== undefined ? `${rd.temp_c}°C` : ""].filter(Boolean).join(" · ");
+    if (keep(body, label)) {
+      live.saveFailed = true;
+      showFlash(t("Kept on this device. It is not in Kishtin until the connection is back."), { tone: "warning", durationMs: 8000 });
+      clearForm();
+      onsaved();
+    } else {
+      showFlash(t("This device could not keep the check. Write it down, and log it when the connection is back."), { tone: "danger", durationMs: 10000 });
+    }
+  }
 
   async function pickPhoto(e: Event) {
     const file = (e.currentTarget as HTMLInputElement).files?.[0];
@@ -379,36 +452,15 @@
       }
       await api.log(body);
       live.saveFailed = false;
-      showFlash("Saved", { tone: "success" });
-      tempText = "";
-      action = "";
-      notes = "";
-      correctionReason = "";
-      cutoffText = "";
-      whenTime = "";
-      docket = null;
-      if (kind !== "temp") {
-        food = "";
-        product = "";
-        supplier = "";
-        cookedAt = "";
-        fridgeAt = "";
-        packagingOk = false;
-        inDate = false;
-        batchCode = "";
-        deliveryUseBy = null;
-        vehicle = "";
-        customer = "";
-        separated = "";
-        staffName = "";
-        topics = [];
-        course = "";
-        provider = "";
-        fit = "";
-      }
+      showFlash(t("Saved"), { tone: "success" });
+      clearForm();
       onsaved();
     } catch (err) {
-      if (err instanceof OfflineError) live.saveFailed = true;
+      if (err instanceof OfflineError) {
+        live.saveFailed = true;
+        unreachable = true;
+        verdict = null;
+      }
       showFlash(message(err), { tone: "danger", durationMs: 8000 });
     } finally {
       saving = false;
@@ -419,7 +471,7 @@
     verdict?.result.outcome === "fail" ? "error" : verdict?.result.outcome === "borderline" ? "warning" : verdict?.result.outcome === "pass" ? "success" : "info",
   );
   const verdictTitle = $derived(
-    ({ pass: "Pass", borderline: "Borderline", fail: "Fail", recorded: "Recorded" } as Record<string, string>)[verdict?.result.outcome ?? ""] ?? "",
+    ({ pass: t("Pass"), borderline: t("Borderline"), fail: t("Fail"), recorded: t("Recorded") } as Record<string, string>)[verdict?.result.outcome ?? ""] ?? "",
   );
   const limitSource = $derived.by(() => {
     const l = verdict?.limit;
@@ -450,120 +502,120 @@
   <div class="stack">
       {#if kind === "temp"}
         <label class="field">
-          <span>Fridge or freezer</span>
+          <span>{t("Fridge or freezer")}</span>
           <SelectDropdown
             value={unit}
             options={(lists?.units ?? []).map((u) => ({ value: u.name, label: `${u.name} (${u.kind})` }))}
             onchange={(v) => (unit = v)}
-            title="Fridge or freezer"
+            title={t("Fridge or freezer")}
           />
         </label>
-        <TempInput bind:value={tempText} label="Temperature (°C)" />
+        <TempInput bind:value={tempText} label={t("Temperature (°C)")} />
       {:else if kind === "delivery"}
-        <label class="field"><span>Supplier</span><TextInput bind:value={supplier} block /></label>
-        <label class="field"><span>Product</span><TextInput bind:value={product} block /></label>
+        <label class="field"><span>{t("Supplier")}</span><TextInput bind:value={supplier} block /></label>
+        <label class="field"><span>{t("Product")}</span><TextInput bind:value={product} block /></label>
         <SegmentedControl
           block
           ariaLabel="Delivery kind"
           value={deliveryKind}
           onchange={(v) => (deliveryKind = v)}
           options={[
-            { value: "chilled", label: "Chilled" },
-            { value: "frozen", label: "Frozen" },
-            { value: "ambient", label: "Ambient" },
+            { value: "chilled", label: t("Chilled") },
+            { value: "frozen", label: t("Frozen") },
+            { value: "ambient", label: t("Ambient") },
           ]}
         />
         {#if deliveryKind !== "ambient"}
-          <TempInput bind:value={tempText} label="Probe temperature (°C)" />
+          <TempInput bind:value={tempText} label={t("Probe temperature (°C)")} />
         {/if}
-        <Checkbox bind:checked={packagingOk} label="Packaging intact" />
-        <Checkbox bind:checked={inDate} label="In date" />
+        <Checkbox bind:checked={packagingOk} label={t("Packaging intact")} />
+        <Checkbox bind:checked={inDate} label={t("In date")} />
         <div class="field">
-          <span>Delivery vehicle check</span>
+          <span>{t("Delivery vehicle check")}</span>
           <SegmentedControl
             block
             ariaLabel="Delivery vehicle check"
             value={vehicle}
             onchange={(v) => (vehicle = v as typeof vehicle)}
             options={[
-              { value: "", label: "Not checked" },
-              { value: "ok", label: "Clean and cold" },
-              { value: "failed", label: "Failed" },
+              { value: "", label: t("Not checked") },
+              { value: "ok", label: t("Clean and cold") },
+              { value: "failed", label: t("Failed") },
             ]}
           />
         </div>
-        <label class="field"><span>Batch code (optional)</span><TextInput bind:value={batchCode} block /></label>
+        <label class="field"><span>{t("Batch code (optional)")}</span><TextInput bind:value={batchCode} block /></label>
         <div class="field">
-          <span>Use-by date (optional)</span>
+          <span>{t("Use-by date (optional)")}</span>
           <div class="row">
             <DatePicker value={deliveryUseBy} onchange={(d) => (deliveryUseBy = d)} ariaLabel="Use-by date" block />
-            {#if deliveryUseBy}<Button label="Clear" onclick={() => (deliveryUseBy = null)} />{/if}
+            {#if deliveryUseBy}<Button label={t("Clear")} onclick={() => (deliveryUseBy = null)} />{/if}
           </div>
         </div>
         <div class="row">
           <input bind:this={fileInput} class="kit-sr-only" type="file" accept="image/*,application/pdf" capture="environment" onchange={pickPhoto} />
-          <Button label={uploading ? "Uploading…" : docket ? "Replace docket photo" : "Add docket photo"} disabled={uploading} onclick={() => fileInput?.click()}>
+          <Button label={uploading ? t("Uploading…") : docket ? t("Replace docket photo") : t("Add docket photo")} disabled={uploading} onclick={() => fileInput?.click()}>
             <Camera size={20} />
           </Button>
-          {#if docket}<Chip tone="success" uppercase={false}>Attached: {docket.name}</Chip>{/if}
+          {#if docket}<Chip tone="success" uppercase={false}>{t("Attached: {name}", { name: docket.name })}</Chip>{/if}
         </div>
       {:else if kind === "cook"}
-        <label class="field"><span>Food</span><TextInput bind:value={food} block /></label>
+        <label class="field"><span>{t("Food")}</span><TextInput bind:value={food} block /></label>
         <SegmentedControl
           block
           ariaLabel="Stage"
           value={stage}
           onchange={(v) => (stage = v)}
           options={[
-            { value: "cook", label: "Cooking" },
-            { value: "reheat", label: "Reheating" },
+            { value: "cook", label: t("Cooking") },
+            { value: "reheat", label: t("Reheating") },
           ]}
         />
         {#if (lists?.food_categories.length ?? 0) > 0}
           <label class="field">
-            <span>Food category (sets the limit)</span>
+            <span>{t("Food category (sets the limit)")}</span>
             <SelectDropdown
               value={category}
-              options={[{ value: "", label: "None" }, ...(lists?.food_categories ?? []).map((c) => ({ value: c, label: c }))]}
+              options={[{ value: "", label: t("None") }, ...(lists?.food_categories ?? []).map((c) => ({ value: c, label: c }))]}
               onchange={(v) => (category = v)}
               title="Food category"
             />
           </label>
         {/if}
-        <TempInput bind:value={tempText} label="Core temperature (°C)" />
+        <TempInput bind:value={tempText} label={t("Core temperature (°C)")} />
       {:else if kind === "cooling"}
-        <label class="field"><span>Food</span><TextInput bind:value={food} block /></label>
+        <label class="field"><span>{t("Food")}</span><TextInput bind:value={food} block /></label>
         <div class="two">
           <div class="stack">
-            <TempInput bind:value={cookedAt} label="Finished cooking" placeholder="14:30" mode="numeric" />
-            <Button label="Now" onclick={() => (cookedAt = dublinTime(new Date()))} />
+            <TempInput bind:value={cookedAt} label={t("Finished cooking")} placeholder="14:30" mode="numeric" />
+            <Button label={t("Now")} onclick={() => (cookedAt = dublinTime(new Date()))} />
           </div>
           <div class="stack">
-            <TempInput bind:value={fridgeAt} label="Into fridge or blast chiller" placeholder="15:45" mode="numeric" />
-            <Button label="Now" onclick={() => (fridgeAt = dublinTime(new Date()))} />
+            <TempInput bind:value={fridgeAt} label={t("Into fridge or blast chiller")} placeholder="15:45" mode="numeric" />
+            <Button label={t("Now")} onclick={() => (fridgeAt = dublinTime(new Date()))} />
           </div>
         </div>
         {#if cooling}
-          <span class="muted">{Math.floor(cooling.minutes / 60)} h {cooling.minutes % 60} min between cooking and the fridge{dublinDate(cooling.cookedAt) !== dublinDate(cooling.intoFridgeAt) ? " (over midnight)" : ""}.</span>
+          <span class="muted">{t("{h} h {m} min between cooking and the fridge", { h: Math.floor(cooling.minutes / 60), m: cooling.minutes % 60 })}{dublinDate(cooling.cookedAt) !== dublinDate(cooling.intoFridgeAt) ? ` ${t("(over midnight)")}` : ""}.</span>
         {/if}
-        <TempInput bind:value={tempText} label="Core temperature going in (°C, optional)" />
+        <TempInput bind:value={tempText} label={t("Core temperature going in (°C, optional)")} />
         {#if cooling && cooling.minutes > 120}
-          <TempInput bind:value={cutoffText} label="Core temperature at 2.5 h (°C)" />
+          <TempInput bind:value={cutoffText} label={t("Core temperature at 2.5 h (°C)")} />
         {/if}
       {:else if kind === "hot_hold"}
-        <label class="field"><span>Food</span><TextInput bind:value={food} block /></label>
-        <TempInput bind:value={tempText} label="Core temperature (°C)" />
+        <label class="field"><span>{t("Food")}</span><TextInput bind:value={food} block /></label>
+        <TempInput bind:value={tempText} label={t("Core temperature (°C)")} />
       {:else if kind === "batch_label"}
-        <label class="field"><span>Item</span><TextInput bind:value={product} block /></label>
+        <label class="field"><span>{t("Item")}</span><TextInput bind:value={product} block /></label>
         <label class="field">
-          <span>Made on</span>
+          <span>{t("Made on")}</span>
           <DatePicker value={madeOn} onchange={(d) => (madeOn = d)} block ariaLabel="Made on" />
         </label>
-        <TempInput bind:value={shelfLife} label="Shelf life (days)" placeholder="5" mode="numeric" />
-        {#if useBy}<strong>Use by {longDate(useBy)}</strong>{/if}
+        <TempInput bind:value={shelfLife} label={t("Shelf life (days)")} placeholder="5" mode="numeric" />
+        {#if useBy}<strong>{t("Use by {date}", { date: longDate(useBy) })}</strong>{/if}
       {:else if kind === "cleaning"}
         <label class="field">
-          <span>Task</span>
+          <span>{t("Task")}</span>
           <SelectDropdown
             value={task}
             options={(lists?.cleaning_tasks ?? []).map((c) => ({ value: c.task, label: c.task }))}
@@ -574,39 +626,39 @@
       {/if}
 
       {#if kind === "transport"}
-        <label class="field"><span>Food</span><TextInput bind:value={product} block /></label>
-        <label class="field"><span>Customer</span><TextInput bind:value={customer} block placeholder="Name or order reference" /></label>
+        <label class="field"><span>{t("Food")}</span><TextInput bind:value={product} block /></label>
+        <label class="field"><span>{t("Customer")}</span><TextInput bind:value={customer} block placeholder={t("Name or order reference")} /></label>
         <SegmentedControl
           block
           ariaLabel="Food kind"
           value={deliveryKind}
           onchange={(v) => (deliveryKind = v)}
           options={[
-            { value: "chilled", label: "Chilled" },
-            { value: "frozen", label: "Frozen" },
-            { value: "hot", label: "Hot" },
-            { value: "ambient", label: "Ambient" },
+            { value: "chilled", label: t("Chilled") },
+            { value: "frozen", label: t("Frozen") },
+            { value: "hot", label: t("Hot") },
+            { value: "ambient", label: t("Ambient") },
           ]}
         />
         {#if deliveryKind !== "ambient"}
-          <TempInput bind:value={tempText} label="Temperature on arrival (°C)" />
+          <TempInput bind:value={tempText} label={t("Temperature on arrival (°C)")} />
         {/if}
         <div class="field">
-          <span>Raw and ready-to-eat food kept apart?</span>
-          <SegmentedControl block ariaLabel="Raw and ready-to-eat food kept apart" value={separated} onchange={(v) => (separated = v as typeof separated)} options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]} />
+          <span>{t("Raw and ready-to-eat food kept apart?")}</span>
+          <SegmentedControl block ariaLabel="Raw and ready-to-eat food kept apart" value={separated} onchange={(v) => (separated = v as typeof separated)} options={[{ value: "yes", label: t("Yes") }, { value: "no", label: t("No") }]} />
         </div>
-        <label class="field"><span>Batch code (optional)</span><TextInput bind:value={batchCode} block /></label>
+        <label class="field"><span>{t("Batch code (optional)")}</span><TextInput bind:value={batchCode} block /></label>
         <div class="field">
-          <span>Use-by date (optional)</span>
+          <span>{t("Use-by date (optional)")}</span>
           <div class="row">
             <DatePicker value={deliveryUseBy} onchange={(d) => (deliveryUseBy = d)} ariaLabel="Use-by date" block />
-            {#if deliveryUseBy}<Button label="Clear" onclick={() => (deliveryUseBy = null)} />{/if}
+            {#if deliveryUseBy}<Button label={t("Clear")} onclick={() => (deliveryUseBy = null)} />{/if}
           </div>
         </div>
       {:else if kind === "training"}
         <label class="field"><span>Who was trained</span><TextInput bind:value={staffName} block /></label>
         <SegmentedControl block ariaLabel="Kind of training" value={trainingKind} onchange={(v) => (trainingKind = v)} options={[{ value: "in_house", label: "In-house" }, { value: "further", label: "Course or further training" }]} />
-        <label class="field"><span>Date</span><DatePicker value={onDate} onchange={(d) => (onDate = d)} ariaLabel="Date" block /></label>
+        <label class="field"><span>{t("Date")}</span><DatePicker value={onDate} onchange={(d) => (onDate = d)} ariaLabel="Date" block /></label>
         {#if trainingKind === "in_house"}
           <div class="field">
             <span>Topics covered</span>
@@ -642,7 +694,7 @@
 
       {#if showWhen}
         <div class="field">
-          <span>When was this done?</span>
+          <span>{t("When was this done?")}</span>
           <SegmentedControl
             block
             ariaLabel="When was this done?"
@@ -650,23 +702,23 @@
             onchange={(v) => (when = v as typeof when)}
             options={correcting
               ? [{ value: "now", label: "Same time as the original" }, { value: "earlier", label: "A different time" }]
-              : [{ value: "now", label: "Just now" }, { value: "earlier", label: "Earlier" }]}
+              : [{ value: "now", label: t("Just now") }, { value: "earlier", label: t("Earlier") }]}
           />
         </div>
         {#if earlier}
           <div class="two">
-            <label class="field"><span>Date</span><DatePicker value={whenDate} onchange={(d) => (whenDate = d)} ariaLabel="Date the check was done" block /></label>
-            <label class="field"><span>Time</span><TextInput bind:value={whenTime} block placeholder="HH:MM" ariaLabel="Time the check was done" /></label>
+            <label class="field"><span>{t("Date")}</span><DatePicker value={whenDate} onchange={(d) => (whenDate = d)} ariaLabel="Date the check was done" block /></label>
+            <label class="field"><span>{t("Time")}</span><TextInput bind:value={whenTime} block placeholder="HH:MM" ariaLabel="Time the check was done" /></label>
           </div>
-          {#if takenAt === "bad"}<Notice tone="info" message="Enter the time the check was done, such as 09:00." />{/if}
-          <label class="field"><span>Done by (if not you)</span><TextInput bind:value={doneBy} block placeholder="Name or initials" /></label>
+          {#if takenAt === "bad"}<Notice tone="info" message={t("Enter the time the check was done, such as 09:00.")} />{/if}
+          <label class="field"><span>{t("Done by (if not you)")}</span><TextInput bind:value={doneBy} block placeholder={t("Name or initials")} /></label>
         {/if}
       {/if}
 
       {#if kind === "fitness"}
         <p class="muted">Kishtin keeps only the outcome: who, when, why, fit or not, and the action taken. Keep the signed questionnaire on paper. Only managers can see these records.</p>
       {:else}
-        <label class="field"><span>Notes (optional)</span><TextInput bind:value={notes} block /></label>
+        <label class="field"><span>{t("Notes (optional)")}</span><TextInput bind:value={notes} block /></label>
       {/if}
       {#if correcting}
         <label class="field">
@@ -679,14 +731,24 @@
   {#if verdict}
     <Notice tone={verdictTone} toneLabel={verdictTitle} message={verdict.result.reason + (limitSource ? ` ${limitSource}.` : "")} />
   {:else if "missing" in draft}
-    <Notice tone="info" message={draft.missing} />
+    <Notice tone="info" message={tAny(draft.missing)} />
+  {:else if canKeep}
+    <Notice
+      tone="warning"
+      title={t("Not connected to Kishtin")}
+      message={t("You can keep this check on this device. It is sent to Kishtin when the connection is back and you are logged in here. Until then it is not a record, and Kishtin has not checked it against the limit.")}
+    />
+    <div class="field">
+      <span>{t("If the reading is out of limit, what did you do? (Kishtin asks again if it needs this)")}</span>
+      <textarea class="text-area" bind:value={action} aria-label="Corrective action, if out of limit" placeholder={t("Leave empty if the reading is fine")}></textarea>
+    </div>
   {:else if verdictError}
     <Notice tone="error" message={verdictError} />
   {/if}
 
   {#if needsAction}
     <div class="field">
-      <span>{kind === "fitness" ? "Action taken (required)" : "Corrective action (required)"}</span>
+      <span>{kind === "fitness" ? "Action taken (required)" : t("Corrective action (required)")}</span>
       {#if presets.length > 0}
         <div class="row">
           {#each presets as p (p.text)}
@@ -694,12 +756,16 @@
           {/each}
         </div>
       {/if}
-      <textarea class="text-area" bind:value={action} aria-label="Corrective action" placeholder="What did you do about it?"></textarea>
+      <textarea class="text-area" bind:value={action} aria-label={t("Corrective action")} placeholder={t("What did you do about it?")}></textarea>
     </div>
   {/if}
 
-  <span class="muted">Logging as {session.user?.name}.</span>
-  <Button tone="success" surface="solid" label={saving ? "Saving…" : correcting ? "Save correction" : "Save record"} disabled={!canSave} onclick={save} />
+  <span class="muted">{t("Logging as {name}.", { name: session.user?.name ?? "" })}</span>
+  {#if canKeep}
+    <Button tone="info" surface="solid" label={t("Keep on this device")} onclick={keepHere} />
+  {:else}
+    <Button tone="success" surface="solid" label={saving ? t("Saving…") : correcting ? "Save correction" : t("Save record")} disabled={!canSave} onclick={save} />
+  {/if}
 </div>
 
 <style>

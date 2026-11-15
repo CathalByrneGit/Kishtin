@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tAny } from "../lib/i18n.svelte";
   import { dueToday, scheduleStatus } from "../lib/cleaning";
   import { Button, Card, Checkbox, Chip, EmptyState, Notice, Spinner, showFlash, type ChipTone } from "@kenn-io/kit-ui";
   import { onMount } from "svelte";
@@ -44,15 +45,16 @@
     if (s.record) {
       return { label: `${s.label} ${temp(s.record.reading.temp_c)}`, tone: outcomeStyle(s.record.outcome).tone };
     }
-    if (s.status === "missed") return { label: `${s.label} missed`, tone: "warning" };
-    return { label: `${s.label} due`, tone: "neutral" };
+    if (s.status === "missed") return { label: `${s.label} ${t("missed")}`, tone: "warning" };
+    if (s.status === "closed") return { label: `${s.label} ${t("closed")}`, tone: "neutral" };
+    return { label: `${s.label} ${t("due")}`, tone: "neutral" };
   }
 
   async function tick(task: string) {
     ticking = task;
     try {
       await api.log({ type: "cleaning", reading: { task, done: true } });
-      showFlash("Saved", { tone: "success" });
+      showFlash(t("Saved"), { tone: "success" });
       await load();
     } catch (err) {
       showFlash(message(err), { tone: "danger", durationMs: 6000 });
@@ -63,16 +65,15 @@
 
   const summary = $derived.by(() => {
     if (!today) return "";
-    if (today.out_of_limit === 0) return "No out-of-limit readings today.";
+    if (today.out_of_limit === 0) return t("No out-of-limit readings today.");
     const n = today.out_of_limit;
-    const what = n === 1 ? "1 out-of-limit reading today" : `${n} out-of-limit readings today`;
-    if (today.without_action === 0) return `${what}, ${n === 1 ? "with" : "each with"} an action recorded.`;
-    return `${what}, ${today.without_action} without an action.`;
+    if (today.without_action === 0) return t("Out-of-limit readings today: {n}.", { n });
+    return t("Out-of-limit readings today: {n}. Without an action: {m}.", { n, m: today.without_action });
   });
 </script>
 
 {#if error}
-  <Notice tone="error" title="Could not load today" message={error} />
+  <Notice tone="error" title={t("Could not load today")} message={error} />
 {/if}
 
 {#if !today}
@@ -81,17 +82,21 @@
   <div class="stack">
     <Card padding="md">
       <div class="summary">
-        <Ring percent={today.percent} state={today.ring} label={`${today.done} of ${today.total} checks done`} />
+        <Ring percent={today.percent} state={today.ring} label={t("{done} of {total} checks done", { done: today.done, total: today.total })} />
         <div class="stack">
-          <strong class="big">{today.done} of {today.total} checks done</strong>
+          <strong class="big">{t("{done} of {total} checks done", { done: today.done, total: today.total })}</strong>
           <span class:alert={today.out_of_limit > 0}>{summary}</span>
         </div>
       </div>
     </Card>
 
-    <h2 class="section-title">Fridge &amp; freezer temperatures</h2>
+    {#if today.closed}
+      <Notice tone="info" message={t("Closed today: no checks are due.")} />
+    {/if}
+
+    <h2 class="section-title">{t("Fridge & freezer temperatures")}</h2>
     {#if today.units.length === 0}
-      <EmptyState title="No fridges or freezers" description="A manager adds them in Setup." />
+      <EmptyState title={t("No fridges or freezers")} description={t("A manager adds them in Setup.")} />
     {/if}
     {#each today.units as u (u.name)}
       <Card padding="md">
@@ -108,12 +113,12 @@
               </Chip>
             {/each}
           </div>
-          <Button tone="info" surface="soft" label="Log" onclick={() => onlog({ type: u.kind, unit: u.name })} />
+          <Button tone="info" surface="soft" label={t("Log")} onclick={() => onlog({ type: u.kind, unit: u.name })} />
         </div>
       </Card>
     {/each}
 
-    <h2 class="section-title">Cleaning due today</h2>
+    <h2 class="section-title">{t("Cleaning due today")}</h2>
     <Card padding="md">
       <ul class="checklist">
         {#each today.cleaning.filter(dueToday) as c (c.task)}
@@ -133,27 +138,27 @@
             {/if}
           </li>
         {:else}
-          <li class="muted">{today.cleaning.length > 0 ? "No cleaning due today." : "No cleaning tasks. A manager adds them in Setup."}</li>
+          <li class="muted">{today.cleaning.length > 0 ? t("No cleaning due today.") : t("No cleaning tasks. A manager adds them in Setup.")}</li>
         {/each}
       </ul>
     </Card>
 
     {#if today.needs_attention.length > 0}
-      <h2 class="section-title">Needs attention</h2>
+      <h2 class="section-title">{t("Needs attention")}</h2>
       {#each today.needs_attention as r (r.id)}
         {@const o = outcomeStyle(r.outcome)}
         <Card padding="md">
           <div class="stack">
             <div class="row">
-              <Chip tone={o.tone} uppercase={false}>{o.label}</Chip>
+              <Chip tone={o.tone} uppercase={false}>{tAny(o.label)}</Chip>
               <strong>{title(r)}</strong>
               <span class="muted num">{dublinTime(doneAt(r))} · {doneBy(r)}</span>
             </div>
             <span>{r.outcome_reason}</span>
             {#if r.corrective_action}
-              <span><strong>Action:</strong> {r.corrective_action}</span>
+              <span><strong>{t("Action:")}</strong> {r.corrective_action}</span>
             {:else}
-              <span class="alert">No corrective action recorded.</span>
+              <span class="alert">{t("No corrective action recorded.")}</span>
             {/if}
           </div>
         </Card>
@@ -161,7 +166,7 @@
     {/if}
 
     {#if today.batches.length > 0}
-      <h2 class="section-title">Batches in use</h2>
+      <h2 class="section-title">{t("Batches in use")}</h2>
       <Card padding="md">
         <ul class="batches">
           {#each today.batches as b (b.record.id)}
@@ -171,11 +176,11 @@
                 <span class="muted">{details(b.record)}</span>
               </div>
               {#if b.status === "expired"}
-                <Chip tone="danger" uppercase={false}>Expired</Chip>
+                <Chip tone="danger" uppercase={false}>{t("Expired")}</Chip>
               {:else if b.status === "use_today"}
-                <Chip tone="warning" uppercase={false}>Use today</Chip>
+                <Chip tone="warning" uppercase={false}>{t("Use today")}</Chip>
               {:else}
-                <Chip tone="success" uppercase={false}>OK</Chip>
+                <Chip tone="success" uppercase={false}>{t("OK")}</Chip>
               {/if}
             </li>
           {/each}

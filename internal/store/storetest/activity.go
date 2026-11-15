@@ -199,3 +199,42 @@ func testClearCustomerDetails(t *testing.T, s store.Store) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"ord-d"}, due, "a cleared order is not found again")
 }
+
+func testPurgePlanSnapshots(t *testing.T, s store.Store) {
+	ctx := context.Background()
+	a := s.Activity()
+	now := time.Now().UTC()
+	snap := func(id string, at time.Time) store.PlanSnapshot {
+		return store.PlanSnapshot{ID: id, At: at, Trigger: "timer", Strategy: "backward", SettingsVersion: "v", Hash: id, Body: []byte(`{}`)}
+	}
+	require.NoError(t, a.AppendPlanSnapshot(ctx, snap("old-1", now.AddDate(0, 0, -400))))
+	require.NoError(t, a.AppendPlanSnapshot(ctx, snap("old-2", now.AddDate(0, 0, -40))))
+	require.NoError(t, a.AppendPlanSnapshot(ctx, snap("new-1", now.AddDate(0, 0, -1))))
+
+	n, err := a.CountPlanSnapshotsBefore(ctx, now.AddDate(0, 0, -35))
+	require.NoError(t, err)
+	assert.Equal(t, 2, n)
+	n, err = a.PurgePlanSnapshotsBefore(ctx, now.AddDate(0, 0, -35))
+	require.NoError(t, err)
+	assert.Equal(t, 2, n)
+
+	// Nothing from the last 30 days can be removed.
+	_, err = a.PurgePlanSnapshotsBefore(ctx, now)
+	require.Error(t, err)
+	left, err := a.ListPlanSnapshots(ctx, time.Time{}, time.Time{}, 10)
+	require.NoError(t, err)
+	require.Len(t, left, 1)
+	assert.Equal(t, "new-1", left[0].ID)
+}
+
+func testClientIDs(t *testing.T, s store.Store) {
+	ctx := context.Background()
+	h := s.HACCP()
+	_, err := h.RecordIDByClientID(ctx, "c1")
+	require.ErrorIs(t, err, store.ErrNotFound)
+	require.NoError(t, h.SaveClientID(ctx, "c1", "rec-1", t0))
+	id, err := h.RecordIDByClientID(ctx, "c1")
+	require.NoError(t, err)
+	assert.Equal(t, "rec-1", id)
+	assert.ErrorIs(t, h.SaveClientID(ctx, "c1", "rec-2", t0), store.ErrConflict, "one record per client ID")
+}

@@ -19,6 +19,9 @@ type TodayView struct {
 	CorrectiveActions []haccp.ActionPreset `json:"corrective_actions"`
 	// SignOff says how far the records are signed off by a manager.
 	SignOff SignOffStatus `json:"sign_off"`
+	// StorageWarning is set when the Kishtin computer's disk is nearly
+	// full, with what to do.
+	StorageWarning string `json:"storage_warning,omitempty"`
 }
 
 // SignOffStatus is how far the records are signed off.
@@ -100,7 +103,7 @@ func (s *Service) Today(ctx context.Context, p *auth.Principal) (TodayView, erro
 	if err != nil {
 		return TodayView{}, err
 	}
-	return TodayView{RestaurantName: sys.Value.RestaurantName, Today: t, CorrectiveActions: lists.Value.CorrectiveActions, SignOff: so}, nil
+	return TodayView{RestaurantName: sys.Value.RestaurantName, Today: t, CorrectiveActions: lists.Value.CorrectiveActions, SignOff: so, StorageWarning: s.storageLevel().Warning}, nil
 }
 
 // cleaningDays returns, per cleaning task done every N days (lower case),

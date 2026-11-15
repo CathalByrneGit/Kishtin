@@ -114,6 +114,8 @@ type Lists struct {
 	// CorrectiveActions are the quick-pick actions offered when a reading
 	// is not a pass. Staff can always write their own.
 	CorrectiveActions []ActionPreset `json:"corrective_actions" required:"false"`
+	// Closed are the days the restaurant is closed, when no checks are due.
+	Closed ClosedDays `json:"closed" required:"false"`
 }
 
 // BuiltinListsID is the version ID of the built-in lists.
@@ -160,7 +162,7 @@ func DefaultLists() Lists {
 
 // emptyLists has every list present and empty.
 func emptyLists() Lists {
-	return Lists{Units: []Unit{}, FoodCategories: []string{}, CleaningTasks: []CleaningTask{}, CorrectiveActions: []ActionPreset{}}
+	return Lists{Units: []Unit{}, FoodCategories: []string{}, CleaningTasks: []CleaningTask{}, CorrectiveActions: []ActionPreset{}, Closed: ClosedDays{Weekdays: []string{}, Dates: []ClosedDate{}}}
 }
 
 // Normalize trims every name and makes nil lists empty.
@@ -186,6 +188,7 @@ func (l Lists) Normalize() Lists {
 		}
 		out.CleaningTasks = append(out.CleaningTasks, CleaningTask{Task: strings.TrimSpace(t.Task), Area: strings.TrimSpace(t.Area), EveryDays: every})
 	}
+	out.Closed = l.Closed.Normalize()
 	return out
 }
 
@@ -237,6 +240,7 @@ func (l Lists) Validate() error {
 		}
 	}
 	return errors.Join(
+		l.Closed.Validate(),
 		errors.Join(every...),
 		unique("units", units),
 		unique("food_categories", l.FoodCategories),

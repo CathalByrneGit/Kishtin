@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -146,6 +147,17 @@ func (s *Service) System() *Group[settings.System] {
 				notes = append(notes, "Voice commands will no longer be recorded, and kept recordings will be deleted within the hour.")
 			case next.VoiceAudioDays < cur.VoiceAudioDays:
 				notes = append(notes, fmt.Sprintf("Recordings older than %d days will be deleted within the hour.", next.VoiceAudioDays))
+			}
+			if next.PlanSnapshotDays != cur.PlanSnapshotDays {
+				if next.PlanSnapshotDays == 0 {
+					notes = append(notes, "Every kept scheduler plan will be kept, which takes more disk space over time.")
+				} else {
+					n, err := st.Activity().CountPlanSnapshotsBefore(ctx, s.clk.Now().AddDate(0, 0, -next.PlanSnapshotDays))
+					if err != nil {
+						return nil, fmt.Errorf("count old plans: %w", err)
+					}
+					notes = append(notes, fmt.Sprintf("Kept scheduler plans older than %d days will be removed: %d now, within the hour. Pass-time reports for those days will no longer say why courses were late. This cannot be undone.", next.PlanSnapshotDays, n))
+				}
 			}
 			if next.CustomerDetailsDays == cur.CustomerDetailsDays {
 				return notes, nil
@@ -431,8 +443,11 @@ func guidanceNotes(ctx context.Context, _ *Service, st store.Store, cur, next ha
 
 // listNotes lists limits and recent records that use names the new lists
 // do not have.
-func listNotes(ctx context.Context, s *Service, st store.Store, _, next haccp.Lists) ([]string, error) {
+func listNotes(ctx context.Context, s *Service, st store.Store, cur, next haccp.Lists) ([]string, error) {
 	out := []string{"Saved records keep the names they were logged with."}
+	if !reflect.DeepEqual(cur.Closed.Normalize(), next.Closed.Normalize()) {
+		out = append(out, "No checks are due on a closed day, so none show as missed on Today, in the record books, reports or Catch up. This applies to past days too: a past closed day prints \"closed\" where it printed \"missed\". No record changes, and a check logged on a closed day still counts. Periods already signed off keep the counts they were signed with.")
+	}
 	rules, err := s.Rules().current(ctx, st)
 	if err != nil {
 		return nil, err

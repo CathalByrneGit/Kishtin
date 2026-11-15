@@ -1,0 +1,13 @@
+{
+  "name": "kishtin-e2e",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Browser tests of Kishtin's screens against a real kishtind. Not part of the Kishtin programs.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

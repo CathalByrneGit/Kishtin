@@ -23,6 +23,10 @@ type NewRecord struct {
 	// Corrects is the ID of an earlier record this one corrects.
 	Corrects         string `json:"corrects,omitempty"`
 	CorrectionReason string `json:"correction_reason,omitempty"`
+	// ClientID is an ID a device made up for a check it kept while Kishtin
+	// could not be reached. Sending the same one again returns the record
+	// already saved, so the check is saved once. Leave it out otherwise.
+	ClientID string `json:"client_id,omitempty" maxLength:"64"`
 }
 
 // Check is the result of checking a reading before it is saved.
@@ -169,13 +173,35 @@ func (s *Service) LogRecord(ctx context.Context, p *auth.Principal, nr NewRecord
 	if err := notFromPaper(nr); err != nil {
 		return haccp.Record{}, err
 	}
+	if len(nr.ClientID) > 64 {
+		return haccp.Record{}, newErr(KindInvalid, "client_id is at most 64 characters")
+	}
+	if nr.ClientID != "" {
+		ctx = withSource(ctx, SourceOffline)
+	}
 	var saved haccp.Record
+	again := false
 	err := s.st.WithTx(ctx, func(tx store.Store) error {
+		if nr.ClientID != "" {
+			id, err := tx.HACCP().RecordIDByClientID(ctx, nr.ClientID)
+			switch {
+			case err == nil:
+				// Sent before: answer with what was saved then.
+				saved, err = tx.HACCP().GetRecord(ctx, id)
+				again = true
+				return err
+			case !errors.Is(err, store.ErrNotFound):
+				return err
+			}
+		}
 		var err error
 		saved, err = s.appendRecord(ctx, tx, p, nr)
-		return err
+		if err != nil || nr.ClientID == "" {
+			return err
+		}
+		return tx.HACCP().SaveClientID(ctx, nr.ClientID, saved.ID, s.clk.Now())
 	})
-	if err == nil {
+	if err == nil && !again {
 		s.publish(events.KindRecord, saved.ID)
 	}
 	return saved, err
