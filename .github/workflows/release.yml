@@ -15,11 +15,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - uses: oven-sh/setup-bun@v2
@@ -39,7 +39,7 @@ jobs:
           fi
       # syft makes the software bills of materials (.goreleaser.yaml, sboms).
       - uses: anchore/sbom-action/download-syft@v0
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: "~> v2"
